@@ -80,8 +80,9 @@ export function StationCard({
       transition={{ delay: index * 0.02 }}
       className="h-full"
     >
-      <div className={`station-card h-full flex flex-col justify-between ${cardStatusClass}`}>
-        <div className="flex flex-col gap-4">
+      <div className={`station-card h-full flex flex-col ${cardStatusClass}`}>
+        {/* Top content area - grows to fill space */}
+        <div className="flex-1 flex flex-col gap-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:gap-4">
             <div className="relative aspect-[5/3] w-full overflow-hidden rounded-2xl border border-slate-300/30 bg-white sm:aspect-square sm:h-16 sm:w-16 sm:rounded-xl sm:border-slate-300/30 shadow-[2px_2px_4px_#b8b9be,-2px_-2px_4px_#ffffff]">
               {station.favicon ? (
@@ -131,37 +132,38 @@ export function StationCard({
               )}
             </div>
           </div>
+        </div>
 
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <Button
+        {/* Buttons section - fixed at bottom */}
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mt-auto pt-3">
+          <Button
+            radius="xl"
+            size="sm"
+            leftSection={<IconPlayerPlayFilled size={16} />}
+            variant="default"
+            className="flex-1 bg-[#e0e5ec] text-slate-700 border-0 shadow-[3px_3px_6px_#b8b9be,-3px_-3px_6px_#ffffff] active:shadow-[inset_3px_3px_6px_#b8b9be,inset_-3px_-3px_6px_#ffffff] transition-all hover:shadow-[4px_4px_8px_#b8b9be,-4px_-4px_8px_#ffffff]"
+            aria-label={hasStream ? `Play ${station.name}` : `Visit ${station.name}`}
+            {...primaryActionProps}
+          >
+            {hasStream ? "Play station" : "Visit station"}
+          </Button>
+          {onToggleFavorite && (
+            <ActionIcon
+              size="lg"
               radius="xl"
-              size="sm"
-              leftSection={<IconPlayerPlayFilled size={16} />}
-              variant="default"
-              className="flex-1 bg-[#e0e5ec] text-slate-700 border-0 shadow-[3px_3px_6px_#b8b9be,-3px_-3px_6px_#ffffff] active:shadow-[inset_3px_3px_6px_#b8b9be,inset_-3px_-3px_6px_#ffffff] transition-all hover:shadow-[4px_4px_8px_#b8b9be,-4px_-4px_8px_#ffffff]"
-              aria-label={hasStream ? `Play ${station.name}` : `Visit ${station.name}`}
-              {...primaryActionProps}
+              onClick={() => {
+                vibrate(10);
+                onToggleFavorite?.(station);
+              }}
+              variant="subtle"
+              color={isFavorite ? "red" : "gray"}
+              className={`border-0 text-slate-500 transition hover:text-red-500 ${isFavorite ? "bg-rose-100 text-rose-500 shadow-[inset_2px_2px_4px_#b8b9be,inset_-2px_-2px_4px_#ffffff]" : "bg-[#e0e5ec] shadow-[2px_2px_4px_#b8b9be,-2px_-2px_4px_#ffffff] active:shadow-[inset_2px_2px_4px_#b8b9be,inset_-2px_-2px_4px_#ffffff]"}`}
+              aria-pressed={isFavorite}
+              aria-label={isFavorite ? `Unfavorite ${station.name}` : `Favorite ${station.name}`}
             >
-              {hasStream ? "Play station" : "Visit station"}
-            </Button>
-            {onToggleFavorite && (
-              <ActionIcon
-                size="lg"
-                radius="xl"
-                onClick={() => {
-                  vibrate(10);
-                  onToggleFavorite?.(station);
-                }}
-                variant="subtle"
-                color={isFavorite ? "red" : "gray"}
-                className={`border-0 text-slate-500 transition hover:text-red-500 ${isFavorite ? "bg-rose-100 text-rose-500 shadow-[inset_2px_2px_4px_#b8b9be,inset_-2px_-2px_4px_#ffffff]" : "bg-[#e0e5ec] shadow-[2px_2px_4px_#b8b9be,-2px_-2px_4px_#ffffff] active:shadow-[inset_2px_2px_4px_#b8b9be,inset_-2px_-2px_4px_#ffffff]"}`}
-                aria-pressed={isFavorite}
-                aria-label={isFavorite ? `Unfavorite ${station.name}` : `Favorite ${station.name}`}
-              >
-                <IconHeart size={18} fill={isFavorite ? "currentColor" : "none"} />
-              </ActionIcon>
-            )}
-          </div>
+              <IconHeart size={18} fill={isFavorite ? "currentColor" : "none"} />
+            </ActionIcon>
+          )}
         </div>
       </div>
     </motion.div>
