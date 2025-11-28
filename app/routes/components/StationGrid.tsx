@@ -13,6 +13,7 @@ type StationGridProps = {
   isFetchingExplore?: boolean;
   favoriteStationIds?: Set<string>;
   onToggleFavorite?: (station: Station) => void;
+  emptyMessage?: string;
 };
 
 export function StationGrid({
@@ -23,6 +24,7 @@ export function StationGrid({
   isFetchingExplore = false,
   favoriteStationIds,
   onToggleFavorite,
+  emptyMessage,
 }: StationGridProps) {
   const [isMobile, setIsMobile] = useState(false);
 
@@ -38,10 +40,13 @@ export function StationGrid({
   }
 
   if (stations.length === 0) {
+    const message =
+      emptyMessage ??
+      "No stations broadcasting from this country right now. Try exploring a neighboring region or use Quick Retune to discover something new.";
     return (
       <div className="rounded-3xl border border-white/10 bg-white/5 p-12 text-center backdrop-blur">
         <Text size="md" c="rgba(226,232,240,0.6)">
-          No stations broadcasting from this country right now. Try exploring a neighboring region or use Quick Retune to discover something new.
+          {message}
         </Text>
       </div>
     );
@@ -64,25 +69,27 @@ export function StationGrid({
 
   // Desktop: Use grid view
   return (
-    <div id="station-grid" className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-      {stations.map((station, index) => {
-        const isCurrent = nowPlaying?.uuid === station.uuid;
-        const isFavorite = favoriteStationIds?.has(station.uuid) ?? false;
-        return (
-          <StationCard
-            key={`${station.uuid}-${index}`}
-            station={station}
-            index={index}
-            isCurrent={isCurrent}
-            onPlay={onPlayStation}
-            isFavorite={isFavorite}
-            onToggleFavorite={onToggleFavorite}
-            stationRef={(element) => {
-              stationRefs.current[station.uuid] = element;
-            }}
-          />
-        );
-      })}
-    </div>
+    <section className="rounded-2xl border border-slate-200/30 bg-[#e0e5ec] p-5 shadow-[3px_3px_6px_#b8b9be,-3px_-3px_6px_#ffffff] md:p-6">
+      <div id="station-grid" className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        {stations.map((station, index) => {
+          const isCurrent = nowPlaying?.uuid === station.uuid;
+          const isFavorite = favoriteStationIds?.has(station.uuid) ?? false;
+          return (
+            <StationCard
+              key={`${station.uuid}-${index}`}
+              station={station}
+              index={index}
+              isCurrent={isCurrent}
+              onPlay={onPlayStation}
+              isFavorite={isFavorite}
+              onToggleFavorite={onToggleFavorite}
+              stationRef={(element) => {
+                stationRefs.current[station.uuid] = element;
+              }}
+            />
+          );
+        })}
+      </div>
+    </section>
   );
 }

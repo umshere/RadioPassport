@@ -58,6 +58,38 @@ export function StationCard({
   const tags = tagBadges?.length ? tagBadges.join(" • ") : null;
   const supportingMeta = [metaSummary, tags].filter(Boolean).join(" • ");
 
+  // Produce a compact 'checked' label like "OK · 1h" from a verbose label
+  const abbreviateCheckedLabel = (label?: string | null) => {
+    if (!label) return null;
+    const parts = label.split("·").map((p) => p.trim());
+    // derive a short status (OK / ⚠ / ERR) from status or text
+    const raw = label.toLowerCase();
+    let statusShort = "";
+    if (/\bok\b/.test(raw) || reliabilityBadge?.status === "good") statusShort = "OK";
+    else if (/warn|warning/.test(raw) || reliabilityBadge?.status === "warning") statusShort = "!";
+    else if (/err|error/.test(raw) || reliabilityBadge?.status === "error") statusShort = "ERR";
+
+    // pick a candidate time part (usually after the dot)
+    let timePart = parts.length > 1 ? parts[1] : parts.find((p) => /\d/.test(p)) || "";
+    const tm = timePart.match(/(\d+)\s*(hour|hours|hr|hrs|minute|minutes|min|mins|day|days)/i);
+    let timeShort = "";
+    if (tm) {
+      const num = tm[1];
+      const unit = tm[2].toLowerCase();
+      const u = unit.startsWith("hour") ? "h" : unit.startsWith("min") ? "m" : unit.startsWith("day") ? "d" : "";
+      timeShort = `${num}${u}`;
+    } else if (timePart) {
+      // fallback: shrink common words
+      timeShort = timePart.replace(/\s+ago$/i, "").replace(/\s+/g, " ").slice(0, 6);
+    }
+
+    if (statusShort && timeShort) return `${statusShort} · ${timeShort}`;
+    if (statusShort) return statusShort;
+    return timeShort || null;
+  };
+
+  const shortChecked = abbreviateCheckedLabel(reliabilityBadge?.label);
+
   const primaryActionProps = hasStream
     ? {
       onClick: () => {
@@ -80,7 +112,7 @@ export function StationCard({
       transition={{ delay: index * 0.02 }}
       className="h-full"
     >
-      <div className={`station-card h-full flex flex-col ${cardStatusClass}`}>
+      <div className={`station-card h-full flex flex-col rounded-2xl border border-slate-200/30 bg-[#e0e5ec] p-4 shadow-[2px_2px_4px_#b8b9be,-2px_-2px_4px_#ffffff] transition-all hover:shadow-[3px_3px_6px_#b8b9be,-3px_-3px_6px_#ffffff] ${cardStatusClass}`}>
         {/* Top content area - grows to fill space */}
         <div className="flex-1 flex flex-col gap-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:gap-4">
@@ -110,24 +142,16 @@ export function StationCard({
                 >
                   {station.name}
                 </Text>
-                {reliabilityBadge && (
-                  <div className="inline-flex items-center gap-1 rounded-full bg-white/80 px-3 py-1 text-[11px] font-medium text-slate-500 ring-1 ring-slate-900/5">
-                    <span
-                      className="inline-flex h-1.5 w-1.5 rounded-full"
-                      style={{ background: statusTone?.dot }}
-                    />
-                    {reliabilityBadge.label}
+                {shortChecked && (
+                  <div className="inline-flex items-center gap-2 rounded-full bg-[#e0e5ec] px-3 py-1 text-[11px] font-medium text-slate-600 shadow-[inset_1px_1px_2px_#b8b9be,inset_-1px_-1px_2px_#ffffff]">
+                    <span className="inline-block h-2 w-2 rounded-full" style={{ background: statusTone?.dot }} />
+                    <span className="truncate">{shortChecked}</span>
                   </div>
                 )}
               </div>
               {supportingMeta && (
                 <Text size="xs" c="dimmed" lineClamp={2} className="text-slate-600">
                   {supportingMeta}
-                </Text>
-              )}
-              {station.country && (
-                <Text size="xs" c="slate.5" className="font-medium uppercase tracking-[0.2em]">
-                  {station.country}
                 </Text>
               )}
             </div>

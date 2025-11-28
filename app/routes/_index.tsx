@@ -10,6 +10,13 @@ import { getContinent } from "~/utils/geography";
 import { rbFetchJson } from "~/utils/radioBrowser";
 import { normalizeStations } from "~/utils/stations";
 import { rankStations, pickTopStation } from "~/utils/stationMeta";
+import {
+  applyStationFilters,
+  createDefaultStationFilters,
+  deriveStationFilterOptions,
+  isStationFilterDirty,
+  type StationFilterState,
+} from "~/utils/stationFilters";
 import { vibrate } from "~/utils/haptics";
 import type { Country, Station } from "~/types/radio";
 
@@ -19,6 +26,8 @@ import { AtlasFilters } from "./components/AtlasFilters";
 import { AtlasGrid } from "./components/AtlasGrid";
 import { CountryOverview } from "./components/CountryOverview";
 import { StationGrid } from "./components/StationGrid";
+import { StationFiltersPanel } from "./components/StationFiltersPanel";
+import { StationFilterQuickBar } from "./components/StationFilterQuickBar";
 import { QuickRetuneWidget } from "./components/QuickRetuneWidget";
 import { LoadingView } from "./components/LoadingView";
 import { CollapsibleSection } from "./components/CollapsibleSection";
@@ -102,6 +111,8 @@ export default function Index() {
   const [hasDismissedPlayer, setHasDismissedPlayer] = useState(false);
   const [showNavigationIndicator, setShowNavigationIndicator] = useState(false);
   const stationRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const [stationFilters, setStationFilters] = useState<StationFilterState>(() => createDefaultStationFilters());
+  const [isAdvancedFiltersOpen, setAdvancedFiltersOpen] = useState(false);
 
   // Derived data
   const topCountries = useMemo(
@@ -112,6 +123,12 @@ export default function Index() {
   const derived = useDerivedData(countries, topCountries, searchQuery, atlas.activeContinent);
   const isRouteTransitioning = navigation.state !== "idle";
   const selectedCountryMeta = selectedCountry ? atlas.countryMap.get(selectedCountry) || null : null;
+  const stationFilterOptions = useMemo(() => deriveStationFilterOptions(stations), [stations]);
+  const filteredStations = useMemo(() => applyStationFilters(stations, stationFilters), [stations, stationFilters]);
+  const isStationFilterActive = isStationFilterDirty(stationFilters);
+  const filteredEmptyMessage = isStationFilterActive
+    ? "No stations match the current filters. Try resetting them or broadening the language, region, mood, or quality filters."
+    : undefined;
 
   // Navigation helpers
   const atlasNavigation = useAtlasNavigation(
@@ -195,6 +212,10 @@ export default function Index() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedCountry, player.nowPlaying]);
+
+  useEffect(() => {
+    setStationFilters(createDefaultStationFilters());
+  }, [selectedCountry]);
 
   useEffect(() => {
     setShowNavigationIndicator(isRouteTransitioning);
@@ -323,26 +344,83 @@ export default function Index() {
         </>
       ) : (
         <>
-          <CountryOverview
-            selectedCountry={selectedCountry}
-            selectedCountryMeta={selectedCountryMeta}
-            stationCount={stations.length}
-            onBack={handlers.handleBackToWorldView}
-            nowPlaying={player.nowPlaying}
-            isPlaying={player.isPlaying}
-            onPlayPause={player.playPause}
-            onNext={playNext}
-            onPrev={playPrevious}
-          />
+          <section className="mt-4 rounded-2xl border border-slate-300/30 bg-[#e0e5ec] shadow-[3px_3px_6px_#b8b9be,-3px_-3px_6px_#ffffff]">
+            <CountryOverview
+              selectedCountry={selectedCountry}
+              selectedCountryMeta={selectedCountryMeta}
+              stationCount={stations.length}
+              onBack={handlers.handleBackToWorldView}
+              nowPlaying={player.nowPlaying}
+              isPlaying={player.isPlaying}
+              onPlayPause={player.playPause}
+              onNext={playNext}
+              onPrev={playPrevious}
+              transparent={true}
+            />
 
-          <CollapsibleSection title={`Stations in ${selectedCountry}`} defaultOpen id="stations">
-            <section className="mt-4">
-              <StationGrid stations={stations} nowPlaying={player.nowPlaying} stationRefs={stationRefs}
-                onPlayStation={handleStartStation} isFetchingExplore={mode.isFetchingExplore}
-                favoriteStationIds={favoriteStationIds} onToggleFavorite={handleToggleFavorite}
-              />
-            </section>
-          </CollapsibleSection>
+            <div className="border-t border-slate-300/30 px-6 py-6 md:px-10">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <Text fw={700} size="sm" c="slate.9">
+                    Stations in {selectedCountry}
+                  </Text>
+                  <Text size="xs" c="dimmed" className="font-mono uppercase tracking-[0.32em]">
+                    {filteredStations.length.toLocaleString()} / {stations.length.toLocaleString()} tuned
+                  </Text>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setStationFilters(createDefaultStationFilters())}
+                    className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500 hover:text-slate-900"
+                  >
+                    Reset
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setAdvancedFiltersOpen((prev) => !prev)}
+                    className="rounded-full border border-slate-300 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.25em] text-slate-600 transition hover:bg-slate-50"
+                  >
+                    {isAdvancedFiltersOpen ? "Hide advanced" : "Advanced"}
+                  </button>
+                </div>
+              </div>
+
+              <div className="mt-4">
+                <StationFilterQuickBar
+                  filters={stationFilters}
+                  options={stationFilterOptions}
+                  onChange={setStationFilters}
+                />
+              </div>
+
+              {isAdvancedFiltersOpen && (
+                <div className="mt-4">
+                  <StationFiltersPanel
+                    filters={stationFilters}
+                    options={stationFilterOptions}
+                    counts={{ total: stations.length, filtered: filteredStations.length }}
+                    isDirty={isStationFilterActive}
+                    onChange={setStationFilters}
+                    onReset={() => setStationFilters(createDefaultStationFilters())}
+                  />
+                </div>
+              )}
+            </div>
+          </section>
+
+          <div className="mt-4">
+            <StationGrid
+              stations={filteredStations}
+              nowPlaying={player.nowPlaying}
+              stationRefs={stationRefs}
+              onPlayStation={handleStartStation}
+              isFetchingExplore={mode.isFetchingExplore}
+              favoriteStationIds={favoriteStationIds}
+              onToggleFavorite={handleToggleFavorite}
+              emptyMessage={filteredEmptyMessage}
+            />
+          </div>
         </>
       )}
       </main>
@@ -373,6 +451,6 @@ export default function Index() {
         )}
       </AnimatePresence>
 
-    </div>
+    </div >
   );
 }

@@ -22,6 +22,7 @@ type CountryOverviewProps = {
   onPlayPause?: () => void;
   onNext?: () => void;
   onPrev?: () => void;
+  transparent?: boolean;
 };
 
 export function CountryOverview({
@@ -34,6 +35,7 @@ export function CountryOverview({
   onPlayPause,
   onNext,
   onPrev,
+  transparent = false,
 }: CountryOverviewProps) {
   const [isMounted, setIsMounted] = useState(false);
 
@@ -84,12 +86,16 @@ export function CountryOverview({
   const tickStart = Math.floor(freqNum) - 2;
   const ticks = Array.from({ length: 25 }, (_, i) => tickStart + i * 0.2);
 
+  const containerClasses = transparent
+    ? "relative overflow-hidden px-6 py-8 md:px-10 md:py-10"
+    : "relative overflow-hidden rounded-2xl border border-slate-300/30 bg-[#e0e5ec] px-6 py-8 md:px-10 md:py-10";
+
   return (
     <motion.section
       initial={{ opacity: 0, y: 18 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, ease: "easeOut" }}
-      className="relative overflow-hidden rounded-2xl border border-slate-300/30 bg-[#e0e5ec] px-6 py-8 md:px-10 md:py-10"
+      className={containerClasses}
     >
       {/* Animated Gradient Orbs Background */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden opacity-60">

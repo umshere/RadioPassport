@@ -38,11 +38,23 @@ export default function MobileSidebarMenu() {
             {/* Hamburger Menu Button - Top Left */}
             <button
                 onClick={() => setIsOpen(true)}
-                className="lg:hidden fixed top-4 left-4 z-50 flex h-11 w-11 items-center justify-center rounded-xl bg-[#e0e5ec] text-slate-700 shadow-[4px_4px_8px_#b8b9be,-4px_-4px_8px_#ffffff] active:shadow-[inset_4px_4px_8px_#b8b9be,inset_-4px_-4px_8px_#ffffff] transition-all"
+                className="lg:hidden fixed top-4 right-4 z-50 flex h-11 w-11 items-center justify-center rounded-xl bg-[#e0e5ec] text-slate-700 shadow-[4px_4px_8px_#b8b9be,-4px_-4px_8px_#ffffff] active:shadow-[inset_4px_4px_8px_#b8b9be,inset_-4px_-4px_8px_#ffffff] transition-all"
                 aria-label="Open menu"
             >
                 <IconMenu2 size={22} stroke={2.5} />
             </button>
+
+            {/* Edge Swipe Trigger (Only when closed) */}
+            {!isOpen && (
+                <motion.div
+                    className="lg:hidden fixed top-0 bottom-0 left-0 w-6 z-40"
+                    onPan={(e, info) => {
+                        if (info.offset.x > 50) {
+                            setIsOpen(true);
+                        }
+                    }}
+                />
+            )}
 
             {/* Backdrop */}
             <AnimatePresence>
@@ -66,28 +78,36 @@ export default function MobileSidebarMenu() {
                         animate={{ x: 0 }}
                         exit={{ x: "-100%" }}
                         transition={{ type: "spring", damping: 30, stiffness: 300 }}
+                        drag="x"
+                        dragConstraints={{ right: 0 }}
+                        dragElastic={0.1}
+                        onDragEnd={(e, info) => {
+                            if (info.offset.x < -50 || info.velocity.x < -500) {
+                                setIsOpen(false);
+                            }
+                        }}
                         className="lg:hidden fixed left-0 top-0 bottom-0 z-[60] w-72 bg-[#e0e5ec] shadow-2xl"
                         style={{
                             paddingBottom: "env(safe-area-inset-bottom)",
                         }}
                     >
                         {/* Header */}
-                        <div className="flex items-center justify-between p-6 border-b border-slate-300/50">
-                            <div className="flex items-center gap-3">
-                                <div className="h-10 w-10 rounded-xl bg-[#e0e5ec] shadow-[inset_4px_4px_8px_#b8b9be,inset_-4px_-4px_8px_#ffffff] flex items-center justify-center text-slate-700 font-bold text-sm">
+                        <div className="relative flex items-center justify-between p-6 border-b border-slate-300/50">
+                            <div className="flex items-center gap-4">
+                                <div className="h-12 w-12 rounded-2xl bg-[#e0e5ec] shadow-[5px_5px_10px_#b8b9be,-5px_-5px_10px_#ffffff] flex items-center justify-center text-slate-700 font-black text-base tracking-wider">
                                     RP
                                 </div>
-                                <div>
-                                    <h2 className="text-lg font-bold text-slate-900">Radio Passport</h2>
-                                    <p className="text-xs text-slate-500">Global sound atlas</p>
+                                <div className="min-w-0 flex-1">
+                                    <h2 className="text-lg font-black tracking-tight text-slate-800 whitespace-nowrap">Radio Passport</h2>
+                                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">Global sound atlas</p>
                                 </div>
                             </div>
                             <button
                                 onClick={() => setIsOpen(false)}
-                                className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#e0e5ec] text-slate-600 shadow-[3px_3px_6px_#b8b9be,-3px_-3px_6px_#ffffff] active:shadow-[inset_3px_3px_6px_#b8b9be,inset_-3px_-3px_6px_#ffffff] transition-all"
+                                className="absolute top-6 right-6 flex h-8 w-8 items-center justify-center rounded-full border border-slate-300/50 bg-slate-200/30 text-slate-500 hover:bg-slate-300/50 hover:text-slate-800 transition-all"
                                 aria-label="Close menu"
                             >
-                                <IconX size={20} stroke={2.5} />
+                                <IconX size={18} stroke={2.5} />
                             </button>
                         </div>
 
