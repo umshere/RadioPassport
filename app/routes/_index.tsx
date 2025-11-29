@@ -1,7 +1,6 @@
 import { json, type LoaderFunctionArgs } from "@remix-run/node";
-import { useLoaderData, useNavigate, useNavigation, useSearchParams } from "@remix-run/react";
+import { useLoaderData, useNavigate, useSearchParams } from "@remix-run/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 import { Text, Title } from "@mantine/core";
 import { useSwipeable } from "react-swipeable";
 
@@ -84,7 +83,6 @@ export default function Index() {
   const { countries, stations: loaderStations, selectedCountry: loaderSelectedCountry } = useLoaderData<typeof loader>();
   const [sp] = useSearchParams();
   const navigate = useNavigate();
-  const navigation = useNavigation();
 
   // Route params
   const countryParam = sp.get("country");
@@ -109,7 +107,6 @@ export default function Index() {
   const [cardDirection, setCardDirection] = useState<1 | -1>(1);
   const { isQuickRetuneOpen, setQuickRetuneOpen } = useUIStore();
   const [hasDismissedPlayer, setHasDismissedPlayer] = useState(false);
-  const [showNavigationIndicator, setShowNavigationIndicator] = useState(false);
   const stationRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const [stationFilters, setStationFilters] = useState<StationFilterState>(() => createDefaultStationFilters());
   const [isAdvancedFiltersOpen, setAdvancedFiltersOpen] = useState(false);
@@ -121,7 +118,6 @@ export default function Index() {
   );
 
   const derived = useDerivedData(countries, topCountries, searchQuery, atlas.activeContinent);
-  const isRouteTransitioning = navigation.state !== "idle";
   const selectedCountryMeta = selectedCountry ? atlas.countryMap.get(selectedCountry) || null : null;
   const stationFilterOptions = useMemo(() => deriveStationFilterOptions(stations), [stations]);
   const filteredStations = useMemo(() => applyStationFilters(stations, stationFilters), [stations, stationFilters]);
@@ -216,10 +212,6 @@ export default function Index() {
   useEffect(() => {
     setStationFilters(createDefaultStationFilters());
   }, [selectedCountry]);
-
-  useEffect(() => {
-    setShowNavigationIndicator(isRouteTransitioning);
-  }, [isRouteTransitioning]);
 
   useEffect(() => {
     if (
@@ -430,26 +422,6 @@ export default function Index() {
         countriesByContinent={derived.continentData} topCountries={topCountries}
         onCountrySelect={handlers.handleQuickRetuneCountrySelect} onSurprise={handlers.handleSurpriseRetune}
       />
-
-      <AnimatePresence>
-        {showNavigationIndicator && (
-          <motion.div key="navigation-indicator" initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -12 }} transition={{ duration: 0.25, ease: "easeOut" }}
-            className="pointer-events-none fixed top-6 right-6 z-40">
-            <motion.div layout className="flex items-center gap-4 rounded-2xl border border-white/10 bg-[rgba(12,20,36,0.82)] px-5 py-3 shadow-xl backdrop-blur"
-              initial={{ scale: 0.96, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.96, opacity: 0 }} transition={{ duration: 0.2 }}>
-              <span className="text-xs font-semibold uppercase tracking-[0.32em] text-slate-100/70">Tuning</span>
-              <div className="flex h-6 items-end gap-[3px]">
-                {Array.from({ length: 5 }).map((_, index) => (
-                  <motion.span key={index} className="w-[6px] rounded-full bg-[rgba(199,158,73,0.7)]"
-                    animate={{ height: [8, 22, 10] }} transition={{ duration: 0.6, repeat: Infinity, repeatType: "mirror", delay: index * 0.08, ease: "easeInOut" }}
-                  />
-                ))}
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
     </div >
   );
