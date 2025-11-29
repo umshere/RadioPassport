@@ -30,8 +30,8 @@ Currently deployed on Vercel and running in live beta with full functionality.
 
 ```bash
 # Clone the repository
-git clone https://github.com/umshere/RadioGarden.git
-cd RadioGarden
+git clone https://github.com/umshere/RadioPassport.git
+cd RadioPassport
 
 # Install dependencies
 npm install
@@ -187,8 +187,8 @@ Radio Passport is an open-source project. Contributions are welcome!
 
 ```bash
 # Fork and clone
-git clone https://github.com/your-username/RadioGarden.git
-cd RadioGarden
+git clone https://github.com/your-username/RadioPassport.git
+cd RadioPassport
 
 # Install dependencies
 npm install
