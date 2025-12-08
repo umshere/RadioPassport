@@ -19,14 +19,6 @@ const HERO_GENRE_CHIPS = [
 ] as const;
 
 // Bottom genre chips - shown below the card
-const GENRE_CHIPS = [
-  { id: 'bollywood', label: 'Bollywood', icon: '🎬' },
-  { id: 'devotional', label: 'Devotional', icon: '🙏' },
-  { id: 'retro', label: 'Retro', icon: '🎤' },
-  { id: 'news', label: 'News', icon: '📰' },
-  { id: 'classical', label: 'Classical', icon: '🎻' },
-] as const;
-
 type HeroSectionProps = {
   topCountries: Country[];
   totalStations: number;
@@ -127,13 +119,13 @@ export function HeroSection({
   }, [heroTickerItems.length]);
 
   return (
-    <div className="flex flex-col -mx-4 md:mx-0 lg:-mx-2 min-h-[calc(100vh-120px)] md:min-h-0">
+    <div className="flex flex-col -mx-4 md:-mx-6 lg:-mx-2 min-h-[calc(100vh-120px)] md:min-h-0 bg-white">
       {/* Hero Image - Wide format, blends seamlessly with page background */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.7, ease: "easeOut" }}
-        className="relative w-full overflow-hidden"
+        className="relative w-full overflow-hidden rounded-b-3xl bg-white shadow-[0_12px_32px_rgba(15,23,42,0.12)]"
         style={{ marginBottom: '-120px', zIndex: 1, minHeight: '54vh' }}
       >
         <img
@@ -151,10 +143,8 @@ export function HeroSection({
         <div
           className="pointer-events-none absolute inset-0"
           style={{
-            background: `
-              linear-gradient(to right, #d1d5db 0%, transparent 8%, transparent 92%, #d1d5db 100%),
-              linear-gradient(to bottom, #d1d5db 0%, transparent 15%, transparent 100%)
-            `,
+            background: "none",
+            borderRadius: 0,
           }}
         />
 
@@ -211,7 +201,7 @@ export function HeroSection({
         initial={{ opacity: 0, y: 18 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, ease: "easeOut", delay: 0.1 }}
-        className="relative overflow-hidden"
+        className="relative overflow-hidden rounded-2xl border border-white/70 bg-white/85 shadow-[0_12px_32px_rgba(15,23,42,0.12)] backdrop-blur-xl"
         onPointerEnter={() => setHeroHovered(true)}
         onPointerLeave={() => setHeroHovered(false)}
         style={{
@@ -377,31 +367,6 @@ export function HeroSection({
                 <IconSettings size={16} />
               </motion.button>
             </div>
-          </div>
-        </div>
-
-        {/* Bottom Genre Pills Strip */}
-        <div className="relative z-10 px-5 py-3 md:px-8">
-          <div className="flex flex-wrap items-center gap-2">
-            {GENRE_CHIPS.map((chip, i) => (
-              <motion.button
-                key={chip.id}
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.5 + (i * 0.04) }}
-                type="button"
-                onClick={() => onGenreSelect?.(selectedGenre === chip.id ? '' : chip.id)}
-                whileHover={{ scale: 1.04 }}
-                whileTap={{ scale: 0.96 }}
-                className={`flex h-9 items-center gap-1.5 rounded-full px-3 text-sm font-medium transition-all border ${selectedGenre === chip.id
-                  ? 'bg-slate-900 text-white border-slate-900 shadow-md'
-                  : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300 hover:bg-slate-50 shadow-sm'
-                  }`}
-              >
-                <span className="text-base">{chip.icon}</span>
-                <span>{chip.label}</span>
-              </motion.button>
-            ))}
           </div>
         </div>
       </motion.section>
