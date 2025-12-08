@@ -85,12 +85,10 @@ export function HeroSection({
       `Spotlight • ${headlineCountry}`,
     ];
 
-    if (nowPlaying) {
-      base.unshift(`Now playing • ${nowPlaying.name} — ${nowPlaying.country}`);
-    }
+    // Removed "Now playing" to prevent overflow in the pill
 
     return base;
-  }, [continents, nowPlaying, topCountries, totalStations]);
+  }, [continents, topCountries, totalStations]);
 
   const currentHeroTicker = heroTickerItems.length
     ? heroTickerItems[heroTickerIndex % heroTickerItems.length]
@@ -119,32 +117,45 @@ export function HeroSection({
   }, [heroTickerItems.length]);
 
   return (
-    <div 
-      className="flex flex-col min-h-[calc(100vh-120px)] md:min-h-0" 
-      style={{ 
-        margin: 0, 
+    <div
+      className="flex flex-col min-h-[calc(100vh-120px)] md:min-h-0"
+      style={{
+        margin: 0,
         border: 'none',
-        paddingLeft: 'clamp(8px, 3vw, 64px)',
-        paddingRight: 'clamp(8px, 3vw, 64px)',
-        paddingTop: 'clamp(12px, 3vw, 56px)',
+        background: 'transparent',
+        // Mobile: minimal padding, Desktop: more breathing room
+        paddingLeft: 'clamp(4px, 2vw, 40px)',
+        paddingRight: 'clamp(4px, 2vw, 40px)',
+        paddingTop: 'clamp(4px, 1vw, 32px)',
+        // Break out of parent container padding on mobile
+        marginLeft: 'clamp(-16px, -4vw, 0px)',
+        marginRight: 'clamp(-16px, -4vw, 0px)',
       }}
     >
-      {/* Hero Image - Contained with soft corners and depth */}
+      {/* Hero Image - No frame on mobile, soft corners on desktop */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.7, ease: "easeOut" }}
-        className="relative overflow-hidden mb-[-280px] sm:mb-[-240px] md:mb-[-180px] rounded-[12px] md:rounded-[28px]"
-        style={{ 
-          zIndex: 1, 
+        className="relative overflow-hidden mb-[-280px] sm:mb-[-240px] md:mb-[-180px] rounded-none sm:rounded-[10px] md:rounded-[20px]"
+        style={{
+          zIndex: 1,
           minHeight: '58vh',
-          boxShadow: '0 20px 60px rgba(0,0,0,0.25)',
+          border: 'none',
+          outline: 'none',
         }}
       >
+        {/* Mobile: no shadow, Desktop: subtle shadow */}
+        <style dangerouslySetInnerHTML={{
+          __html: `
+          @media (min-width: 640px) {
+            .hero-image-container { box-shadow: 0 12px 40px rgba(0,0,0,0.18); }
+          }
+        `}} />
         <img
           src="/RPHERO_WIDE.png"
           alt="Radio Passport - Global music discovery"
-          className="w-full h-full object-cover rounded-[12px] md:rounded-[28px]"
+          className="w-full h-full object-cover rounded-none sm:rounded-[10px] md:rounded-[20px]"
           style={{
             minHeight: '54vh',
             width: '100%',
@@ -215,29 +226,37 @@ export function HeroSection({
         </AnimatePresence>
       </motion.div>
 
-      {/* Main Card Section - Glassmorphic with more transparent top to show background image */}
+      {/* Main Card Section - Glassmorphic, no frame on mobile */}
       <motion.section
         id="explore"
         initial={{ opacity: 0, y: 18 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, ease: "easeOut", delay: 0.1 }}
-        className="relative overflow-hidden rounded-[12px] md:rounded-[20px]"
+        className="relative overflow-hidden rounded-none sm:rounded-[10px] md:rounded-[16px]"
         onPointerEnter={() => setHeroHovered(true)}
         onPointerLeave={() => setHeroHovered(false)}
         style={{
           zIndex: 2,
-          border: '1px solid rgba(255,255,255,0.2)',
           // More transparent glassmorphic gradient to show background image
           background: 'linear-gradient(to bottom, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.35) 20%, rgba(255,255,255,0.6) 40%, rgba(255,255,255,0.85) 60%, rgba(255,255,255,0.95) 100%)',
-          marginBottom: '20px',
-          boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
+          marginBottom: '16px',
           backdropFilter: 'blur(16px)',
           WebkitBackdropFilter: 'blur(16px)',
         }}
       >
+        {/* Mobile: no border/shadow, Desktop: subtle border/shadow via CSS */}
+        <style dangerouslySetInnerHTML={{
+          __html: `
+          @media (min-width: 640px) {
+            #explore { 
+              border: 1px solid rgba(255,255,255,0.15); 
+              box-shadow: 0 6px 24px rgba(0,0,0,0.08);
+            }
+          }
+        `}} />
         {/* Warm orange glow at bottom right - subtle accent */}
         <div
-          className="absolute inset-0 pointer-events-none rounded-[12px] md:rounded-[20px]"
+          className="absolute inset-0 pointer-events-none rounded-none sm:rounded-[10px] md:rounded-[16px]"
           style={{
             background: 'radial-gradient(ellipse 50% 40% at 85% 100%, rgba(255,160,100,0.12) 0%, transparent 70%)',
           }}
