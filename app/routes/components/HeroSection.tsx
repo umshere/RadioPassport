@@ -132,15 +132,15 @@ export function HeroSection({
         marginRight: 'clamp(-16px, -4vw, 0px)',
       }}
     >
-      {/* Hero Image - No frame on mobile, soft corners on desktop */}
+      {/* Hero Image - More visible on mobile, proper aspect ratio */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.7, ease: "easeOut" }}
-        className="relative overflow-hidden mb-[-280px] sm:mb-[-240px] md:mb-[-180px] rounded-none sm:rounded-[10px] md:rounded-[20px]"
+        className="relative overflow-hidden mb-[-180px] sm:mb-[-200px] md:mb-[-180px] rounded-none sm:rounded-[10px] md:rounded-[20px]"
         style={{
           zIndex: 1,
-          minHeight: '58vh',
+          minHeight: '45vh',
           border: 'none',
           outline: 'none',
         }}
@@ -157,9 +157,11 @@ export function HeroSection({
           alt="Radio Passport - Global music discovery"
           className="w-full h-full object-cover rounded-none sm:rounded-[10px] md:rounded-[20px]"
           style={{
-            minHeight: '54vh',
+            minHeight: '45vh',
+            height: 'auto',
             width: '100%',
-            objectPosition: 'center center',
+            objectPosition: 'center 30%',
+            aspectRatio: '16 / 9',
           }}
         />
 
