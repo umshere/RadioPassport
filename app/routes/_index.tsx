@@ -278,7 +278,7 @@ export default function Index() {
       background: "linear-gradient(180deg, #d1d5db 0%, #9ca3af 50%, #6b7280 100%)",
     }}>
       <main
-        className="relative z-10 mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 pt-6 md:px-6 md:pt-8"
+        className="relative z-10 mx-auto flex w-full max-w-7xl flex-col gap-4 md:gap-6 px-4 pt-0 md:px-6 md:pt-2"
         {...swipeHandlers}
         {...ariaHidden}
       >  {isCountryViewPending ? <LoadingView /> : !selectedCountry ? (
@@ -319,7 +319,7 @@ export default function Index() {
             </div>
           </div>
 
-          <section id="atlas" className="mt-2">
+          <section id="atlas" className="mt-4 md:mt-6">
             <div className="sticky top-[73px] z-30 -mx-4 px-4 py-3 md:-mx-8 md:px-8">
               <div className="rounded-2xl border border-white/70 bg-white/85 px-4 py-3 shadow-[0_12px_32px_rgba(15,23,42,0.12)] backdrop-blur-xl md:px-6">
                 <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
@@ -349,7 +349,7 @@ export default function Index() {
         </>
       ) : (
         <>
-          <section className="rounded-2xl border border-white/70 bg-white/80 shadow-[0_12px_32px_rgba(15,23,42,0.12)] backdrop-blur-xl">
+          <section className="-mx-4 sm:-mx-6 md:mx-0 rounded-2xl border border-white/70 bg-white/80 shadow-[0_12px_32px_rgba(15,23,42,0.12)] backdrop-blur-xl">
             <CountryOverview
               selectedCountry={selectedCountry}
               selectedCountryMeta={selectedCountryMeta}

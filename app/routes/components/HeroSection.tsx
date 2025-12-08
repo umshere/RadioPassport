@@ -127,22 +127,22 @@ export function HeroSection({
   }, [heroTickerItems.length]);
 
   return (
-    <div className="flex flex-col -mx-4 md:-mx-6">
+    <div className="flex flex-col -mx-4 md:mx-0 lg:-mx-2 min-h-[calc(100vh-120px)] md:min-h-0">
       {/* Hero Image - Wide format, blends seamlessly with page background */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.7, ease: "easeOut" }}
         className="relative w-full overflow-hidden"
-        style={{ marginBottom: '-140px', zIndex: 1 }}
+        style={{ marginBottom: '-120px', zIndex: 1, minHeight: '54vh' }}
       >
         <img
           src="/RPHERO_WIDE.png"
           alt="Radio Passport - Global music discovery"
-          className="w-full h-auto object-cover"
+          className="w-full h-full object-cover"
           style={{
-            minHeight: '320px',
-            maxHeight: '450px',
+            minHeight: '54vh',
+            maxHeight: '520px',
             objectPosition: 'center center',
           }}
         />
@@ -237,7 +237,7 @@ export function HeroSection({
             WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 30%)',
           }}
         />
-        <div className="relative px-6 pt-16 pb-6 md:px-10 md:pt-20 md:pb-8">
+        <div className="relative px-6 pt-2 pb-6 md:px-10 md:pt-6 md:pb-8">
           {/* Status Ticker */}
           <motion.span
             className="inline-flex h-8 items-center gap-2 rounded-full bg-white/80 px-4 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-700 shadow-sm border border-white/50"

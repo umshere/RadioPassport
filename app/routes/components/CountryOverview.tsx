@@ -63,7 +63,7 @@ export function CountryOverview({
 
   const containerClasses = transparent
     ? "relative overflow-hidden px-6 py-8 md:px-10 md:py-10"
-    : "relative overflow-hidden rounded-2xl border border-white/70 bg-white/80 backdrop-blur-xl px-6 py-8 md:px-10 md:py-10 shadow-[0_12px_32px_rgba(15,23,42,0.12)]";
+    : "relative overflow-hidden rounded-2xl bg-white/80 backdrop-blur-xl px-6 py-8 md:px-10 md:py-10 shadow-[0_12px_32px_rgba(15,23,42,0.12)]";
 
   return (
     <motion.section
@@ -75,7 +75,7 @@ export function CountryOverview({
     >
       {/* Hero Background Image */}
       <div
-        className="absolute inset-0 z-0"
+        className="absolute inset-0 z-0 rounded-2xl"
         style={{
           backgroundImage: "url('/RPhero.png')",
           backgroundSize: "cover",
@@ -85,7 +85,7 @@ export function CountryOverview({
       />
       {/* Subtle overlay for text readability */}
       <div
-        className="absolute inset-0 z-0"
+        className="absolute inset-0 z-0 rounded-2xl"
         style={{
           background: "linear-gradient(180deg, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0.5) 100%)",
         }}
