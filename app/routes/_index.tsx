@@ -2,12 +2,6 @@ import { json, type LoaderFunctionArgs } from "@remix-run/node";
 import { useLoaderData, useNavigate, useSearchParams } from "@remix-run/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Text, Title } from "@mantine/core";
-import {
-  IconLoader2,
-  IconRefresh,
-  IconSparkles,
-  IconWorld,
-} from "@tabler/icons-react";
 import { useSwipeable } from "react-swipeable";
 
 import { BRAND } from "~/constants/brand";
@@ -51,8 +45,6 @@ import { useStationNavigation } from "~/hooks/useStationNavigation";
 import { useAtlasNavigation } from "~/hooks/useAtlasNavigation";
 import { useDerivedData } from "~/hooks/useDerivedData";
 import { useEventHandlers } from "~/hooks/useEventHandlers";
-import { useSceneDescriptor } from "~/hooks/useSceneDescriptor";
-import type { SceneDescriptor } from "~/scenes/types";
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const url = new URL(request.url);
@@ -153,12 +145,6 @@ export default function Index() {
     selectedCountry
   );
 
-  const sceneDescriptor = useSceneDescriptor();
-  const moodSuggestions = useMemo(
-    () => ["sunrise drive", "festival energy", "night city jazz", "balcony chill", "desert dusk"],
-    []
-  );
-
   // Core event handler
   const handleStartStation = useCallback((station: Station, options?: { autoPlay?: boolean; preserveQueue?: boolean }) => {
     atlasNavigation.selectContinentForCountry(station.country);
@@ -185,20 +171,6 @@ export default function Index() {
     atlasNavigation,
   });
   const { handleWorldMoodRefresh } = handlers;
-
-  const handlePlayWorldDescriptor = useCallback(() => {
-    const firstStation = sceneDescriptor?.stations?.[0];
-    if (!firstStation) return;
-    setActiveCardIndex(1);
-    handleStartStation(firstStation, { autoPlay: true, preserveQueue: true });
-  }, [sceneDescriptor, handleStartStation, setActiveCardIndex]);
-
-  const handleRefreshWorldMood = useCallback(
-    (mood?: string) => {
-      handleWorldMoodRefresh({ mood });
-    },
-    [handleWorldMoodRefresh]
-  );
 
   // Card navigation handlers
   const handleCardChange = useCallback((direction: 1 | -1) => {
@@ -311,21 +283,6 @@ export default function Index() {
         {...ariaHidden}
       >  {isCountryViewPending ? <LoadingView /> : !selectedCountry ? (
         <>
-          {mode.listeningMode === "world" && (
-            <WorldMixPanel
-              descriptor={sceneDescriptor}
-              isLoading={mode.isFetchingExplore}
-              error={mode.exploreError}
-              onPlay={handlePlayWorldDescriptor}
-              onRefresh={handleRefreshWorldMood}
-              context={{
-                country: player.nowPlaying?.country ?? selectedCountry ?? undefined,
-                language: player.nowPlaying?.language ?? undefined,
-                moods: moodSuggestions,
-              }}
-            />
-          )}
-
           <HeroSection topCountries={topCountries} totalStations={derived.totalStations} continents={derived.continents.length}
             nowPlaying={player.nowPlaying} searchQueryRaw={searchQueryRaw} onStartListening={handlers.handleStartListening}
             onQuickRetune={handlers.handleQuickRetune} onMissionExploreWorld={handlers.handleMissionExploreWorld}
@@ -482,148 +439,5 @@ export default function Index() {
       <Footer />
 
     </div >
-  );
-}
-
-type WorldMixPanelProps = {
-  descriptor: SceneDescriptor | null;
-  isLoading: boolean;
-  error: string | null;
-  onPlay: () => void;
-  onRefresh: (mood?: string) => void;
-  context: {
-    country?: string;
-    language?: string;
-    moods: string[];
-  };
-};
-
-function WorldMixPanel({ descriptor, isLoading, error, onPlay, onRefresh, context }: WorldMixPanelProps) {
-  const stations = descriptor?.stations ?? [];
-  const stationPreview = stations.slice(0, 4);
-  const vibe = descriptor?.mood ?? "World mix";
-  const reason = descriptor?.reason ?? "Our AI is curating a global set for you.";
-  const hintParts = [
-    context.country ? `Grounded in ${context.country}` : null,
-    context.language ? `${context.language} voices` : null,
-    descriptor?.play ? descriptor.play : null,
-  ].filter(Boolean);
-
-  const pickMood = () => {
-    if (context.moods.length === 0) return undefined;
-    const index = Math.floor(Math.random() * context.moods.length);
-    return context.moods[index];
-  };
-
-  return (
-    <section className="mt-4 md:mt-6">
-      <div className="relative overflow-hidden rounded-3xl border border-white/70 bg-gradient-to-r from-white/90 via-emerald-50/90 to-white/95 px-4 py-5 shadow-[0_16px_46px_rgba(16,185,129,0.18)] backdrop-blur">
-        <div className="absolute -left-10 -top-12 h-32 w-32 rounded-full bg-emerald-300/20 blur-3xl" aria-hidden />
-        <div className="absolute -right-6 -bottom-10 h-28 w-28 rounded-full bg-amber-200/30 blur-3xl" aria-hidden />
-
-        <div className="relative flex flex-col gap-3">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center gap-2 rounded-full bg-emerald-600 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.3em] text-white shadow-sm">
-              <IconWorld size={14} />
-              AI World Mix
-            </span>
-            {hintParts.length > 0 && (
-              <div className="flex flex-wrap gap-2 text-[11px] font-semibold uppercase tracking-[0.25em] text-emerald-800/80">
-                {hintParts.map((part) => (
-                  <span key={part} className="rounded-full bg-white/80 px-3 py-1 border border-emerald-100">
-                    {part}
-                  </span>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-            <div>
-              <div className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-[12px] font-semibold text-emerald-700 shadow-sm">
-                <IconSparkles size={16} className="text-amber-500" />
-                {vibe}
-              </div>
-              <p className="mt-2 text-base font-semibold text-slate-800 leading-tight">
-                {reason}
-              </p>
-              {descriptor?.play && (
-                <p className="text-sm text-slate-500">
-                  {descriptor.play}
-                </p>
-              )}
-            </div>
-
-            <div className="flex flex-wrap items-center gap-2">
-              <button
-                type="button"
-                onClick={onPlay}
-                disabled={isLoading || stations.length === 0}
-                className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold text-white shadow-md transition disabled:cursor-not-allowed disabled:opacity-60 ${
-                  isLoading
-                    ? "bg-slate-500"
-                    : "bg-emerald-600 hover:scale-[1.02] hover:bg-emerald-700"
-                }`}
-              >
-                {isLoading ? <IconLoader2 size={16} className="animate-spin" /> : <IconWorld size={16} />}
-                {isLoading ? "Curating…" : "Start this mix"}
-              </button>
-              <button
-                type="button"
-                onClick={() => onRefresh(pickMood())}
-                disabled={isLoading}
-                className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-white/90 px-4 py-2 text-sm font-semibold text-emerald-700 transition hover:border-emerald-300 hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                <IconRefresh size={16} />
-                New vibe
-              </button>
-            </div>
-          </div>
-
-          {isLoading && (
-            <div className="flex items-center gap-3 rounded-2xl border border-emerald-100 bg-white/80 px-3 py-2 text-sm text-emerald-700 shadow-inner">
-              <IconLoader2 size={16} className="animate-spin" />
-              <span>Curating a world set for you… pulling stations from your recent plays and favorites.</span>
-            </div>
-          )}
-
-          {error && (
-            <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
-              <span>{error}</span>
-              <button
-                type="button"
-                onClick={() => onRefresh()}
-                className="inline-flex items-center gap-1 rounded-full border border-amber-300 bg-white px-3 py-1 text-[12px] font-semibold uppercase tracking-[0.2em] text-amber-800 transition hover:bg-amber-100"
-              >
-                <IconRefresh size={14} />
-                Retry
-              </button>
-            </div>
-          )}
-
-          {stationPreview.length > 0 && (
-            <div className="flex flex-wrap items-center gap-2">
-              {stationPreview.map((station) => (
-                <div
-                  key={station.uuid}
-                  className="group inline-flex items-center gap-2 rounded-full border border-emerald-100 bg-white/90 px-3 py-1.5 text-sm font-semibold text-slate-700 shadow-sm hover:border-emerald-200"
-                >
-                  <span className="h-2 w-2 rounded-full bg-emerald-500" aria-hidden />
-                  <span>{station.name}</span>
-                  <span className="text-xs text-slate-500 group-hover:text-emerald-600">
-                    {station.country}
-                  </span>
-                </div>
-              ))}
-              {stations.length > stationPreview.length && (
-                <span className="text-sm text-emerald-700 font-semibold">
-                  +{stations.length - stationPreview.length} more
-                </span>
-              )}
-            </div>
-          )}
-        </div>
-      </div>
-    </section>
   );
 }

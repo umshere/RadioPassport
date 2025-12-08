@@ -27,6 +27,11 @@ type LoadWorldDescriptorOptions = {
   onStartStation?: (station: Station, options: { autoPlay: boolean }) => void;
 };
 
+type WorldDescriptorPreviewOptions = Omit<
+  LoadWorldDescriptorOptions,
+  "onStationsResolved" | "onStartStation"
+>;
+
 function isSceneDescriptor(value: unknown): value is SceneDescriptor {
   if (!value || typeof value !== "object") return false;
   const candidate = value as Record<string, unknown>;
@@ -53,9 +58,8 @@ function parseResponse(payload: unknown): SceneDescriptor {
   };
 }
 
-export async function loadWorldDescriptor(options: LoadWorldDescriptorOptions = {}) {
+function buildRequestOptions(options: LoadWorldDescriptorOptions | WorldDescriptorPreviewOptions) {
   const {
-    signal,
     prompt,
     mood,
     visual,
@@ -68,8 +72,6 @@ export async function loadWorldDescriptor(options: LoadWorldDescriptorOptions = 
     recentStationIds,
     dislikedStationIds,
     currentStationId,
-    onStationsResolved,
-    onStartStation,
   } = options;
   const usePost = typeof prompt === "string" && prompt.trim().length > 0;
   const query = new URLSearchParams();
@@ -104,7 +106,7 @@ export async function loadWorldDescriptor(options: LoadWorldDescriptorOptions = 
     ? `${ENDPOINT}?${query.toString()}`
     : ENDPOINT;
 
-  const response = await fetch(endpoint, {
+  const fetchInit = {
     method: usePost ? "POST" : "GET",
     headers: usePost
       ? {
@@ -127,7 +129,18 @@ export async function loadWorldDescriptor(options: LoadWorldDescriptorOptions = 
           currentStationId,
         })
       : undefined,
-    signal,
+  };
+
+  return { endpoint, fetchInit };
+}
+
+async function fetchDescriptor(
+  options: LoadWorldDescriptorOptions | WorldDescriptorPreviewOptions
+) {
+  const { endpoint, fetchInit } = buildRequestOptions(options);
+  const response = await fetch(endpoint, {
+    ...fetchInit,
+    signal: options.signal,
   });
 
   if (!response.ok) {
@@ -135,7 +148,43 @@ export async function loadWorldDescriptor(options: LoadWorldDescriptorOptions = 
   }
 
   const payload: unknown = await response.json();
-  const descriptor = parseResponse(payload);
+  return parseResponse(payload);
+}
+
+export async function loadWorldDescriptor(options: LoadWorldDescriptorOptions = {}) {
+  const {
+    signal,
+    prompt,
+    mood,
+    visual,
+    sceneId,
+    country,
+    language,
+    preferredCountries,
+    preferredLanguages,
+    favoriteStationIds,
+    recentStationIds,
+    dislikedStationIds,
+    currentStationId,
+    onStationsResolved,
+    onStartStation,
+  } = options;
+
+  const descriptor = await fetchDescriptor({
+    signal,
+    prompt,
+    mood,
+    visual,
+    sceneId,
+    country,
+    language,
+    preferredCountries,
+    preferredLanguages,
+    favoriteStationIds,
+    recentStationIds,
+    dislikedStationIds,
+    currentStationId,
+  });
 
   sceneManager.setDescriptor(descriptor);
 
@@ -149,4 +198,8 @@ export async function loadWorldDescriptor(options: LoadWorldDescriptorOptions = 
   }
 
   return descriptor;
+}
+
+export async function loadWorldDescriptorPreview(options: WorldDescriptorPreviewOptions = {}) {
+  return fetchDescriptor(options);
 }

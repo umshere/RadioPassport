@@ -260,24 +260,12 @@ export function useEventHandlers({
 
   const handleMissionExploreWorld = useCallback(() => {
     mode.setListeningMode("world");
-    atlasNavigation.resetContinent();
-    scrollIfOffscreen("player", "center");
-
-    requestWorldDescriptor(currentStationId).then((success) => {
-      if (success) return;
-      const fallback = mode.exploreStations[0];
-      if (fallback) {
-        setActiveCardIndex(1);
-        handleStartStation(fallback);
-      }
-    });
+    setIsQuickRetuneOpen(false);
+    navigate("/ai", { preventScrollReset: true });
   }, [
     mode,
-    atlasNavigation,
-    requestWorldDescriptor,
-    currentStationId,
-    handleStartStation,
-    setActiveCardIndex,
+    navigate,
+    setIsQuickRetuneOpen,
   ]);
 
   const handleWorldMoodRefresh = useCallback(
