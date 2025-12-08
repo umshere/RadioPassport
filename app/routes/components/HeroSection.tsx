@@ -119,34 +119,44 @@ export function HeroSection({
   }, [heroTickerItems.length]);
 
   return (
-    <div className="flex flex-col -mx-4 md:-mx-6 lg:-mx-2 min-h-[calc(100vh-120px)] md:min-h-0">
-      {/* Hero Image - Wide format, blends seamlessly with page background */}
+    <div 
+      className="flex flex-col min-h-[calc(100vh-120px)] md:min-h-0" 
+      style={{ 
+        margin: 0, 
+        border: 'none',
+        paddingLeft: 'clamp(8px, 3vw, 64px)',
+        paddingRight: 'clamp(8px, 3vw, 64px)',
+        paddingTop: 'clamp(12px, 3vw, 56px)',
+      }}
+    >
+      {/* Hero Image - Contained with soft corners and depth */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.7, ease: "easeOut" }}
-        className="relative w-full overflow-hidden"
-        style={{ marginBottom: '-180px', zIndex: 1, minHeight: '54vh' }}
+        className="relative overflow-hidden mb-[-280px] sm:mb-[-240px] md:mb-[-180px] rounded-[12px] md:rounded-[28px]"
+        style={{ 
+          zIndex: 1, 
+          minHeight: '58vh',
+          boxShadow: '0 20px 60px rgba(0,0,0,0.25)',
+        }}
       >
         <img
           src="/RPHERO_WIDE.png"
           alt="Radio Passport - Global music discovery"
-          className="w-full h-full object-cover"
+          className="w-full h-full object-cover rounded-[12px] md:rounded-[28px]"
           style={{
             minHeight: '54vh',
-            maxHeight: '520px',
+            width: '100%',
             objectPosition: 'center center',
           }}
         />
 
-        {/* Edge feather to blend with page background - only sides and top, NO bottom fade */}
+        {/* Edge feather - only top, NO sides or bottom fade */}
         <div
           className="pointer-events-none absolute inset-0"
           style={{
-            background: `
-              linear-gradient(to right, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.6) 6%, transparent 18%, transparent 82%, rgba(255,255,255,0.6) 94%, rgba(255,255,255,0.9) 100%),
-              linear-gradient(to bottom, rgba(255,255,255,0.7) 0%, rgba(255,255,255,0.3) 12%, transparent 30%, transparent 100%)
-            `,
+            background: 'linear-gradient(to bottom, rgba(255,255,255,0.5) 0%, rgba(255,255,255,0.2) 8%, transparent 20%, transparent 100%)',
           }}
         />
 
@@ -205,48 +215,37 @@ export function HeroSection({
         </AnimatePresence>
       </motion.div>
 
-      {/* Main Card Section - Seamless blend with hero image */}
+      {/* Main Card Section - Glassmorphic with more transparent top to show background image */}
       <motion.section
         id="explore"
         initial={{ opacity: 0, y: 18 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, ease: "easeOut", delay: 0.1 }}
-        className="relative overflow-hidden"
+        className="relative overflow-hidden rounded-[12px] md:rounded-[20px]"
         onPointerEnter={() => setHeroHovered(true)}
         onPointerLeave={() => setHeroHovered(false)}
         style={{
           zIndex: 2,
-          background: "transparent",
+          border: '1px solid rgba(255,255,255,0.2)',
+          // More transparent glassmorphic gradient to show background image
+          background: 'linear-gradient(to bottom, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.35) 20%, rgba(255,255,255,0.6) 40%, rgba(255,255,255,0.85) 60%, rgba(255,255,255,0.95) 100%)',
+          marginBottom: '20px',
+          boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
+          backdropFilter: 'blur(16px)',
+          WebkitBackdropFilter: 'blur(16px)',
         }}
       >
-        {/* Frosted glass effect - fully transparent at top, gradually opaque toward bottom */}
+        {/* Warm orange glow at bottom right - subtle accent */}
         <div
-          className="absolute inset-0 pointer-events-none"
+          className="absolute inset-0 pointer-events-none rounded-[12px] md:rounded-[20px]"
           style={{
-            background: 'linear-gradient(to bottom, rgba(255,255,255,0) 0%, rgba(255,255,255,0) 15%, rgba(255,255,255,0.3) 35%, rgba(255,255,255,0.7) 55%, rgba(255,255,255,0.92) 75%, rgba(255,255,255,0.98) 100%)',
+            background: 'radial-gradient(ellipse 50% 40% at 85% 100%, rgba(255,160,100,0.12) 0%, transparent 70%)',
           }}
         />
-        {/* Warm orange glow at bottom right */}
-        <div
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            background: 'radial-gradient(ellipse 60% 50% at 85% 100%, rgba(255,160,100,0.35) 0%, rgba(255,200,150,0.15) 50%, transparent 80%)',
-          }}
-        />
-        {/* Glass blur that increases downward - starts much lower */}
-        <div
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            backdropFilter: 'blur(16px) saturate(180%)',
-            WebkitBackdropFilter: 'blur(16px) saturate(180%)',
-            maskImage: 'linear-gradient(to bottom, transparent 0%, transparent 20%, rgba(0,0,0,0.2) 35%, rgba(0,0,0,0.6) 55%, black 80%)',
-            WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, transparent 20%, rgba(0,0,0,0.2) 35%, rgba(0,0,0,0.6) 55%, black 80%)',
-          }}
-        />
-        <div className="relative px-6 pt-2 pb-6 md:px-10 md:pt-6 md:pb-8">
+        <div className="relative px-4 pt-16 pb-10 sm:px-6 sm:pt-12 md:px-10 md:pt-6 md:pb-12 max-w-7xl mx-auto">
           {/* Status Ticker */}
           <motion.span
-            className="inline-flex h-8 items-center gap-2 rounded-full bg-white/80 px-4 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-700 shadow-sm border border-white/50"
+            className="inline-flex h-8 items-center gap-2 rounded-full bg-white/90 px-4 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-700 shadow-sm"
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, ease: "easeOut", delay: 0.2 }}
@@ -285,7 +284,8 @@ export function HeroSection({
           <AnimatePresence initial={false} mode="wait">
             <motion.p
               key={HERO_TAGLINES[heroTaglineIndex]}
-              className="mt-2 text-base font-medium text-slate-500 sm:text-lg"
+              className="mt-2 text-base font-medium sm:text-lg"
+              style={{ color: 'hsl(220 15% 28%)' }} // Dark slate - readable, distinct from heading
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
@@ -321,7 +321,7 @@ export function HeroSection({
             </Tooltip>
           </div>
 
-          {/* Hero Genre Pills + Oracle Actions */}
+          {/* Hero Genre Pills + World Actions */}
           <div className="mt-6 flex flex-wrap items-center justify-between gap-4">
             <div className="flex flex-wrap items-center gap-2">
               {HERO_GENRE_CHIPS.map((chip, i) => (
@@ -345,7 +345,7 @@ export function HeroSection({
               ))}
             </div>
 
-            {/* Oracle Returns Button + Action Icons */}
+            {/* World Explore CTA + Action Icons */}
             <div className="flex items-center gap-2">
               <motion.button
                 initial={{ opacity: 0, scale: 0.9 }}
@@ -358,7 +358,7 @@ export function HeroSection({
                 className="flex h-9 items-center gap-2 rounded-full bg-emerald-500 px-4 text-sm font-semibold text-white shadow-md transition-all hover:bg-emerald-600"
               >
                 <IconBolt size={16} />
-                Oracle Returns
+                Explore the world
               </motion.button>
               <motion.button
                 initial={{ opacity: 0, scale: 0.9 }}

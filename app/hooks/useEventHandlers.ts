@@ -60,6 +60,7 @@ export function useEventHandlers({
 }: UseEventHandlersProps) {
   const setIsFetchingExplore = mode.setIsFetchingExplore;
   const setExploreStations = mode.setExploreStations;
+  const setExploreError = mode.setExploreError;
   const nowPlaying = player?.nowPlaying ?? null;
   const currentStationId = nowPlaying?.uuid ?? null;
 
@@ -191,6 +192,7 @@ export function useEventHandlers({
       if (mode.isFetchingExplore) return false;
 
       setIsFetchingExplore(true);
+      setExploreError(null);
       try {
         const preferredCountries = Array.from(
           new Set(
@@ -231,6 +233,11 @@ export function useEventHandlers({
         return true;
       } catch (error) {
         console.error("Failed to load world descriptor", error);
+        setExploreError(
+          error instanceof Error
+            ? error.message
+            : "We could not curate a world mix. Please try again."
+        );
         return false;
       } finally {
         setIsFetchingExplore(false);
@@ -247,6 +254,7 @@ export function useEventHandlers({
       setExploreStations,
       setActiveCardIndex,
       handleStartStation,
+      setExploreError,
     ]
   );
 

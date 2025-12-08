@@ -9,6 +9,7 @@ export function useListeningMode() {
   const [listeningMode, setListeningMode] = useState<ListeningMode>("local");
   const [exploreStations, setExploreStations] = useState<Station[]>([]);
   const [isFetchingExplore, setIsFetchingExplore] = useState(false);
+  const [exploreError, setExploreError] = useState<string | null>(null);
 
   // Persist listening mode to localStorage
   useEffect(() => {
@@ -33,6 +34,7 @@ export function useListeningMode() {
 
     const fetchExploreStations = async () => {
       setIsFetchingExplore(true);
+      setExploreError(null);
       try {
         const payload = await rbFetchJson<unknown>(
           `/json/stations/topvote/120?hidebroken=true&order=clicktrend&reverse=true`
@@ -44,6 +46,9 @@ export function useListeningMode() {
         }
       } catch (error) {
         console.error("Failed to fetch global stations", error);
+        if (!cancelled) {
+          setExploreError("We could not load world stations. Please try again.");
+        }
       } finally {
         if (!cancelled) {
           setIsFetchingExplore(false);
@@ -62,8 +67,10 @@ export function useListeningMode() {
     listeningMode,
     exploreStations,
     isFetchingExplore,
+    exploreError,
     setListeningMode,
     setExploreStations,
     setIsFetchingExplore,
+    setExploreError,
   };
 }
