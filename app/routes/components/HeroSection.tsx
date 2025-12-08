@@ -119,14 +119,14 @@ export function HeroSection({
   }, [heroTickerItems.length]);
 
   return (
-    <div className="flex flex-col -mx-4 md:-mx-6 lg:-mx-2 min-h-[calc(100vh-120px)] md:min-h-0 bg-white">
+    <div className="flex flex-col -mx-4 md:-mx-6 lg:-mx-2 min-h-[calc(100vh-120px)] md:min-h-0">
       {/* Hero Image - Wide format, blends seamlessly with page background */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.7, ease: "easeOut" }}
-        className="relative w-full overflow-hidden rounded-b-3xl bg-white shadow-[0_12px_32px_rgba(15,23,42,0.12)]"
-        style={{ marginBottom: '-120px', zIndex: 1, minHeight: '54vh' }}
+        className="relative w-full overflow-hidden"
+        style={{ marginBottom: '-180px', zIndex: 1, minHeight: '54vh' }}
       >
         <img
           src="/RPHERO_WIDE.png"
@@ -139,12 +139,22 @@ export function HeroSection({
           }}
         />
 
-        {/* Feathered edges to blend with gray page background */}
+        {/* Edge feather to blend with page background - only sides and top, NO bottom fade */}
         <div
           className="pointer-events-none absolute inset-0"
           style={{
-            background: "none",
-            borderRadius: 0,
+            background: `
+              linear-gradient(to right, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.6) 6%, transparent 18%, transparent 82%, rgba(255,255,255,0.6) 94%, rgba(255,255,255,0.9) 100%),
+              linear-gradient(to bottom, rgba(255,255,255,0.7) 0%, rgba(255,255,255,0.3) 12%, transparent 30%, transparent 100%)
+            `,
+          }}
+        />
+
+        {/* Warm orange glow at bottom right - subtle, no white fade */}
+        <div
+          className="pointer-events-none absolute inset-0"
+          style={{
+            background: "radial-gradient(ellipse 60% 40% at 85% 95%, rgba(255,140,80,0.25) 0%, rgba(255,180,120,0.1) 40%, transparent 70%)",
           }}
         />
 
@@ -201,30 +211,36 @@ export function HeroSection({
         initial={{ opacity: 0, y: 18 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, ease: "easeOut", delay: 0.1 }}
-        className="relative overflow-hidden rounded-2xl border border-white/70 bg-white/85 shadow-[0_12px_32px_rgba(15,23,42,0.12)] backdrop-blur-xl"
+        className="relative overflow-hidden"
         onPointerEnter={() => setHeroHovered(true)}
         onPointerLeave={() => setHeroHovered(false)}
         style={{
           zIndex: 2,
+          background: "transparent",
         }}
       >
-        {/* Gradient overlay that fades from transparent to glass */}
+        {/* Frosted glass effect - fully transparent at top, gradually opaque toward bottom */}
         <div
           className="absolute inset-0 pointer-events-none"
           style={{
-            background: 'linear-gradient(to bottom, transparent 0%, rgba(255,255,255,0.3) 15%, rgba(255,255,255,0.7) 40%, rgba(255,255,255,0.9) 70%, rgba(255,255,255,0.95) 100%)',
-            backdropFilter: 'blur(0px)',
+            background: 'linear-gradient(to bottom, rgba(255,255,255,0) 0%, rgba(255,255,255,0) 15%, rgba(255,255,255,0.3) 35%, rgba(255,255,255,0.7) 55%, rgba(255,255,255,0.92) 75%, rgba(255,255,255,0.98) 100%)',
           }}
         />
-        {/* Glass layer that intensifies downward */}
+        {/* Warm orange glow at bottom right */}
         <div
-          className="absolute inset-0 pointer-events-none rounded-b-3xl"
+          className="absolute inset-0 pointer-events-none"
           style={{
-            background: 'transparent',
+            background: 'radial-gradient(ellipse 60% 50% at 85% 100%, rgba(255,160,100,0.35) 0%, rgba(255,200,150,0.15) 50%, transparent 80%)',
+          }}
+        />
+        {/* Glass blur that increases downward - starts much lower */}
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
             backdropFilter: 'blur(16px) saturate(180%)',
             WebkitBackdropFilter: 'blur(16px) saturate(180%)',
-            maskImage: 'linear-gradient(to bottom, transparent 0%, black 30%)',
-            WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 30%)',
+            maskImage: 'linear-gradient(to bottom, transparent 0%, transparent 20%, rgba(0,0,0,0.2) 35%, rgba(0,0,0,0.6) 55%, black 80%)',
+            WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, transparent 20%, rgba(0,0,0,0.2) 35%, rgba(0,0,0,0.6) 55%, black 80%)',
           }}
         />
         <div className="relative px-6 pt-2 pb-6 md:px-10 md:pt-6 md:pb-8">
