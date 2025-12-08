@@ -1,38 +1,31 @@
 import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Text, Tooltip } from "@mantine/core";
-import { IconSearch, IconHeadphones, IconCompass, IconMusic } from "@tabler/icons-react";
-import PassportStampIcon from "~/components/PassportStampIcon";
-import { CountryFlag } from "~/components/CountryFlag";
-import { BRAND } from "~/constants/brand";
+import { Tooltip } from "@mantine/core";
+import { IconHeadphones, IconCompass, IconBolt, IconSettings } from "@tabler/icons-react";
 import type { Country, Station } from "~/types/radio";
+import { usePlayerStore } from "~/state/playerStore";
 
 const HERO_TAGLINES = [
-  "Every country, one click away your global radio passport.",
-  "Stamp your way through the world's soundscapes.",
   "Where every station is a new destination.",
+  "Stamp your way through the world's soundscapes.",
+  "Every country, one click away — your global radio passport.",
 ] as const;
 
-const HERO_PREVIEW_FALLBACKS: Array<Pick<Station, "name" | "country" | "language" | "tags">> = [
-  {
-    name: "Lisbon Atlantic FM",
-    country: "Portugal",
-    language: "Portuguese",
-    tags: "Sunrise grooves & maritime jazz",
-  },
-  {
-    name: "Kyoto Night Signals",
-    country: "Japan",
-    language: "Japanese",
-    tags: "Ambient downtempo for evening trains",
-  },
-  {
-    name: "Brooklyn Skyline Radio",
-    country: "United States",
-    language: "English",
-    tags: "Lo-fi beats & borough stories",
-  },
-];
+// Top genre chips - shown in hero card
+const HERO_GENRE_CHIPS = [
+  { id: 'bollywood', label: 'Bollywood', icon: '🎬' },
+  { id: 'devotional', label: 'Devotional', icon: '🙏' },
+  { id: 'jazz', label: 'Jazz', icon: '🎺' },
+] as const;
+
+// Bottom genre chips - shown below the card
+const GENRE_CHIPS = [
+  { id: 'bollywood', label: 'Bollywood', icon: '🎬' },
+  { id: 'devotional', label: 'Devotional', icon: '🙏' },
+  { id: 'retro', label: 'Retro', icon: '🎤' },
+  { id: 'news', label: 'News', icon: '📰' },
+  { id: 'classical', label: 'Classical', icon: '🎻' },
+] as const;
 
 type HeroSectionProps = {
   topCountries: Country[];
@@ -45,6 +38,8 @@ type HeroSectionProps = {
   onMissionExploreWorld?: () => void;
   onMissionStayLocal?: () => void;
   onHoverSound?: () => void;
+  onGenreSelect?: (genre: string) => void;
+  selectedGenre?: string | null;
 };
 
 export function HeroSection({
@@ -58,49 +53,37 @@ export function HeroSection({
   onMissionExploreWorld,
   onMissionStayLocal,
   onHoverSound,
+  onGenreSelect,
+  selectedGenre,
 }: HeroSectionProps) {
   const [heroHovered, setHeroHovered] = useState(false);
   const [heroTaglineIndex, setHeroTaglineIndex] = useState(0);
   const [heroTickerIndex, setHeroTickerIndex] = useState(0);
   const [isMounted, setIsMounted] = useState(false);
 
-  // Floating music notes animation data - deterministic seed based on index
+  // Get playing state from store
+  const isPlaying = usePlayerStore((state) => state.isPlaying);
+
+  // Floating music notes - natural wind-like movement
   const floatingNotes = useMemo(
     () =>
-      Array.from({ length: 18 }).map((_, i) => {
-        // Use index-based deterministic values to avoid hydration mismatch
-        const seed = i / 18;
-        const isEven = i % 2 === 0;
+      Array.from({ length: 8 }).map((_, i) => {
+        const seed = Math.random();
         return {
           id: i,
-          delay: seed * 6,
-          duration: 12 + seed * 8,
-          startX: (i * 5.5) % 100,
-          endX: ((i * 5.5) + (isEven ? 60 : -60)) % 100,
-          startY: 115,
-          midY: 40 + (seed * 30),
-          endY: -25 - (seed * 15),
-          rotation: i * 25,
-          scale1: 0.6 + (seed * 0.5),
-          scale2: 1.1 + (seed * 0.6),
-          opacity: 0.5 + (seed * 0.35),
-          note: ['🎵', '🎶', '🎼', '🎹', '🎺', '🎸', '🎻', '🎤', '🎧', '🎙️'][i % 10],
-          blur: seed * 0.3,
-          color: isEven ? 'rgba(99, 102, 241, 0.3)' : 'rgba(168, 85, 247, 0.3)', // Indigo and purple
+          delay: i * 1.2 + seed * 2,
+          duration: 8 + seed * 4,
+          startX: 10 + (i * 12) % 80,
+          note: ['🎵', '🎶', '♪', '♫', '🎵', '🎶', '♪', '♫'][i],
+          size: 14 + seed * 10,
         };
       }),
     []
   );
 
-  // Only enable animations after mount to avoid hydration mismatch
   useEffect(() => {
     setIsMounted(true);
   }, []);
-
-  const countryMap = useMemo(
-    () => new Map(topCountries.map((country) => [country.name, country] as const)),
-    [topCountries]
-  );
 
   const heroTickerItems = useMemo(() => {
     const headlineCountry = topCountries[0]?.name ?? "Global";
@@ -120,28 +103,6 @@ export function HeroSection({
   const currentHeroTicker = heroTickerItems.length
     ? heroTickerItems[heroTickerIndex % heroTickerItems.length]
     : "Global radio passport updates";
-
-  const heroPreviewStation = useMemo<
-    Station | Pick<Station, "name" | "country" | "language" | "tags">
-  >(() => {
-    if (nowPlaying) {
-      return nowPlaying;
-    }
-
-    const fallbackIndex = heroTickerIndex % HERO_PREVIEW_FALLBACKS.length;
-    const fallback = HERO_PREVIEW_FALLBACKS[fallbackIndex] ?? HERO_PREVIEW_FALLBACKS[0];
-
-    return fallback as Pick<Station, "name" | "country" | "language" | "tags">;
-  }, [heroTickerIndex, nowPlaying]);
-
-  const heroPreviewCountryMeta = heroPreviewStation
-    ? countryMap.get(heroPreviewStation.country) ?? null
-    : null;
-
-  const heroPreviewFavicon =
-    typeof heroPreviewStation === "object" && "favicon" in heroPreviewStation
-      ? (heroPreviewStation.favicon as string | undefined)
-      : undefined;
 
   useEffect(() => {
     const interval = window.setInterval(() => {
@@ -166,130 +127,127 @@ export function HeroSection({
   }, [heroTickerItems.length]);
 
   return (
-    <motion.section
-      id="explore"
-      initial={{ opacity: 0, y: 18 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.6, ease: "easeOut" }}
-      className="hero-surface brand-hero px-6 py-8 md:px-10 md:py-10"
-      onPointerEnter={() => setHeroHovered(true)}
-      onPointerLeave={() => setHeroHovered(false)}
-      style={{
-        background: "linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)",
-        position: 'relative',
-        overflow: 'hidden',
-        borderRadius: '1rem',
-        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.06)',
-        border: '1px solid #e8e8e8',
-      }}
-    >
-      {/* Animated Gradient Background Orbs */}
-      <div className="pointer-events-none absolute inset-0 overflow-hidden opacity-40">
-        <motion.div
-          className="absolute w-96 h-96 rounded-full"
+    <div className="flex flex-col -mx-4 md:-mx-6">
+      {/* Hero Image - Wide format, blends seamlessly with page background */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.7, ease: "easeOut" }}
+        className="relative w-full overflow-hidden"
+        style={{ marginBottom: '-140px', zIndex: 1 }}
+      >
+        <img
+          src="/RPHERO_WIDE.png"
+          alt="Radio Passport - Global music discovery"
+          className="w-full h-auto object-cover"
           style={{
-            background: 'radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, transparent 70%)',
-            filter: 'blur(40px)',
-          }}
-          animate={{
-            x: ['-20%', '120%'],
-            y: ['-10%', '110%'],
-            scale: heroHovered ? [1, 1.5, 1] : [1, 1.3, 1],
-            opacity: heroHovered ? [0.4, 0.6, 0.4] : [0.4, 0.4, 0.4],
-          }}
-          transition={{
-            duration: 25,
-            repeat: Infinity,
-            ease: 'linear',
+            minHeight: '320px',
+            maxHeight: '450px',
+            objectPosition: 'center center',
           }}
         />
-        <motion.div
-          className="absolute w-80 h-80 rounded-full"
-          style={{
-            background: 'radial-gradient(circle, rgba(168, 85, 247, 0.12) 0%, transparent 70%)',
-            filter: 'blur(50px)',
-          }}
-          animate={{
-            x: ['120%', '-20%'],
-            y: ['110%', '-10%'],
-            scale: heroHovered ? [1.2, 0.8, 1.2] : [1.2, 1, 1.2],
-            opacity: heroHovered ? [0.4, 0.7, 0.4] : [0.4, 0.4, 0.4],
-          }}
-          transition={{
-            duration: 30,
-            repeat: Infinity,
-            ease: 'linear',
-          }}
-        />
-        <motion.div
-          className="absolute w-72 h-72 rounded-full"
-          style={{
-            background: 'radial-gradient(circle, rgba(236, 72, 153, 0.1) 0%, transparent 70%)',
-            filter: 'blur(60px)',
-          }}
-          animate={{
-            x: ['50%', '50%'],
-            y: ['-20%', '120%'],
-            scale: heroHovered ? [1, 1.8, 1] : [1, 1.5, 1],
-            opacity: heroHovered ? [0.4, 0.6, 0.4] : [0.4, 0.4, 0.4],
-          }}
-          transition={{
-            duration: 20,
-            repeat: Infinity,
-            ease: 'easeInOut',
-          }}
-        />
-      </div>
 
-      {/* Floating Music Notes Animation - Enhanced & Visible */}
-      <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        {isMounted && floatingNotes.map((note) => (
-          <motion.div
-            key={note.id}
-            className="absolute text-3xl md:text-4xl"
-            initial={{
-              x: `${note.startX}vw`,
-              y: `${note.startY}%`,
-              rotate: note.rotation,
-              scale: note.scale1,
-              opacity: 0,
-            }}
-            animate={{
-              y: [`${note.startY}%`, `${note.midY}%`, `${note.endY}%`],
-              x: [`${note.startX}vw`, `${(note.startX + note.endX) / 2}vw`, `${note.endX}vw`],
-              rotate: [note.rotation, note.rotation + 180, note.rotation + 360],
-              scale: [note.scale1, note.scale2, note.scale1 * 0.6],
-              opacity: [0, note.opacity, note.opacity * 0.7, 0],
-            }}
-            transition={{
-              duration: note.duration,
-              delay: note.delay,
-              repeat: Infinity,
-              ease: "easeInOut",
-            }}
-            style={{
-              filter: `blur(${note.blur}px) drop-shadow(0 2px 8px ${note.color})`,
-              color: note.color,
-            }}
-          >
-            {note.note}
-          </motion.div>
-        ))}
-      </div>
+        {/* Feathered edges to blend with gray page background */}
+        <div
+          className="pointer-events-none absolute inset-0"
+          style={{
+            background: `
+              linear-gradient(to right, #d1d5db 0%, transparent 8%, transparent 92%, #d1d5db 100%),
+              linear-gradient(to bottom, #d1d5db 0%, transparent 15%, transparent 100%)
+            `,
+          }}
+        />
 
-      <div className="relative z-10 flex flex-col gap-6 md:flex-row md:items-center md:justify-between md:gap-8">
-        <div className="max-w-2xl space-y-5 sm:space-y-6">
+        {/* Floating Music Notes Animation - natural wind flow, only when playing */}
+        <AnimatePresence>
+          {isMounted && isPlaying && (
+            <motion.div
+              className="pointer-events-none absolute inset-0 overflow-hidden"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.8 }}
+            >
+              {floatingNotes.map((note) => (
+                <motion.div
+                  key={note.id}
+                  className="absolute"
+                  style={{
+                    left: `${note.startX}%`,
+                    bottom: '-5%',
+                    fontSize: `${note.size}px`,
+                    filter: 'drop-shadow(0 1px 4px rgba(99, 102, 241, 0.3))',
+                  }}
+                  animate={{
+                    y: [0, -150, -350, -500],
+                    x: [
+                      0,
+                      Math.sin(note.id) * 25,
+                      Math.cos(note.id) * 40,
+                      Math.sin(note.id + 1) * 30,
+                    ],
+                    rotate: [0, 15, -10, 20, -15, 10],
+                    opacity: [0, 0.5, 0.7, 0.5, 0],
+                  }}
+                  transition={{
+                    duration: note.duration,
+                    delay: note.delay,
+                    repeat: Infinity,
+                    ease: [0.25, 0.1, 0.25, 1],
+                    times: [0, 0.2, 0.5, 1],
+                  }}
+                >
+                  {note.note}
+                </motion.div>
+              ))}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.div>
+
+      {/* Main Card Section - Seamless blend with hero image */}
+      <motion.section
+        id="explore"
+        initial={{ opacity: 0, y: 18 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, ease: "easeOut", delay: 0.1 }}
+        className="relative overflow-hidden"
+        onPointerEnter={() => setHeroHovered(true)}
+        onPointerLeave={() => setHeroHovered(false)}
+        style={{
+          zIndex: 2,
+        }}
+      >
+        {/* Gradient overlay that fades from transparent to glass */}
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background: 'linear-gradient(to bottom, transparent 0%, rgba(255,255,255,0.3) 15%, rgba(255,255,255,0.7) 40%, rgba(255,255,255,0.9) 70%, rgba(255,255,255,0.95) 100%)',
+            backdropFilter: 'blur(0px)',
+          }}
+        />
+        {/* Glass layer that intensifies downward */}
+        <div
+          className="absolute inset-0 pointer-events-none rounded-b-3xl"
+          style={{
+            background: 'transparent',
+            backdropFilter: 'blur(16px) saturate(180%)',
+            WebkitBackdropFilter: 'blur(16px) saturate(180%)',
+            maskImage: 'linear-gradient(to bottom, transparent 0%, black 30%)',
+            WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 30%)',
+          }}
+        />
+        <div className="relative px-6 pt-16 pb-6 md:px-10 md:pt-20 md:pb-8">
+          {/* Status Ticker */}
           <motion.span
-            className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-xs font-medium text-slate-600 shadow-sm ring-1 ring-slate-200"
+            className="inline-flex h-8 items-center gap-2 rounded-full bg-white/80 px-4 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-700 shadow-sm border border-white/50"
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, ease: "easeOut", delay: 0.2 }}
             role="status"
             aria-live="polite"
           >
-            <span className="text-indigo-500">
-              <IconCompass size={14} />
-            </span>
+            <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
             <AnimatePresence initial={false} mode="wait">
               <motion.span
                 key={currentHeroTicker}
@@ -302,99 +260,151 @@ export function HeroSection({
               </motion.span>
             </AnimatePresence>
           </motion.span>
-          <div className="space-y-4">
-            <div className="flex items-center gap-3">
-              <PassportStampIcon size={80} id="preview" />
-              <div className="flex flex-col">
-                <motion.span
-                  className="text-2xl font-black tracking-tight text-slate-900 sm:text-3xl md:text-4xl"
-                  initial={{ opacity: 0, y: 12 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6, ease: "easeOut", delay: 0.18 }}
-                >
-                  Radio Passport
-                </motion.span>
-                <span className="mt-0.5 text-sm font-medium text-slate-500">Global sound atlas</span>
-              </div>
+
+          {/* Brand & Tagline */}
+          <div className="mt-5 flex items-center gap-4">
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white font-bold text-xl shadow-lg">
+              RP
             </div>
-            <AnimatePresence initial={false} mode="wait">
-              <motion.h1
-                key={HERO_TAGLINES[heroTaglineIndex]}
-                className="text-lg font-medium text-slate-600 sm:text-xl md:text-2xl md:leading-tight"
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -16 }}
-                transition={{ duration: 0.5, ease: [0.42, 0, 0.58, 1] }}
-              >
-                {HERO_TAGLINES[heroTaglineIndex]}
-              </motion.h1>
-            </AnimatePresence>
+            <motion.h1
+              className="text-[2.2rem] font-black tracking-tight text-slate-900 sm:text-[2.6rem]"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, ease: "easeOut", delay: 0.18 }}
+            >
+              Radio Passport
+            </motion.h1>
           </div>
-          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
+
+          <AnimatePresence initial={false} mode="wait">
+            <motion.p
+              key={HERO_TAGLINES[heroTaglineIndex]}
+              className="mt-2 text-base font-medium text-slate-500 sm:text-lg"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.5, ease: [0.42, 0, 0.58, 1] }}
+            >
+              {HERO_TAGLINES[heroTaglineIndex]}
+            </motion.p>
+          </AnimatePresence>
+
+          {/* CTA Buttons */}
+          <div className="mt-6 flex flex-wrap items-center gap-3">
             <Tooltip label="Begin listening with curated picks" position="top" withArrow>
               <button
                 type="button"
-                className="flex items-center gap-2 rounded-full bg-slate-900 px-6 py-3 text-sm font-bold text-white shadow-md transition-all hover:bg-slate-800 hover:shadow-lg active:scale-95 w-full justify-center sm:w-auto"
+                className="group flex h-11 items-center gap-2.5 rounded-full bg-slate-900 px-6 text-sm font-semibold text-white shadow-lg transition-all hover:bg-slate-800 hover:scale-[1.02] active:scale-[0.98]"
                 onClick={onStartListening}
                 onMouseEnter={onHoverSound}
                 onFocus={onHoverSound}
-                aria-label="Start your listening journey"
-                title="Start your listening journey"
               >
-                <IconHeadphones size={18} />
+                <IconHeadphones size={18} className="opacity-80" />
                 Start Your Journey
               </button>
             </Tooltip>
             <Tooltip label="Quickly jump to a region or station" position="top" withArrow>
               <button
                 type="button"
-                className="flex items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-bold text-slate-700 shadow-sm ring-1 ring-slate-200 transition-all hover:bg-slate-50 hover:text-slate-900 hover:shadow-md active:scale-95 w-full justify-center sm:w-auto"
+                className="flex h-11 items-center gap-2 rounded-full border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-600 transition-all hover:bg-slate-50 hover:border-slate-300 hover:text-slate-900 active:scale-[0.98]"
                 onClick={onQuickRetune}
-                aria-label="Browse world atlas"
-                title="Browse world atlas"
               >
-                <IconCompass size={18} />
+                <IconCompass size={18} className="opacity-70" />
                 Quick Retune
               </button>
             </Tooltip>
           </div>
-        </div>
 
-        <div className="flex flex-col gap-4">
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-            <div
-              className="rounded-xl border p-3 bg-white/60 backdrop-blur-md border-slate-200 shadow-sm"
-            >
-              <Text size="xs" c="dimmed" fw={600} tt="uppercase" style={{ letterSpacing: "0.05em" }}>
-                Countries
-              </Text>
-              <Text size="lg" fw={800} c="slate.9">
-                {topCountries.length.toLocaleString()}
-              </Text>
+          {/* Hero Genre Pills + Oracle Actions */}
+          <div className="mt-6 flex flex-wrap items-center justify-between gap-4">
+            <div className="flex flex-wrap items-center gap-2">
+              {HERO_GENRE_CHIPS.map((chip, i) => (
+                <motion.button
+                  key={chip.id}
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.3 + (i * 0.05) }}
+                  type="button"
+                  onClick={() => onGenreSelect?.(selectedGenre === chip.id ? '' : chip.id)}
+                  whileHover={{ scale: 1.04 }}
+                  whileTap={{ scale: 0.96 }}
+                  className={`flex h-9 items-center gap-1.5 rounded-full px-3.5 text-sm font-medium transition-all ${selectedGenre === chip.id
+                    ? 'bg-slate-900 text-white shadow-md'
+                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                    }`}
+                >
+                  <span className="text-sm">{chip.icon}</span>
+                  <span>{chip.label}</span>
+                </motion.button>
+              ))}
             </div>
-            <div
-              className="rounded-xl border p-3 bg-white/60 backdrop-blur-md border-slate-200 shadow-sm"
-            >
-              <Text size="xs" c="dimmed" fw={600} tt="uppercase" style={{ letterSpacing: "0.05em" }}>
-                Stations
-              </Text>
-              <Text size="lg" fw={800} c="slate.9">
-                {(totalStations / 1000).toFixed(0)}k
-              </Text>
-            </div>
-            <div
-              className="rounded-xl border p-3 bg-white/60 backdrop-blur-md border-slate-200 shadow-sm"
-            >
-              <Text size="xs" c="dimmed" fw={600} tt="uppercase" style={{ letterSpacing: "0.05em" }}>
-                Continents
-              </Text>
-              <Text size="lg" fw={800} c="slate.9">
-                {continents}
-              </Text>
+
+            {/* Oracle Returns Button + Action Icons */}
+            <div className="flex items-center gap-2">
+              <motion.button
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.45 }}
+                type="button"
+                onClick={onMissionExploreWorld}
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.97 }}
+                className="flex h-9 items-center gap-2 rounded-full bg-emerald-500 px-4 text-sm font-semibold text-white shadow-md transition-all hover:bg-emerald-600"
+              >
+                <IconBolt size={16} />
+                Oracle Returns
+              </motion.button>
+              <motion.button
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.5 }}
+                type="button"
+                whileHover={{ scale: 1.08 }}
+                whileTap={{ scale: 0.92 }}
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-amber-400 text-white shadow-md transition-all hover:bg-amber-500"
+              >
+                <IconBolt size={16} />
+              </motion.button>
+              <motion.button
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.55 }}
+                type="button"
+                whileHover={{ scale: 1.08 }}
+                whileTap={{ scale: 0.92 }}
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-indigo-500 text-white shadow-md transition-all hover:bg-indigo-600"
+              >
+                <IconSettings size={16} />
+              </motion.button>
             </div>
           </div>
         </div>
-      </div>
-    </motion.section>
+
+        {/* Bottom Genre Pills Strip */}
+        <div className="relative z-10 px-5 py-3 md:px-8">
+          <div className="flex flex-wrap items-center gap-2">
+            {GENRE_CHIPS.map((chip, i) => (
+              <motion.button
+                key={chip.id}
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.5 + (i * 0.04) }}
+                type="button"
+                onClick={() => onGenreSelect?.(selectedGenre === chip.id ? '' : chip.id)}
+                whileHover={{ scale: 1.04 }}
+                whileTap={{ scale: 0.96 }}
+                className={`flex h-9 items-center gap-1.5 rounded-full px-3 text-sm font-medium transition-all border ${selectedGenre === chip.id
+                  ? 'bg-slate-900 text-white border-slate-900 shadow-md'
+                  : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300 hover:bg-slate-50 shadow-sm'
+                  }`}
+              >
+                <span className="text-base">{chip.icon}</span>
+                <span>{chip.label}</span>
+              </motion.button>
+            ))}
+          </div>
+        </div>
+      </motion.section>
+    </div>
   );
 }

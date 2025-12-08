@@ -1,6 +1,6 @@
 import { Link, useNavigation } from "@remix-run/react";
 import { motion } from "framer-motion";
-import { Text, Title, Badge, ThemeIcon, ActionIcon, Tooltip, Loader, Button } from "@mantine/core";
+import { Text, Title, Badge, ThemeIcon, Loader } from "@mantine/core";
 import {
   IconBroadcast,
   IconMapPin,
@@ -65,18 +65,18 @@ export function AtlasGrid({ displaySections, onPreviewCountry }: AtlasGridProps)
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, amount: 0.1 }}
             transition={{ duration: 0.5, ease: "easeOut" }}
-            className="rounded-2xl border border-slate-200/30 bg-[#e0e5ec] p-5 shadow-[3px_3px_6px_#b8b9be,-3px_-3px_6px_#ffffff] md:p-6"
+            className="rounded-2xl border border-white/70 bg-white/70 p-6 shadow-[0_12px_32px_rgba(15,23,42,0.12)] backdrop-blur-xl md:p-7"
           >
-            <div className="mb-6 flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+            <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
               <div className="flex items-start gap-3">
                 <ThemeIcon
                   size={44}
                   radius="lg"
                   style={{
-                    background: "#e0e5ec",
+                    background: "#f8fafc",
                     border: "none",
                     color: "#64748b",
-                    boxShadow: "2px 2px 4px #b8b9be, -2px -2px 4px #ffffff",
+                    boxShadow: "0 8px 20px rgba(15,23,42,0.08)",
                   }}
                 >
                   {continentIcons[continent] ?? <IconWorld size={22} />}
@@ -96,83 +96,60 @@ export function AtlasGrid({ displaySections, onPreviewCountry }: AtlasGridProps)
                 variant="light"
                 color="gray"
                 leftSection={<IconBroadcast size={14} />}
-                className="bg-[#e0e5ec] text-slate-600 border-0 shadow-[inset_2px_2px_4px_#b8b9be,inset_-2px_-2px_4px_#ffffff]"
+                className="bg-white/80 text-slate-700 border border-white/80 shadow-[0_6px_18px_rgba(15,23,42,0.08)]"
               >
                 {total.toLocaleString()} tuned-in listeners
               </Badge>
             </div>
 
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 md:gap-4">
               {continentCountries.map((country, index) => (
                 <motion.div
                   key={country.name}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.03 }}
-                  whileHover={{ y: -4 }}
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: index * 0.05 }}
+                  whileHover={{ y: -8, scale: 1.02 }}
                 >
                   <Link
                     to={`/?country=${encodeURIComponent(country.name)}`}
-                    className="group flex flex-col h-full relative overflow-hidden rounded-2xl border border-slate-200/30 bg-[#e0e5ec] p-4 shadow-[2px_2px_4px_#b8b9be,-2px_-2px_4px_#ffffff] transition-all hover:shadow-[3px_3px_6px_#b8b9be,-3px_-3px_6px_#ffffff]"
+                    className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-white/80 bg-white/80 p-4 backdrop-blur-xl transition-all shadow-[0_10px_26px_rgba(15,23,42,0.12)] hover:-translate-y-1 hover:shadow-[0_14px_32px_rgba(15,23,42,0.16)]"
                     prefetch="intent"
                   >
-                    <div className="flex flex-col gap-3 flex-1">
+                    {/* Glass sheen effect */}
+                    <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/50 to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
+
+                    <div className="relative z-10 flex flex-1 flex-col gap-3">
                       <div className="flex items-start justify-between gap-2">
                         <CountryFlag
                           iso={country.iso_3166_1}
                           title={`${country.name} flag`}
-                          size={32}
-                          className="rounded-md shadow-[2px_2px_4px_#b8b9be,-2px_-2px_4px_#ffffff] border border-slate-200/20"
+                          size={42}
+                          className="rounded-lg border border-white/80 shadow-[0_8px_18px_rgba(15,23,42,0.12)]"
                         />
-                        <Badge
-                          radius="xl"
-                          size="xs"
-                          variant="light"
-                          color="gray"
-                          className="px-1.5 h-5 font-mono bg-[#e0e5ec] shadow-[inset_1px_1px_2px_#b8b9be,inset_-1px_-1px_2px_#ffffff]"
-                        >
-                          {country.stationcount}
-                        </Badge>
+                        <div className="flex items-center gap-1.5 rounded-full border border-slate-200/80 bg-slate-900/5 px-2.5 py-1 backdrop-blur-sm">
+                          <IconBroadcast size={10} className="text-slate-500" />
+                          <span className="text-[10px] font-bold text-slate-600 font-mono">
+                            {country.stationcount}
+                          </span>
+                        </div>
                       </div>
 
-                      <div>
-                        <Text fw={700} size="sm" c="slate.9" className="leading-tight line-clamp-2 mb-0.5">
+                      <div className="space-y-1">
+                        <Text fw={800} size="md" c="slate.9" className="leading-tight line-clamp-2 group-hover:text-indigo-900 transition-colors">
                           {country.name}
                         </Text>
-                        <Text size="xs" c="dimmed" className="text-[10px] font-medium">
-                          Passport ready
+                        <Text size="xs" c="dimmed" className="font-medium flex items-center gap-1 text-slate-500">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block animate-pulse" />
+                          {country.stationcount > 0 ? 'Live now' : 'No signal'}
                         </Text>
-                      </div>
-                    </div>
-
-                    <div className="mt-3 pt-3 border-t border-slate-300/30">
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider group-hover:text-slate-700 transition-colors">
-                          Explore
-                        </span>
-                        {onPreviewCountry && (
-                          <ActionIcon
-                            size="sm"
-                            radius="xl"
-                            variant="subtle"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              onPreviewCountry(country.name);
-                            }}
-                            className="text-slate-500 hover:text-slate-700 bg-[#e0e5ec] shadow-[2px_2px_4px_#b8b9be,-2px_-2px_4px_#ffffff] active:shadow-[inset_2px_2px_4px_#b8b9be,inset_-2px_-2px_4px_#ffffff]"
-                            aria-label={`Preview ${country.name}`}
-                          >
-                            <IconPlayerPlayFilled size={12} />
-                          </ActionIcon>
-                        )}
                       </div>
                     </div>
 
                     {/* Pending overlay when navigating to this country */}
                     {navigation.state !== "idle" && pendingCountry === country.name && (
                       <div
-                        className="absolute inset-0 z-[1] grid place-items-center bg-[#e0e5ec]/80 backdrop-blur-[1px]"
+                        className="absolute inset-0 z-20 grid place-items-center bg-white/60 backdrop-blur-sm rounded-2xl"
                         aria-hidden="true"
                       >
                         <Loader size="sm" color="dark" />

@@ -2,6 +2,20 @@
 
 All notable changes in this iteration (Oct 2025).
 
+## 2025-12-08 — Visual Redesign & Player Improvements
+
+### Improved
+
+- Restored and enhanced Hero glass surface — frosted, feathered, and blended seamlessly with the page background for a cinematic overlap with the new wide hero artwork (`RPHERO_WIDE.png`).
+- Reworked floating music notes animation in `HeroSection`: natural "music wind" effect, staggered timing, and now conditionally visible only when audio playback is active.
+- Major visual redesign for player surfaces (`PlayerDock`, `MinimalPlayer`, `PassportPlayerFooter`) — warm gold/amber gradient accents, animated shimmer and sparkles, pulsing play controls, and more dynamic progress visuals across desktop and mobile.
+- Restyled `StationCard` and the mobile `CompactStationCard` to match the new warm/vibrant aesthetic: glowing active states, warm gradients for fallback art, updated buttons, and responsive polish.
+- Improved hero/mini-player blend on mobile and desktop for a cohesive, elevated "wow" experience across pages.
+
+### Docs
+
+- Updated `docs/UI_REDESIGN_PLAN.md` with implementation notes for the new hero, PlayerDock, and card styling changes (visual polish, mobile behavior, and TODOs for follow-ups).
+
 ## Fixed
 
 - **SceneManager Module Resolution**: Fixed AtlasScene loading error by replacing dynamic string interpolation with explicit scene registry to ensure Vite alias resolution works properly

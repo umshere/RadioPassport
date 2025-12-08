@@ -2,6 +2,7 @@ type PassportStampIconProps = {
   size?: number;
   animated?: boolean;
   id?: string;
+  className?: string;
 };
 
 let idCounter = 0;
@@ -10,18 +11,20 @@ export default function PassportStampIcon({
   size = 72,
   animated = true,
   id,
+  className,
 }: PassportStampIconProps) {
   return (
     <div
+      className={className}
       style={{
         width: size,
         height: size,
         borderRadius: '12px',
-        background: '#e0e5ec',
+        background: !className ? '#e0e5ec' : undefined,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        boxShadow: '6px 6px 12px #b8b9be, -6px -6px 12px #ffffff',
+        boxShadow: !className ? '6px 6px 12px #b8b9be, -6px -6px 12px #ffffff' : undefined,
       }}
     >
       <span

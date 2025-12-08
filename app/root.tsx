@@ -1,7 +1,7 @@
 import type { LinksFunction } from "@remix-run/node";
 import { Links, Meta, Outlet, Scripts, ScrollRestoration, useNavigation } from "@remix-run/react";
 import { MantineProvider, createTheme } from "@mantine/core";
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { usePlayerStore } from "~/state/playerStore";
 import stylesheet from "./tailwind.css?url";
 import AppHeader from "~/components/AppHeader";
@@ -207,6 +207,25 @@ function GlobalAudioBridge() {
     nowPlaying,
   } = usePlayerStore();
 
+  const normalizeStreamUrl = useCallback((url?: string | null) => {
+    if (!url) return "";
+    const trimmed = url.trim();
+    const lower = trimmed.toLowerCase();
+    if (!trimmed || ["null", "undefined", "n/a", "na", "-", "0"].includes(lower)) return "";
+    try {
+      const candidate = trimmed.startsWith("//")
+        ? `${window.location.protocol}${trimmed}`
+        : trimmed;
+      const parsed = new URL(candidate, window.location.origin);
+      if (parsed.protocol === "http:" || parsed.protocol === "https:") {
+        return parsed.href;
+      }
+      return "";
+    } catch {
+      return "";
+    }
+  }, []);
+
   useEffect(() => {
     const element = audioRef.current;
     if (element) {
@@ -249,18 +268,17 @@ function GlobalAudioBridge() {
       return;
     }
 
-    const streamUrl = nowPlaying.streamUrl ?? nowPlaying.url ?? "";
+    const streamUrl = normalizeStreamUrl(nowPlaying.streamUrl ?? nowPlaying.url ?? "");
     if (!streamUrl) {
       audio.pause();
       audio.removeAttribute("src");
       return;
     }
 
-    const absoluteStreamUrl = new URL(streamUrl, window.location.origin).href;
-    if (audio.src !== absoluteStreamUrl) {
-      audio.src = absoluteStreamUrl;
+    if (audio.src !== streamUrl) {
+      audio.src = streamUrl;
     }
-  }, [nowPlaying]);
+  }, [nowPlaying, normalizeStreamUrl]);
 
   useEffect(() => {
     const audio = audioRef.current;

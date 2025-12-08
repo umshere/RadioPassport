@@ -69,8 +69,8 @@ export function StationGrid({
 
   // Desktop: Use grid view
   return (
-    <section className="rounded-2xl border border-slate-200/30 bg-[#e0e5ec] p-5 shadow-[3px_3px_6px_#b8b9be,-3px_-3px_6px_#ffffff] md:p-6">
-      <div id="station-grid" className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+    <section className="rounded-2xl border border-white/70 bg-white/80 p-6 shadow-[0_12px_32px_rgba(15,23,42,0.12)] backdrop-blur-xl md:p-8">
+      <div id="station-grid" className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {stations.map((station, index) => {
           const isCurrent = nowPlaying?.uuid === station.uuid;
           const isFavorite = favoriteStationIds?.has(station.uuid) ?? false;

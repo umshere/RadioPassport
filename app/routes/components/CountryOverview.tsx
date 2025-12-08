@@ -43,32 +43,7 @@ export function CountryOverview({
     setIsMounted(true);
   }, []);
 
-  // Floating music notes animation
-  const floatingNotes = useMemo(
-    () =>
-      Array.from({ length: 18 }).map((_, i) => {
-        const seed = i / 18;
-        const isEven = i % 2 === 0;
-        return {
-          id: i,
-          delay: seed * 6,
-          duration: 12 + seed * 8,
-          startX: (i * 5.5) % 100,
-          endX: ((i * 5.5) + (isEven ? 60 : -60)) % 100,
-          startY: 115,
-          midY: 40 + (seed * 30),
-          endY: -25 - (seed * 15),
-          rotation: i * 25,
-          scale1: 0.6 + (seed * 0.5),
-          scale2: 1.1 + (seed * 0.6),
-          opacity: 0.5 + (seed * 0.35),
-          note: ['🎵', '🎶', '🎼', '🎹', '🎺', '🎸', '🎻', '🎤', '🎧', '🎙️'][i % 10],
-          blur: seed * 0.3,
-          color: isEven ? 'rgba(99, 102, 241, 0.3)' : 'rgba(168, 85, 247, 0.3)',
-        };
-      }),
-    []
-  );
+
 
   // Generate frequency for now playing station
   const frequency = useMemo(() => {
@@ -88,7 +63,7 @@ export function CountryOverview({
 
   const containerClasses = transparent
     ? "relative overflow-hidden px-6 py-8 md:px-10 md:py-10"
-    : "relative overflow-hidden rounded-2xl border border-slate-300/30 bg-[#e0e5ec] px-6 py-8 md:px-10 md:py-10";
+    : "relative overflow-hidden rounded-2xl border border-white/70 bg-white/80 backdrop-blur-xl px-6 py-8 md:px-10 md:py-10 shadow-[0_12px_32px_rgba(15,23,42,0.12)]";
 
   return (
     <motion.section
@@ -96,9 +71,27 @@ export function CountryOverview({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, ease: "easeOut" }}
       className={containerClasses}
+      style={{ position: 'relative' }}
     >
+      {/* Hero Background Image */}
+      <div
+        className="absolute inset-0 z-0"
+        style={{
+          backgroundImage: "url('/RPhero.png')",
+          backgroundSize: "cover",
+          backgroundPosition: "center -80px",
+          backgroundRepeat: "no-repeat",
+        }}
+      />
+      {/* Subtle overlay for text readability */}
+      <div
+        className="absolute inset-0 z-0"
+        style={{
+          background: "linear-gradient(180deg, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0.5) 100%)",
+        }}
+      />
       {/* Animated Gradient Orbs Background */}
-      <div className="pointer-events-none absolute inset-0 overflow-hidden opacity-60">
+      <div className="pointer-events-none absolute inset-0 z-[1] overflow-hidden opacity-40">
         <motion.div
           className="absolute w-96 h-96 rounded-full"
           style={{
@@ -137,47 +130,7 @@ export function CountryOverview({
         />
       </div>
 
-      {/* Floating Music Notes Animation - Synced with Playing State */}
-      <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        {isMounted && floatingNotes.map((note) => (
-          <motion.div
-            key={note.id}
-            className="absolute text-2xl md:text-3xl"
-            initial={{
-              x: `${note.startX}vw`,
-              y: `${note.startY}%`,
-              rotate: note.rotation,
-              scale: note.scale1,
-              opacity: 0,
-            }}
-            animate={isPlaying ? {
-              y: [`${note.startY}%`, `${note.midY}%`, `${note.endY}%`],
-              x: [`${note.startX}vw`, `${(note.startX + note.endX) / 2}vw`, `${note.endX}vw`],
-              rotate: [note.rotation, note.rotation + 180, note.rotation + 360],
-              scale: [note.scale1, note.scale2 * 1.2, note.scale1 * 0.6],
-              opacity: [0, note.opacity * 1.3, note.opacity, 0],
-            } : {
-              y: [`${note.startY}%`, `${note.midY + 20}%`, `${note.endY + 30}%`],
-              x: [`${note.startX}vw`, `${note.startX}vw`, `${note.startX}vw`],
-              rotate: [note.rotation, note.rotation + 90, note.rotation + 180],
-              scale: [note.scale1 * 0.6, note.scale2 * 0.7, note.scale1 * 0.4],
-              opacity: [0, note.opacity * 0.3, note.opacity * 0.2, 0],
-            }}
-            transition={{
-              duration: isPlaying ? note.duration * 0.8 : note.duration * 1.8,
-              delay: note.delay,
-              repeat: Infinity,
-              ease: isPlaying ? "easeInOut" : "easeOut",
-            }}
-            style={{
-              filter: `blur(${note.blur}px) drop-shadow(0 2px 8px ${note.color})`,
-              color: note.color,
-            }}
-          >
-            {note.note}
-          </motion.div>
-        ))}
-      </div>
+
 
       <div className="relative z-10 space-y-6">
         {/* Top Row: Just Badges */}

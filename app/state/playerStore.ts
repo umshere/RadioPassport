@@ -2,6 +2,23 @@ import { create, persist } from "~/utils/zustand-lite";
 import type { SceneDescriptor } from "~/scenes/types";
 import type { Station } from "~/types/radio";
 
+const INVALID_STREAM_TOKENS = new Set([
+  "",
+  "null",
+  "undefined",
+  "n/a",
+  "na",
+  "-",
+  "0",
+]);
+
+function hasValidStreamUrl(url?: string | null): boolean {
+  if (!url) return false;
+  const trimmed = url.trim();
+  if (INVALID_STREAM_TOKENS.has(trimmed.toLowerCase())) return false;
+  return /^https?:\/\//i.test(trimmed) || /^\/\//.test(trimmed);
+}
+
 type StartStationOptions = {
   autoPlay?: boolean;
   preserveQueue?: boolean;
@@ -178,7 +195,8 @@ export const usePlayerStore = create<PlayerState>(
         return null;
       },
       startStation: (station: Station, options?: StartStationOptions) => {
-        const streamUrl = station.streamUrl ?? station.url ?? "";
+        const rawStreamUrl = station.streamUrl ?? station.url ?? "";
+        const hasStream = hasValidStreamUrl(rawStreamUrl);
         const preserveQueue = options?.preserveQueue ?? false;
         const shouldAutoplay = options?.autoPlay ?? true;
         const currentQueue = get().queue;
@@ -210,10 +228,10 @@ export const usePlayerStore = create<PlayerState>(
           nowPlaying: station,
           queue: nextQueue,
           currentStationIndex: nextIndex,
-          isPlaying: shouldAutoplay && Boolean(streamUrl),
+          isPlaying: shouldAutoplay && hasStream,
         });
 
-        if (!streamUrl) {
+        if (!hasStream) {
           const audio = get().audioElement;
           if (audio) {
             audio.pause();

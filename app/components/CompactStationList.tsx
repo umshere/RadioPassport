@@ -19,55 +19,104 @@ export function CompactStationCard({
     onToggleFavorite,
     index,
 }: CompactStationCardProps) {
+    // Generate vibrant fallback gradient
+    const getFallbackGradient = (name: string) => {
+        let hash = 0;
+        for (let i = 0; i < name.length; i++) {
+            hash = name.charCodeAt(i) + ((hash << 5) - hash);
+        }
+        const vibrantHues = [25, 35, 45, 280, 320, 350, 260];
+        const h1 = vibrantHues[Math.abs(hash) % vibrantHues.length] ?? 35;
+        const h2 = (h1 + 30) % 360;
+        return `linear-gradient(135deg, hsl(${h1}, 85%, 60%) 0%, hsl(${h2}, 75%, 50%) 100%)`;
+    };
+
+    const getInitials = (name: string) => {
+        const words = name.split(/\s+/).filter(w => w.length > 0);
+        if (words.length >= 2 && words[0]?.[0] && words[1]?.[0]) {
+            return (words[0][0] + words[1][0]).toUpperCase();
+        }
+        return name.slice(0, 2).toUpperCase();
+    };
+
     return (
         <motion.button
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.03, duration: 0.3 }}
             onClick={() => onPlay(station)}
-            className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all ${isPlaying
-                ? "bg-[#e0e5ec] text-slate-700 border-slate-300/30 shadow-[inset_4px_4px_8px_#b8b9be,inset_-4px_-4px_8px_#ffffff]"
-                : "bg-[#e0e5ec] text-slate-700 border-slate-300/30 active:shadow-[inset_3px_3px_6px_#b8b9be,inset_-3px_-3px_6px_#ffffff]"
-                }`}
+            className="w-full flex items-center gap-3 p-3 rounded-xl transition-all relative overflow-hidden"
+            style={{
+                background: isPlaying
+                    ? 'linear-gradient(135deg, rgba(255,250,240,0.98) 0%, rgba(254,243,199,0.95) 100%)'
+                    : 'linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(255,250,245,0.9) 100%)',
+                boxShadow: isPlaying
+                    ? '0 8px 25px -6px rgba(251,146,60,0.35), 0 0 0 2px rgba(251,146,60,0.25), inset 0 1px 0 rgba(255,255,255,1)'
+                    : '0 4px 15px -4px rgba(0,0,0,0.1), 0 0 0 1px rgba(255,255,255,0.8), inset 0 1px 0 rgba(255,255,255,1)',
+            }}
         >
+            {/* Warm shimmer for playing state */}
+            {isPlaying && (
+                <motion.div
+                    className="absolute inset-0 pointer-events-none"
+                    style={{
+                        background: 'linear-gradient(90deg, transparent 0%, rgba(255,200,100,0.2) 50%, transparent 100%)',
+                    }}
+                    animate={{ x: ['-100%', '200%'] }}
+                    transition={{ duration: 2, repeat: Infinity, repeatDelay: 1 }}
+                />
+            )}
+
             {/* Artwork/Icon */}
-            <div className={`h-12 w-12 rounded-lg overflow-hidden flex-shrink-0 ${isPlaying ? "bg-slate-200/50 shadow-inner" : "bg-slate-200/50"
-                }`}>
+            <div
+                className="h-12 w-12 rounded-xl overflow-hidden flex-shrink-0 relative"
+                style={{
+                    boxShadow: isPlaying
+                        ? '0 4px 15px -4px rgba(251,146,60,0.4), 0 0 0 2px rgba(255,255,255,0.9)'
+                        : '0 3px 10px -4px rgba(0,0,0,0.15), 0 0 0 2px rgba(255,255,255,0.8)',
+                }}
+            >
                 {station.favicon ? (
                     <img src={station.favicon} alt="" className="w-full h-full object-cover" />
                 ) : (
-                    <div className={`w-full h-full flex items-center justify-center font-bold text-xs ${isPlaying ? "text-slate-400" : "text-slate-400"
-                        }`}>
-                        FM
+                    <div
+                        className="w-full h-full flex items-center justify-center font-bold text-xs text-white"
+                        style={{ background: getFallbackGradient(station.name) }}
+                    >
+                        {getInitials(station.name)}
                     </div>
                 )}
             </div>
 
             {/* Station Info */}
-            <div className="flex-1 min-w-0 text-left">
-                <div className={`text-sm font-bold truncate leading-tight ${isPlaying ? "text-slate-900" : "text-slate-900"
-                    }`}>
+            <div className="flex-1 min-w-0 text-left relative z-10">
+                <div className="text-sm font-bold truncate leading-tight text-slate-800">
                     {station.name}
                 </div>
-                <div className={`text-xs truncate leading-tight mt-0.5 ${isPlaying ? "text-slate-500" : "text-slate-500"
-                    }`}>
+                <div className={`text-xs truncate leading-tight mt-0.5 font-medium ${isPlaying ? 'text-amber-600/80' : 'text-slate-500'}`}>
                     {[station.country, station.state].filter(Boolean).join(" • ")}
                 </div>
                 {/* Tags/Bitrate */}
                 <div className="flex gap-1.5 mt-1">
                     {station.bitrate > 0 && (
-                        <span className={`text-[10px] px-1.5 py-0.5 rounded font-semibold ${isPlaying
-                            ? "bg-slate-300/50 text-slate-500"
-                            : "bg-slate-300/50 text-slate-500"
-                            }`}>
+                        <span
+                            className="text-[10px] px-1.5 py-0.5 rounded-md font-semibold"
+                            style={{
+                                background: isPlaying ? 'rgba(251,191,36,0.15)' : 'rgba(241,245,249,0.8)',
+                                color: isPlaying ? '#b45309' : '#64748b',
+                            }}
+                        >
                             {station.bitrate}kbps
                         </span>
                     )}
                     {station.language && (
-                        <span className={`text-[10px] px-1.5 py-0.5 rounded font-semibold truncate max-w-20 ${isPlaying
-                            ? "bg-slate-300/50 text-slate-500"
-                            : "bg-slate-300/50 text-slate-500"
-                            }`}>
+                        <span
+                            className="text-[10px] px-1.5 py-0.5 rounded-md font-semibold truncate max-w-20"
+                            style={{
+                                background: isPlaying ? 'rgba(251,191,36,0.15)' : 'rgba(241,245,249,0.8)',
+                                color: isPlaying ? '#b45309' : '#64748b',
+                            }}
+                        >
                             {station.language}
                         </span>
                     )}
@@ -75,27 +124,40 @@ export function CompactStationCard({
             </div>
 
             {/* Controls */}
-            <div className="flex items-center gap-2 flex-shrink-0">
+            <div className="flex items-center gap-2 flex-shrink-0 relative z-10">
                 {onToggleFavorite && (
                     <button
                         onClick={(e) => {
                             e.stopPropagation();
                             onToggleFavorite(station);
                         }}
-                        className={`flex h-8 w-8 items-center justify-center rounded-lg transition-all ${isPlaying
-                            ? "bg-white/10 text-white/80 hover:bg-white/20"
-                            : "bg-[#e0e5ec] text-slate-400 shadow-[2px_2px_4px_#b8b9be,-2px_-2px_4px_#ffffff] active:shadow-[inset_2px_2px_4px_#b8b9be,inset_-2px_-2px_4px_#ffffff]"
-                            }`}
+                        className="flex h-8 w-8 items-center justify-center rounded-lg transition-all"
+                        style={{
+                            background: isFavorite
+                                ? 'linear-gradient(135deg, #fef2f2 0%, #ffe4e6 100%)'
+                                : 'rgba(255,255,255,0.8)',
+                            color: isFavorite ? '#f43f5e' : '#9ca3af',
+                            boxShadow: isFavorite
+                                ? '0 3px 10px -3px rgba(244,63,94,0.3)'
+                                : '0 2px 6px -2px rgba(0,0,0,0.1)',
+                        }}
                         aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
                     >
                         {isFavorite ? <IconHeartFilled size={14} /> : <IconHeart size={14} />}
                     </button>
                 )}
 
-                <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${isPlaying
-                    ? "bg-slate-900 text-white shadow-[inset_2px_2px_4px_#b8b9be,inset_-2px_-2px_4px_#ffffff]"
-                    : "bg-slate-900 text-white shadow-[3px_3px_6px_#b8b9be,-3px_-3px_6px_#ffffff]"
-                    }`}>
+                <div
+                    className="flex h-9 w-9 items-center justify-center rounded-xl text-white"
+                    style={{
+                        background: isPlaying
+                            ? 'linear-gradient(135deg, #f59e0b 0%, #ea580c 100%)'
+                            : 'linear-gradient(135deg, #1e293b 0%, #334155 100%)',
+                        boxShadow: isPlaying
+                            ? '0 4px 15px -4px rgba(251,146,60,0.5)'
+                            : '0 4px 12px -4px rgba(15,23,42,0.3)',
+                    }}
+                >
                     <IconPlayerPlayFilled size={14} />
                 </div>
             </div>

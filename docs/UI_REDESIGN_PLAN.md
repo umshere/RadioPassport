@@ -20,6 +20,21 @@ This document blends the strongest parts of the existing Remix/Mantine implement
 
 ## Page-Level Blueprint
 
+### Status update — 2025-12-08
+
+The design refresh described in this plan has been partially implemented in this sprint. Key updates shipped in this iteration include:
+
+- Hero section: restored frosted glass card with feathered blend into the new wide hero artwork (`RPHERO_WIDE.png`) and improved overlap for a more cinematic composition.
+- Floating music notes: redesigned to flow like a natural "music wind", made conditional on playback state and subtler by default.
+- Player surfaces: major visual redesign for `PlayerDock`, `MinimalPlayer`, and `PassportPlayerFooter` (warm amber/gold palette, shimmer, sparkles, pulsing play control) to match the hero's energy both on desktop and mobile.
+- Station cards: refreshed `StationCard` and mobile `CompactStationCard` with vibrant fallback avatars, warm gradients, glowing active states, and consistent play button treatment.
+
+Follow-ups / next visual polish (short-term):
+
+- Verify color accessibility for foreground contrast across the new warm palettes (buttons, badges, and mini-player).
+- Add a lightweight theme token for the warm accent colors to centralize tuning.
+- Fine-tune mobile spacing and snapshot tests to avoid visual regression in Playwright screenshots.
+
 ### 1. Global App Shell & Header
 
 - **Retain:** Mantine theme shades + gradients from `app/root.tsx`; hero ticker + floating notes from `HeroSection`.
@@ -75,6 +90,12 @@ This document blends the strongest parts of the existing Remix/Mantine implement
 - **New/TODO:**
   - `TODO:` Visual EQ / audio level pill fed by `setAudioLevel`.
   - `TODO:` Queue & favorites quick actions (icons already exist in `StationCard`).
+
+### Implementation notes — recent changes
+
+- `HeroSection.tsx`: implemented glass blend, feathered image fade, larger overlap for cinematic effect; floating notes now conditionally render based on the player state and were tuned to a more organic motion curve.
+- `PlayerDock.tsx`: desktop dock and mobile mini-player redesigned to use warm amber gradients and subtle particle and shimmer animations when playing.
+- `StationCard.tsx` and `CompactStationList.tsx`: updated to warm vibrant fallback gradients, playing states with glow and shimmer, and improved play/favorite control styling.
 
 **Raptor (Preview)**
 

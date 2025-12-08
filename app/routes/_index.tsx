@@ -30,8 +30,8 @@ import { StationFilterQuickBar } from "./components/StationFilterQuickBar";
 import { QuickRetuneWidget } from "./components/QuickRetuneWidget";
 import { LoadingView } from "./components/LoadingView";
 import { CollapsibleSection } from "./components/CollapsibleSection";
-import JourneyComposer from "~/components/JourneyComposer";
-import MissionLogDrawer from "~/components/MissionLogDrawer";
+
+import Footer from "~/components/Footer";
 
 // Custom Hooks
 import { useRadioPlayer } from "~/hooks/useRadioPlayer";
@@ -235,7 +235,7 @@ export default function Index() {
     const loadStation = async () => {
       try {
         const raw = await rbFetchJson<unknown>(
-          `/json/stations/byname/ISHQ FM 104.8?limit=1&hidebroken=true`
+          `/json/stations/byname/Radio Schizoid - Dub Techno?limit=1&hidebroken=true`
         );
         const station = pickTopStation(normalizeStations(Array.isArray(raw) ? raw : []));
         if (!station || cancelled) return;
@@ -274,12 +274,11 @@ export default function Index() {
   const ariaHidden = isQuickRetuneOpen ? { "aria-hidden": true, style: { pointerEvents: "none" as const, userSelect: "none" as const } } : {};
 
   return (
-    <div className="app-bg relative min-h-screen text-slate-900" style={{
-      background: "#e0e5ec",
+    <div className="app-bg relative min-h-screen text-slate-900 overflow-x-hidden w-full pb-32" style={{
+      background: "linear-gradient(180deg, #d1d5db 0%, #9ca3af 50%, #6b7280 100%)",
     }}>
       <main
-        className="relative z-10 mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 pt-4 md:px-6"
-        style={{ paddingBottom: "calc(8rem + env(safe-area-inset-bottom, 0px))" }}
+        className="relative z-10 mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 pt-6 md:px-6 md:pt-8"
         {...swipeHandlers}
         {...ariaHidden}
       >  {isCountryViewPending ? <LoadingView /> : !selectedCountry ? (
@@ -290,53 +289,67 @@ export default function Index() {
             onMissionStayLocal={handlers.handleMissionStayLocal} onHoverSound={triggerHoverStatic}
           />
 
-          <section className="mt-6 grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-            <JourneyComposer onSubmit={() => handlers.handleQuickRetune()} />
-            <div className="rounded-3xl border border-slate-200 bg-slate-100/50 p-4 shadow-sm flex flex-col gap-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-bold text-slate-800">Mission Log</p>
-                  <p className="text-xs text-slate-500">
-                    Track upcoming AI journeys and revisit past prompts once the service hooks in.
-                  </p>
-                </div>
-                <div className="rounded-full border border-slate-300 px-3 py-1 text-[11px] uppercase tracking-[0.35em] text-slate-500 font-bold">
-                  TODO
-                </div>
-              </div>
-              <MissionLogDrawer />
-            </div>
-          </section>
-
-          <section id="atlas" className="mt-6">
-            <div className="sticky top-[73px] z-40 pb-3 pt-3">
-              <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-                <div>
-                  <Title order={2} style={{ fontSize: "1.35rem", fontWeight: 700, color: "#1e293b", marginBottom: "0.15rem" }}>
-                    Chart your path by continent
-                  </Title>
-                  <Text size="xs" c="dimmed">
-                    Filter the atlas to the regions that match your listening mood.
-                  </Text>
-                </div>
-                <Text size="xs" c="dimmed" className="whitespace-nowrap font-mono">
-                  Showing {derived.filteredCountries.length.toLocaleString()} of {topCountries.length.toLocaleString()} spotlight countries
+          {/* Stats Bar - Consistent pill surface */}
+          <div className="rounded-2xl border border-white/60 bg-white/90 px-4 py-5 shadow-lg backdrop-blur-sm md:px-8">
+            <div className="grid grid-cols-3 divide-x divide-slate-200/50 text-center">
+              <div className="px-2">
+                <Text size="lg" fw={800} c="slate.9" className="leading-none">
+                  {topCountries.length.toLocaleString()}
+                </Text>
+                <Text size="xs" c="dimmed" fw={600} tt="uppercase" className="mt-1 tracking-[0.25em]">
+                  Countries
                 </Text>
               </div>
+              <div className="px-2">
+                <Text size="lg" fw={800} c="slate.9" className="leading-none">
+                  {(derived.totalStations / 1000).toFixed(0)}k+
+                </Text>
+                <Text size="xs" c="dimmed" fw={600} tt="uppercase" className="mt-1 tracking-[0.25em]">
+                  Stations
+                </Text>
+              </div>
+              <div className="px-2">
+                <Text size="lg" fw={800} c="slate.9" className="leading-none">
+                  {derived.continents.length}
+                </Text>
+                <Text size="xs" c="dimmed" fw={600} tt="uppercase" className="mt-1 tracking-[0.25em]">
+                  Continents
+                </Text>
+              </div>
+            </div>
+          </div>
 
-              <div className="mt-3">
-                <AtlasFilters continents={derived.continents} activeContinent={atlas.activeContinent} onContinentSelect={atlas.setActiveContinent} />
+          <section id="atlas" className="mt-2">
+            <div className="sticky top-[73px] z-30 -mx-4 px-4 py-3 md:-mx-8 md:px-8">
+              <div className="rounded-2xl border border-white/70 bg-white/85 px-4 py-3 shadow-[0_12px_32px_rgba(15,23,42,0.12)] backdrop-blur-xl md:px-6">
+                <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                  <div>
+                    <Title order={2} style={{ fontSize: "1.35rem", fontWeight: 700, color: "#1e293b", marginBottom: "0.15rem" }}>
+                      Chart your path by continent
+                    </Title>
+                    <Text size="xs" c="dimmed">
+                      Filter the atlas to the regions that match your listening mood.
+                    </Text>
+                  </div>
+                  <Text size="xs" c="dimmed" className="whitespace-nowrap font-mono tracking-[0.16em] uppercase">
+                    Showing {derived.filteredCountries.length.toLocaleString()} of {topCountries.length.toLocaleString()} spotlight countries
+                  </Text>
+                </div>
+
+                <div className="mt-3">
+                  <AtlasFilters continents={derived.continents} activeContinent={atlas.activeContinent} onContinentSelect={atlas.setActiveContinent} />
+                </div>
               </div>
             </div>
 
-            <div className="mt-4">
+            <div className="mt-6 md:mt-8">
               <AtlasGrid displaySections={derived.displaySections} onPreviewCountry={handlers.handlePreviewCountryPlay} />
             </div>
           </section>
         </>
       ) : (
         <>
-          <section className="mt-4 rounded-2xl border border-slate-300/30 bg-[#e0e5ec] shadow-[3px_3px_6px_#b8b9be,-3px_-3px_6px_#ffffff]">
+          <section className="rounded-2xl border border-white/70 bg-white/80 shadow-[0_12px_32px_rgba(15,23,42,0.12)] backdrop-blur-xl">
             <CountryOverview
               selectedCountry={selectedCountry}
               selectedCountryMeta={selectedCountryMeta}
@@ -347,7 +360,7 @@ export default function Index() {
               onPlayPause={player.playPause}
               onNext={playNext}
               onPrev={playPrevious}
-              transparent={true}
+              transparent={false}
             />
 
             <div className="border-t border-slate-300/30 px-6 py-6 md:px-10">
@@ -401,7 +414,7 @@ export default function Index() {
             </div>
           </section>
 
-          <div className="mt-4">
+          <div>
             <StationGrid
               stations={filteredStations}
               nowPlaying={player.nowPlaying}
@@ -422,6 +435,8 @@ export default function Index() {
         countriesByContinent={derived.continentData} topCountries={topCountries}
         onCountrySelect={handlers.handleQuickRetuneCountrySelect} onSurprise={handlers.handleSurpriseRetune}
       />
+
+      <Footer />
 
     </div >
   );
