@@ -4,7 +4,8 @@
 
 Radio Passport is a beautiful, web-based radio player that lets you explore and discover radio stations from around the globe. With a curated, passport-stamp-style interface, you can travel the world through sound without leaving your browser.
 
-> Documentation: See the docs index at [docs/README.md](./docs/README.md) for guides, plans, and testing.
+> Documentation: Start with [docs/README.md](./docs/README.md) for the full doc index.  
+> AI assistant guide: [LLM.md](./LLM.md) summarizes the architecture, commands, and key contracts.
 
 ## ✨ Features
 
@@ -15,8 +16,8 @@ Radio Passport is a beautiful, web-based radio player that lets you explore and 
 - **🔍 Smart Search**: Filter countries instantly and jump via Quick Retune
 - **⭐ Favorites**: Heart any station and find it again in seconds
 - **🎨 Designed for Discovery**: Light, airy discovery aesthetic with Mantine + Tailwind polish (updated Oct 2025)
-- **�️ Raptor Mini (Preview)**: Compact, low-height player for one-handed mobile use (experimental). Toggle with `ENABLE_RAPTOR_MINI=true` in local `.env`. The Raptor mini will be enabled for all clients after completion of the preview rollout.
-- **�📱 Fully Responsive**: Optimised layouts from phones to ultrawide displays
+- **🦖 Raptor Mini (Preview)**: Compact, low-height player for one-handed mobile use (experimental). Toggle with `ENABLE_RAPTOR_MINI=true` in local `.env`. The Raptor mini will be enabled for all clients after completion of the preview rollout.
+- **📱 Fully Responsive**: Optimised layouts from phones to ultrawide displays
 
 ## 🚀 Quick Start
 
@@ -199,14 +200,14 @@ npm run dev
 
 ### Areas for Contribution
 
-New UI themes and designs
-Additional station sources
-Mobile app development
-Performance optimizations
-Localization support
-Unit tests for components
-End-to-end testing improvements
-Accessibility enhancements
+- New UI themes and designs
+- Additional station sources
+- Mobile app development
+- Performance optimizations
+- Localization support
+- Unit tests for components
+- End-to-end testing improvements
+- Accessibility enhancements
 
 ## 📄 License
 

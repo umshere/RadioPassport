@@ -1,4 +1,5 @@
 import { useMemo, useCallback, useState } from "react";
+import { useLocation } from "@remix-run/react";
 import { ActionIcon, Paper, Text, Tooltip } from "@mantine/core";
 import { motion, AnimatePresence } from "framer-motion";
 import RetroTuner from "./RetroTuner";
@@ -14,6 +15,9 @@ import { useUIStore } from "~/state/uiStore";
 import { neomorphicButtonSmall, neomorphicButtonPrimary } from "~/utils/buttonStyles";
 
 export default function PlayerDock() {
+  const location = useLocation();
+  const isAiRoute = location.pathname.startsWith("/ai");
+
   const {
     nowPlaying,
     isPlaying,
@@ -315,6 +319,7 @@ export default function PlayerDock() {
       </aside>
 
       {/* Mobile mini-player - Vibrant design */}
+      {!isAiRoute && (
       <motion.div
         className="lg:hidden fixed left-0 right-0 z-40 px-3"
         style={{
@@ -541,6 +546,7 @@ export default function PlayerDock() {
           </div>
         </motion.div>
       </motion.div>
+      )}
     </>
   );
 }
