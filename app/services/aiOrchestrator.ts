@@ -32,6 +32,41 @@ type WorldDescriptorPreviewOptions = Omit<
   "onStationsResolved" | "onStartStation"
 >;
 
+type CallType = "descriptor" | "preview";
+
+const aiCallStats: {
+  descriptor: number;
+  preview: number;
+  history: Array<{
+    type: CallType;
+    mood?: string | null;
+    country?: string | null;
+    language?: string | null;
+    at: number;
+  }>;
+} = {
+  descriptor: 0,
+  preview: 0,
+  history: [],
+};
+
+function recordCall(type: CallType, options: LoadWorldDescriptorOptions | WorldDescriptorPreviewOptions) {
+  aiCallStats[type] += 1;
+  aiCallStats.history = [
+    { type, mood: options.mood, country: options.country, language: options.language, at: Date.now() },
+    ...aiCallStats.history,
+  ].slice(0, 50);
+}
+
+export function getAiCallStats() {
+  return {
+    descriptor: aiCallStats.descriptor,
+    preview: aiCallStats.preview,
+    total: aiCallStats.descriptor + aiCallStats.preview,
+    history: [...aiCallStats.history],
+  };
+}
+
 function isSceneDescriptor(value: unknown): value is SceneDescriptor {
   if (!value || typeof value !== "object") return false;
   const candidate = value as Record<string, unknown>;
@@ -137,6 +172,9 @@ function buildRequestOptions(options: LoadWorldDescriptorOptions | WorldDescript
 async function fetchDescriptor(
   options: LoadWorldDescriptorOptions | WorldDescriptorPreviewOptions
 ) {
+  const callType: CallType = "currentStationId" in options ? "descriptor" : "preview";
+  recordCall(callType, options);
+
   const { endpoint, fetchInit } = buildRequestOptions(options);
   const response = await fetch(endpoint, {
     ...fetchInit,
