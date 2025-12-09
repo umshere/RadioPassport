@@ -379,7 +379,7 @@ export function HeroSection({
                 className="flex h-9 items-center gap-2 rounded-full bg-emerald-500 px-4 text-sm font-semibold text-white shadow-md transition-all hover:bg-emerald-600"
               >
                 <IconBolt size={16} />
-                Explore the world
+                AI-Curated World
               </motion.button>
               <motion.button
                 initial={{ opacity: 0, scale: 0.9 }}

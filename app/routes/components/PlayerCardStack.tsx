@@ -373,7 +373,7 @@ export function PlayerCardStack({
                     border: "1px solid rgba(254,250,226,0.6)",
                   }}
                 >
-                  Explore the world
+                  AI-Curated World
                 </Button>
                 <Button
                   radius="xl"
