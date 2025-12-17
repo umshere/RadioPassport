@@ -147,6 +147,43 @@ export default function Index() {
       }),
     [stations, stationFilters, unavailableIds, player.nowPlaying?.uuid, pageProtocol, isSafari]
   );
+
+  const areSameStationList = useCallback((a: Station[], b: Station[]) => {
+    if (a === b) return true;
+    if (a.length !== b.length) return false;
+    for (let i = 0; i < a.length; i++) {
+      if (a[i]?.uuid !== b[i]?.uuid) return false;
+    }
+    return true;
+  }, []);
+
+  // Keep the playback queue aligned with the *visible* (filtered) country list so Next/Prev behave as users expect.
+  useEffect(() => {
+    if (!selectedCountry) return;
+    if (!loaderMatchesSearch) return;
+
+    const nextQueue = filteredStations;
+    if (!areSameStationList(player.queue, nextQueue)) {
+      player.setQueue(nextQueue);
+    }
+
+    if (player.nowPlaying) {
+      const idx = nextQueue.findIndex((station) => station.uuid === player.nowPlaying!.uuid);
+      if (idx >= 0 && idx !== player.currentStationIndex) {
+        player.setCurrentStationIndex(idx);
+      }
+    }
+  }, [
+    selectedCountry,
+    loaderMatchesSearch,
+    filteredStations,
+    player.queue,
+    player.nowPlaying,
+    player.currentStationIndex,
+    player.setQueue,
+    player.setCurrentStationIndex,
+    areSameStationList,
+  ]);
   const isStationFilterActive = isStationFilterDirty(stationFilters);
   const filteredEmptyMessage = isStationFilterActive
     ? "No stations match the current filters. Try resetting them or broadening the language, region, mood, or quality filters."
@@ -159,11 +196,12 @@ export default function Index() {
     atlas.setActiveContinent
   );
 
+  const navigationStations = selectedCountry ? filteredStations : cards.activeStationsSnapshot;
   const { playNext, playPrevious } = useStationNavigation(
     player.currentStationIndex,
     player.setCurrentStationIndex,
     player.shuffleMode,
-    cards.activeStationsSnapshot,
+    navigationStations,
     player.startStation,
     atlas.countryMap,
     atlas.setSelectedContinent,
@@ -175,8 +213,8 @@ export default function Index() {
   const handleStartStation = useCallback((station: Station, options?: { autoPlay?: boolean; preserveQueue?: boolean }) => {
     atlasNavigation.selectContinentForCountry(station.country);
     setHasDismissedPlayer(false);
-    player.startStation(station, { autoPlay: options?.autoPlay ?? true });
-  }, [atlasNavigation, player, setHasDismissedPlayer]);
+    player.startStation(station, { autoPlay: options?.autoPlay ?? true, preserveQueue: selectedCountry ? true : options?.preserveQueue });
+  }, [atlasNavigation, player, setHasDismissedPlayer, selectedCountry]);
 
   // All other event handlers
   const handlers = useEventHandlers({
