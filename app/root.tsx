@@ -10,8 +10,7 @@ import AppHeader from "~/components/AppHeader";
 import PlayerDock from "~/components/PlayerDock";
 import MobileSidebarMenu from "~/components/MobileSidebarMenu";
 import { TuningOverlay } from "~/components/TuningOverlay";
-import { ToastViewport } from "~/components/ToastViewport";
-import { useToastStore } from "~/state/toastStore";
+import { usePlayerNoticeStore } from "~/state/playerNoticeStore";
 import type { Station } from "~/types/radio";
 
 export const links: LinksFunction = () => [
@@ -192,7 +191,6 @@ export default function App() {
             {/* Player surfaces */}
             <PlayerDock />
             <TuningOverlay />
-            <ToastViewport />
             <GlobalAudioBridge />
           </>
         </MantineProvider>
@@ -219,7 +217,7 @@ function GlobalAudioBridge() {
   } = usePlayerStore();
   const markFailed = useStationAvailabilityStore((state) => state.markFailed);
   const clearFailure = useStationAvailabilityStore((state) => state.clearFailure);
-  const pushToast = useToastStore((state) => state.pushToast);
+  const setNotice = usePlayerNoticeStore((state) => state.setNotice);
 
   const normalizeStreamUrl = useCallback((url?: string | null) => {
     if (!url) return "";
@@ -251,7 +249,7 @@ function GlobalAudioBridge() {
       guard.recentFailures = guard.recentFailures.filter((ts) => now - ts < 20_000);
       guard.recentFailures.push(now);
       if (guard.recentFailures.length >= 4) {
-        pushToast({
+        setNotice({
           kind: "error",
           message: "Playback paused: too many stations failed in a row. Try toggling filters or switching countries.",
           durationMs: 6000,
@@ -264,7 +262,9 @@ function GlobalAudioBridge() {
       const currentQueue = state.queue;
 
       if (currentQueue.length <= 1) {
-        pushToast({
+        // Keep the current station displayed even if it failed
+        state.setIsPlaying(false);
+        setNotice({
           kind: "warning",
           message: "This station failed to play. Try another station.",
         });
@@ -289,7 +289,9 @@ function GlobalAudioBridge() {
       }
 
       if (!candidate) {
-        pushToast({
+        // Keep the current nowPlaying station (even if failed) so player doesn't disappear
+        state.setIsPlaying(false);
+        setNotice({
           kind: "warning",
           message: "Couldn’t find another playable station in this queue. Try changing filters.",
           durationMs: 5000,
@@ -298,7 +300,7 @@ function GlobalAudioBridge() {
       }
 
       const label = failedStation?.name ? `“${failedStation.name}”` : "That station";
-      pushToast({
+      setNotice({
         kind: "warning",
         message: `${label} failed (${reason.replace(/_/g, " ")}). Skipping to the next station…`,
         durationMs: 4500,
@@ -306,7 +308,7 @@ function GlobalAudioBridge() {
 
       state.startStation(candidate, { preserveQueue: true, autoPlay: true });
     },
-    [pushToast]
+    [setNotice]
   );
 
   useEffect(() => {

@@ -12,11 +12,14 @@ import {
 } from "@tabler/icons-react";
 import { usePlayerStore } from "~/state/playerStore";
 import { useUIStore } from "~/state/uiStore";
+import { usePlayerNoticeStore } from "~/state/playerNoticeStore";
 import { neomorphicButtonSmall, neomorphicButtonPrimary } from "~/utils/buttonStyles";
 
 export default function PlayerDock() {
   const location = useLocation();
   const isAiRoute = location.pathname.startsWith("/ai");
+  const notice = usePlayerNoticeStore((state) => state.notice);
+  const clearNotice = usePlayerNoticeStore((state) => state.clearNotice);
 
   const {
     nowPlaying,
@@ -225,6 +228,53 @@ export default function PlayerDock() {
                   {subtitle}
                 </Text>
               </div>
+              {notice && (
+                <div
+                  className="flex items-center gap-2 rounded-xl border px-3 py-2"
+                  style={{
+                    borderColor:
+                      notice.kind === "error"
+                        ? "rgba(244,63,94,0.28)"
+                        : notice.kind === "warning"
+                        ? "rgba(245,158,11,0.28)"
+                        : "rgba(100,116,139,0.28)",
+                    background:
+                      notice.kind === "error"
+                        ? "linear-gradient(135deg, rgba(254,242,242,0.95) 0%, rgba(255,228,230,0.85) 100%)"
+                        : notice.kind === "warning"
+                        ? "linear-gradient(135deg, rgba(255,251,235,0.95) 0%, rgba(254,243,199,0.85) 100%)"
+                        : "linear-gradient(135deg, rgba(248,250,252,0.95) 0%, rgba(241,245,249,0.85) 100%)",
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                  role="status"
+                  aria-live="polite"
+                >
+                  <span
+                    className="h-2 w-2 rounded-full"
+                    style={{
+                      background:
+                        notice.kind === "error"
+                          ? "#fb7185"
+                          : notice.kind === "warning"
+                          ? "#f59e0b"
+                          : "#64748b",
+                    }}
+                  />
+                  <Text size="xs" className="flex-1 min-w-0 truncate text-slate-700 font-semibold">
+                    {notice.message}
+                  </Text>
+                  <button
+                    type="button"
+                    className="text-[10px] font-bold uppercase tracking-[0.25em] text-slate-600 opacity-70 hover:opacity-100"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      clearNotice(notice.id);
+                    }}
+                  >
+                    Dismiss
+                  </button>
+                </div>
+              )}
 
               {/* Minimal Tuner Scale - warm colors */}
               <div className="flex items-center gap-3">

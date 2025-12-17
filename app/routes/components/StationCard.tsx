@@ -14,6 +14,7 @@ type StationCardProps = {
   isFavorite?: boolean;
   onToggleFavorite?: (station: Station) => void;
   stationRef?: (element: HTMLDivElement | null) => void;
+  isUnavailable?: boolean;
 };
 
 // Generate a vibrant gradient background for stations without favicons
@@ -61,6 +62,7 @@ export function StationCard({
   isFavorite = false,
   onToggleFavorite,
   stationRef,
+  isUnavailable = false,
 }: StationCardProps) {
   const hasStream = Boolean(station.streamUrl);
   const healthMeta = deriveStationHealth(station);
@@ -87,7 +89,7 @@ export function StationCard({
 
   const cardStatusClass = [
     isCurrent ? "station-card--active" : "",
-    station.healthStatus === "error" ? "station-card--error" : "",
+    station.healthStatus === "error" || isUnavailable ? "station-card--error" : "",
     station.healthStatus === "warning" ? "station-card--warn" : "",
     !hasStream ? "station-card--no-stream" : "",
     isFavorite ? "station-card--favorite" : "",
@@ -96,7 +98,7 @@ export function StationCard({
     .join(" ");
 
   const externalHref = getExternalHref(station);
-  const statusDisplay = getStatusDisplay(healthMeta?.status);
+  const statusDisplay = isUnavailable ? { icon: "🔴", label: "Unavailable" } : getStatusDisplay(healthMeta?.status);
   const fallbackGradient = generateFallbackGradient(station.name);
   const initials = getStationInitials(station.name);
 
@@ -257,7 +259,7 @@ export function StationCard({
             aria-label={hasStream ? `Play ${station.name}` : `Visit ${station.name}`}
             {...primaryActionProps}
           >
-            {hasStream ? "Play" : "Visit"}
+            {hasStream ? (isUnavailable ? "Retry" : "Play") : "Visit"}
           </Button>
           {onToggleFavorite && (
             <ActionIcon

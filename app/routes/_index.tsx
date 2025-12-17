@@ -450,6 +450,7 @@ export default function Index() {
               favoriteStationIds={favoriteStationIds}
               onToggleFavorite={handleToggleFavorite}
               emptyMessage={filteredEmptyMessage}
+              unavailableIds={unavailableIds}
             />
           </div>
         </>

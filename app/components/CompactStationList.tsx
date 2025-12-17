@@ -9,6 +9,7 @@ interface CompactStationCardProps {
     onPlay: (station: Station) => void;
     onToggleFavorite?: (station: Station) => void;
     index: number;
+    isUnavailable?: boolean;
 }
 
 export function CompactStationCard({
@@ -18,6 +19,7 @@ export function CompactStationCard({
     onPlay,
     onToggleFavorite,
     index,
+    isUnavailable = false,
 }: CompactStationCardProps) {
     const streamCandidate = (station.streamUrl ?? station.url ?? "").trim().toLowerCase();
     const isHttpStream = streamCandidate.startsWith("http://");
@@ -102,6 +104,17 @@ export function CompactStationCard({
                 </div>
                 {/* Tags/Bitrate */}
                 <div className="flex gap-1.5 mt-1">
+                    {isUnavailable && (
+                        <span
+                            className="text-[10px] px-1.5 py-0.5 rounded-md font-semibold"
+                            style={{
+                                background: 'rgba(254,226,226,0.9)',
+                                color: '#b91c1c',
+                            }}
+                        >
+                            UNAVAILABLE
+                        </span>
+                    )}
                     {station.bitrate > 0 && (
                         <span
                             className="text-[10px] px-1.5 py-0.5 rounded-md font-semibold"
@@ -197,6 +210,7 @@ interface CompactStationListProps {
     favoriteIds?: Set<string>;
     onPlayStation: (station: Station) => void;
     onToggleFavorite?: (station: Station) => void;
+    unavailableIds?: Set<string>;
 }
 
 export function CompactStationList({
@@ -205,6 +219,7 @@ export function CompactStationList({
     favoriteIds = new Set(),
     onPlayStation,
     onToggleFavorite,
+    unavailableIds,
 }: CompactStationListProps) {
     if (stations.length === 0) {
         return (
@@ -225,6 +240,7 @@ export function CompactStationList({
                     onPlay={onPlayStation}
                     onToggleFavorite={onToggleFavorite}
                     index={index}
+                    isUnavailable={unavailableIds?.has(station.uuid) ?? false}
                 />
             ))}
         </div>

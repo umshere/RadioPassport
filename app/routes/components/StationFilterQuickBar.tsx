@@ -1,4 +1,4 @@
-import { Select } from "@mantine/core";
+import { Select, Switch } from "@mantine/core";
 import type { StationFilterOptions, StationFilterState } from "~/utils/stationFilters";
 
 type StationFilterQuickBarProps = {
@@ -47,6 +47,14 @@ export function StationFilterQuickBar({
           clearable
           size="xs"
           disabled={!options.regions.length}
+        />
+      </div>
+      <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-3 py-2 sm:justify-start sm:gap-2">
+        <Switch
+          size="xs"
+          checked={filters.hideRecentlyFailed}
+          onChange={(event) => onChange({ ...filters, hideRecentlyFailed: event.currentTarget.checked })}
+          label="Hide unavailable"
         />
       </div>
     </div>

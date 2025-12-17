@@ -14,6 +14,7 @@ type StationGridProps = {
   favoriteStationIds?: Set<string>;
   onToggleFavorite?: (station: Station) => void;
   emptyMessage?: string;
+  unavailableIds?: Set<string>;
 };
 
 export function StationGrid({
@@ -25,6 +26,7 @@ export function StationGrid({
   favoriteStationIds,
   onToggleFavorite,
   emptyMessage,
+  unavailableIds,
 }: StationGridProps) {
   const [isMobile, setIsMobile] = useState(false);
 
@@ -62,6 +64,7 @@ export function StationGrid({
           favoriteIds={favoriteStationIds}
           onPlayStation={onPlayStation}
           onToggleFavorite={onToggleFavorite}
+          unavailableIds={unavailableIds}
         />
       </div>
     );
@@ -83,6 +86,7 @@ export function StationGrid({
               onPlay={onPlayStation}
               isFavorite={isFavorite}
               onToggleFavorite={onToggleFavorite}
+              isUnavailable={unavailableIds?.has(station.uuid) ?? false}
               stationRef={(element) => {
                 stationRefs.current[station.uuid] = element;
               }}
