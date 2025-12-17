@@ -2,6 +2,17 @@
 
 This document captures the **source of truth** for how /api/ai/recommend currently works. Use it when debugging intent mismatches or explaining the stack to other contributors.
 
+## Overview
+
+`app/api/ai/recommend.ts` mediates between user intent and scene rendering:
+
+1. Resolve which provider to use (`OpenAI`, `Gemini`, `Ollama`, or mock) based on env vars.
+2. Call `provider.getSceneDescriptor(prompt, { intent })` so each model receives region/language and personalization hints alongside the natural-language prompt.
+3. Apply ranking and health heuristics before sending results to the client.
+4. Return the descriptor to Remix loaders, which hydrate `SceneManager` and the player store.
+
+Providers live under `app/services/ai/providers/` and must implement the `SceneDescriptor` contract. They may include provider-specific metadata but should normalize station fields before returning.
+
 ## 1. Prompt intake & intent extraction
 
 1. Client sends `prompt`, `mood`, `scene/visual`, and listening context (favorites, recents, now playing).

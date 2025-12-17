@@ -64,6 +64,9 @@ export function StationCard({
 }: StationCardProps) {
   const hasStream = Boolean(station.streamUrl);
   const healthMeta = deriveStationHealth(station);
+  const streamCandidate = (station.streamUrl ?? station.url ?? "").trim().toLowerCase();
+  const isHttpStream = streamCandidate.startsWith("http://");
+  const isHlsStream = Boolean(station.hls);
 
   // Simplified: show only language OR primary genre (not both)
   const secondaryInfo = useMemo(() => {
@@ -193,6 +196,16 @@ export function StationCard({
                   <div className="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-bold border" style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(254,243,199,0.5) 100%)', borderColor: 'rgba(251,191,36,0.2)', color: '#78716c' }}>
                     <span>{statusDisplay.icon}</span>
                     <span>{statusDisplay.label}</span>
+                  </div>
+                )}
+                {isHlsStream && (
+                  <div className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold border" style={{ background: "rgba(15, 23, 42, 0.04)", borderColor: "rgba(15, 23, 42, 0.10)", color: "#475569" }}>
+                    HLS
+                  </div>
+                )}
+                {isHttpStream && (
+                  <div className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold border" style={{ background: "rgba(239, 68, 68, 0.06)", borderColor: "rgba(239, 68, 68, 0.20)", color: "#b91c1c" }}>
+                    HTTP
                   </div>
                 )}
                 {/* Diagnostics tooltip */}

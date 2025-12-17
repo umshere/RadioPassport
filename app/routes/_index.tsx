@@ -16,6 +16,11 @@ import {
   isStationFilterDirty,
   type StationFilterState,
 } from "~/utils/stationFilters";
+import {
+  isStationTemporarilyUnavailable,
+  useStationAvailabilityStore,
+} from "~/state/stationAvailabilityStore";
+import { isSafariBrowser } from "~/utils/streamHeuristics";
 import { vibrate } from "~/utils/haptics";
 import type { Country, Station } from "~/types/radio";
 
@@ -120,7 +125,28 @@ export default function Index() {
   const derived = useDerivedData(countries, topCountries, searchQuery, atlas.activeContinent);
   const selectedCountryMeta = selectedCountry ? atlas.countryMap.get(selectedCountry) || null : null;
   const stationFilterOptions = useMemo(() => deriveStationFilterOptions(stations), [stations]);
-  const filteredStations = useMemo(() => applyStationFilters(stations, stationFilters), [stations, stationFilters]);
+  const failuresById = useStationAvailabilityStore((state) => state.failuresById);
+  const unavailableIds = useMemo(() => {
+    const set = new Set<string>();
+    const now = Date.now();
+    for (const [id, failure] of Object.entries(failuresById)) {
+      if (isStationTemporarilyUnavailable(failure, now)) set.add(id);
+    }
+    return set;
+  }, [failuresById]);
+  const pageProtocol = typeof window !== "undefined" ? window.location.protocol : null;
+  const isSafari = typeof navigator === "undefined" ? undefined : isSafariBrowser();
+
+  const filteredStations = useMemo(
+    () =>
+      applyStationFilters(stations, stationFilters, {
+        unavailableIds,
+        pinnedStationId: player.nowPlaying?.uuid,
+        pageProtocol,
+        isSafari,
+      }),
+    [stations, stationFilters, unavailableIds, player.nowPlaying?.uuid, pageProtocol, isSafari]
+  );
   const isStationFilterActive = isStationFilterDirty(stationFilters);
   const filteredEmptyMessage = isStationFilterActive
     ? "No stations match the current filters. Try resetting them or broadening the language, region, mood, or quality filters."

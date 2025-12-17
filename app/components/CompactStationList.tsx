@@ -19,6 +19,10 @@ export function CompactStationCard({
     onToggleFavorite,
     index,
 }: CompactStationCardProps) {
+    const streamCandidate = (station.streamUrl ?? station.url ?? "").trim().toLowerCase();
+    const isHttpStream = streamCandidate.startsWith("http://");
+    const isHlsStream = Boolean(station.hls);
+
     // Generate vibrant fallback gradient
     const getFallbackGradient = (name: string) => {
         let hash = 0;
@@ -118,6 +122,28 @@ export function CompactStationCard({
                             }}
                         >
                             {station.language}
+                        </span>
+                    )}
+                    {isHlsStream && (
+                        <span
+                            className="text-[10px] px-1.5 py-0.5 rounded-md font-semibold"
+                            style={{
+                                background: isPlaying ? 'rgba(251,191,36,0.15)' : 'rgba(241,245,249,0.8)',
+                                color: isPlaying ? '#b45309' : '#64748b',
+                            }}
+                        >
+                            HLS
+                        </span>
+                    )}
+                    {isHttpStream && (
+                        <span
+                            className="text-[10px] px-1.5 py-0.5 rounded-md font-semibold"
+                            style={{
+                                background: 'rgba(239, 68, 68, 0.08)',
+                                color: '#b91c1c',
+                            }}
+                        >
+                            HTTP
                         </span>
                     )}
                 </div>

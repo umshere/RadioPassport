@@ -1,4 +1,5 @@
 import type { Station } from "~/types/radio";
+import { isMixedContentStream } from "~/utils/streamHeuristics";
 
 export type StationFilterSort = "featured" | "recent" | "bitrateHigh" | "bitrateLow";
 
@@ -8,6 +9,9 @@ export type StationFilterState = {
   mood: string | null;
   minBitrate: number | null;
   sort: StationFilterSort;
+  hideRecentlyFailed: boolean;
+  hideHttpOnHttps: boolean;
+  hideHlsOnUnsupported: boolean;
 };
 
 export type StationFilterOption = {
@@ -29,6 +33,9 @@ export const createDefaultStationFilters = (): StationFilterState => ({
   mood: null,
   minBitrate: null,
   sort: "featured",
+  hideRecentlyFailed: true,
+  hideHttpOnHttps: true,
+  hideHlsOnUnsupported: true,
 });
 
 export function deriveStationFilterOptions(stations: Station[]): StationFilterOptions {
@@ -63,12 +70,38 @@ export function deriveStationFilterOptions(stations: Station[]): StationFilterOp
   };
 }
 
-export function applyStationFilters(stations: Station[], filters: StationFilterState): Station[] {
+export function applyStationFilters(
+  stations: Station[],
+  filters: StationFilterState,
+  context: {
+    unavailableIds?: Set<string>;
+    pinnedStationId?: string | null;
+    pageProtocol?: string | null;
+    isSafari?: boolean;
+  } = {}
+): Station[] {
   if (!stations.length) return [];
 
   const minBitrate = filters.minBitrate ?? 0;
+  const isSafari = context.isSafari;
 
   const filtered = stations.filter((station) => {
+    if (context.pinnedStationId && station.uuid === context.pinnedStationId) {
+      return true;
+    }
+
+    if (filters.hideRecentlyFailed && context.unavailableIds?.has(station.uuid)) {
+      return false;
+    }
+
+    if (filters.hideHttpOnHttps && isMixedContentStream(station.streamUrl ?? station.url, context.pageProtocol)) {
+      return false;
+    }
+
+    if (filters.hideHlsOnUnsupported && station.hls && isSafari === false) {
+      return false;
+    }
+
     if (filters.language) {
       const tokens = extractLanguages(station)
         .map(normalizeToken)
@@ -117,12 +150,16 @@ export function applyStationFilters(stations: Station[], filters: StationFilterS
 }
 
 export function isStationFilterDirty(filters: StationFilterState): boolean {
+  const defaults = createDefaultStationFilters();
   return Boolean(
     filters.language ||
       filters.region ||
       filters.mood ||
       (filters.minBitrate ?? 0) > 0 ||
-      filters.sort !== "featured"
+      filters.sort !== "featured" ||
+      filters.hideRecentlyFailed !== defaults.hideRecentlyFailed ||
+      filters.hideHttpOnHttps !== defaults.hideHttpOnHttps ||
+      filters.hideHlsOnUnsupported !== defaults.hideHlsOnUnsupported
   );
 }
 

@@ -50,6 +50,30 @@ npm run dev
 3. **Choose a Station**: Browse through the list of stations and click play on any station
 4. **Enjoy**: Listen to live radio from around the world!
 
+### AI-Powered Discovery
+
+Radio Passport features AI-curated station recommendations. Try these example prompts:
+
+**Genre-Based:**
+
+- "psychedelic jazz from Brazil"
+- "electronic music from Berlin"
+- "indie rock from Seattle"
+
+**Mood-Based:**
+
+- "relaxing ambient music for late night"
+- "energetic dance music"
+- "chill lo-fi beats"
+
+**Geographic:**
+
+- "music from Tokyo"
+- "French radio stations"
+- "Latin music from Colombia"
+
+Navigate to `/world/atlas` and enter a prompt to get AI-curated station collections!
+
 ### Navigation
 
 - **Home**: Main passport stamp interface

@@ -1,4 +1,4 @@
-import { Select, Text } from "@mantine/core";
+import { Select, Switch, Text } from "@mantine/core";
 import { IconAdjustmentsHorizontal } from "@tabler/icons-react";
 
 import type {
@@ -31,6 +31,8 @@ export function StationFiltersPanel({
   onChange,
   onReset,
 }: StationFiltersPanelProps) {
+  const isHttps = typeof window !== "undefined" ? window.location.protocol === "https:" : false;
+
   const handleQualityChange = (value: string | null) => {
     const next: StationFilterState = {
       ...filters,
@@ -104,6 +106,28 @@ export function StationFiltersPanel({
           value={filters.sort}
           onChange={(value) => onChange({ ...filters, sort: (value as StationFilterSort) ?? "featured" })}
           size="sm"
+        />
+      </div>
+
+      <div className="mt-5 grid gap-3 md:grid-cols-3">
+        <Switch
+          size="sm"
+          label="Hide stations that failed recently"
+          checked={filters.hideRecentlyFailed}
+          onChange={(event) => onChange({ ...filters, hideRecentlyFailed: event.currentTarget.checked })}
+        />
+        <Switch
+          size="sm"
+          label="Hide HTTP streams (blocked on HTTPS)"
+          checked={filters.hideHttpOnHttps}
+          disabled={!isHttps}
+          onChange={(event) => onChange({ ...filters, hideHttpOnHttps: event.currentTarget.checked })}
+        />
+        <Switch
+          size="sm"
+          label="Hide HLS streams (often unsupported)"
+          checked={filters.hideHlsOnUnsupported}
+          onChange={(event) => onChange({ ...filters, hideHlsOnUnsupported: event.currentTarget.checked })}
         />
       </div>
 

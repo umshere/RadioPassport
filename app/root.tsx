@@ -3,11 +3,16 @@ import { Links, Meta, Outlet, Scripts, ScrollRestoration, useNavigation } from "
 import { MantineProvider, createTheme } from "@mantine/core";
 import { useCallback, useEffect, useRef } from "react";
 import { usePlayerStore } from "~/state/playerStore";
+import { isStationTemporarilyUnavailable, useStationAvailabilityStore } from "~/state/stationAvailabilityStore";
+import { isMixedContentStream } from "~/utils/streamHeuristics";
 import stylesheet from "./tailwind.css?url";
 import AppHeader from "~/components/AppHeader";
 import PlayerDock from "~/components/PlayerDock";
 import MobileSidebarMenu from "~/components/MobileSidebarMenu";
 import { TuningOverlay } from "~/components/TuningOverlay";
+import { ToastViewport } from "~/components/ToastViewport";
+import { useToastStore } from "~/state/toastStore";
+import type { Station } from "~/types/radio";
 
 export const links: LinksFunction = () => [
   { rel: "stylesheet", href: stylesheet },
@@ -187,6 +192,7 @@ export default function App() {
             {/* Player surfaces */}
             <PlayerDock />
             <TuningOverlay />
+            <ToastViewport />
             <GlobalAudioBridge />
           </>
         </MantineProvider>
@@ -199,6 +205,11 @@ export default function App() {
 
 function GlobalAudioBridge() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const nowPlayingRef = useRef<ReturnType<typeof usePlayerStore.getState>["nowPlaying"]>(null);
+  const autoSkipRef = useRef<{ lastSkipAt: number; recentFailures: number[] }>({
+    lastSkipAt: 0,
+    recentFailures: [],
+  });
   const {
     setAudioElement,
     setIsPlaying,
@@ -206,6 +217,9 @@ function GlobalAudioBridge() {
     isPlaying,
     nowPlaying,
   } = usePlayerStore();
+  const markFailed = useStationAvailabilityStore((state) => state.markFailed);
+  const clearFailure = useStationAvailabilityStore((state) => state.clearFailure);
+  const pushToast = useToastStore((state) => state.pushToast);
 
   const normalizeStreamUrl = useCallback((url?: string | null) => {
     if (!url) return "";
@@ -225,6 +239,75 @@ function GlobalAudioBridge() {
       return "";
     }
   }, []);
+
+  const autoSkipToNext = useCallback(
+    (failedStation: Station | null, reason: Parameters<typeof markFailed>[1]) => {
+      const now = Date.now();
+      const guard = autoSkipRef.current;
+      if (now - guard.lastSkipAt < 800) return;
+      guard.lastSkipAt = now;
+
+      // Avoid infinite spin if a bunch of stations fail quickly.
+      guard.recentFailures = guard.recentFailures.filter((ts) => now - ts < 20_000);
+      guard.recentFailures.push(now);
+      if (guard.recentFailures.length >= 4) {
+        pushToast({
+          kind: "error",
+          message: "Playback paused: too many stations failed in a row. Try toggling filters or switching countries.",
+          durationMs: 6000,
+        });
+        return;
+      }
+
+      const state = usePlayerStore.getState();
+      const availability = useStationAvailabilityStore.getState().failuresById;
+      const currentQueue = state.queue;
+
+      if (currentQueue.length <= 1) {
+        pushToast({
+          kind: "warning",
+          message: "This station failed to play. Try another station.",
+        });
+        return;
+      }
+
+      const startIndex = Math.max(0, state.currentStationIndex);
+      const pinnedId = state.nowPlaying?.uuid ?? null;
+      const protocol = typeof window !== "undefined" ? window.location.protocol : "https:";
+
+      let candidate: Station | null = null;
+      for (let offset = 1; offset <= currentQueue.length; offset++) {
+        const idx = (startIndex + offset) % currentQueue.length;
+        const station = currentQueue[idx];
+        if (!station) continue;
+        if (pinnedId && station.uuid === pinnedId) continue;
+        if (isStationTemporarilyUnavailable(availability[station.uuid], now)) continue;
+        const url = station.streamUrl ?? station.url ?? "";
+        if (isMixedContentStream(url, protocol)) continue;
+        candidate = station;
+        break;
+      }
+
+      if (!candidate) {
+        pushToast({
+          kind: "warning",
+          message: "Couldn’t find another playable station in this queue. Try changing filters.",
+          durationMs: 5000,
+        });
+        return;
+      }
+
+      const label = failedStation?.name ? `“${failedStation.name}”` : "That station";
+      pushToast({
+        kind: "warning",
+        message: `${label} failed (${reason.replace(/_/g, " ")}). Skipping to the next station…`,
+        durationMs: 4500,
+      });
+
+      state.startStation(candidate, { preserveQueue: true, autoPlay: true });
+    },
+    [pushToast]
+  );
 
   useEffect(() => {
     const element = audioRef.current;
@@ -246,17 +329,41 @@ function GlobalAudioBridge() {
     if (!audio) return;
 
     const handleEnded = () => setIsPlaying(false);
-    const handleError = () => setIsPlaying(false);
+    const handleError = () => {
+      setIsPlaying(false);
+      const current = nowPlayingRef.current;
+      if (!current) return;
+      const url = current.streamUrl ?? current.url ?? "";
+      const reason = isMixedContentStream(url, window.location.protocol)
+        ? "mixed_content"
+        : current.hls
+        ? "hls_stream"
+        : "audio_error";
+      markFailed(current.uuid, reason);
+      autoSkipToNext(current, reason);
+    };
+    const handlePlaying = () => {
+      const current = nowPlayingRef.current;
+      if (!current) return;
+      clearFailure(current.uuid);
+      autoSkipRef.current.recentFailures = [];
+    };
 
     audio.addEventListener("ended", handleEnded);
     audio.addEventListener("error", handleError);
+    audio.addEventListener("playing", handlePlaying);
 
     return () => {
       audio.removeEventListener("ended", handleEnded);
       audio.removeEventListener("error", handleError);
+      audio.removeEventListener("playing", handlePlaying);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    nowPlayingRef.current = nowPlaying;
+  }, [nowPlaying]);
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -275,6 +382,15 @@ function GlobalAudioBridge() {
       return;
     }
 
+    if (isMixedContentStream(streamUrl, window.location.protocol)) {
+      markFailed(nowPlaying.uuid, "mixed_content");
+      setIsPlaying(false);
+      audio.pause();
+      audio.removeAttribute("src");
+      autoSkipToNext(nowPlaying, "mixed_content");
+      return;
+    }
+
     if (audio.src !== streamUrl) {
       audio.src = streamUrl;
     }
@@ -290,7 +406,22 @@ function GlobalAudioBridge() {
     }
 
     if (isPlaying) {
-      void audio.play().catch(() => setIsPlaying(false));
+      void audio
+        .play()
+        .then(() => {
+          clearFailure(nowPlaying.uuid);
+        })
+        .catch(() => {
+          setIsPlaying(false);
+          const url = nowPlaying.streamUrl ?? nowPlaying.url ?? "";
+          const reason = isMixedContentStream(url, window.location.protocol)
+            ? "mixed_content"
+            : nowPlaying.hls
+            ? "hls_stream"
+            : "play_rejected";
+          markFailed(nowPlaying.uuid, reason);
+          autoSkipToNext(nowPlaying, reason);
+        });
     } else {
       audio.pause();
     }
