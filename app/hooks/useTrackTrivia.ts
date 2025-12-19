@@ -48,11 +48,8 @@ export function useTrackTrivia({ track, source, enabled, context }: UseTrackTriv
   useEffect(() => {
     if (!enabled) return;
     if (!track || (!track.title && !track.artist)) {
-      setState({
-        status: "empty",
-        trivia: null,
-        message: "Start playing a station to see track trivia.",
-      });
+      // Hide widget instead of showing error text when nothing to resolve
+      setState({ status: "empty", trivia: null, message: null });
       return;
     }
 
@@ -60,11 +57,8 @@ export function useTrackTrivia({ track, source, enabled, context }: UseTrackTriv
     const controller = new AbortController();
     pendingRef.current = controller;
 
-    setState((prev) => ({
-      status: prev.trivia ? "ready" : "loading",
-      trivia: prev.trivia,
-      message: null,
-    }));
+    // Always clear previous trivia to avoid stale flash while loading next
+    setState({ status: "loading", trivia: null, message: null });
 
     const params = new URLSearchParams();
     if (track.title) params.set("title", track.title);
@@ -85,19 +79,17 @@ export function useTrackTrivia({ track, source, enabled, context }: UseTrackTriv
           return;
         }
         if (data.status === "empty") {
-          setState({ status: "empty", trivia: null, message: data.reason });
+          // Keep UI minimal; no explicit unavailable text
+          setState({ status: "empty", trivia: null, message: null });
           return;
         }
-        setState({ status: "error", trivia: null, message: data.reason });
+        // Hide error details in UI; treat as empty to avoid noisy UX
+        setState({ status: "empty", trivia: null, message: null });
       })
       .catch((error) => {
         if (controller.signal.aborted) return;
         if ((error as Error).name === "AbortError") return;
-        setState({
-          status: "error",
-          trivia: null,
-          message: "Unable to fetch track trivia.",
-        });
+        setState({ status: "empty", trivia: null, message: null });
       });
   }, [enabled, trackKey, source, contextKey]);
 

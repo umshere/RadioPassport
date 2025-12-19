@@ -207,17 +207,6 @@ export default function RetroTuner({
                             {triviaTitle}
                         </Text>
 
-                        {freeTrivia.status === "loading" && (
-                            <Text size="sm" className="mt-3 text-slate-700">
-                                Fetching highlights…
-                            </Text>
-                        )}
-                        {freeTrivia.status === "error" && (
-                            <Text size="sm" className="mt-3 text-rose-600">
-                                {freeTrivia.message ?? "Trivia unavailable."}
-                            </Text>
-                        )}
-                        {freeTrivia.status === "empty" && null}
                         {freeTrivia.status === "ready" && freeTrivia.trivia && (
                             <div className="mt-3 flex flex-col gap-3">
                                 <div className="flex items-start gap-3">
@@ -271,19 +260,8 @@ export default function RetroTuner({
                                 </Text>
                             </div>
                         )}
-                        {aiTriviaExpanded && (
+                        {aiTriviaExpanded && aiTrivia.status === "ready" && aiTrivia.trivia && (
                             <div className="mt-3 rounded-2xl border border-slate-200 bg-white/95 px-4 py-3 shadow-[0_10px_18px_rgba(15,23,42,0.12)]">
-                                {aiTrivia.status === "loading" && (
-                                    <Text size="sm" className="text-slate-700">
-                                        Fetching AI insights…
-                                    </Text>
-                                )}
-                                {aiTrivia.status === "error" && (
-                                    <Text size="sm" className="text-rose-600">
-                                        {aiTrivia.message ?? "AI trivia unavailable."}
-                                    </Text>
-                                )}
-                                {aiTrivia.status === "empty" && null}
                                 {aiTrivia.status === "ready" && aiTrivia.trivia && (
                                     <div className="flex flex-col gap-2">
                                         <Text size="sm" fw={600} className="text-slate-900">
@@ -305,7 +283,7 @@ export default function RetroTuner({
                                 )}
                             </div>
                         )}
-                        {!aiTriviaExpanded && (
+                        {!aiTriviaExpanded && freeTrivia.status === "ready" && freeTrivia.trivia && (
                             <button
                                 type="button"
                                 className="mt-3 inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-600 shadow-[inset_2px_2px_4px_#d1d5db,inset_-2px_-2px_4px_#ffffff]"

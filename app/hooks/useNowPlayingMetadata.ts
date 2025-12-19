@@ -64,11 +64,8 @@ export function useNowPlayingMetadata(station: Station | null, isPlaying: boolea
       pendingRef.current?.abort();
       const controller = new AbortController();
       pendingRef.current = controller;
-      setState((prev) => ({
-        ...prev,
-        status: prev.track ? "ready" : "loading",
-        message: null,
-      }));
+      // Clear previous track to avoid showing stale metadata briefly
+      setState({ status: "loading", track: null, message: null, lastUpdated: null });
 
       try {
         const params = new URLSearchParams({ url: streamUrl });

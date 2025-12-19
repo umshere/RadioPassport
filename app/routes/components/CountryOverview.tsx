@@ -307,7 +307,7 @@ export function CountryOverview({
                   {trackLine}
                 </Text>
                 <AnimatePresence initial={false}>
-                  {(freeSummary || freeFacts.length > 0 || freeLinks.length > 0 || freeImage) && (
+                  {freeTrivia.status === "ready" && (freeSummary || freeFacts.length > 0 || freeLinks.length > 0 || freeImage) && (
                     <motion.div
                       key="spotlight-free"
                       initial={{ opacity: 0, y: 8 }}
@@ -367,7 +367,7 @@ export function CountryOverview({
                           })}
                         </div>
                       )}
-                      {!aiTriviaExpanded && (
+                      {!aiTriviaExpanded && freeTrivia.status === "ready" && (
                         <button
                           type="button"
                           className="mt-3 inline-flex items-center gap-2 rounded-full bg-white/90 px-3 py-1 text-[11px] font-semibold text-slate-600 shadow-[2px_2px_4px_#b8b9be,-2px_-2px_4px_#ffffff]"
@@ -381,7 +381,7 @@ export function CountryOverview({
                   )}
                 </AnimatePresence>
                 <AnimatePresence initial={false}>
-                  {aiTriviaExpanded && aiSummary && (
+                  {aiTriviaExpanded && aiTrivia.status === "ready" && aiSummary && (
                     <motion.div
                       key="spotlight-ai"
                       initial={{ opacity: 0, y: 6 }}
