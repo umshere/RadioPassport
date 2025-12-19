@@ -2,7 +2,8 @@ import { json, type LoaderFunctionArgs } from "@remix-run/node";
 import type { TrackTriviaResponse, TrackTrivia } from "~/types/trivia";
 
 const MUSICBRAINZ_BASE = "https://musicbrainz.org/ws/2";
-const USER_AGENT = "radio-passport/1.0 (https://github.com/umshere/RadioPassport)";
+const USER_AGENT =
+  "radio-passport/1.0 (https://github.com/umshere/RadioPassport)";
 const CACHE_TTL_MS = 6 * 60 * 60 * 1000;
 const AI_CACHE_TTL_MS = 60 * 60 * 1000;
 const AI_PROVIDER = (process.env.AI_PROVIDER ?? "openai").trim().toLowerCase();
@@ -40,8 +41,14 @@ type CacheEntry = {
 
 const triviaCache = new Map<string, CacheEntry>();
 
-function getCacheKey(source: string, title?: string | null, artist?: string | null) {
-  return `${source}:${(title ?? "").toLowerCase().trim()}|${(artist ?? "").toLowerCase().trim()}`;
+function getCacheKey(
+  source: string,
+  title?: string | null,
+  artist?: string | null
+) {
+  return `${source}:${(title ?? "").toLowerCase().trim()}|${(artist ?? "")
+    .toLowerCase()
+    .trim()}`;
 }
 
 function escapeQueryValue(value: string) {
@@ -54,7 +61,10 @@ function cleanSearchTerm(value: string): string {
     /\b(hq|lyrics?|lyric video|official|video|audio|remaster(ed)?|live|full|mix|version|feat\.?|ft\.?|featuring|cover|performance|m\/v|mv|hd|4k|8k|explicit|clean)\b/gi,
     " "
   );
-  return withoutNoise.replace(/[“”"']/g, " ").replace(/\s+/g, " ").trim();
+  return withoutNoise
+    .replace(/[“”"']/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function buildSearchQuery(title?: string | null, artist?: string | null) {
@@ -240,16 +250,19 @@ async function fetchGeminiTrivia(prompt: string): Promise<AiTriviaResult> {
 
 async function fetchOllamaTrivia(prompt: string): Promise<AiTriviaResult> {
   if (!OLLAMA_URL) return { trivia: null, error: "Missing OLLAMA_URL." };
-  const response = await fetch(`${OLLAMA_URL.replace(/\/$/, "")}/api/generate`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      model: OLLAMA_MODEL,
-      prompt: `${AI_SYSTEM_PROMPT}\n\n${prompt}`,
-      format: "json",
-      stream: false,
-    }),
-  });
+  const response = await fetch(
+    `${OLLAMA_URL.replace(/\/$/, "")}/api/generate`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: OLLAMA_MODEL,
+        prompt: `${AI_SYSTEM_PROMPT}\n\n${prompt}`,
+        format: "json",
+        stream: false,
+      }),
+    }
+  );
   if (!response.ok) {
     return {
       trivia: null,
@@ -276,17 +289,65 @@ async function fetchAiTrivia(
   promptParts.push("Return JSON only.");
   const prompt = promptOverride ?? promptParts.join("\n");
 
-  switch (AI_PROVIDER) {
-    case "openrouter":
-      return fetchOpenRouterTrivia(prompt);
-    case "gemini":
-      return fetchGeminiTrivia(prompt);
-    case "ollama":
-      return fetchOllamaTrivia(prompt);
-    case "openai":
-    default:
-      return fetchOpenAiTrivia(prompt);
+  // Build a fallback chain based on configured provider and available keys
+  type ProviderFn = () => Promise<AiTriviaResult>;
+  const chain: ProviderFn[] = [];
+
+  const hasOpenRouter = Boolean((process.env.OPENROUTER_API_KEY ?? "").trim());
+  const hasOpenAI = Boolean((process.env.OPENAI_API_KEY ?? "").trim());
+  const hasGemini = Boolean((process.env.GEMINI_API_KEY ?? "").trim());
+  const hasOllama = Boolean((process.env.OLLAMA_URL ?? "").trim());
+
+  const pushIf = (cond: boolean, fn: ProviderFn) => {
+    if (cond) chain.push(fn);
+  };
+
+  // Helper to enqueue by name
+  const enqueueByName = (name: string) => {
+    const n = name.trim().toLowerCase();
+    if (n === "gemini") pushIf(hasGemini, () => fetchGeminiTrivia(prompt));
+    else if (n === "openrouter")
+      pushIf(hasOpenRouter, () => fetchOpenRouterTrivia(prompt));
+    else if (n === "openai") pushIf(hasOpenAI, () => fetchOpenAiTrivia(prompt));
+    else if (n === "ollama") pushIf(hasOllama, () => fetchOllamaTrivia(prompt));
+  };
+
+  // 1) Preferred provider first
+  enqueueByName(AI_PROVIDER);
+  // 2) Fallback order: OpenRouter → OpenAI → Gemini → Ollama (skip duplicates)
+  ["openrouter", "openai", "gemini", "ollama"].forEach((p) => {
+    // avoid duplicate entries by checking function reference presence
+    const beforeLen = chain.length;
+    enqueueByName(p);
+    // If preferred already added the same provider, this will no-op due to cond checks
+  });
+
+  // Ensure at least one option (even if keys are missing, we'll get an error which we surface)
+  if (chain.length === 0) {
+    // No keys present; try Gemini then OpenRouter then OpenAI then Ollama to return a clear error
+    chain.push(
+      () => fetchGeminiTrivia(prompt),
+      () => fetchOpenRouterTrivia(prompt),
+      () => fetchOpenAiTrivia(prompt),
+      () => fetchOllamaTrivia(prompt)
+    );
   }
+
+  const errors: string[] = [];
+  for (const attempt of chain) {
+    try {
+      const result = await attempt();
+      if (result.trivia) return result; // success
+      if (result.error) errors.push(result.error);
+    } catch (err) {
+      errors.push((err as Error)?.message ?? String(err));
+    }
+  }
+
+  return {
+    trivia: null,
+    error: errors.join(" | ") || "All AI providers failed.",
+  };
 }
 
 function pickReleaseYear(date?: string | null) {
@@ -324,7 +385,10 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const artist = url.searchParams.get("artist");
   const source = url.searchParams.get("source") ?? "free";
   const contextRaw = url.searchParams.get("context");
-  let contextInfo: { summary?: string; facts?: Array<{ label: string; value: string }> } | null = null;
+  let contextInfo: {
+    summary?: string;
+    facts?: Array<{ label: string; value: string }>;
+  } | null = null;
 
   if (contextRaw) {
     try {
@@ -370,7 +434,9 @@ export async function loader({ request }: LoaderFunctionArgs) {
     if (!trivia) {
       const response: TrackTriviaResponse = {
         status: "error",
-        reason: error ?? "AI trivia unavailable.",
+        reason: error?.includes("429")
+          ? "AI provider rate-limited. Please try again shortly."
+          : error ?? "AI trivia unavailable.",
       };
       triviaCache.set(cacheKey, {
         expiresAt: Date.now() + AI_CACHE_TTL_MS,
@@ -384,14 +450,22 @@ export async function loader({ request }: LoaderFunctionArgs) {
       trivia.cleanArtist ?? artist ?? ""
     );
     const youtubeUrl = searchQuery
-      ? `https://www.youtube.com/results?search_query=${encodeURIComponent(searchQuery)}`
+      ? `https://www.youtube.com/results?search_query=${encodeURIComponent(
+          searchQuery
+        )}`
       : null;
     const wikipediaUrl = searchQuery
-      ? `https://en.wikipedia.org/wiki/Special:Search?search=${encodeURIComponent(searchQuery)}`
+      ? `https://en.wikipedia.org/wiki/Special:Search?search=${encodeURIComponent(
+          searchQuery
+        )}`
       : null;
     const links = [
-      youtubeUrl ? { label: "YouTube", url: youtubeUrl, kind: "youtube" as const } : null,
-      wikipediaUrl ? { label: "Wiki", url: wikipediaUrl, kind: "info" as const } : null,
+      youtubeUrl
+        ? { label: "YouTube", url: youtubeUrl, kind: "youtube" as const }
+        : null,
+      wikipediaUrl
+        ? { label: "Wiki", url: wikipediaUrl, kind: "info" as const }
+        : null,
     ].filter(Boolean) as TrackTrivia["links"];
 
     const response: TrackTriviaResponse = {
@@ -440,12 +514,19 @@ export async function loader({ request }: LoaderFunctionArgs) {
       status: "empty",
       reason: "No free trivia found for this track yet.",
     };
-    triviaCache.set(cacheKey, { expiresAt: Date.now() + CACHE_TTL_MS, value: response });
+    triviaCache.set(cacheKey, {
+      expiresAt: Date.now() + CACHE_TTL_MS,
+      value: response,
+    });
     return json(response);
   }
 
   const artistCredit = recording["artist-credit"]?.[0];
-  const artistName = artistCredit?.name ?? artistCredit?.artist?.name ?? artist ?? "Unknown artist";
+  const artistName =
+    artistCredit?.name ??
+    artistCredit?.artist?.name ??
+    artist ??
+    "Unknown artist";
   const artistId = artistCredit?.artist?.id ?? null;
   const release = recording.releases?.[0];
   const releaseTitle = release?.title ?? null;
@@ -468,7 +549,9 @@ export async function loader({ request }: LoaderFunctionArgs) {
     artistTags = (artistData?.tags ?? []).map((tag) => tag.name).slice(0, 3);
   }
 
-  const recordingTags = (recording.tags ?? []).map((tag) => tag.name).slice(0, 3);
+  const recordingTags = (recording.tags ?? [])
+    .map((tag) => tag.name)
+    .slice(0, 3);
   const tags = [...recordingTags, ...artistTags].filter(Boolean);
 
   const facts: TrackTrivia["facts"] = [];
@@ -476,22 +559,32 @@ export async function loader({ request }: LoaderFunctionArgs) {
   if (releaseYear) facts.push({ label: "Year", value: releaseYear });
   if (artistArea) facts.push({ label: "Origin", value: artistArea });
   if (duration) facts.push({ label: "Length", value: duration });
-  if (tags.length > 0) facts.push({ label: "Style", value: tags.slice(0, 2).join(", ") });
+  if (tags.length > 0)
+    facts.push({ label: "Style", value: tags.slice(0, 2).join(", ") });
 
   const summaryPieces = [`${recording.title ?? title ?? "This track"}`];
   if (artistName) summaryPieces.push(`by ${artistName}`);
   if (releaseYear) summaryPieces.push(`(${releaseYear})`);
   const summary = summaryPieces.join(" ");
 
-  const searchQuery = buildSearchQuery(recording.title ?? title ?? "", artistName);
+  const searchQuery = buildSearchQuery(
+    recording.title ?? title ?? "",
+    artistName
+  );
   const youtubeUrl = searchQuery
-    ? `https://www.youtube.com/results?search_query=${encodeURIComponent(searchQuery)}`
+    ? `https://www.youtube.com/results?search_query=${encodeURIComponent(
+        searchQuery
+      )}`
     : null;
   const wikipediaUrl = searchQuery
-    ? `https://en.wikipedia.org/wiki/Special:Search?search=${encodeURIComponent(searchQuery)}`
+    ? `https://en.wikipedia.org/wiki/Special:Search?search=${encodeURIComponent(
+        searchQuery
+      )}`
     : null;
   const links = [
-    youtubeUrl ? { label: "YouTube", url: youtubeUrl, kind: "youtube" as const } : null,
+    youtubeUrl
+      ? { label: "YouTube", url: youtubeUrl, kind: "youtube" as const }
+      : null,
     recordingId
       ? {
           label: "Track",
@@ -540,6 +633,9 @@ export async function loader({ request }: LoaderFunctionArgs) {
     trivia,
   };
 
-  triviaCache.set(cacheKey, { expiresAt: Date.now() + CACHE_TTL_MS, value: response });
+  triviaCache.set(cacheKey, {
+    expiresAt: Date.now() + CACHE_TTL_MS,
+    value: response,
+  });
   return json(response);
 }

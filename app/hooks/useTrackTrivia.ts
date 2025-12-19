@@ -24,7 +24,12 @@ type UseTrackTriviaOptions = {
   };
 };
 
-export function useTrackTrivia({ track, source, enabled, context }: UseTrackTriviaOptions) {
+export function useTrackTrivia({
+  track,
+  source,
+  enabled,
+  context,
+}: UseTrackTriviaOptions) {
   const [state, setState] = useState<TriviaState>(INITIAL_STATE);
   const pendingRef = useRef<AbortController | null>(null);
   const trackKey = track ? `${track.artist ?? ""}|${track.title ?? ""}` : "";

@@ -263,14 +263,14 @@ export default function PlayerDock() {
       </Text>
       {renderTriviaBody(freeTrivia, "details")}
       {aiTriviaExpanded && (
-        <div className="rounded-xl border border-slate-200 bg-white/95 px-3 py-2 shadow-[0_10px_18px_rgba(15,23,42,0.12)]">
+        <div className="rounded-xl border border-white/40 bg-white/40 backdrop-blur-md px-3 py-2 shadow-sm">
           {renderTriviaBody(aiTrivia, "AI insights")}
         </div>
       )}
       {!aiTriviaExpanded && (
         <button
           type="button"
-          className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-semibold text-slate-600 hover:border-slate-300 hover:text-slate-900"
+          className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/50 backdrop-blur-sm px-3 py-1 text-[11px] font-semibold text-slate-600 hover:border-slate-300 hover:text-slate-900 shadow-sm"
           onClick={(event) => {
             event.stopPropagation();
             setAiTriviaExpanded(true);
@@ -307,6 +307,33 @@ export default function PlayerDock() {
         size="md"
         title="Track Spotlight"
         overlayProps={{ opacity: 0.2 }}
+        styles={{
+          content: {
+            background: 'rgba(255, 255, 255, 0.65)',
+            backdropFilter: 'blur(20px)',
+            WebkitBackdropFilter: 'blur(20px)',
+            borderRadius: '24px',
+            margin: '12px',
+            marginBottom: 'calc(env(safe-area-inset-bottom) + 12px)',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
+            border: '1px solid rgba(255,255,255,0.4)',
+            height: 'auto',
+            maxHeight: '85vh',
+            width: 'calc(100% - 24px)', // Fix overflow by accounting for margins
+            overflow: 'hidden',
+          },
+          header: {
+            background: 'transparent',
+            borderBottom: '1px solid rgba(0,0,0,0.05)',
+          },
+          title: {
+            fontWeight: 700,
+            color: '#334155',
+          },
+          close: {
+            color: '#64748b',
+          }
+        }}
       >
         {triviaContent}
       </Drawer>
@@ -598,7 +625,7 @@ export default function PlayerDock() {
         </motion.div>
       </aside>
 
-      {/* Mobile mini-player - Vibrant design */}
+      {/* Mobile mini-player - Scrubbed Glass design */}
       {!isAiRoute && (
         <motion.div
           className="lg:hidden fixed left-0 right-0 z-40 px-3"
@@ -612,29 +639,23 @@ export default function PlayerDock() {
           <motion.div
             data-raptor={raptorMiniEnabled ? "true" : "false"}
             onClick={() => setIsExpanded(true)}
-            className={`rounded-2xl overflow-hidden active:scale-[0.98] transition-transform cursor-pointer relative ${raptorMiniEnabled ? 'py-2 px-3' : 'py-3 px-3'}`}
+            className={`rounded-[2rem] overflow-hidden active:scale-[0.98] transition-transform cursor-pointer relative ${raptorMiniEnabled ? 'py-2 px-3' : 'py-3 px-4'}`}
             style={{
-              background: 'linear-gradient(135deg, rgba(255,255,255,0.98) 0%, rgba(255,250,245,0.98) 100%)',
-              boxShadow: '0 12px 32px -8px rgba(15, 23, 42, 0.2), 0 0 0 1px rgba(203, 213, 225, 1), inset 0 1px 0 rgba(255,255,255,1)',
+              background: 'rgba(255, 255, 255, 0.4)',
+              backdropFilter: 'blur(24px)',
+              WebkitBackdropFilter: 'blur(24px)',
+              boxShadow: '0 12px 32px -8px rgba(15, 23, 42, 0.15), 0 0 0 1px rgba(255, 255, 255, 0.6) inset',
+              border: '1px solid rgba(255, 255, 255, 0.5)',
             }}
           >
-            {/* Animated shimmer */}
-            {isPlaying && (
-              <motion.div
-                className="absolute inset-0 pointer-events-none"
-                style={{
-                  background: 'linear-gradient(90deg, transparent 0%, rgba(255,200,100,0.3) 50%, transparent 100%)',
-                }}
-                animate={{ x: ['-100%', '200%'] }}
-                transition={{ duration: 2.5, repeat: Infinity, repeatDelay: 1.5 }}
-              />
-            )}
+            {/* Glass Shine Overlay */}
+            <div className="absolute inset-0 bg-gradient-to-b from-white/40 to-transparent opacity-50 pointer-events-none" />
 
-            {/* Progress bar at top */}
-            <div className="absolute top-0 left-0 right-0 h-1 bg-amber-100/50 overflow-hidden rounded-t-2xl">
+            {/* Progress bar at top - integrated */}
+            <div className="absolute top-0 left-0 right-0 h-[3px] bg-slate-200/30 overflow-hidden">
               {isPlaying && (
                 <motion.div
-                  className="h-full bg-gradient-to-r from-amber-400 via-orange-400 to-rose-400"
+                  className="h-full bg-gradient-to-r from-amber-400 via-orange-400 to-rose-400 shadow-[0_0_8px_rgba(251,146,60,0.6)]"
                   initial={{ width: "0%" }}
                   animate={{ width: "100%" }}
                   transition={{ duration: 30, ease: "linear", repeat: Infinity }}
@@ -642,54 +663,60 @@ export default function PlayerDock() {
               )}
             </div>
 
-            <div className="flex items-center gap-3 relative z-10">
+            <div className="flex items-center gap-3.5 relative z-10 pt-1 px-1">
               <motion.div
-                className={`${raptorMiniEnabled ? 'h-10 w-10' : 'h-12 w-12'} rounded-xl overflow-hidden flex items-center justify-center text-sm flex-shrink-0 font-bold`}
-                style={{
-                  boxShadow: isPlaying ? '0 4px 15px rgba(251,146,60,0.4)' : '0 2px 8px rgba(0,0,0,0.1)',
-                  border: '2px solid rgba(255,255,255,0.8)',
-                }}
+                className={`${raptorMiniEnabled ? 'h-10 w-10' : 'h-12 w-12'} overflow-visible flex items-center justify-center text-sm flex-shrink-0 relative`}
                 animate={isPlaying ? { scale: [1, 1.05, 1] } : {}}
                 transition={{ duration: 1, repeat: Infinity }}
               >
-                <StationArtwork
-                  station={nowPlaying}
-                  fallbackClassName="w-full h-full flex items-center justify-center text-amber-700 bg-gradient-to-br from-amber-100 to-orange-100"
-                />
-              </motion.div>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2">
-                  <div className="text-[13px] font-bold text-slate-800 truncate leading-tight">{title}</div>
-                  <button
-                    type="button"
-                    className="flex h-7 w-7 items-center justify-center rounded-full border border-amber-200 bg-amber-50 text-amber-700 shadow-sm"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      setTriviaOpen(true);
-                    }}
-                    aria-label="Show track trivia"
-                  >
-                    <IconSparkles size={12} />
-                  </button>
+                <div
+                  className="w-full h-full rounded-xl overflow-hidden relative z-0"
+                  style={{
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.1), 0 0 0 1px rgba(255,255,255,0.5)',
+                  }}
+                >
+                  <StationArtwork
+                    station={nowPlaying}
+                    fallbackClassName="w-full h-full flex items-center justify-center text-amber-700 bg-transparent backdrop-blur"
+                  />
                 </div>
-                {!raptorMiniEnabled && (
-                  <div className="text-[11px] text-slate-600 truncate leading-tight mt-0.5 font-medium">
-                    {triviaTitle}
-                  </div>
-                )}
-                <div className="text-[11px] text-amber-600/80 truncate leading-tight mt-0.5 font-medium">
+
+                {/* AI Button - Pinned to Artwork */}
+                <button
+                  type="button"
+                  className="absolute -top-1.5 -right-1.5 z-10 flex h-6 w-6 items-center justify-center rounded-full border border-amber-300 bg-gradient-to-br from-amber-100 to-amber-50 text-amber-700 shadow-[0_2px_8px_rgba(245,158,11,0.3)] active:scale-95 transition-all"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    setTriviaOpen(true);
+                  }}
+                  aria-label="Show track trivia"
+                >
+                  <IconSparkles size={12} />
+                </button>
+              </motion.div>
+
+              <div className="min-w-0 flex-1 flex flex-col justify-center">
+                <div className="flex items-center gap-2">
+                  <div className="text-[13px] font-bold text-slate-800 truncate leading-tight shadow-sm">{title}</div>
+                </div>
+                <div className="text-[11px] text-amber-600/90 truncate leading-tight mt-0.5 font-bold tracking-wide">
                   {subtitle}
                 </div>
               </div>
 
-              {/* Mobile Controls - Vibrant */}
-              <div className="flex items-center gap-2">
-                {/* Quick Retune */}
+              {/* Mobile Controls - Embossed Glass */}
+              <div className="flex items-center gap-2.5">
+                {/* Quick Retune - Restored */}
                 <button
-                  className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/70 text-violet-600 transition-all active:scale-95"
+                  className="flex h-9 w-9 items-center justify-center rounded-full text-slate-500 active:scale-95 transition-all"
                   style={{
-                    background: 'linear-gradient(135deg, #ede9fe 0%, #e0e7ff 100%)',
-                    boxShadow: '0 2px 8px rgba(139,92,246,0.2)',
+                    background: 'rgba(255, 255, 255, 0.3)',
+                    backdropFilter: 'blur(4px)',
+                    borderTop: '1px solid rgba(255,255,255,0.8)',
+                    borderLeft: '1px solid rgba(255,255,255,0.8)',
+                    borderBottom: '1px solid rgba(0,0,0,0.05)',
+                    borderRight: '1px solid rgba(0,0,0,0.05)',
+                    boxShadow: '4px 4px 10px rgba(0,0,0,0.05), -2px -2px 6px rgba(255,255,255,0.6)',
                   }}
                   onClick={(e) => {
                     e.stopPropagation();
@@ -697,148 +724,113 @@ export default function PlayerDock() {
                   }}
                   aria-label="Quick Retune"
                 >
-                  <IconMapPin size={16} />
+                  <IconMapPin size={15} />
                 </button>
 
                 {/* Prev */}
                 <button
-                  className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/70 bg-slate-100 text-slate-500 active:scale-95 transition-all shadow-sm"
+                  className="flex h-9 w-9 items-center justify-center rounded-full text-slate-500 active:scale-95 transition-all"
+                  style={{
+                    background: 'rgba(255, 255, 255, 0.3)',
+                    backdropFilter: 'blur(4px)',
+                    borderTop: '1px solid rgba(255,255,255,0.8)',
+                    borderLeft: '1px solid rgba(255,255,255,0.8)',
+                    borderBottom: '1px solid rgba(0,0,0,0.05)',
+                    borderRight: '1px solid rgba(0,0,0,0.05)',
+                    boxShadow: '4px 4px 10px rgba(0,0,0,0.05), -2px -2px 6px rgba(255,255,255,0.6)',
+                  }}
                   onClick={(e) => {
                     e.stopPropagation();
                     handlePrev();
                   }}
                   aria-label="Previous"
                 >
-                  <IconPlayerSkipBackFilled size={18} />
+                  <IconPlayerSkipBackFilled size={15} />
                 </button>
 
-                {/* Play/Pause - Vibrant orange */}
+                {/* Play/Pause - Embossed Active State */}
                 <motion.button
-                  className="flex h-12 w-12 items-center justify-center rounded-xl border border-white/70 text-white active:scale-95 transition-transform"
+                  className="flex h-12 w-12 items-center justify-center rounded-full text-white active:scale-95 transition-transform"
                   style={{
-                    background: 'linear-gradient(135deg, #f59e0b 0%, #ea580c 100%)',
-                    boxShadow: '0 4px 15px rgba(251,146,60,0.4)',
+                    background: 'linear-gradient(135deg, #fb923c, #ea580c)',
+                    boxShadow: 'inset 2px 2px 4px rgba(255,255,255,0.4), inset -2px -2px 4px rgba(0,0,0,0.2), 0 8px 20px rgba(249,115,22,0.4)',
+                    border: '1px solid rgba(255,255,255,0.2)',
+                    textShadow: '0 2px 4px rgba(0,0,0,0.2)'
                   }}
                   whileTap={{ scale: 0.95 }}
-                  animate={isPlaying ? { boxShadow: ['0 4px 15px rgba(251,146,60,0.4)', '0 4px 25px rgba(251,146,60,0.6)', '0 4px 15px rgba(251,146,60,0.4)'] } : {}}
-                  transition={isPlaying ? { duration: 1.2, repeat: Infinity } : {}}
                   onClick={(e) => {
                     e.stopPropagation();
                     togglePlay();
                   }}
                   aria-label={isPlaying ? "Pause" : "Play"}
                 >
-                  {isPlaying ? <IconPlayerPauseFilled size={20} /> : <IconPlayerPlayFilled size={20} />}
+                  {isPlaying ? <IconPlayerPauseFilled size={20} /> : <IconPlayerPlayFilled size={20} className="ml-0.5" />}
                 </motion.button>
 
                 {/* Next */}
                 <button
-                  className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/70 bg-slate-100 text-slate-500 active:scale-95 transition-all shadow-sm"
+                  className="flex h-9 w-9 items-center justify-center rounded-full text-slate-500 active:scale-95 transition-all"
+                  style={{
+                    background: 'rgba(255, 255, 255, 0.3)',
+                    backdropFilter: 'blur(4px)',
+                    borderTop: '1px solid rgba(255,255,255,0.8)',
+                    borderLeft: '1px solid rgba(255,255,255,0.8)',
+                    borderBottom: '1px solid rgba(0,0,0,0.05)',
+                    borderRight: '1px solid rgba(0,0,0,0.05)',
+                    boxShadow: '4px 4px 10px rgba(0,0,0,0.05), -2px -2px 6px rgba(255,255,255,0.6)',
+                  }}
                   onClick={(e) => {
                     e.stopPropagation();
                     handleNext();
                   }}
                   aria-label="Next"
                 >
-                  <IconPlayerSkipForwardFilled size={18} />
+                  <IconPlayerSkipForwardFilled size={15} />
                 </button>
               </div>
             </div>
 
-            {/* Mobile Tuner Display - Vibrant warm colors */}
-            <div className="mt-2"
+
+            {/* Mobile Bottom Bar - Text Ticker & Freq */}
+            <div className="mt-3 mx-1 mb-0.5"
               style={{
                 position: "relative",
-                width: "100%",
-                height: "28px",
-                background: "linear-gradient(90deg, rgba(254,243,199,0.5) 0%, rgba(254,215,170,0.5) 100%)",
+                width: "auto",
+                height: "26px",
+                background: "rgba(255,252,240,0.5)",
                 borderRadius: "8px",
-                padding: "0 8px",
+                padding: "0 10px",
                 display: "flex",
                 alignItems: "center",
+                justifyContent: "space-between",
+                boxShadow: "inset 0 1px 2px rgba(0,0,0,0.03)",
+                border: "1px solid rgba(0,0,0,0.03)"
               }}
             >
-              {/* Simplified tick marks for mobile */}
-              <div
-                style={{
-                  position: "absolute",
-                  inset: "0 8px",
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                }}
-              >
-                {ticks.filter((_, i) => i % 5 === 0).map((tick, i) => (
-                  <div
-                    key={i}
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "center",
-                      gap: "2px",
-                      opacity: tick.isNear ? 1 : 0.25,
-                      transition: "opacity 0.3s ease",
-                    }}
-                  >
-                    <div
-                      style={{
-                        width: "1.5px",
-                        height: "12px",
-                        background: "#64748b",
-                        borderRadius: "999px",
-                      }}
-                    />
-                  </div>
-                ))}
+              {/* Marquee Song Title */}
+              <div className="flex-1 overflow-hidden relative h-full flex items-center mask-image-linear-gradient-to-r">
+                <div className="whitespace-nowrap text-[10px] font-mono font-medium text-slate-500 uppercase tracking-wide">
+                  {triviaTitle}
+                </div>
               </div>
-
-              {/* Red needle indicator */}
-              <div
-                style={{
-                  position: "absolute",
-                  left: `calc(${frequencyPercent}% + 8px - 1.5px)`,
-                  top: "50%",
-                  transform: "translateY(-50%)",
-                  width: "2.5px",
-                  height: "18px",
-                  background: "#ef4444",
-                  borderRadius: "999px",
-                  zIndex: 10,
-                }}
-              />
-              <div
-                style={{
-                  position: "absolute",
-                  left: `calc(${frequencyPercent}% + 8px - 4px)`,
-                  top: "50%",
-                  transform: "translateY(-50%)",
-                  width: "8px",
-                  height: "8px",
-                  background: "#ef4444",
-                  borderRadius: "50%",
-                  zIndex: 11,
-                }}
-              />
 
               {/* Frequency Display */}
               <div
                 style={{
-                  position: "absolute",
-                  right: "8px",
-                  top: "50%",
-                  transform: "translateY(-50%)",
                   fontFamily: "monospace",
-                  fontSize: "0.85rem",
+                  fontSize: "0.75rem",
                   fontWeight: "bold",
-                  color: "#92400e",
-                  zIndex: 12,
+                  color: "#d97706",
                   display: "flex",
                   alignItems: "baseline",
                   gap: "2px",
+                  paddingLeft: "12px",
+                  position: "relative",
+                  zIndex: 2
                 }}
               >
                 <span>{frequency}</span>
-                <span style={{ fontSize: "0.55rem", color: "#d97706" }}>MHz</span>
+                <span style={{ fontSize: "0.55rem", opacity: 0.8 }}>MHz</span>
               </div>
             </div>
           </motion.div>

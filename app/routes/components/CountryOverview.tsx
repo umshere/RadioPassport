@@ -89,15 +89,15 @@ export function CountryOverview({
   const trackLine =
     nowPlayingMeta.status === "ready" && nowPlayingMeta.track
       ? [nowPlayingMeta.track.artist, nowPlayingMeta.track.title]
-          .filter(Boolean)
-          .join(" — ")
+        .filter(Boolean)
+        .join(" — ")
       : nowPlayingMeta.status === "loading"
-      ? "Identifying track…"
-      : nowPlayingMeta.status === "empty"
-      ? "On-air update soon"
-      : nowPlayingMeta.status === "error"
-      ? "Track info unavailable"
-      : "Listening live";
+        ? "Identifying track…"
+        : nowPlayingMeta.status === "empty"
+          ? "On-air update soon"
+          : nowPlayingMeta.status === "error"
+            ? "Track info unavailable"
+            : "Listening live";
   const freeSummary = freeTrivia.trivia?.summary ?? null;
   const freeFacts = freeTrivia.trivia?.facts ?? [];
   const freeLinks = freeTrivia.trivia?.links ?? [];

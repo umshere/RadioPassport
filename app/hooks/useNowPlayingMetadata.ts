@@ -24,7 +24,10 @@ function getStationStreamUrl(station: Station | null): string {
   return (station.streamUrl ?? station.url ?? "").trim();
 }
 
-export function useNowPlayingMetadata(station: Station | null, isPlaying: boolean) {
+export function useNowPlayingMetadata(
+  station: Station | null,
+  isPlaying: boolean
+) {
   const [state, setState] = useState<NowPlayingState>(INITIAL_STATE);
   const pollRef = useRef<number | null>(null);
   const pendingRef = useRef<AbortController | null>(null);
@@ -65,7 +68,12 @@ export function useNowPlayingMetadata(station: Station | null, isPlaying: boolea
       const controller = new AbortController();
       pendingRef.current = controller;
       // Clear previous track to avoid showing stale metadata briefly
-      setState({ status: "loading", track: null, message: null, lastUpdated: null });
+      setState({
+        status: "loading",
+        track: null,
+        message: null,
+        lastUpdated: null,
+      });
 
       try {
         const params = new URLSearchParams({ url: streamUrl });
