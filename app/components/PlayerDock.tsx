@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useCallback, useState } from "react";
+import { useEffect, useMemo, useCallback, useState, useRef } from "react";
 import { useLocation } from "@remix-run/react";
 import { Drawer, Popover, Text, Tooltip } from "@mantine/core";
 import { motion, AnimatePresence } from "framer-motion";
@@ -149,10 +149,28 @@ export default function PlayerDock() {
           ? "Track info unavailable"
           : null;
   const triviaTitle = trackLine ?? statusHint ?? "Listening live";
+  const lastTrackKeyRef = useRef<string>("");
+  const lastStationRef = useRef<string | null>(null);
+  const trackKey = nowPlayingMeta.track
+    ? `${nowPlayingMeta.track.artist ?? ""}|${nowPlayingMeta.track.title ?? ""}`
+    : "";
 
   useEffect(() => {
-    setAiTriviaExpanded(false);
-  }, [nowPlaying?.uuid, trackLine]);
+    const stationId = nowPlaying?.uuid ?? null;
+    if (stationId !== lastStationRef.current) {
+      setAiTriviaExpanded(false);
+      lastStationRef.current = stationId;
+      if (trackKey) {
+        lastTrackKeyRef.current = trackKey;
+      }
+      return;
+    }
+    if (trackKey && trackKey !== lastTrackKeyRef.current) {
+      setAiTriviaExpanded(false);
+      lastTrackKeyRef.current = trackKey;
+    }
+    // Keep AI trivia expanded during temporary metadata gaps to avoid UI flicker.
+  }, [nowPlaying?.uuid, trackKey, setAiTriviaExpanded]);
 
   const renderLinkIcon = (kind?: string) => {
     switch (kind) {
@@ -250,39 +268,59 @@ export default function PlayerDock() {
       onClick={(event) => event.stopPropagation()}
       onMouseDown={(event) => event.stopPropagation()}
     >
-      <div className="flex items-center justify-between">
-        <Text size="xs" fw={700} c="dark">
-          Track Spotlight
-        </Text>
-        <div className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
-          Highlights
-        </div>
-      </div>
-      <Text size="xs" c="dimmed">
-        {triviaTitle}
-      </Text>
-      {renderTriviaBody(freeTrivia, "details")}
-      {aiTriviaExpanded && (() => {
-        const content = renderTriviaBody(aiTrivia, "AI insights");
-        return content ? (
-          <div className="rounded-xl border border-white/40 bg-white/40 backdrop-blur-md px-3 py-2 shadow-sm">
-            {content}
-          </div>
-        ) : null;
-      })()}<children_omitted />
-      {!aiTriviaExpanded && (
-        <button
-          type="button"
-          className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/50 backdrop-blur-sm px-3 py-1 text-[11px] font-semibold text-slate-600 hover:border-slate-300 hover:text-slate-900 shadow-sm"
-          onClick={(event) => {
-            event.stopPropagation();
-            setAiTriviaExpanded(true);
-          }}
-        >
-          <IconSparkles size={12} />
-          More
-        </button>
-      )}
+      {(() => {
+        const hasFreeContent = Boolean(freeTrivia.trivia);
+        const canRequestAi = Boolean(trackKey);
+        const showEmptyHint = !hasFreeContent && (freeTrivia.status === "empty" || freeTrivia.status === "idle");
+        return (
+          <>
+            <div className="flex items-center justify-between">
+              <Text size="xs" fw={700} c="dark">
+                Track Spotlight
+              </Text>
+              <div className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+                Highlights
+              </div>
+            </div>
+            <Text size="xs" c="dimmed">
+              {triviaTitle}
+            </Text>
+            {renderTriviaBody(freeTrivia, "details")}
+            {showEmptyHint && (
+              <div className="rounded-lg border border-white/40 bg-white/40 px-3 py-2 text-[11px] text-slate-600 shadow-sm">
+                <div className="font-semibold text-slate-700">Spotlight is warming up.</div>
+                <div className="text-slate-500">Ask AI for quick facts while we wait for metadata.</div>
+              </div>
+            )}
+            {aiTriviaExpanded && (() => {
+              const content = renderTriviaBody(aiTrivia, "AI insights");
+              return content ? (
+                <div className="rounded-xl border border-white/40 bg-white/40 backdrop-blur-md px-3 py-2 shadow-sm">
+                  {content}
+                </div>
+              ) : null;
+            })()}
+            {!aiTriviaExpanded && canRequestAi && (
+              <button
+                type="button"
+                className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/50 backdrop-blur-sm px-3 py-1 text-[11px] font-semibold text-slate-600 hover:border-slate-300 hover:text-slate-900 shadow-sm"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  setAiTriviaExpanded(true);
+                }}
+              >
+                <IconSparkles size={12} />
+                {hasFreeContent ? "More" : "Ask AI"}
+              </button>
+            )}
+            {!aiTriviaExpanded && !canRequestAi && showEmptyHint && (
+              <Text size="xs" c="dimmed">
+                Waiting for track details…
+              </Text>
+            )}
+          </>
+        );
+      })()}
     </div>
   );
 

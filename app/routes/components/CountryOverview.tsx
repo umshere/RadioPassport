@@ -243,6 +243,11 @@ export function CountryOverview({
   const aiFacts = aiTrivia.trivia?.facts ?? [];
   const [cachedFreeTrivia, setCachedFreeTrivia] = useState<TrackTrivia | null>(null);
   const [cachedAiTrivia, setCachedAiTrivia] = useState<TrackTrivia | null>(null);
+  const lastTrackKeyRef = useRef<string>("");
+  const lastStationRef = useRef<string | null>(null);
+  const trackKey = nowPlayingMeta.track
+    ? `${nowPlayingMeta.track.artist ?? ""}|${nowPlayingMeta.track.title ?? ""}`
+    : "";
 
   useEffect(() => {
     if (freeTrivia.status === "ready" && freeTrivia.trivia) {
@@ -257,8 +262,21 @@ export function CountryOverview({
   }, [aiTrivia.status, aiTrivia.trivia]);
 
   useEffect(() => {
-    setAiTriviaExpanded(false);
-  }, [nowPlaying?.uuid, trackLine]);
+    const stationId = nowPlaying?.uuid ?? null;
+    if (stationId !== lastStationRef.current) {
+      setAiTriviaExpanded(false);
+      lastStationRef.current = stationId;
+      if (trackKey) {
+        lastTrackKeyRef.current = trackKey;
+      }
+      return;
+    }
+    if (trackKey && trackKey !== lastTrackKeyRef.current) {
+      setAiTriviaExpanded(false);
+      lastTrackKeyRef.current = trackKey;
+    }
+    // Keep AI trivia expanded during temporary metadata gaps to avoid UI flicker.
+  }, [nowPlaying?.uuid, trackKey, setAiTriviaExpanded]);
 
   const renderLinkIcon = (kind?: string) => {
     switch (kind) {
@@ -531,7 +549,7 @@ export function CountryOverview({
                     Boolean(display?.imageUrl) ||
                     (display?.facts?.length ?? 0) > 0 ||
                     (display?.links?.length ?? 0) > 0;
-                  if (!hasContent && freeTrivia.status !== "loading") return null;
+                  const canRequestAi = Boolean(trackKey);
                   return (
                     <div className="mt-3 rounded-2xl bg-white/85 px-4 py-3 shadow-[4px_4px_10px_#b8b9be,-4px_-4px_10px_#ffffff] min-h-[120px] md:min-h-0">
                       {freeTrivia.status === "loading" && !cachedFreeTrivia && (
@@ -539,69 +557,86 @@ export function CountryOverview({
                           Loading spotlight…
                         </Text>
                       )}
-                      <>
-                        {display?.summary && (
-                          <Text size="xs" c="slate.9" fw={600} lineClamp={2}>
-                            {display?.summary}
-                          </Text>
-                        )}
-                        {(display?.imageUrl || (display?.facts?.length ?? 0) > 0) && (
-                          <div className="mt-2 flex flex-wrap items-center gap-3">
-                            {display?.imageUrl && (
-                              <img
-                                src={display?.imageUrl}
-                                alt="Track artwork"
-                                className="h-10 w-10 rounded-xl object-cover shadow-[2px_2px_4px_#b8b9be,-2px_-2px_4px_#ffffff]"
-                                onError={(event) => {
-                                  event.currentTarget.style.display = "none";
-                                }}
-                              />
-                            )}
-                            <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-700">
-                              {(display?.facts ?? []).slice(0, 3).map((fact) => (
-                                <span
-                                  key={fact.label}
-                                  className="rounded-full bg-white/90 px-2 py-1 shadow-[2px_2px_4px_#b8b9be,-2px_-2px_4px_#ffffff]"
-                                >
-                                  <span className="font-semibold text-slate-800">{fact.label}</span>
-                                  <span className="text-slate-500"> • </span>
-                                  <span>{fact.value}</span>
-                                </span>
-                              ))}
+                      {hasContent && (
+                        <>
+                          {display?.summary && (
+                            <Text size="xs" c="slate.9" fw={600} lineClamp={2}>
+                              {display?.summary}
+                            </Text>
+                          )}
+                          {(display?.imageUrl || (display?.facts?.length ?? 0) > 0) && (
+                            <div className="mt-2 flex flex-wrap items-center gap-3">
+                              {display?.imageUrl && (
+                                <img
+                                  src={display?.imageUrl}
+                                  alt="Track artwork"
+                                  className="h-10 w-10 rounded-xl object-cover shadow-[2px_2px_4px_#b8b9be,-2px_-2px_4px_#ffffff]"
+                                  onError={(event) => {
+                                    event.currentTarget.style.display = "none";
+                                  }}
+                                />
+                              )}
+                              <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-700">
+                                {(display?.facts ?? []).slice(0, 3).map((fact) => (
+                                  <span
+                                    key={fact.label}
+                                    className="rounded-full bg-white/90 px-2 py-1 shadow-[2px_2px_4px_#b8b9be,-2px_-2px_4px_#ffffff]"
+                                  >
+                                    <span className="font-semibold text-slate-800">{fact.label}</span>
+                                    <span className="text-slate-500"> • </span>
+                                    <span>{fact.value}</span>
+                                  </span>
+                                ))}
+                              </div>
                             </div>
-                          </div>
-                        )}
-                        {(display?.links ?? []).length > 0 && (
-                          <div className="mt-2 flex flex-wrap items-center gap-2">
-                            {display?.links?.map((link) => {
-                              const Icon = renderLinkIcon(link.kind);
-                              return (
-                                <a
-                                  key={link.url}
-                                  href={link.url}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 bg-white/90 text-slate-700 shadow-[2px_2px_4px_#b8b9be,-2px_-2px_4px_#ffffff] hover:text-slate-900"
-                                  aria-label={link.label}
-                                  title={link.label}
-                                >
-                                  <Icon size={16} />
-                                </a>
-                              );
-                            })}
-                          </div>
-                        )}
-                        {!aiTriviaExpanded && freeTrivia.status === "ready" && (
-                          <button
-                            type="button"
-                            className="mt-3 inline-flex items-center gap-2 rounded-full bg-white/90 px-3 py-1 text-[11px] font-semibold text-slate-600 shadow-[2px_2px_4px_#b8b9be,-2px_-2px_4px_#ffffff]"
-                            onClick={() => setAiTriviaExpanded(true)}
-                          >
-                            <IconSparkles size={12} />
-                            More
-                          </button>
-                        )}
-                      </>
+                          )}
+                          {(display?.links ?? []).length > 0 && (
+                            <div className="mt-2 flex flex-wrap items-center gap-2">
+                              {display?.links?.map((link) => {
+                                const Icon = renderLinkIcon(link.kind);
+                                return (
+                                  <a
+                                    key={link.url}
+                                    href={link.url}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 bg-white/90 text-slate-700 shadow-[2px_2px_4px_#b8b9be,-2px_-2px_4px_#ffffff] hover:text-slate-900"
+                                    aria-label={link.label}
+                                    title={link.label}
+                                  >
+                                    <Icon size={16} />
+                                  </a>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </>
+                      )}
+                      {!hasContent && freeTrivia.status !== "loading" && (
+                        <div className="flex flex-col items-start gap-2 text-left">
+                          <Text size="xs" c="slate.6" fw={600}>
+                            Spotlight is warming up.
+                          </Text>
+                          <Text size="xs" c="slate.5">
+                            Ask AI for quick facts while we wait for metadata.
+                          </Text>
+                        </div>
+                      )}
+                      {!aiTriviaExpanded && canRequestAi && (
+                        <button
+                          type="button"
+                          className="mt-3 inline-flex items-center gap-2 rounded-full bg-white/90 px-3 py-1 text-[11px] font-semibold text-slate-600 shadow-[2px_2px_4px_#b8b9be,-2px_-2px_4px_#ffffff]"
+                          onClick={() => setAiTriviaExpanded(true)}
+                        >
+                          <IconSparkles size={12} />
+                          {hasContent ? "More" : "Ask AI"}
+                        </button>
+                      )}
+                      {!aiTriviaExpanded && !canRequestAi && !hasContent && freeTrivia.status !== "loading" && (
+                        <Text size="xs" c="slate.5" className="mt-3">
+                          Waiting for track details…
+                        </Text>
+                      )}
                     </div>
                   );
                 })()}

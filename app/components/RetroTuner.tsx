@@ -85,9 +85,24 @@ export default function RetroTuner({
     const trackKey = nowPlayingMeta.track
         ? `${nowPlayingMeta.track.artist ?? ""}|${nowPlayingMeta.track.title ?? ""}`
         : "";
+    const lastTrackKeyRef = useRef<string>("");
+    const lastStationRef = useRef<string | null>(null);
     useEffect(() => {
-        setAiTriviaExpanded(false);
-    }, [trackKey, setAiTriviaExpanded]);
+        const stationId = station.uuid ?? null;
+        if (stationId !== lastStationRef.current) {
+            setAiTriviaExpanded(false);
+            lastStationRef.current = stationId;
+            if (trackKey) {
+                lastTrackKeyRef.current = trackKey;
+            }
+            return;
+        }
+        if (trackKey && trackKey !== lastTrackKeyRef.current) {
+            setAiTriviaExpanded(false);
+            lastTrackKeyRef.current = trackKey;
+        }
+        // Keep AI trivia expanded during temporary metadata gaps to avoid UI flicker.
+    }, [station.uuid, trackKey, setAiTriviaExpanded]);
 
     const dialRef = useRef<HTMLDivElement | null>(null);
     const settleTimerRef = useRef<number | null>(null);
