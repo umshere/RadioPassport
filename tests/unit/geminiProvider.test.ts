@@ -130,7 +130,7 @@ describe("GeminiProvider", () => {
       "/v1beta/models/non-existent-model"
     );
     expect(fetchMock.mock.calls[1][0]).toContain(
-      "/v1beta/models/gemini-2.0-flash"
+      "/v1beta/models/gemini-2.5-flash-lite"
     );
 
     expect(descriptor.visual).toBe("atlas");
@@ -360,7 +360,7 @@ describe("GeminiProvider", () => {
 
     expect(fetchMock).toHaveBeenCalledTimes(3);
     expect(fetchMock.mock.calls[0][0]).toContain(
-      "/v1beta/models/gemini-2.0-flash"
+      "/v1beta/models/gemini-2.5-flash-lite"
     );
     expect(fetchMock.mock.calls[1][0]).toContain(
       "/v1beta/models/gemini-2.5-flash"

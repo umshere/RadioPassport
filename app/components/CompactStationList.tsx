@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { IconPlayerPlayFilled, IconHeart, IconHeartFilled } from "@tabler/icons-react";
 import type { Station } from "~/types/radio";
+import { StationArtwork } from "./StationArtwork";
 
 interface CompactStationCardProps {
     station: Station;
@@ -24,26 +25,6 @@ export function CompactStationCard({
     const streamCandidate = (station.streamUrl ?? station.url ?? "").trim().toLowerCase();
     const isHttpStream = streamCandidate.startsWith("http://");
     const isHlsStream = Boolean(station.hls);
-
-    // Generate vibrant fallback gradient
-    const getFallbackGradient = (name: string) => {
-        let hash = 0;
-        for (let i = 0; i < name.length; i++) {
-            hash = name.charCodeAt(i) + ((hash << 5) - hash);
-        }
-        const vibrantHues = [25, 35, 45, 280, 320, 350, 260];
-        const h1 = vibrantHues[Math.abs(hash) % vibrantHues.length] ?? 35;
-        const h2 = (h1 + 30) % 360;
-        return `linear-gradient(135deg, hsl(${h1}, 85%, 60%) 0%, hsl(${h2}, 75%, 50%) 100%)`;
-    };
-
-    const getInitials = (name: string) => {
-        const words = name.split(/\s+/).filter(w => w.length > 0);
-        if (words.length >= 2 && words[0]?.[0] && words[1]?.[0]) {
-            return (words[0][0] + words[1][0]).toUpperCase();
-        }
-        return name.slice(0, 2).toUpperCase();
-    };
 
     return (
         <motion.button
@@ -82,16 +63,10 @@ export function CompactStationCard({
                         : '0 3px 10px -4px rgba(0,0,0,0.15), 0 0 0 2px rgba(255,255,255,0.8)',
                 }}
             >
-                {station.favicon ? (
-                    <img src={station.favicon} alt="" className="w-full h-full object-cover" />
-                ) : (
-                    <div
-                        className="w-full h-full flex items-center justify-center font-bold text-xs text-white"
-                        style={{ background: getFallbackGradient(station.name) }}
-                    >
-                        {getInitials(station.name)}
-                    </div>
-                )}
+                <StationArtwork
+                    station={station}
+                    fallbackClassName="w-full h-full flex items-center justify-center font-bold text-xs text-white"
+                />
             </div>
 
             {/* Station Info */}

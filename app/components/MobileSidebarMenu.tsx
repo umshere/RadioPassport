@@ -1,5 +1,6 @@
 import { Link, useLocation } from "@remix-run/react";
 import { motion, AnimatePresence } from "framer-motion";
+import { StationArtwork } from "./StationArtwork";
 import {
     IconHome,
     IconWorld,
@@ -123,13 +124,10 @@ export default function MobileSidebarMenu() {
                                 </div>
                                 <div className="flex items-center gap-3 p-3 rounded-xl bg-white/40 shadow-inner">
                                     <div className="h-12 w-12 rounded-lg overflow-hidden bg-slate-200 flex-shrink-0 shadow-sm">
-                                        {nowPlaying.favicon ? (
-                                            <img src={nowPlaying.favicon} alt="" className="w-full h-full object-cover" />
-                                        ) : (
-                                            <div className="w-full h-full flex items-center justify-center text-slate-400 font-bold text-xs">
-                                                FM
-                                            </div>
-                                        )}
+                                        <StationArtwork
+                                            station={nowPlaying}
+                                            fallbackClassName="w-full h-full flex items-center justify-center text-slate-400 font-bold text-xs"
+                                        />
                                     </div>
                                     <div className="flex-1 min-w-0">
                                         <div className="text-sm font-bold text-slate-900 truncate">{nowPlaying.name}</div>

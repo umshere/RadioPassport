@@ -1,5 +1,6 @@
 import { useMemo, useCallback, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { StationArtwork } from "./StationArtwork";
 import {
     IconPlayerPauseFilled,
     IconPlayerPlayFilled,
@@ -115,16 +116,11 @@ export function PremiumPlayerDock() {
                                 boxShadow: `0 8px 25px -5px ${colors.accent}50, 0 0 0 2px rgba(255,255,255,0.1)`,
                             }}
                         >
-                            {nowPlaying.favicon ? (
-                                <img src={nowPlaying.favicon} alt="artwork" className="w-full h-full object-cover" />
-                            ) : (
-                                <div
-                                    className="w-full h-full flex items-center justify-center text-white font-bold text-lg"
-                                    style={{ background: fallbackGradient }}
-                                >
-                                    {nowPlaying.name.slice(0, 2).toUpperCase()}
-                                </div>
-                            )}
+                            <StationArtwork
+                                station={nowPlaying}
+                                fallbackStyle={{ background: fallbackGradient }}
+                                fallbackClassName="w-full h-full flex items-center justify-center text-white font-bold text-lg"
+                            />
                         </motion.div>
 
                         {/* Station Info */}
@@ -251,16 +247,11 @@ export function PremiumPlayerDock() {
                                 boxShadow: `0 4px 15px ${colors.accent}40`,
                             }}
                         >
-                            {nowPlaying.favicon ? (
-                                <img src={nowPlaying.favicon} alt="artwork" className="w-full h-full object-cover" />
-                            ) : (
-                                <div
-                                    className="w-full h-full flex items-center justify-center text-white font-bold"
-                                    style={{ background: fallbackGradient }}
-                                >
-                                    {nowPlaying.name.slice(0, 2).toUpperCase()}
-                                </div>
-                            )}
+                            <StationArtwork
+                                station={nowPlaying}
+                                fallbackStyle={{ background: fallbackGradient }}
+                                fallbackClassName="w-full h-full flex items-center justify-center text-white font-bold"
+                            />
                         </motion.div>
 
                         {/* Info */}

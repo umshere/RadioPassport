@@ -5,6 +5,7 @@ Welcome to the Radio Passport documentation. This folder collects all the projec
 ## Core References
 
 - Architecture: [ARCHITECTURE.md](./ARCHITECTURE.md)
+- **User Journey & UI Flow**: [UI_FLOW.md](./UI_FLOW.md) - Visual diagrams of user journeys, API calls, and data flows
 - Scene descriptor contract: [SCENE_DESCRIPTOR.md](./SCENE_DESCRIPTOR.md)
 - Player store behavior: [PLAYER_STORE.md](./PLAYER_STORE.md)
 - Environment variables: [ENVIRONMENT.md](./ENVIRONMENT.md)

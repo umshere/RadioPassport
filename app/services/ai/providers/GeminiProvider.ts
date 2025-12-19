@@ -10,7 +10,7 @@ import type { Station } from "~/types/radio";
 import { rbFetchJson } from "~/utils/radioBrowser";
 import { normalizeStations } from "~/utils/stations";
 
-const DEFAULT_GEMINI_MODEL = "gemini-2.0-flash";
+const DEFAULT_GEMINI_MODEL = "gemini-2.5-flash-lite";
 
 const PREFERRED_MODEL_ORDER = [
   DEFAULT_GEMINI_MODEL,

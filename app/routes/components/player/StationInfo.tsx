@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import { Avatar, Text, Badge } from "@mantine/core";
 import { IconDisc } from "@tabler/icons-react";
 import { CountryFlag } from "~/components/CountryFlag";
+import { useNowPlayingMetadata } from "~/hooks/useNowPlayingMetadata";
 import type { Station } from "~/types/radio";
 
 type StationInfoProps = {
@@ -11,6 +12,22 @@ type StationInfoProps = {
 };
 
 export function StationInfo({ station, isPlaying, countryMap }: StationInfoProps) {
+  const nowPlaying = useNowPlayingMetadata(station, isPlaying);
+  const trackLine =
+    nowPlaying.status === "ready" && nowPlaying.track
+      ? [nowPlaying.track.artist, nowPlaying.track.title]
+          .filter(Boolean)
+          .join(" — ")
+      : null;
+  const statusHint =
+    nowPlaying.status === "loading"
+      ? "Identifying track…"
+      : nowPlaying.status === "empty"
+      ? "On-air update soon"
+      : nowPlaying.status === "error"
+      ? "Track info unavailable"
+      : null;
+
   return (
     <div className="flex min-w-0 flex-1 items-center gap-3">
       <div className="relative flex-shrink-0">
@@ -53,6 +70,14 @@ export function StationInfo({ station, isPlaying, countryMap }: StationInfoProps
         </div>
         <Text fw={600} size="md" c="#f8fafc" lineClamp={1}>
           {station.name}
+        </Text>
+        <Text
+          size="sm"
+          c="#f8fafc"
+          className="text-xs text-slate-200/90 sm:text-sm"
+          lineClamp={1}
+        >
+          {trackLine ?? statusHint ?? "Listening live"}
         </Text>
         <div className="flex items-center gap-2 text-xs text-slate-300/70">
           <CountryFlag

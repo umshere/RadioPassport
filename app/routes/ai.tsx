@@ -27,6 +27,7 @@ import { useListeningMode } from "~/hooks/useListeningMode";
 import { useSceneDescriptor } from "~/hooks/useSceneDescriptor";
 import type { SceneDescriptor } from "~/scenes/types";
 import type { Station } from "~/types/radio";
+import { StationArtwork } from "~/components/StationArtwork";
 
 export const loader = async (_args: LoaderFunctionArgs) => {
   return json({ ok: true });
@@ -83,8 +84,6 @@ function FeaturedCard({
   label?: string;
 }) {
   const gradient = useMemo(() => generateGradient(station.name, "cool"), [station.name]);
-  const [imgFailed, setImgFailed] = useState(false);
-  const initials = useMemo(() => getInitials(station.name), [station.name]);
 
   return (
     <motion.div
@@ -94,21 +93,12 @@ function FeaturedCard({
       onClick={onPlay}
     >
       <div className="relative aspect-square rounded-2xl overflow-hidden shadow-lg mb-3 bg-gray-100">
-        {station.favicon && !imgFailed ? (
-          <img
-            src={station.favicon}
-            alt=""
-            className="w-full h-full object-cover transition-transform group-hover:scale-105"
-            onError={() => setImgFailed(true)}
-          />
-        ) : (
-          <div
-            className="w-full h-full flex items-center justify-center text-3xl font-black text-white"
-            style={{ background: gradient }}
-          >
-            {initials}
-          </div>
-        )}
+        <StationArtwork
+          station={station}
+          className="w-full h-full object-cover transition-transform group-hover:scale-105"
+          fallbackStyle={{ background: gradient }}
+          fallbackClassName="w-full h-full flex items-center justify-center text-3xl font-black text-white"
+        />
         {label && (
           <div className="absolute top-2 left-2 px-2 py-0.5 bg-orange-500 text-white text-[10px] font-bold uppercase rounded">
             {label}
@@ -667,16 +657,11 @@ export default function AiExperience() {
                     whileHover={{ y: -4 }}
                   >
                     <div className="aspect-square rounded-2xl overflow-hidden mb-2 bg-gray-100 relative shadow">
-                      {previewStation?.favicon ? (
-                        <img src={previewStation.favicon} alt="" className="w-full h-full object-cover" />
-                      ) : (
-                        <div
-                          className="w-full h-full flex items-center justify-center text-2xl font-bold text-white"
-                          style={{ background: generateGradient(mix.mood, "purple") }}
-                        >
-                          {getInitials(mix.mood)}
-                        </div>
-                      )}
+                      <StationArtwork
+                        station={previewStation || { name: mix.mood }}
+                        fallbackStyle={{ background: generateGradient(mix.mood, "purple") }}
+                        fallbackClassName="w-full h-full flex items-center justify-center text-2xl font-bold text-white"
+                      />
                       <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition flex items-center justify-center opacity-0 group-hover:opacity-100">
                         <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-lg">
                           <IconPlayerPlay size={18} fill="currentColor" className="text-gray-900 ml-0.5" />
@@ -698,16 +683,11 @@ export default function AiExperience() {
         <div className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-white border-t border-gray-200 shadow-xl">
           <div className="flex items-center gap-3 p-3">
             <div className="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 shadow">
-              {currentStation.favicon && !heroImgFailed ? (
-                <img src={currentStation.favicon} alt="" className="w-full h-full object-cover" />
-              ) : (
-                <div
-                  className="w-full h-full flex items-center justify-center text-sm font-bold text-white"
-                  style={{ background: heroGradient }}
-                >
-                  {getInitials(currentStation.name)}
-                </div>
-              )}
+              <StationArtwork
+                station={currentStation}
+                fallbackStyle={{ background: heroGradient }}
+                fallbackClassName="w-full h-full flex items-center justify-center text-sm font-bold text-white"
+              />
             </div>
             <div className="flex-1 min-w-0">
               <p className="font-semibold text-gray-900 text-sm truncate">{currentStation.name}</p>

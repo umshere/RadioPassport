@@ -5,7 +5,8 @@
 Radio Passport is a beautiful, web-based radio player that lets you explore and discover radio stations from around the globe. With a curated, passport-stamp-style interface, you can travel the world through sound without leaving your browser.
 
 > Documentation: Start with [docs/README.md](./docs/README.md) for the full doc index.  
-> AI assistant guide: [LLM.md](./LLM.md) summarizes the architecture, commands, and key contracts.
+> AI assistant guide: [LLM.md](./LLM.md) summarizes the architecture, commands, and key contracts.  
+> **User Journey & API Flows**: See [docs/UI_FLOW.md](./docs/UI_FLOW.md) for visual diagrams and flow charts.
 
 ## ✨ Features
 

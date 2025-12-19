@@ -1901,6 +1901,15 @@
     background: rgba(209, 73, 91, 0.55);
   }
 
+  .scrollbar-hide {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
   /* Skeleton loading animations */
   .skeleton {
     background: linear-gradient(

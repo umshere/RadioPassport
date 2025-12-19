@@ -1,8 +1,10 @@
 import { json, type LoaderFunctionArgs } from "@remix-run/node";
 import { useLoaderData, useNavigate, useSearchParams } from "@remix-run/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Text, Title } from "@mantine/core";
+import { Collapse, Text, Title } from "@mantine/core";
 import { useSwipeable } from "react-swipeable";
+import { IconAdjustmentsHorizontal } from "@tabler/icons-react";
+
 
 import { BRAND } from "~/constants/brand";
 import { getContinent } from "~/utils/geography";
@@ -35,6 +37,8 @@ import { StationFilterQuickBar } from "./components/StationFilterQuickBar";
 import { QuickRetuneWidget } from "./components/QuickRetuneWidget";
 import { LoadingView } from "./components/LoadingView";
 import { CollapsibleSection } from "./components/CollapsibleSection";
+import { MobileFilterDrawer } from "./components/MobileFilterDrawer";
+
 
 import Footer from "~/components/Footer";
 
@@ -115,6 +119,8 @@ export default function Index() {
   const stationRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const [stationFilters, setStationFilters] = useState<StationFilterState>(() => createDefaultStationFilters());
   const [isAdvancedFiltersOpen, setAdvancedFiltersOpen] = useState(false);
+  const [isFilterDrawerOpen, setIsFilterDrawerOpen] = useState(false);
+
 
   // Derived data
   const topCountries = useMemo(
@@ -440,6 +446,16 @@ export default function Index() {
                 <div className="flex flex-wrap items-center gap-2">
                   <button
                     type="button"
+                    onClick={() => setIsFilterDrawerOpen(true)}
+                    className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-300 text-slate-600 transition hover:bg-slate-50 md:hidden"
+                    aria-label="Open filters"
+                  >
+                    <IconAdjustmentsHorizontal size={18} />
+                  </button>
+                </div>
+                <div className="hidden flex-wrap items-center gap-2 md:flex">
+                  <button
+                    type="button"
                     onClick={() => setStationFilters(createDefaultStationFilters())}
                     className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500 hover:text-slate-900"
                   >
@@ -456,25 +472,40 @@ export default function Index() {
               </div>
 
               <div className="mt-4">
-                <StationFilterQuickBar
-                  filters={stationFilters}
-                  options={stationFilterOptions}
-                  onChange={setStationFilters}
-                />
-              </div>
-
-              {isAdvancedFiltersOpen && (
-                <div className="mt-4">
-                  <StationFiltersPanel
+                <div className="hidden md:block">
+                  <StationFilterQuickBar
                     filters={stationFilters}
                     options={stationFilterOptions}
-                    counts={{ total: stations.length, filtered: filteredStations.length }}
-                    isDirty={isStationFilterActive}
                     onChange={setStationFilters}
-                    onReset={() => setStationFilters(createDefaultStationFilters())}
                   />
+                  {/* Desktop Advanced Filters */}
+                  <Collapse in={isAdvancedFiltersOpen}>
+                    <div className="mt-4">
+                      <StationFiltersPanel
+                        filters={stationFilters}
+                        options={stationFilterOptions}
+                        counts={{ total: stations.length, filtered: filteredStations.length }}
+                        isDirty={isStationFilterActive}
+                        onChange={setStationFilters}
+                        onReset={() => setStationFilters(createDefaultStationFilters())}
+                      />
+                    </div>
+                  </Collapse>
                 </div>
-              )}
+
+                {/* Mobile Filter Drawer */}
+                <MobileFilterDrawer
+                  opened={isFilterDrawerOpen}
+                  onClose={() => setIsFilterDrawerOpen(false)}
+                  filters={stationFilters}
+                  options={stationFilterOptions}
+                  counts={{ total: stations.length, filtered: filteredStations.length }}
+                  isDirty={isStationFilterActive}
+                  onChange={setStationFilters}
+                  onReset={() => setStationFilters(createDefaultStationFilters())}
+                />
+
+              </div>
             </div>
           </section>
 

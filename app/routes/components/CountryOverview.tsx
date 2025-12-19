@@ -1,4 +1,4 @@
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Badge, Title, Text, ActionIcon } from "@mantine/core";
 import {
   IconBroadcast,
@@ -7,10 +7,20 @@ import {
   IconPlayerPlayFilled,
   IconPlayerSkipBackFilled,
   IconPlayerSkipForwardFilled,
+  IconSparkles,
+  IconBrandYoutube,
+  IconBrandWikipedia,
+  IconUser,
+  IconDisc,
+  IconMusic,
+  IconExternalLink,
 } from "@tabler/icons-react";
 import { CountryFlag } from "~/components/CountryFlag";
 import type { Country, Station } from "~/types/radio";
 import { useMemo, useState, useEffect } from "react";
+import { useNowPlayingMetadata } from "~/hooks/useNowPlayingMetadata";
+import { useTrackTrivia } from "~/hooks/useTrackTrivia";
+import { useUIStore } from "~/state/uiStore";
 
 type CountryOverviewProps = {
   selectedCountry: string;
@@ -38,6 +48,7 @@ export function CountryOverview({
   transparent = false,
 }: CountryOverviewProps) {
   const [isMounted, setIsMounted] = useState(false);
+  const { aiTriviaExpanded, setAiTriviaExpanded } = useUIStore();
 
   useEffect(() => {
     setIsMounted(true);
@@ -60,6 +71,60 @@ export function CountryOverview({
   const freqNum = parseFloat(frequency);
   const tickStart = Math.floor(freqNum) - 2;
   const ticks = Array.from({ length: 25 }, (_, i) => tickStart + i * 0.2);
+  const nowPlayingMeta = useNowPlayingMetadata(nowPlaying ?? null, Boolean(isPlaying));
+  const freeTrivia = useTrackTrivia({
+    track: nowPlayingMeta.track,
+    source: "free",
+    enabled: Boolean(nowPlaying),
+  });
+  const aiTrivia = useTrackTrivia({
+    track: nowPlayingMeta.track,
+    source: "ai",
+    enabled: Boolean(nowPlaying) && aiTriviaExpanded,
+    context: {
+      summary: freeTrivia.trivia?.summary ?? null,
+      facts: freeTrivia.trivia?.facts ?? [],
+    },
+  });
+  const trackLine =
+    nowPlayingMeta.status === "ready" && nowPlayingMeta.track
+      ? [nowPlayingMeta.track.artist, nowPlayingMeta.track.title]
+          .filter(Boolean)
+          .join(" — ")
+      : nowPlayingMeta.status === "loading"
+      ? "Identifying track…"
+      : nowPlayingMeta.status === "empty"
+      ? "On-air update soon"
+      : nowPlayingMeta.status === "error"
+      ? "Track info unavailable"
+      : "Listening live";
+  const freeSummary = freeTrivia.trivia?.summary ?? null;
+  const freeFacts = freeTrivia.trivia?.facts ?? [];
+  const freeLinks = freeTrivia.trivia?.links ?? [];
+  const freeImage = freeTrivia.trivia?.imageUrl ?? null;
+  const aiSummary = aiTrivia.trivia?.summary ?? null;
+  const aiFacts = aiTrivia.trivia?.facts ?? [];
+
+  useEffect(() => {
+    setAiTriviaExpanded(false);
+  }, [nowPlaying?.uuid, trackLine]);
+
+  const renderLinkIcon = (kind?: string) => {
+    switch (kind) {
+      case "youtube":
+        return IconBrandYoutube;
+      case "artist":
+        return IconUser;
+      case "release":
+        return IconDisc;
+      case "track":
+        return IconMusic;
+      case "info":
+        return IconBrandWikipedia;
+      default:
+        return IconExternalLink;
+    }
+  };
 
   const containerClasses = transparent
     ? "relative overflow-hidden px-6 py-8 md:px-10 md:py-10"
@@ -159,7 +224,7 @@ export function CountryOverview({
               <Title order={1} className="text-3xl md:text-4xl font-bold text-slate-900">
                 {selectedCountry}
               </Title>
-              <Text size="sm" c="dimmed">
+              <Text size="sm" c="slate.7">
                 Explore this nation's airwaves and discover local voices in real time.
               </Text>
             </div>
@@ -238,6 +303,110 @@ export function CountryOverview({
                 <Text size="sm" c="dimmed">
                   {[nowPlaying.country, nowPlaying.state].filter(Boolean).join(" • ")}
                 </Text>
+                <Text size="sm" c="slate.9" lineClamp={1}>
+                  {trackLine}
+                </Text>
+                <AnimatePresence initial={false}>
+                  {(freeSummary || freeFacts.length > 0 || freeLinks.length > 0 || freeImage) && (
+                    <motion.div
+                      key="spotlight-free"
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 6 }}
+                      transition={{ duration: 0.25, ease: "easeOut" }}
+                      className="mt-3 rounded-2xl bg-white/85 px-4 py-3 shadow-[4px_4px_10px_#b8b9be,-4px_-4px_10px_#ffffff]"
+                    >
+                      {freeSummary && (
+                        <Text size="xs" c="slate.9" fw={600} lineClamp={2}>
+                          {freeSummary}
+                        </Text>
+                      )}
+                      {(freeImage || freeFacts.length > 0) && (
+                        <div className="mt-2 flex flex-wrap items-center gap-3">
+                          {freeImage && (
+                            <img
+                              src={freeImage}
+                              alt="Track artwork"
+                              className="h-10 w-10 rounded-xl object-cover shadow-[2px_2px_4px_#b8b9be,-2px_-2px_4px_#ffffff]"
+                              onError={(event) => {
+                                event.currentTarget.style.display = "none";
+                              }}
+                            />
+                          )}
+                          <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-700">
+                            {freeFacts.slice(0, 3).map((fact) => (
+                              <span
+                                key={fact.label}
+                                className="rounded-full bg-white/90 px-2 py-1 shadow-[2px_2px_4px_#b8b9be,-2px_-2px_4px_#ffffff]"
+                              >
+                                <span className="font-semibold text-slate-800">{fact.label}</span>
+                                <span className="text-slate-500"> • </span>
+                                <span>{fact.value}</span>
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {freeLinks.length > 0 && (
+                        <div className="mt-2 flex flex-wrap items-center gap-2">
+                          {freeLinks.map((link) => {
+                            const Icon = renderLinkIcon(link.kind);
+                            return (
+                              <a
+                                key={link.url}
+                                href={link.url}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 bg-white/90 text-slate-700 shadow-[2px_2px_4px_#b8b9be,-2px_-2px_4px_#ffffff] hover:text-slate-900"
+                                aria-label={link.label}
+                                title={link.label}
+                              >
+                                <Icon size={16} />
+                              </a>
+                            );
+                          })}
+                        </div>
+                      )}
+                      {!aiTriviaExpanded && (
+                        <button
+                          type="button"
+                          className="mt-3 inline-flex items-center gap-2 rounded-full bg-white/90 px-3 py-1 text-[11px] font-semibold text-slate-600 shadow-[2px_2px_4px_#b8b9be,-2px_-2px_4px_#ffffff]"
+                          onClick={() => setAiTriviaExpanded(true)}
+                        >
+                          <IconSparkles size={12} />
+                          More
+                        </button>
+                      )}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+                <AnimatePresence initial={false}>
+                  {aiTriviaExpanded && aiSummary && (
+                    <motion.div
+                      key="spotlight-ai"
+                      initial={{ opacity: 0, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 4 }}
+                      transition={{ duration: 0.25, ease: "easeOut" }}
+                      className="mt-2 rounded-2xl border border-slate-200 bg-white/95 px-4 py-3 shadow-[0_10px_18px_rgba(15,23,42,0.12)]"
+                    >
+                      <Text size="xs" c="slate.9" fw={700} lineClamp={2}>
+                        {aiSummary}
+                      </Text>
+                      {aiFacts.length > 0 && (
+                        <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-slate-700">
+                          {aiFacts.slice(0, 2).map((fact) => (
+                            <span key={fact.label} className="rounded-full bg-white/90 px-2 py-1">
+                              <span className="font-semibold text-slate-800">{fact.label}</span>
+                              <span className="text-slate-500"> • </span>
+                              <span>{fact.value}</span>
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             </div>
 
