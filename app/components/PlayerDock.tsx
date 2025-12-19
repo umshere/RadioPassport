@@ -119,6 +119,32 @@ export default function PlayerDock() {
   const [triviaOpen, setTriviaOpen] = useState(false);
   const { aiTriviaExpanded, setAiTriviaExpanded } = useUIStore();
   const isMobile = useMediaQuery("(max-width: 1024px)");
+  const miniSwipeStartRef = useRef<{ x: number; y: number } | null>(null);
+  const miniSwipeDeltaRef = useRef(0);
+
+  const handleMiniSwipeStart = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
+    if (event.pointerType === "mouse") return;
+    miniSwipeStartRef.current = { x: event.clientX, y: event.clientY };
+    miniSwipeDeltaRef.current = 0;
+  }, []);
+
+  const handleMiniSwipeMove = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
+    if (!miniSwipeStartRef.current) return;
+    const dx = event.clientX - miniSwipeStartRef.current.x;
+    const dy = event.clientY - miniSwipeStartRef.current.y;
+    if (Math.abs(dy) < 10 || Math.abs(dy) < Math.abs(dx) * 1.2) return;
+    miniSwipeDeltaRef.current = dy;
+  }, []);
+
+  const handleMiniSwipeEnd = useCallback(() => {
+    if (!miniSwipeStartRef.current) return;
+    const dy = miniSwipeDeltaRef.current;
+    miniSwipeStartRef.current = null;
+    miniSwipeDeltaRef.current = 0;
+    if (dy < -70) {
+      setIsExpanded(true);
+    }
+  }, []);
   const nowPlayingMeta = useNowPlayingMetadata(nowPlaying, isPlaying);
   const freeTrivia = useTrackTrivia({
     track: nowPlayingMeta.track,
@@ -687,6 +713,10 @@ export default function PlayerDock() {
           <motion.div
             data-raptor={raptorMiniEnabled ? "true" : "false"}
             onClick={() => setIsExpanded(true)}
+            onPointerDown={handleMiniSwipeStart}
+            onPointerMove={handleMiniSwipeMove}
+            onPointerUp={handleMiniSwipeEnd}
+            onPointerCancel={handleMiniSwipeEnd}
             className={`rounded-[2rem] overflow-hidden active:scale-[0.98] transition-transform cursor-pointer relative ${raptorMiniEnabled ? 'py-2 px-3' : 'py-3 px-4'}`}
             style={{
               background: 'rgba(255, 255, 255, 0.4)',

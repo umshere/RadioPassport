@@ -15,7 +15,6 @@ import {
     IconDisc,
     IconMusic,
     IconExternalLink,
-    IconSparkles,
 } from "@tabler/icons-react";
 import { motion } from "framer-motion";
 import type { Station } from "~/types/radio";
@@ -106,6 +105,8 @@ export default function RetroTuner({
 
     const dialRef = useRef<HTMLDivElement | null>(null);
     const settleTimerRef = useRef<number | null>(null);
+    const swipeStartRef = useRef<{ x: number; y: number } | null>(null);
+    const swipeDeltaRef = useRef(0);
     const inertiaRef = useRef<number | null>(null);
     const lastAngleRef = useRef<number | null>(null);
     const lastTimeRef = useRef<number | null>(null);
@@ -262,6 +263,32 @@ export default function RetroTuner({
         handleDialValue(normalized);
     }, [handleDialValue, totalStations]);
 
+    const handleSwipeStart = useCallback((event: ReactPointerEvent<HTMLDivElement>) => {
+        if (event.pointerType === "mouse") return;
+        const target = event.target as HTMLElement;
+        if (target.closest("button, a, [role='slider'], [data-swipe-ignore]")) return;
+        swipeStartRef.current = { x: event.clientX, y: event.clientY };
+        swipeDeltaRef.current = 0;
+    }, []);
+
+    const handleSwipeMove = useCallback((event: ReactPointerEvent<HTMLDivElement>) => {
+        if (!swipeStartRef.current) return;
+        const dx = event.clientX - swipeStartRef.current.x;
+        const dy = event.clientY - swipeStartRef.current.y;
+        if (Math.abs(dy) < 12 || Math.abs(dy) < Math.abs(dx) * 1.2) return;
+        swipeDeltaRef.current = dy;
+    }, []);
+
+    const handleSwipeEnd = useCallback(() => {
+        if (!swipeStartRef.current) return;
+        const dy = swipeDeltaRef.current;
+        swipeStartRef.current = null;
+        swipeDeltaRef.current = 0;
+        if (dy > 90) {
+            onClose();
+        }
+    }, [onClose]);
+
     const frequency = useMemo(() => deriveFrequency(displayStation), [deriveFrequency, displayStation.uuid]);
 
     const freqNum = frequency;
@@ -276,6 +303,10 @@ export default function RetroTuner({
             transition={{ type: "spring", damping: 25, stiffness: 200 }}
             className="fixed inset-0 z-50 flex flex-col overflow-hidden bg-[#e0e5ec] text-slate-800"
             style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+            onPointerDown={handleSwipeStart}
+            onPointerMove={handleSwipeMove}
+            onPointerUp={handleSwipeEnd}
+            onPointerCancel={handleSwipeEnd}
         >
             {/* Header */}
             <div className="flex items-center justify-between px-6 py-6">
@@ -343,12 +374,12 @@ export default function RetroTuner({
                         </div>
 
                         {/* Side Actions */}
-                        <div className="absolute top-1/2 -translate-y-1/2 left-0 md:left-2">
+                        <div className="absolute top-1/2 -translate-y-1/2 left-2 md:left-2">
                             <ActionIcon variant="transparent" color="red">
                                 <IconHeart size={20} />
                             </ActionIcon>
                         </div>
-                        <div className="absolute top-1/2 -translate-y-1/2 right-0 md:right-2">
+                        <div className="absolute top-1/2 -translate-y-1/2 right-2 md:right-2">
                             <ActionIcon variant="transparent" color="gray">
                                 <IconShare size={20} />
                             </ActionIcon>
@@ -499,6 +530,8 @@ const TrackSpotlight = memo(function TrackSpotlight({
     const [wheelPos, setWheelPos] = useState(0);
     const [wheelNudge, setWheelNudge] = useState(0);
     const [hasOverflow, setHasOverflow] = useState(false);
+    const [actionsOpen, setActionsOpen] = useState(false);
+    const [showDetails, setShowDetails] = useState(false);
     const updateWheelPos = useCallback(() => {
         const content = contentRef.current;
         if (!content) return;
@@ -541,7 +574,31 @@ const TrackSpotlight = memo(function TrackSpotlight({
         { kind: "track", label: "Track" },
         { kind: "info", label: "Info" },
     ];
-    const linkByKind = new Map((freeTrivia.trivia?.links ?? []).map((link) => [link.kind ?? "info", link]));
+    const combinedLinks = [
+        ...(freeTrivia.trivia?.links ?? []),
+        ...(aiTrivia.trivia?.links ?? []),
+    ];
+    const linkByKind = new Map(combinedLinks.map((link) => [link.kind ?? "info", link]));
+    const availableLinks = linkPresets.flatMap(({ kind, label }) => {
+        const link = linkByKind.get(kind);
+        if (!link) return [];
+        return [{ ...link, kind, label }];
+    });
+    const canExpand =
+        !aiTriviaExpanded &&
+        (freeTrivia.status === "ready" && freeTrivia.trivia || Boolean(trackLine));
+    const hasMetadata =
+        Boolean(trackLine) ||
+        Boolean(freeTrivia.trivia?.summary) ||
+        Boolean(freeTrivia.trivia?.facts?.length);
+    const showMoreButton = availableLinks.length > 0 || hasMetadata;
+
+    useEffect(() => {
+        if (!showMoreButton) {
+            setActionsOpen(false);
+            setShowDetails(false);
+        }
+    }, [showMoreButton]);
 
     return (
         <div className="w-full max-w-2xl px-5">
@@ -566,6 +623,7 @@ const TrackSpotlight = memo(function TrackSpotlight({
                     <div
                         ref={contentRef}
                         onScroll={updateWheelPos}
+                        data-swipe-ignore
                         className="h-full overflow-y-auto scrollbar-hide px-5 pb-5 pt-4 font-['Courier_New',Courier,monospace] text-[#eff8e6]"
                     >
                     <div className="flex items-center justify-between gap-3 text-[#e2f1d7]">
@@ -593,7 +651,7 @@ const TrackSpotlight = memo(function TrackSpotlight({
                             className="mt-3 text-[#f4ffe9]"
                             style={{
                                 display: "-webkit-box",
-                                WebkitLineClamp: 2,
+                                WebkitLineClamp: showDetails ? 4 : 2,
                                 WebkitBoxOrient: "vertical",
                                 overflow: "hidden",
                             }}
@@ -608,7 +666,7 @@ const TrackSpotlight = memo(function TrackSpotlight({
                             className="mt-3 text-[#f4ffe9]"
                             style={{
                                 display: "-webkit-box",
-                                WebkitLineClamp: 2,
+                                WebkitLineClamp: showDetails ? 4 : 2,
                                 WebkitBoxOrient: "vertical",
                                 overflow: "hidden",
                             }}
@@ -616,14 +674,29 @@ const TrackSpotlight = memo(function TrackSpotlight({
                             {aiTrivia.trivia.summary}
                         </Text>
                     )}
+                    {showDetails && freeTrivia.trivia?.facts?.length ? (
+                        <div className="mt-2 flex flex-wrap gap-2 text-[11px] text-[#e2f1d7]">
+                            {freeTrivia.trivia.facts.slice(0, 2).map((fact) => (
+                                <span
+                                    key={fact.label}
+                                    className="rounded-full border border-[#c8dab8] px-2 py-0.5 text-[#e7f4dc]"
+                                >
+                                    <span className="font-semibold">{fact.label}</span>
+                                    <span className="text-[#d5e7c8]"> • </span>
+                                    <span>{fact.value}</span>
+                                </span>
+                            ))}
+                        </div>
+                    ) : null}
                     </div>
                 </div>
                 <div
-                    className="absolute top-1/2 right-0"
-                    style={{ transform: "translate(calc(100% + 12px), -50%)" }}
+                    className="absolute top-1/2 right-2"
+                    style={{ transform: "translate(70%, -50%)" }}
                 >
                     <div
                         ref={wheelRef}
+                        data-swipe-ignore
                         onPointerDown={(event) => {
                             if (!hasOverflow || !contentRef.current) return;
                             event.currentTarget.setPointerCapture(event.pointerId);
@@ -681,52 +754,52 @@ const TrackSpotlight = memo(function TrackSpotlight({
                     </div>
                 </div>
             </div>
-            <div className="mt-3 flex items-center gap-3">
-                <div className="flex flex-wrap gap-2">
-                    {linkPresets.map(({ kind, label }) => {
-                        const link = linkByKind.get(kind);
-                        const Icon = renderLinkIcon(kind);
-                        if (link) {
-                            return (
-                                <a
-                                    key={link.url}
-                                    href={link.url}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    className="flex h-9 w-9 items-center justify-center rounded-full bg-[#e0e5ec] text-slate-600 shadow-[inset_2px_2px_4px_#c5c9d1,inset_-2px_-2px_4px_#ffffff]"
-                                    aria-label={link.label ?? label}
-                                    title={link.label ?? label}
+            {showMoreButton && (
+                <div className="mt-3 flex flex-wrap items-center gap-3">
+                    {actionsOpen && (
+                        <div className="flex flex-wrap items-center gap-2">
+                            {hasMetadata && (
+                                <button
+                                    type="button"
+                                    className="inline-flex items-center gap-2 rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-600 bg-[#e0e5ec] shadow-[inset_2px_2px_4px_#c5c9d1,inset_-2px_-2px_4px_#ffffff]"
+                                    onClick={() => {
+                                        setShowDetails((prev) => !prev);
+                                        if (canExpand) {
+                                            onExpand();
+                                        }
+                                    }}
                                 >
-                                    <Icon size={14} />
-                                </a>
-                            );
-                        }
-                        return (
-                            <button
-                                key={kind}
-                                type="button"
-                                className="flex h-9 w-9 items-center justify-center rounded-full bg-[#d5dae2] text-slate-400 shadow-[inset_2px_2px_4px_#c5c9d1,inset_-2px_-2px_4px_#ffffff]"
-                                aria-label={`${label} unavailable`}
-                                title={`${label} unavailable`}
-                                disabled
-                            >
-                                <Icon size={14} />
-                            </button>
-                        );
-                    })}
+                                    <IconMusic size={12} />
+                                    Track
+                                </button>
+                            )}
+                            {availableLinks.map((link) => {
+                                const Icon = renderLinkIcon(link.kind);
+                                return (
+                                    <a
+                                        key={link.url}
+                                        href={link.url}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="flex h-9 w-9 items-center justify-center rounded-full bg-[#e0e5ec] text-slate-600 shadow-[inset_2px_2px_4px_#c5c9d1,inset_-2px_-2px_4px_#ffffff]"
+                                        aria-label={link.label ?? link.kind}
+                                        title={link.label ?? link.kind}
+                                    >
+                                        <Icon size={14} />
+                                    </a>
+                                );
+                            })}
+                        </div>
+                    )}
+                    <button
+                        type="button"
+                        className="ml-auto inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-600 bg-[#e0e5ec] shadow-[inset_2px_2px_4px_#c5c9d1,inset_-2px_-2px_4px_#ffffff]"
+                        onClick={() => setActionsOpen((prev) => !prev)}
+                    >
+                        More
+                    </button>
                 </div>
-                <button
-                    type="button"
-                    className={`ml-auto inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold shadow-[inset_2px_2px_4px_#c5c9d1,inset_-2px_-2px_4px_#ffffff] ${
-                        canShowAi ? "bg-[#e0e5ec] text-slate-600" : "bg-[#d5dae2] text-slate-400"
-                    }`}
-                    onClick={canShowAi ? onExpand : undefined}
-                    disabled={!canShowAi}
-                >
-                    <IconSparkles size={12} />
-                    More
-                </button>
-            </div>
+            )}
         </div>
     );
 });
