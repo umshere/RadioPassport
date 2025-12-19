@@ -92,12 +92,7 @@ export function CompactStationCard({
                     {isHttpStream && (
                         <span className="text-[10px] font-bold text-rose-500 bg-rose-50/50 px-1.5 py-0.5 rounded border border-rose-100/50">HTTP</span>
                     )}
-                    {isPlaying && (
-                        <div className="ml-auto flex items-center gap-1.5 text-[10px] font-bold text-orange-600 bg-orange-50/80 px-2 py-0.5 rounded-full border border-orange-100 backdrop-blur-sm shadow-sm">
-                            <IconWaveSine size={12} className="animate-pulse" />
-                            LIVE
-                        </div>
-                    )}
+
                 </div>
             </div>
 

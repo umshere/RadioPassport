@@ -430,6 +430,11 @@ export default function Index() {
               onPlayPause={player.playPause}
               onNext={playNext}
               onPrev={playPrevious}
+              queue={player.queue}
+              currentIndex={player.currentStationIndex}
+              onSelectStation={(station) => {
+                player.startStation(station, { preserveQueue: true });
+              }}
               transparent={false}
             />
 

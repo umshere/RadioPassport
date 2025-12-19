@@ -262,11 +262,14 @@ export default function PlayerDock() {
         {triviaTitle}
       </Text>
       {renderTriviaBody(freeTrivia, "details")}
-      {aiTriviaExpanded && (
-        <div className="rounded-xl border border-white/40 bg-white/40 backdrop-blur-md px-3 py-2 shadow-sm">
-          {renderTriviaBody(aiTrivia, "AI insights")}
-        </div>
-      )}
+      {aiTriviaExpanded && (() => {
+        const content = renderTriviaBody(aiTrivia, "AI insights");
+        return content ? (
+          <div className="rounded-xl border border-white/40 bg-white/40 backdrop-blur-md px-3 py-2 shadow-sm">
+            {content}
+          </div>
+        ) : null;
+      })()}<children_omitted />
       {!aiTriviaExpanded && (
         <button
           type="button"
@@ -297,6 +300,11 @@ export default function PlayerDock() {
             onNext={handleNext}
             onPrev={handlePrev}
             onClose={() => setIsExpanded(false)}
+            queue={queue}
+            currentIndex={currentStationIndex}
+            onSelectStation={(nextStation) => {
+              startStation(nextStation, { preserveQueue: true });
+            }}
           />
         )}
       </AnimatePresence>
@@ -309,17 +317,19 @@ export default function PlayerDock() {
         overlayProps={{ opacity: 0.2 }}
         styles={{
           content: {
-            background: 'rgba(255, 255, 255, 0.65)',
-            backdropFilter: 'blur(20px)',
-            WebkitBackdropFilter: 'blur(20px)',
+            background: 'rgba(255, 255, 255, 0.1)',
+            backdropFilter: 'blur(40px)',
+            WebkitBackdropFilter: 'blur(40px)',
             borderRadius: '24px',
-            margin: '12px',
+            margin: '0',
             marginBottom: 'calc(env(safe-area-inset-bottom) + 12px)',
-            boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
-            border: '1px solid rgba(255,255,255,0.4)',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
+            border: '1px solid rgba(255, 255, 255, 0.6)',
             height: 'auto',
             maxHeight: '85vh',
-            width: 'calc(100% - 24px)', // Fix overflow by accounting for margins
+            width: 'calc(100% - 48px)',
             overflow: 'hidden',
           },
           header: {

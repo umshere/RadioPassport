@@ -1,4 +1,5 @@
-import { motion, AnimatePresence } from "framer-motion";
+import type { PointerEvent as ReactPointerEvent } from "react";
+import { motion } from "framer-motion";
 import { Badge, Title, Text, ActionIcon } from "@mantine/core";
 import {
   IconBroadcast,
@@ -17,7 +18,8 @@ import {
 } from "@tabler/icons-react";
 import { CountryFlag } from "~/components/CountryFlag";
 import type { Country, Station } from "~/types/radio";
-import { useMemo, useState, useEffect } from "react";
+import type { TrackTrivia } from "~/types/trivia";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNowPlayingMetadata } from "~/hooks/useNowPlayingMetadata";
 import { useTrackTrivia } from "~/hooks/useTrackTrivia";
 import { useUIStore } from "~/state/uiStore";
@@ -32,6 +34,9 @@ type CountryOverviewProps = {
   onPlayPause?: () => void;
   onNext?: () => void;
   onPrev?: () => void;
+  queue: Station[];
+  currentIndex: number;
+  onSelectStation: (station: Station) => void;
   transparent?: boolean;
 };
 
@@ -45,6 +50,9 @@ export function CountryOverview({
   onPlayPause,
   onNext,
   onPrev,
+  queue,
+  currentIndex,
+  onSelectStation,
   transparent = false,
 }: CountryOverviewProps) {
   const [isMounted, setIsMounted] = useState(false);
@@ -56,19 +64,148 @@ export function CountryOverview({
 
 
 
-  // Generate frequency for now playing station
-  const frequency = useMemo(() => {
-    if (!nowPlaying) return "0.0";
+  const settleTimerRef = useRef<number | null>(null);
+  const inertiaRef = useRef<number | null>(null);
+  const lastAngleRef = useRef<number | null>(null);
+  const lastTimeRef = useRef<number | null>(null);
+  const velocityRef = useRef(0);
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const [dialValue, setDialValue] = useState(0);
+  const [dialIndex, setDialIndex] = useState(0);
+  const [isDialing, setIsDialing] = useState(false);
+  const dialValueRef = useRef(0);
+  const lastIndexRef = useRef<number>(0);
+
+  const deriveFrequency = useCallback((target: Station) => {
     let hash = 0;
-    for (let i = 0; i < nowPlaying.uuid.length; i++) {
-      hash = nowPlaying.uuid.charCodeAt(i) + ((hash << 5) - hash);
+    for (let i = 0; i < target.uuid.length; i++) {
+      hash = target.uuid.charCodeAt(i) + ((hash << 5) - hash);
     }
     const range = 108.0 - 88.0;
     const normalized = Math.abs(hash % 1000) / 1000;
-    return (88.0 + normalized * range).toFixed(1);
-  }, [nowPlaying?.uuid]);
+    return 88.0 + normalized * range;
+  }, []);
 
-  const freqNum = parseFloat(frequency);
+  const boundedQueue = nowPlaying ? (queue.length > 0 ? queue : [nowPlaying]) : [];
+  const totalStations = boundedQueue.length;
+  const clampedIndex = Math.max(0, Math.min(currentIndex, totalStations - 1));
+  const displayStation = boundedQueue[dialIndex] ?? nowPlaying ?? null;
+  const isPreviewing = Boolean(nowPlaying && displayStation && displayStation.uuid !== nowPlaying.uuid);
+
+  const syncDialFromIndex = useCallback((index: number) => {
+    const bounded = Math.max(0, Math.min(index, totalStations - 1));
+    setDialIndex(bounded);
+    lastIndexRef.current = bounded;
+    if (totalStations <= 1) {
+      setDialValue(0);
+      dialValueRef.current = 0;
+      return;
+    }
+    const nextValue = bounded / (totalStations - 1);
+    setDialValue(nextValue);
+    dialValueRef.current = nextValue;
+  }, [totalStations]);
+
+  useEffect(() => {
+    if (!nowPlaying || isDialing) return;
+    syncDialFromIndex(clampedIndex);
+  }, [clampedIndex, isDialing, nowPlaying, syncDialFromIndex]);
+
+  useEffect(() => {
+    return () => {
+      if (settleTimerRef.current) {
+        window.clearTimeout(settleTimerRef.current);
+      }
+      if (inertiaRef.current) {
+        window.cancelAnimationFrame(inertiaRef.current);
+      }
+    };
+  }, []);
+
+  const playClick = useCallback(() => {
+    try {
+      const context = audioCtxRef.current ?? new AudioContext();
+      audioCtxRef.current = context;
+      if (context.state === "suspended") {
+        context.resume();
+      }
+      const osc = context.createOscillator();
+      const gain = context.createGain();
+      osc.type = "square";
+      osc.frequency.value = 1200;
+      gain.gain.value = 0.0001;
+      osc.connect(gain);
+      gain.connect(context.destination);
+      const now = context.currentTime;
+      gain.gain.exponentialRampToValueAtTime(0.08, now + 0.005);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.03);
+      osc.start(now);
+      osc.stop(now + 0.04);
+    } catch {
+      // Ignore audio errors on unsupported platforms.
+    }
+  }, []);
+
+  const tickFeedback = useCallback((nextIndex: number) => {
+    if (nextIndex !== lastIndexRef.current) {
+      lastIndexRef.current = nextIndex;
+      playClick();
+      if (navigator.vibrate) {
+        navigator.vibrate(8);
+      }
+    }
+  }, [playClick]);
+
+  const scheduleTune = useCallback((index: number) => {
+    if (!nowPlaying) return;
+    if (settleTimerRef.current) {
+      window.clearTimeout(settleTimerRef.current);
+    }
+    settleTimerRef.current = window.setTimeout(() => {
+      const nextStation = boundedQueue[index];
+      if (!nextStation || nextStation.uuid === nowPlaying.uuid) return;
+      onSelectStation(nextStation);
+    }, 650);
+  }, [boundedQueue, nowPlaying, onSelectStation]);
+
+  const handleDialValue = useCallback((value: number) => {
+    if (totalStations <= 1) return;
+    const clamped = Math.min(1, Math.max(0, value));
+    const nextIndex = Math.round(clamped * (totalStations - 1));
+    setDialValue(clamped);
+    dialValueRef.current = clamped;
+    setDialIndex(nextIndex);
+    tickFeedback(nextIndex);
+    scheduleTune(nextIndex);
+  }, [scheduleTune, tickFeedback, totalStations]);
+
+  const handleDialPointer = useCallback((event: ReactPointerEvent<HTMLDivElement>) => {
+    if (totalStations <= 1) return;
+    const rect = event.currentTarget.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    const angle = Math.atan2(event.clientY - centerY, event.clientX - centerX);
+    const angleDeg = (angle * 180) / Math.PI;
+    const minAngle = -135;
+    const maxAngle = 135;
+    const clamped = Math.min(maxAngle, Math.max(minAngle, angleDeg));
+    const normalized = (clamped - minAngle) / (maxAngle - minAngle);
+    const now = performance.now();
+    if (lastTimeRef.current !== null && lastAngleRef.current !== null) {
+      const dt = now - lastTimeRef.current;
+      if (dt > 0) {
+        velocityRef.current = (clamped - lastAngleRef.current) / dt;
+      }
+    }
+    lastAngleRef.current = clamped;
+    lastTimeRef.current = now;
+    handleDialValue(normalized);
+  }, [handleDialValue, totalStations]);
+
+  const frequencyValue = displayStation ? deriveFrequency(displayStation) : 0;
+  const frequency = frequencyValue.toFixed(1);
+
+  const freqNum = frequencyValue;
   const tickStart = Math.floor(freqNum) - 2;
   const ticks = Array.from({ length: 25 }, (_, i) => tickStart + i * 0.2);
   const nowPlayingMeta = useNowPlayingMetadata(nowPlaying ?? null, Boolean(isPlaying));
@@ -104,6 +241,20 @@ export function CountryOverview({
   const freeImage = freeTrivia.trivia?.imageUrl ?? null;
   const aiSummary = aiTrivia.trivia?.summary ?? null;
   const aiFacts = aiTrivia.trivia?.facts ?? [];
+  const [cachedFreeTrivia, setCachedFreeTrivia] = useState<TrackTrivia | null>(null);
+  const [cachedAiTrivia, setCachedAiTrivia] = useState<TrackTrivia | null>(null);
+
+  useEffect(() => {
+    if (freeTrivia.status === "ready" && freeTrivia.trivia) {
+      setCachedFreeTrivia(freeTrivia.trivia);
+    }
+  }, [freeTrivia.status, freeTrivia.trivia]);
+
+  useEffect(() => {
+    if (aiTrivia.status === "ready" && aiTrivia.trivia) {
+      setCachedAiTrivia(aiTrivia.trivia);
+    }
+  }, [aiTrivia.status, aiTrivia.trivia]);
 
   useEffect(() => {
     setAiTriviaExpanded(false);
@@ -234,7 +385,7 @@ export function CountryOverview({
           {nowPlaying ? (
             <div className="flex flex-col items-center gap-4 lg:items-end">
               <Text size="xs" c="dimmed" fw={600} tt="uppercase">
-                Now Playing
+                {isPreviewing ? "Tuning preview" : "Now Playing"}
               </Text>
               <div className="text-center lg:text-right">
                 <h2 className="font-mono text-5xl font-bold tracking-tighter text-slate-900 lg:text-6xl">
@@ -259,9 +410,9 @@ export function CountryOverview({
 
         {/* Tuner Scale & Controls (only when playing) */}
         {nowPlaying && (
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:gap-6">
-            {/* Tuner Scale */}
-            <div className="flex-1">
+          <div className="flex flex-col gap-4 md:flex-row md:items-start md:gap-6">
+            {/* Tuner + Dial (mobile) */}
+            <div className="flex flex-col gap-4 md:flex-1">
               <div className="relative h-20 w-full overflow-hidden rounded-2xl bg-white/40 border border-slate-300/30 shadow-[inset_3px_3px_6px_#b8b9be,inset_-3px_-3px_6px_#ffffff]">
                 {/* Scale Ticks */}
                 <div className="absolute inset-x-0 top-1/2 flex -translate-y-1/2 justify-between px-6">
@@ -295,107 +446,183 @@ export function CountryOverview({
                 </div>
               </div>
 
+              <div className="flex flex-col items-center gap-2 text-center md:hidden">
+                <div
+                  onPointerDown={(event) => {
+                    event.currentTarget.setPointerCapture(event.pointerId);
+                    if (inertiaRef.current) {
+                      window.cancelAnimationFrame(inertiaRef.current);
+                    }
+                    setIsDialing(true);
+                    lastAngleRef.current = null;
+                    lastTimeRef.current = null;
+                    velocityRef.current = 0;
+                    handleDialPointer(event);
+                  }}
+                  onPointerMove={(event) => {
+                    if (!isDialing) return;
+                    handleDialPointer(event);
+                  }}
+                  onPointerUp={(event) => {
+                    event.currentTarget.releasePointerCapture(event.pointerId);
+                    setIsDialing(false);
+                    const angleRange = 270;
+                    let velocity = velocityRef.current / angleRange;
+                    if (Math.abs(velocity) < 0.00005) return;
+                    let lastFrame = performance.now();
+                    const animate = () => {
+                      const now = performance.now();
+                      const dt = now - lastFrame;
+                      lastFrame = now;
+                      velocity *= 0.92;
+                      const nextValue = Math.min(1, Math.max(0, dialValueRef.current + velocity * dt));
+                      handleDialValue(nextValue);
+                      if (Math.abs(velocity) > 0.00003 && nextValue > 0 && nextValue < 1) {
+                        inertiaRef.current = window.requestAnimationFrame(animate);
+                      }
+                    };
+                    inertiaRef.current = window.requestAnimationFrame(animate);
+                  }}
+                  onPointerCancel={(event) => {
+                    event.currentTarget.releasePointerCapture(event.pointerId);
+                    setIsDialing(false);
+                  }}
+                  className="relative h-16 w-16 rounded-full bg-[#e0e5ec] shadow-[6px_6px_12px_#b8b9be,-6px_-6px_12px_#ffffff] touch-none"
+                  style={{
+                    transform: `rotate(${(-135 + dialValue * 270).toFixed(1)}deg)`,
+                  }}
+                  aria-label="Tuning dial"
+                  role="slider"
+                  aria-valuemin={0}
+                  aria-valuemax={Math.max(0, totalStations - 1)}
+                  aria-valuenow={dialIndex}
+                >
+                  <div className="absolute left-1/2 top-1.5 h-2.5 w-0.5 -translate-x-1/2 rounded-full bg-slate-400" />
+                  <div className="absolute inset-2 rounded-full bg-[#d9dee7] shadow-[inset_3px_3px_6px_#b8b9be,inset_-3px_-3px_6px_#ffffff]" />
+                </div>
+                <Text size="xs" c="dimmed" className="font-mono uppercase tracking-[0.28em]">
+                  Rotate to tune
+                </Text>
+              </div>
+
               {/* Station Info */}
-              <div className="mt-3 text-center md:text-left">
+              <div className="mt-1 text-center md:text-left">
                 <Text fw={700} size="md" c="slate.9" lineClamp={1}>
-                  {nowPlaying.name}
+                  {displayStation?.name ?? nowPlaying.name}
                 </Text>
                 <Text size="sm" c="dimmed">
-                  {[nowPlaying.country, nowPlaying.state].filter(Boolean).join(" • ")}
+                  {[displayStation?.country, displayStation?.state].filter(Boolean).join(" • ")}
                 </Text>
-                <Text size="sm" c="slate.9" lineClamp={1}>
-                  {trackLine}
-                </Text>
-                <AnimatePresence initial={false}>
-                  {freeTrivia.status === "ready" && (freeSummary || freeFacts.length > 0 || freeLinks.length > 0 || freeImage) && (
-                    <motion.div
-                      key="spotlight-free"
-                      initial={{ opacity: 0, y: 8 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: 6 }}
-                      transition={{ duration: 0.25, ease: "easeOut" }}
-                      className="mt-3 rounded-2xl bg-white/85 px-4 py-3 shadow-[4px_4px_10px_#b8b9be,-4px_-4px_10px_#ffffff]"
-                    >
-                      {freeSummary && (
-                        <Text size="xs" c="slate.9" fw={600} lineClamp={2}>
-                          {freeSummary}
+                <div className="mt-1 min-h-[44px]">
+                  <Text size="xs" c="slate.5" className="uppercase tracking-[0.2em]">
+                    {isPreviewing ? "Tuning preview" : "Now playing"}
+                  </Text>
+                  <Text size="sm" c="slate.9" lineClamp={1}>
+                    {trackLine}
+                  </Text>
+                  <Text size="xs" c="slate.5" className={freeTrivia.status === "loading" ? "mt-2 animate-pulse" : "mt-2 opacity-0"}>
+                    Updating spotlight…
+                  </Text>
+                </div>
+                {(() => {
+                  const display = freeTrivia.status === "ready" ? freeTrivia.trivia : cachedFreeTrivia;
+                  const hasContent =
+                    Boolean(display?.summary) ||
+                    Boolean(display?.imageUrl) ||
+                    (display?.facts?.length ?? 0) > 0 ||
+                    (display?.links?.length ?? 0) > 0;
+                  if (!hasContent && freeTrivia.status !== "loading") return null;
+                  return (
+                    <div className="mt-3 rounded-2xl bg-white/85 px-4 py-3 shadow-[4px_4px_10px_#b8b9be,-4px_-4px_10px_#ffffff] min-h-[120px] md:min-h-0">
+                      {freeTrivia.status === "loading" && !cachedFreeTrivia && (
+                        <Text size="xs" c="slate.5">
+                          Loading spotlight…
                         </Text>
                       )}
-                      {(freeImage || freeFacts.length > 0) && (
-                        <div className="mt-2 flex flex-wrap items-center gap-3">
-                          {freeImage && (
-                            <img
-                              src={freeImage}
-                              alt="Track artwork"
-                              className="h-10 w-10 rounded-xl object-cover shadow-[2px_2px_4px_#b8b9be,-2px_-2px_4px_#ffffff]"
-                              onError={(event) => {
-                                event.currentTarget.style.display = "none";
-                              }}
-                            />
-                          )}
-                          <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-700">
-                            {freeFacts.slice(0, 3).map((fact) => (
-                              <span
-                                key={fact.label}
-                                className="rounded-full bg-white/90 px-2 py-1 shadow-[2px_2px_4px_#b8b9be,-2px_-2px_4px_#ffffff]"
-                              >
-                                <span className="font-semibold text-slate-800">{fact.label}</span>
-                                <span className="text-slate-500"> • </span>
-                                <span>{fact.value}</span>
-                              </span>
-                            ))}
+                      <>
+                        {display?.summary && (
+                          <Text size="xs" c="slate.9" fw={600} lineClamp={2}>
+                            {display?.summary}
+                          </Text>
+                        )}
+                        {(display?.imageUrl || (display?.facts?.length ?? 0) > 0) && (
+                          <div className="mt-2 flex flex-wrap items-center gap-3">
+                            {display?.imageUrl && (
+                              <img
+                                src={display?.imageUrl}
+                                alt="Track artwork"
+                                className="h-10 w-10 rounded-xl object-cover shadow-[2px_2px_4px_#b8b9be,-2px_-2px_4px_#ffffff]"
+                                onError={(event) => {
+                                  event.currentTarget.style.display = "none";
+                                }}
+                              />
+                            )}
+                            <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-700">
+                              {(display?.facts ?? []).slice(0, 3).map((fact) => (
+                                <span
+                                  key={fact.label}
+                                  className="rounded-full bg-white/90 px-2 py-1 shadow-[2px_2px_4px_#b8b9be,-2px_-2px_4px_#ffffff]"
+                                >
+                                  <span className="font-semibold text-slate-800">{fact.label}</span>
+                                  <span className="text-slate-500"> • </span>
+                                  <span>{fact.value}</span>
+                                </span>
+                              ))}
+                            </div>
                           </div>
-                        </div>
+                        )}
+                        {(display?.links ?? []).length > 0 && (
+                          <div className="mt-2 flex flex-wrap items-center gap-2">
+                            {display?.links?.map((link) => {
+                              const Icon = renderLinkIcon(link.kind);
+                              return (
+                                <a
+                                  key={link.url}
+                                  href={link.url}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 bg-white/90 text-slate-700 shadow-[2px_2px_4px_#b8b9be,-2px_-2px_4px_#ffffff] hover:text-slate-900"
+                                  aria-label={link.label}
+                                  title={link.label}
+                                >
+                                  <Icon size={16} />
+                                </a>
+                              );
+                            })}
+                          </div>
+                        )}
+                        {!aiTriviaExpanded && freeTrivia.status === "ready" && (
+                          <button
+                            type="button"
+                            className="mt-3 inline-flex items-center gap-2 rounded-full bg-white/90 px-3 py-1 text-[11px] font-semibold text-slate-600 shadow-[2px_2px_4px_#b8b9be,-2px_-2px_4px_#ffffff]"
+                            onClick={() => setAiTriviaExpanded(true)}
+                          >
+                            <IconSparkles size={12} />
+                            More
+                          </button>
+                        )}
+                      </>
+                    </div>
+                  );
+                })()}
+                {aiTriviaExpanded && (() => {
+                  const display = aiTrivia.status === "ready" ? aiTrivia.trivia : cachedAiTrivia;
+                  if (!display && aiTrivia.status !== "loading") return null;
+                  return (
+                    <div className="mt-2 rounded-2xl border border-slate-200 bg-white/95 px-4 py-3 shadow-[0_10px_18px_rgba(15,23,42,0.12)] min-h-[64px] md:min-h-0">
+                      {aiTrivia.status === "loading" && !cachedAiTrivia && (
+                        <Text size="xs" c="slate.5">
+                          Loading AI insights…
+                        </Text>
                       )}
-                      {freeLinks.length > 0 && (
-                        <div className="mt-2 flex flex-wrap items-center gap-2">
-                          {freeLinks.map((link) => {
-                            const Icon = renderLinkIcon(link.kind);
-                            return (
-                              <a
-                                key={link.url}
-                                href={link.url}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 bg-white/90 text-slate-700 shadow-[2px_2px_4px_#b8b9be,-2px_-2px_4px_#ffffff] hover:text-slate-900"
-                                aria-label={link.label}
-                                title={link.label}
-                              >
-                                <Icon size={16} />
-                              </a>
-                            );
-                          })}
-                        </div>
+                      {display?.summary && (
+                        <Text size="xs" c="slate.9" fw={700} lineClamp={2}>
+                          {display.summary}
+                        </Text>
                       )}
-                      {!aiTriviaExpanded && freeTrivia.status === "ready" && (
-                        <button
-                          type="button"
-                          className="mt-3 inline-flex items-center gap-2 rounded-full bg-white/90 px-3 py-1 text-[11px] font-semibold text-slate-600 shadow-[2px_2px_4px_#b8b9be,-2px_-2px_4px_#ffffff]"
-                          onClick={() => setAiTriviaExpanded(true)}
-                        >
-                          <IconSparkles size={12} />
-                          More
-                        </button>
-                      )}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-                <AnimatePresence initial={false}>
-                  {aiTriviaExpanded && aiTrivia.status === "ready" && aiSummary && (
-                    <motion.div
-                      key="spotlight-ai"
-                      initial={{ opacity: 0, y: 6 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: 4 }}
-                      transition={{ duration: 0.25, ease: "easeOut" }}
-                      className="mt-2 rounded-2xl border border-slate-200 bg-white/95 px-4 py-3 shadow-[0_10px_18px_rgba(15,23,42,0.12)]"
-                    >
-                      <Text size="xs" c="slate.9" fw={700} lineClamp={2}>
-                        {aiSummary}
-                      </Text>
-                      {aiFacts.length > 0 && (
+                      {(display?.facts ?? []).length > 0 && (
                         <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-slate-700">
-                          {aiFacts.slice(0, 2).map((fact) => (
+                          {(display?.facts ?? []).slice(0, 2).map((fact) => (
                             <span key={fact.label} className="rounded-full bg-white/90 px-2 py-1">
                               <span className="font-semibold text-slate-800">{fact.label}</span>
                               <span className="text-slate-500"> • </span>
@@ -404,48 +631,108 @@ export function CountryOverview({
                           ))}
                         </div>
                       )}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+                    </div>
+                  );
+                })()}
               </div>
             </div>
 
-            {/* Transport Controls */}
-            <div className="flex items-center justify-center gap-3">
-              <ActionIcon
-                size="lg"
-                radius="xl"
-                variant="light"
-                color="gray"
-                onClick={onPrev}
-                className="bg-[#e0e5ec] text-slate-600 shadow-[3px_3px_6px_#b8b9be,-3px_-3px_6px_#ffffff] active:shadow-[inset_3px_3px_6px_#b8b9be,inset_-3px_-3px_6px_#ffffff] border-0"
-              >
-                <IconPlayerSkipBackFilled size={20} />
-              </ActionIcon>
+            {/* Dial + Transport Controls (desktop) */}
+            <div className="hidden flex-col items-center gap-4 md:flex md:min-w-[140px] md:justify-start md:pt-2">
+              <div className="flex flex-col items-center gap-2 text-center">
+                <div
+                  onPointerDown={(event) => {
+                    event.currentTarget.setPointerCapture(event.pointerId);
+                    if (inertiaRef.current) {
+                      window.cancelAnimationFrame(inertiaRef.current);
+                    }
+                    setIsDialing(true);
+                    lastAngleRef.current = null;
+                    lastTimeRef.current = null;
+                    velocityRef.current = 0;
+                    handleDialPointer(event);
+                  }}
+                  onPointerMove={(event) => {
+                    if (!isDialing) return;
+                    handleDialPointer(event);
+                  }}
+                  onPointerUp={(event) => {
+                    event.currentTarget.releasePointerCapture(event.pointerId);
+                    setIsDialing(false);
+                    const angleRange = 270;
+                    let velocity = velocityRef.current / angleRange;
+                    if (Math.abs(velocity) < 0.00005) return;
+                    let lastFrame = performance.now();
+                    const animate = () => {
+                      const now = performance.now();
+                      const dt = now - lastFrame;
+                      lastFrame = now;
+                      velocity *= 0.92;
+                      const nextValue = Math.min(1, Math.max(0, dialValueRef.current + velocity * dt));
+                      handleDialValue(nextValue);
+                      if (Math.abs(velocity) > 0.00003 && nextValue > 0 && nextValue < 1) {
+                        inertiaRef.current = window.requestAnimationFrame(animate);
+                      }
+                    };
+                    inertiaRef.current = window.requestAnimationFrame(animate);
+                  }}
+                  onPointerCancel={(event) => {
+                    event.currentTarget.releasePointerCapture(event.pointerId);
+                    setIsDialing(false);
+                  }}
+                  className="relative h-16 w-16 rounded-full bg-[#e0e5ec] shadow-[6px_6px_12px_#b8b9be,-6px_-6px_12px_#ffffff] touch-none"
+                  style={{
+                    transform: `rotate(${(-135 + dialValue * 270).toFixed(1)}deg)`,
+                  }}
+                  aria-label="Tuning dial"
+                  role="slider"
+                  aria-valuemin={0}
+                  aria-valuemax={Math.max(0, totalStations - 1)}
+                  aria-valuenow={dialIndex}
+                >
+                  <div className="absolute left-1/2 top-1.5 h-2.5 w-0.5 -translate-x-1/2 rounded-full bg-slate-400" />
+                  <div className="absolute inset-2 rounded-full bg-[#d9dee7] shadow-[inset_3px_3px_6px_#b8b9be,inset_-3px_-3px_6px_#ffffff]" />
+                </div>
+                <Text size="xs" c="dimmed" className="font-mono uppercase tracking-[0.28em]">
+                  Rotate to tune
+                </Text>
+              </div>
+              <div className="flex items-center justify-center gap-3">
+                <ActionIcon
+                  size="lg"
+                  radius="xl"
+                  variant="light"
+                  color="gray"
+                  onClick={onPrev}
+                  className="bg-[#e0e5ec] text-slate-600 shadow-[3px_3px_6px_#b8b9be,-3px_-3px_6px_#ffffff] active:shadow-[inset_3px_3px_6px_#b8b9be,inset_-3px_-3px_6px_#ffffff] border-0"
+                >
+                  <IconPlayerSkipBackFilled size={20} />
+                </ActionIcon>
 
-              <ActionIcon
-                size="xl"
-                radius="xl"
-                onClick={onPlayPause}
-                className="bg-slate-900 text-white hover:bg-slate-800 shadow-[4px_4px_8px_#b8b9be,-4px_-4px_8px_#ffffff] active:scale-95 transition-transform border-0"
-              >
-                {isPlaying ? (
-                  <IconPlayerPauseFilled size={24} />
-                ) : (
-                  <IconPlayerPlayFilled size={24} />
-                )}
-              </ActionIcon>
+                <ActionIcon
+                  size="xl"
+                  radius="xl"
+                  onClick={onPlayPause}
+                  className="bg-slate-900 text-white hover:bg-slate-800 shadow-[4px_4px_8px_#b8b9be,-4px_-4px_8px_#ffffff] active:scale-95 transition-transform border-0"
+                >
+                  {isPlaying ? (
+                    <IconPlayerPauseFilled size={24} />
+                  ) : (
+                    <IconPlayerPlayFilled size={24} />
+                  )}
+                </ActionIcon>
 
-              <ActionIcon
-                size="lg"
-                radius="xl"
-                variant="light"
-                color="gray"
-                onClick={onNext}
-                className="bg-[#e0e5ec] text-slate-600 shadow-[3px_3px_6px_#b8b9be,-3px_-3px_6px_#ffffff] active:shadow-[inset_3px_3px_6px_#b8b9be,inset_-3px_-3px_6px_#ffffff] border-0"
-              >
-                <IconPlayerSkipForwardFilled size={20} />
-              </ActionIcon>
+                <ActionIcon
+                  size="lg"
+                  radius="xl"
+                  variant="light"
+                  color="gray"
+                  onClick={onNext}
+                  className="bg-[#e0e5ec] text-slate-600 shadow-[3px_3px_6px_#b8b9be,-3px_-3px_6px_#ffffff] active:shadow-[inset_3px_3px_6px_#b8b9be,inset_-3px_-3px_6px_#ffffff] border-0"
+                >
+                  <IconPlayerSkipForwardFilled size={20} />
+                </ActionIcon>
+              </div>
             </div>
           </div>
         )}
