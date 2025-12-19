@@ -126,34 +126,40 @@ export function StationCard({
       className="h-full"
     >
       <div
-        className={`station-card group h-full flex flex-col rounded-2xl p-4 transition-all hover:-translate-y-1 ${cardStatusClass}`}
+        className={`station-card group h-full flex flex-col rounded-[2rem] p-5 transition-all duration-300 hover:-translate-y-1.5 ${cardStatusClass}`}
         style={{
           position: 'relative',
           overflow: 'hidden',
-          background: 'linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(255,250,245,0.9) 100%)',
+          background: isCurrent
+            ? 'rgba(255, 255, 255, 0.95)'
+            : 'rgba(255, 255, 255, 0.8)',
+          backdropFilter: 'blur(12px)',
           boxShadow: isCurrent
-            ? '0 12px 35px -8px rgba(251,146,60,0.35), 0 0 0 2px rgba(251,146,60,0.3), inset 0 1px 0 rgba(255,255,255,1)'
-            : '0 8px 25px -8px rgba(0,0,0,0.12), 0 0 0 1px rgba(255,255,255,0.8), inset 0 1px 0 rgba(255,255,255,1)',
+            ? '0 20px 40px -12px rgba(251, 146, 60, 0.4), 0 8px 16px -8px rgba(251, 146, 60, 0.2)'
+            : '0 10px 30px -10px rgba(0, 0, 0, 0.05), 0 4px 12px -6px rgba(0, 0, 0, 0.02)',
         }}
       >
-        {/* Warm decorative gradient overlay */}
-        <div
-          className="pointer-events-none absolute inset-0 z-0 opacity-30"
-          style={{
-            background: 'radial-gradient(ellipse at top right, rgba(251,191,36,0.15) 0%, transparent 50%), radial-gradient(ellipse at bottom left, rgba(244,114,182,0.1) 0%, transparent 50%)',
-          }}
-        />
+        {/* Subtle nice glow for active state instead of heavy gradient */}
+        {isCurrent && (
+          <div
+            className="absolute inset-0 pointer-events-none opacity-20"
+            style={{
+              background: 'radial-gradient(circle at 50% 0%, rgba(251,146,60,0.4) 0%, transparent 70%)'
+            }}
+          />
+        )}
+
 
         {/* Top content area - grows to fill space */}
         <div className="relative z-10 flex flex-1 flex-col gap-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:gap-4">
-            {/* Station Image with auto-generated fallback */}
+            {/* Station Image with cleaner shadow */}
             <div
-              className="relative h-14 w-14 overflow-hidden rounded-xl sm:h-16 sm:w-16 transition-all duration-300"
+              className="relative h-14 w-14 overflow-hidden rounded-2xl sm:h-16 sm:w-16 transition-all duration-300 group-hover:shadow-md"
               style={{
                 boxShadow: isCurrent
-                  ? '0 6px 20px -4px rgba(251,146,60,0.4), 0 0 0 2px rgba(255,255,255,0.9)'
-                  : '0 4px 12px -4px rgba(0,0,0,0.15), 0 0 0 2px rgba(255,255,255,0.8)',
+                  ? '0 8px 24px -6px rgba(251, 146, 60, 0.5)'
+                  : '0 4px 12px -4px rgba(0, 0, 0, 0.08)',
               }}
             >
               {station.favicon ? (
@@ -193,20 +199,20 @@ export function StationCard({
                 >
                   {station.name}
                 </Text>
-                {/* User-friendly status badge */}
+                {/* User-friendly status badge - simplified */}
                 {statusDisplay && (
-                  <div className="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-bold border" style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(254,243,199,0.5) 100%)', borderColor: 'rgba(251,191,36,0.2)', color: '#78716c' }}>
-                    <span>{statusDisplay.icon}</span>
+                  <div className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold" style={{ background: 'rgba(0,0,0,0.03)', color: '#78716c' }}>
+                    <span className="opacity-80">{statusDisplay.icon}</span>
                     <span>{statusDisplay.label}</span>
                   </div>
                 )}
                 {isHlsStream && (
-                  <div className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold border" style={{ background: "rgba(15, 23, 42, 0.04)", borderColor: "rgba(15, 23, 42, 0.10)", color: "#475569" }}>
+                  <div className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold" style={{ background: "rgba(15, 23, 42, 0.03)", color: "#64748b" }}>
                     HLS
                   </div>
                 )}
                 {isHttpStream && (
-                  <div className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold border" style={{ background: "rgba(239, 68, 68, 0.06)", borderColor: "rgba(239, 68, 68, 0.20)", color: "#b91c1c" }}>
+                  <div className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold" style={{ background: "rgba(239, 68, 68, 0.04)", color: "#ef4444" }}>
                     HTTP
                   </div>
                 )}
@@ -240,8 +246,8 @@ export function StationCard({
           </div>
         </div>
 
-        {/* Buttons section - fixed at bottom */}
-        <div className="relative z-10 mt-auto flex flex-col gap-2.5 border-t pt-4 sm:flex-row sm:items-center sm:justify-between" style={{ borderColor: 'rgba(251,191,36,0.15)' }}>
+        {/* Buttons section - remove border top, use auto margin */}
+        <div className="relative z-10 mt-auto flex flex-col gap-2.5 pt-4 sm:flex-row sm:items-center sm:justify-between">
           <Button
             radius="xl"
             size="sm"

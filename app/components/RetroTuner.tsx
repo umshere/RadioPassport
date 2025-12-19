@@ -190,13 +190,10 @@ export default function RetroTuner({
 
                 {/* Track Spotlight */}
                 <div className="w-full max-w-xl px-5 mb-6">
-                    <div className="relative max-h-[240px] overflow-y-auto rounded-3xl bg-[#e4e8ef] px-5 py-4 shadow-[10px_10px_20px_#b8b9be,-10px_-10px_20px_#ffffff] scrollbar-hide">
-                        <div className="pointer-events-none absolute inset-x-0 top-0 flex justify-end px-4 pt-2 text-slate-400/70">
-                            <IconChevronUp size={16} />
-                        </div>
-                        <div className="pointer-events-none absolute inset-x-0 bottom-0 flex justify-end px-4 pb-2 text-slate-400/70">
-                            <IconChevronDown size={16} />
-                        </div>
+                    <div className="relative max-h-[240px] overflow-hidden rounded-3xl bg-[#e4e8ef] shadow-[10px_10px_20px_#b8b9be,-10px_-10px_20px_#ffffff]">
+                        <div className="pointer-events-none absolute inset-x-0 top-0 z-10 h-8 rounded-t-3xl bg-gradient-to-b from-[#e4e8ef] via-[#e4e8ef]/80 to-transparent" />
+                        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-8 rounded-b-3xl bg-gradient-to-t from-[#e4e8ef] via-[#e4e8ef]/80 to-transparent" />
+                        <div className="max-h-[240px] overflow-y-auto px-5 pb-6 pt-6 scrollbar-hide">
                         <div className="flex items-center justify-between gap-3">
                             <div className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
                                 Track Spotlight
@@ -319,6 +316,7 @@ export default function RetroTuner({
                             </button>
                         )}
                     </div>
+                </div>
                 </div>
             </div>
 

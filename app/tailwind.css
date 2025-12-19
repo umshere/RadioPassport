@@ -438,9 +438,8 @@
   }
 
   .station-card {
-    @apply relative flex h-full flex-col gap-4 overflow-hidden rounded-2xl border p-4 transition md:gap-5 md:p-5;
-    border-color: rgba(203, 213, 225, 0.3);
-    background: #e0e5ec;
+    @apply relative flex h-full flex-col gap-4 overflow-hidden p-4 transition md:gap-5 md:p-5;
+    background: transparent;
     min-height: 0;
   }
 
@@ -486,33 +485,28 @@
   }
 
   .station-card:hover {
-    border-color: rgba(148, 163, 184, 0.5);
     transform: translateY(-3px);
   }
 
   .station-card--active {
-    border-color: rgba(15, 23, 42, 0.65);
-    background: #ffffff;
+    /* controlled by inline styles now */
   }
 
   .station-card--favorite {
-    border-color: rgba(244, 63, 94, 0.45);
+    /* controlled by inline styles now */
   }
 
   .station-card--warn:not(.station-card--active) {
-    border-color: rgba(250, 204, 21, 0.65);
     background: #fffdfa;
   }
 
   .station-card--error:not(.station-card--active) {
-    border-color: rgba(248, 113, 113, 0.65);
     background: #fff8f6;
     box-shadow: 0 14px 32px -18px rgba(248, 113, 113, 0.55);
   }
 
   .station-card--no-stream:not(.station-card--active) {
-    background: #fdfdfd;
-    border-style: dashed;
+    opacity: 0.7;
   }
 
   .player-stack-shell {

@@ -11,12 +11,12 @@ export default function AppHeader() {
 
 
   return (
-    <header className="sticky top-0 z-40 backdrop-blur-md bg-[#e0e5ec]/80 border-b border-slate-200/50">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between gap-4">
+    <header className="sticky top-0 z-40 backdrop-blur-xl bg-white/70 transition-all duration-300">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
         {/* Logo Area */}
-        <Link to="/" className="flex items-center gap-3 flex-shrink-0" prefetch="intent" aria-label="Radio Passport">
-          <div className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-[#e0e5ec] shadow-[4px_4px_8px_#b8b9be,-4px_-4px_8px_#ffffff] overflow-hidden">
-            <span className="relative text-sm font-black tracking-wider z-10 text-slate-700">RP</span>
+        <Link to="/" className="flex items-center gap-3 flex-shrink-0 group" prefetch="intent" aria-label="Radio Passport">
+          <div className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-white shadow-sm ring-1 ring-slate-900/5 overflow-hidden transition-transform group-hover:scale-105">
+            <span className="relative text-sm font-black tracking-wider z-10 text-slate-800">RP</span>
           </div>
           <div className="hidden lg:flex flex-col">
             <span className="text-base font-black tracking-tight text-slate-800 leading-tight whitespace-nowrap">Radio Passport</span>
