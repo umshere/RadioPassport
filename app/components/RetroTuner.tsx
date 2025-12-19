@@ -309,12 +309,12 @@ export default function RetroTuner({
             onPointerCancel={handleSwipeEnd}
         >
             {/* Header */}
-            <div className="flex items-center justify-between px-6 py-6">
+            <div className="flex items-center justify-between px-6 py-4 md:py-6">
                 <ActionIcon
                     variant="transparent"
                     color="dark"
                     onClick={onClose}
-                    className="opacity-60 hover:opacity-100"
+                    className="hidden md:inline-flex opacity-60 hover:opacity-100"
                 >
                     <IconChevronDown size={28} />
                 </ActionIcon>
@@ -323,7 +323,7 @@ export default function RetroTuner({
 
             {/* Main Tuner Area */}
             <div className="relative flex-1">
-                <div className="flex flex-col items-center gap-6 px-4 pb-40 pt-2 md:gap-8">
+                <div className="flex flex-col items-center gap-5 px-4 pb-36 pt-0 md:gap-8 md:pb-40 md:pt-2">
                     {/* 1. Giant Frequency Number */}
                     <div className="flex flex-col items-center">
                         <h1 className="font-mono text-7xl md:text-8xl font-bold tracking-tighter text-slate-900">
@@ -397,7 +397,10 @@ export default function RetroTuner({
                 </div>
 
                 {/* Control Cluster */}
-                <div className="absolute inset-x-0 bottom-10 flex flex-col items-center gap-2 md:bottom-12">
+                <div
+                    className="absolute inset-x-0 bottom-10 flex flex-col items-center gap-2 md:bottom-12"
+                    data-swipe-ignore
+                >
                     <div className="flex items-center justify-center gap-6 md:gap-8">
                         <button
                             onClick={onPrev}
@@ -408,6 +411,7 @@ export default function RetroTuner({
 
                         <div
                             ref={dialRef}
+                            data-swipe-ignore
                             onPointerDown={(event) => {
                                 event.currentTarget.setPointerCapture(event.pointerId);
                                 if (inertiaRef.current) {
@@ -460,8 +464,13 @@ export default function RetroTuner({
                                     transform: `rotate(${(-135 + dialValue * 270).toFixed(1)}deg)`,
                                 }}
                             >
-                                <div className="absolute inset-2 rounded-full shadow-[inset_6px_6px_12px_#b8b9be,inset_-6px_-6px_12px_#ffffff]" />
-                                <div className="absolute left-1/2 top-2 h-4 w-1 -translate-x-1/2 rounded-full bg-slate-400" />
+                                <div
+                                    className="absolute inset-2 rounded-full shadow-[inset_6px_6px_12px_#b8b9be,inset_-6px_-6px_12px_#ffffff]"
+                                    style={{
+                                        backgroundImage:
+                                            "repeating-linear-gradient(90deg, rgba(120,126,136,0.35) 0px, rgba(120,126,136,0.35) 1px, rgba(245,247,252,0.75) 2px, rgba(245,247,252,0.75) 4px)",
+                                    }}
+                                />
                             </div>
                             <button
                                 type="button"
@@ -523,30 +532,12 @@ const TrackSpotlight = memo(function TrackSpotlight({
     aiTriviaExpanded,
     onExpand,
 }: TrackSpotlightProps) {
-    const contentRef = useRef<HTMLDivElement | null>(null);
     const wheelRef = useRef<HTMLDivElement | null>(null);
     const wheelStartRef = useRef<number | null>(null);
-    const scrollStartRef = useRef(0);
     const [wheelPos, setWheelPos] = useState(0);
     const [wheelNudge, setWheelNudge] = useState(0);
-    const [hasOverflow, setHasOverflow] = useState(false);
     const [actionsOpen, setActionsOpen] = useState(false);
     const [showDetails, setShowDetails] = useState(false);
-    const updateWheelPos = useCallback(() => {
-        const content = contentRef.current;
-        if (!content) return;
-        const maxScroll = content.scrollHeight - content.clientHeight;
-        setHasOverflow(maxScroll > 1);
-        setWheelPos(maxScroll > 0 ? content.scrollTop / maxScroll : 0);
-    }, []);
-    useEffect(() => {
-        updateWheelPos();
-    }, [updateWheelPos, freeTrivia.status, freeTrivia.trivia, aiTrivia.status, aiTrivia.trivia, aiTriviaExpanded, trackLine]);
-    useEffect(() => {
-        const handleResize = () => updateWheelPos();
-        window.addEventListener("resize", handleResize);
-        return () => window.removeEventListener("resize", handleResize);
-    }, [updateWheelPos]);
     const renderLinkIcon = (kind?: string) => {
         switch (kind) {
             case "youtube":
@@ -591,19 +582,19 @@ const TrackSpotlight = memo(function TrackSpotlight({
         Boolean(trackLine) ||
         Boolean(freeTrivia.trivia?.summary) ||
         Boolean(freeTrivia.trivia?.facts?.length);
-    const showMoreButton = availableLinks.length > 0 || hasMetadata;
+    const hasMoreContent = availableLinks.length > 0 || hasMetadata;
 
     useEffect(() => {
-        if (!showMoreButton) {
+        if (!hasMoreContent) {
             setActionsOpen(false);
             setShowDetails(false);
         }
-    }, [showMoreButton]);
+    }, [hasMoreContent]);
 
     return (
         <div className="w-full max-w-2xl px-5">
-            <div className="relative">
-                <div className="relative h-40 md:h-44 overflow-hidden rounded-2xl bg-[#8aa77b] shadow-[inset_6px_6px_12px_rgba(40,58,32,0.5),inset_-6px_-6px_12px_rgba(176,204,160,0.55)]">
+            <div className="flex items-stretch gap-3">
+                <div className="relative h-40 md:h-44 flex-1 overflow-hidden rounded-2xl bg-[#8aa77b] shadow-[inset_6px_6px_12px_rgba(40,58,32,0.5),inset_-6px_-6px_12px_rgba(176,204,160,0.55)]">
                     <div
                         className="pointer-events-none absolute inset-0 opacity-35"
                         style={{
@@ -621,10 +612,8 @@ const TrackSpotlight = memo(function TrackSpotlight({
                     />
                     <div className="pointer-events-none absolute inset-0 rounded-2xl shadow-[inset_1px_1px_2px_rgba(230,245,210,0.7),inset_-2px_-2px_4px_rgba(25,32,18,0.45)]" />
                     <div
-                        ref={contentRef}
-                        onScroll={updateWheelPos}
                         data-swipe-ignore
-                        className="h-full overflow-y-auto scrollbar-hide px-5 pb-5 pt-4 font-['Courier_New',Courier,monospace] text-[#eff8e6]"
+                        className="h-full overflow-hidden px-5 pb-5 pt-4 font-['Courier_New',Courier,monospace] text-[#eff8e6]"
                     >
                     <div className="flex items-center justify-between gap-3 text-[#e2f1d7]">
                         <div className="text-[11px] font-semibold uppercase tracking-[0.3em]">
@@ -690,26 +679,22 @@ const TrackSpotlight = memo(function TrackSpotlight({
                     ) : null}
                     </div>
                 </div>
-                <div
-                    className="absolute top-1/2 right-2"
-                    style={{ transform: "translate(70%, -50%)" }}
-                >
+                <div className="flex items-center">
                     <div
                         ref={wheelRef}
                         data-swipe-ignore
                         onPointerDown={(event) => {
-                            if (!hasOverflow || !contentRef.current) return;
                             event.currentTarget.setPointerCapture(event.pointerId);
                             wheelStartRef.current = event.clientY;
-                            scrollStartRef.current = contentRef.current.scrollTop;
                         }}
                         onPointerMove={(event) => {
-                            if (wheelStartRef.current === null || !contentRef.current) return;
+                            if (wheelStartRef.current === null || !wheelRef.current) return;
                             const delta = event.clientY - wheelStartRef.current;
-                            const maxScroll = contentRef.current.scrollHeight - contentRef.current.clientHeight;
-                            const nextTop = Math.min(maxScroll, Math.max(0, scrollStartRef.current + delta * 1.6));
-                            contentRef.current.scrollTop = nextTop;
-                            setWheelPos(maxScroll > 0 ? nextTop / maxScroll : 0);
+                            const rect = wheelRef.current.getBoundingClientRect();
+                            const trackRange = Math.max(1, rect.height - 28);
+                            const nextPos = Math.min(1, Math.max(0, wheelPos + delta / trackRange));
+                            setWheelPos(nextPos);
+                            wheelStartRef.current = event.clientY;
                             setWheelNudge(delta > 0 ? 1 : -1);
                         }}
                         onPointerUp={(event) => {
@@ -722,26 +707,21 @@ const TrackSpotlight = memo(function TrackSpotlight({
                             wheelStartRef.current = null;
                             setWheelNudge(0);
                         }}
-                        className={`relative h-20 w-9 rounded-full bg-[#e0e5ec] shadow-[4px_4px_10px_#b8b9be,-4px_-4px_10px_#ffffff] ${hasOverflow ? "cursor-grab" : "opacity-50"}`}
+                        className="relative h-20 w-9 rounded-full bg-[#c7ccd4] shadow-[inset_3px_3px_6px_rgba(130,135,145,0.55),inset_-3px_-3px_6px_rgba(255,255,255,0.9),0_8px_12px_rgba(120,125,135,0.28)]"
                         style={{
                             transform: `translateY(${wheelNudge * 1.5}px)`,
                             transition: wheelNudge === 0 ? "transform 120ms ease-out" : "transform 80ms ease-in",
+                            backgroundImage:
+                                "linear-gradient(90deg, rgba(245,247,250,0.85) 0%, rgba(200,205,214,0.95) 35%, rgba(175,181,191,0.9) 60%, rgba(230,233,239,0.9) 100%), repeating-linear-gradient(90deg, rgba(255,255,255,0.45) 0px, rgba(255,255,255,0.45) 1px, rgba(150,156,166,0.28) 2px, rgba(150,156,166,0.28) 4px)",
                         }}
-                        aria-label="Spotlight scroll wheel"
-                        role="scrollbar"
+                        aria-label="Spotlight side control"
+                        role="slider"
                         aria-valuemin={0}
                         aria-valuemax={100}
                         aria-valuenow={Math.round(wheelPos * 100)}
                     >
-                        <div
-                            className="absolute inset-1 rounded-full bg-[#d3d8e0] shadow-[inset_2px_2px_4px_#b4b7bf,inset_-2px_-2px_4px_#ffffff]"
-                            style={{
-                                backgroundImage:
-                                    "repeating-linear-gradient(180deg, rgba(120,126,136,0.35) 0px, rgba(120,126,136,0.35) 1px, rgba(255,255,255,0.5) 2px, rgba(255,255,255,0.5) 4px)",
-                            }}
-                        />
-                        <div className="absolute left-2 right-2 top-1 h-2 rounded-full bg-[#b2b7c1] shadow-[inset_1px_1px_2px_rgba(120,126,136,0.7),inset_-1px_-1px_2px_rgba(255,255,255,0.7)]" />
-                        <div className="absolute left-2 right-2 bottom-1 h-2 rounded-full bg-[#b2b7c1] shadow-[inset_1px_1px_2px_rgba(120,126,136,0.7),inset_-1px_-1px_2px_rgba(255,255,255,0.7)]" />
+                        <div className="absolute left-2 right-2 top-1.5 h-2 rounded-full bg-[#b2b7c1] shadow-[inset_1px_1px_2px_rgba(120,126,136,0.7),inset_-1px_-1px_2px_rgba(255,255,255,0.7)]" />
+                        <div className="absolute left-2 right-2 bottom-1.5 h-2 rounded-full bg-[#b2b7c1] shadow-[inset_1px_1px_2px_rgba(120,126,136,0.7),inset_-1px_-1px_2px_rgba(255,255,255,0.7)]" />
                         <div
                             className="absolute left-1.5 right-1.5 h-5 rounded-full bg-[#f0f2f6]"
                             style={{
@@ -754,52 +734,55 @@ const TrackSpotlight = memo(function TrackSpotlight({
                     </div>
                 </div>
             </div>
-            {showMoreButton && (
-                <div className="mt-3 flex flex-wrap items-center gap-3">
-                    {actionsOpen && (
-                        <div className="flex flex-wrap items-center gap-2">
-                            {hasMetadata && (
-                                <button
-                                    type="button"
-                                    className="inline-flex items-center gap-2 rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-600 bg-[#e0e5ec] shadow-[inset_2px_2px_4px_#c5c9d1,inset_-2px_-2px_4px_#ffffff]"
-                                    onClick={() => {
-                                        setShowDetails((prev) => !prev);
-                                        if (canExpand) {
-                                            onExpand();
-                                        }
-                                    }}
+            <div className="mt-3 flex flex-wrap items-center gap-3">
+                {actionsOpen && hasMoreContent && (
+                    <div className="flex flex-wrap items-center gap-2">
+                        {hasMetadata && (
+                            <button
+                                type="button"
+                                className="inline-flex items-center gap-2 rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-600 bg-[#e0e5ec] shadow-[inset_2px_2px_4px_#c5c9d1,inset_-2px_-2px_4px_#ffffff]"
+                                onClick={() => {
+                                    setShowDetails((prev) => !prev);
+                                    if (canExpand) {
+                                        onExpand();
+                                    }
+                                }}
+                            >
+                                <IconMusic size={12} />
+                                Track
+                            </button>
+                        )}
+                        {availableLinks.map((link) => {
+                            const Icon = renderLinkIcon(link.kind);
+                            return (
+                                <a
+                                    key={link.url}
+                                    href={link.url}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="flex h-9 w-9 items-center justify-center rounded-full bg-[#e0e5ec] text-slate-600 shadow-[inset_2px_2px_4px_#c5c9d1,inset_-2px_-2px_4px_#ffffff]"
+                                    aria-label={link.label ?? link.kind}
+                                    title={link.label ?? link.kind}
                                 >
-                                    <IconMusic size={12} />
-                                    Track
-                                </button>
-                            )}
-                            {availableLinks.map((link) => {
-                                const Icon = renderLinkIcon(link.kind);
-                                return (
-                                    <a
-                                        key={link.url}
-                                        href={link.url}
-                                        target="_blank"
-                                        rel="noreferrer"
-                                        className="flex h-9 w-9 items-center justify-center rounded-full bg-[#e0e5ec] text-slate-600 shadow-[inset_2px_2px_4px_#c5c9d1,inset_-2px_-2px_4px_#ffffff]"
-                                        aria-label={link.label ?? link.kind}
-                                        title={link.label ?? link.kind}
-                                    >
-                                        <Icon size={14} />
-                                    </a>
-                                );
-                            })}
-                        </div>
-                    )}
-                    <button
-                        type="button"
-                        className="ml-auto inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-600 bg-[#e0e5ec] shadow-[inset_2px_2px_4px_#c5c9d1,inset_-2px_-2px_4px_#ffffff]"
-                        onClick={() => setActionsOpen((prev) => !prev)}
-                    >
-                        More
-                    </button>
-                </div>
-            )}
+                                    <Icon size={14} />
+                                </a>
+                            );
+                        })}
+                    </div>
+                )}
+                <button
+                    type="button"
+                    className={`ml-auto inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.22em] ${
+                        hasMoreContent
+                            ? "text-slate-600 bg-[#e0e5ec] shadow-[inset_2px_2px_4px_#c5c9d1,inset_-2px_-2px_4px_#ffffff]"
+                            : "text-slate-400 bg-[#d5dae2] shadow-[inset_2px_2px_4px_#c5c9d1,inset_-2px_-2px_4px_#ffffff] cursor-not-allowed"
+                    }`}
+                    onClick={hasMoreContent ? () => setActionsOpen((prev) => !prev) : undefined}
+                    disabled={!hasMoreContent}
+                >
+                    More
+                </button>
+            </div>
         </div>
     );
 });
