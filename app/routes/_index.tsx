@@ -3,7 +3,8 @@ import { useLoaderData, useNavigate, useSearchParams } from "@remix-run/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Collapse, Text, Title } from "@mantine/core";
 import { useSwipeable } from "react-swipeable";
-import { IconAdjustmentsHorizontal } from "@tabler/icons-react";
+import { IconAdjustmentsHorizontal, IconWorld, IconSearch } from "@tabler/icons-react";
+import { WorldHome } from "~/components/WorldMode/WorldHome";
 
 
 import { BRAND } from "~/constants/brand";
@@ -58,21 +59,48 @@ import { useEventHandlers } from "~/hooks/useEventHandlers";
 export async function loader({ request }: LoaderFunctionArgs) {
   const url = new URL(request.url);
   const country = url.searchParams.get("country");
+  const view = url.searchParams.get("view");
 
   try {
-    const countries: Country[] = await rbFetchJson(`/json/countries`);
-    let stations: Station[] = [];
+    const stationsPath = country
+      ? `/json/stations/bycountry/${encodeURIComponent(country)}?limit=100&hidebroken=true&order=clickcount&reverse=true`
+      : `/json/stations/topclicks?limit=40&hidebroken=true`;
 
-    if (country) {
-      const rawStations = await rbFetchJson<unknown>(
-        `/json/stations/bycountry/${encodeURIComponent(country)}?limit=100&hidebroken=true&order=clickcount&reverse=true`
+    const [countriesResult, stationsResult] = await Promise.allSettled([
+      rbFetchJson<Country[]>(`/json/countries`),
+      rbFetchJson<unknown>(stationsPath, undefined, { softFail: true }),
+    ]);
+
+    const countries =
+      countriesResult.status === "fulfilled" ? countriesResult.value : [];
+    let stations: Station[] = [];
+    const rawStations =
+      stationsResult.status === "fulfilled" ? stationsResult.value : null;
+
+    if (countriesResult.status === "rejected") {
+      console.error("Failed to load countries:", countriesResult.reason);
+    }
+
+    if (!rawStations) {
+      if (stationsResult.status === "rejected") {
+        console.error("Failed to load stations:", stationsResult.reason);
+      } else {
+        console.warn("Stations unavailable from all mirrors; continuing with countries.");
+      }
+    } else if (country) {
+      const normalized = normalizeStations(
+        Array.isArray(rawStations) ? rawStations : []
       );
-      const normalized = normalizeStations(Array.isArray(rawStations) ? rawStations : []);
       stations = rankStations(normalized);
+    } else {
+      // Default stations for World Mode / Global view
+      stations = normalizeStations(
+        Array.isArray(rawStations) ? rawStations : []
+      );
     }
 
     return json(
-      { countries, stations, selectedCountry: country },
+      { countries, stations, selectedCountry: country, initialView: view },
       {
         headers: {
           "Cache-Control": "public, max-age=300, stale-while-revalidate=600",
@@ -81,7 +109,8 @@ export async function loader({ request }: LoaderFunctionArgs) {
     );
   } catch (error) {
     console.error("Error loading radio data:", error);
-    return json({ countries: [], stations: [], selectedCountry: country });
+    // If even countries fail, returned defaults
+    return json({ countries: [], stations: [], selectedCountry: country, initialView: view });
   }
 }
 
@@ -89,8 +118,8 @@ import { useUIStore } from "~/state/uiStore";
 
 export default function Index() {
   // Remix hooks
-  const { countries, stations: loaderStations, selectedCountry: loaderSelectedCountry } = useLoaderData<typeof loader>();
-  const [sp] = useSearchParams();
+  const { countries, stations: loaderStations, selectedCountry: loaderSelectedCountry, initialView } = useLoaderData<typeof loader>();
+  const [sp, setSp] = useSearchParams();
   const navigate = useNavigate();
 
   // Route params
@@ -101,6 +130,31 @@ export default function Index() {
   const isCountryViewPending = Boolean(countryParam) && !loaderMatchesSearch;
   const searchQueryRaw = sp.get("q") ?? "";
   const searchQuery = searchQueryRaw.trim().toLowerCase();
+
+  // View configuration
+  const viewParam = sp.get("view");
+  const [viewMode, setViewModeState] = useState<'classical' | 'world'>(
+    initialView === 'world' || viewParam === 'world' ? 'world' : 'classical'
+  );
+
+  // Synchronize viewMode with URL
+  const setViewMode = useCallback((mode: 'classical' | 'world') => {
+    setViewModeState(mode);
+    setSp(prev => {
+      const next = new URLSearchParams(prev);
+      if (mode === 'world') next.set("view", "world");
+      else next.delete("view");
+      return next;
+    }, { preventScrollReset: true });
+  }, [setSp]);
+
+  // Handle back/forward navigation for view param
+  useEffect(() => {
+    const currentView = sp.get("view") === 'world' ? 'world' : 'classical';
+    if (currentView !== viewMode) {
+      setViewModeState(currentView);
+    }
+  }, [sp, viewMode]);
 
   // Domain hooks - all state management extracted
   const player = useRadioPlayer();
@@ -239,8 +293,19 @@ export default function Index() {
     topCountries,
     countries,
     atlasNavigation,
+    setViewMode,
   });
   const { handleWorldMoodRefresh } = handlers;
+
+  // Search handler for HeroSection
+  const handleSearch = useCallback((query: string) => {
+    setSp(prev => {
+      const next = new URLSearchParams(prev);
+      if (query) next.set("q", query);
+      else next.delete("q");
+      return next;
+    }, { replace: true, preventScrollReset: true });
+  }, [setSp]);
 
   // Card navigation handlers
   const handleCardChange = useCallback((direction: 1 | -1) => {
@@ -343,10 +408,24 @@ export default function Index() {
   // Render
   const ariaHidden = isQuickRetuneOpen ? { "aria-hidden": true, style: { pointerEvents: "none" as const, userSelect: "none" as const } } : {};
 
+  if (viewMode === 'world') {
+    return (
+      <div className="bg-[#0a0a0c] min-h-screen">
+        <WorldHome
+          nowPlaying={player.nowPlaying}
+          onPlayStation={(s) => handlers.handleStartStation(s, { autoPlay: true })}
+          initialStations={stations}
+        />
+        <Footer />
+      </div>
+    );
+  }
+
   return (
     <div className="app-bg relative min-h-screen text-slate-900 overflow-x-hidden w-full pb-32" style={{
       background: "linear-gradient(180deg, #d1d5db 0%, #9ca3af 50%, #6b7280 100%)",
     }}>
+
       <main
         className="relative z-10 mx-auto flex w-full max-w-7xl flex-col gap-4 md:gap-6 px-4 pt-0 md:px-6 md:pt-2"
         {...swipeHandlers}
@@ -355,8 +434,9 @@ export default function Index() {
         <>
           <HeroSection topCountries={topCountries} totalStations={derived.totalStations} continents={derived.continents.length}
             nowPlaying={player.nowPlaying} searchQueryRaw={searchQueryRaw} onStartListening={handlers.handleStartListening}
-            onQuickRetune={handlers.handleQuickRetune} onMissionExploreWorld={handlers.handleMissionExploreWorld}
+            onQuickRetune={handlers.handleQuickRetune} onMissionExploreWorld={() => setViewMode('world')}
             onMissionStayLocal={handlers.handleMissionStayLocal} onHoverSound={triggerHoverStatic}
+            onSearch={handleSearch}
           />
 
           {/* Stats Bar - Consistent pill surface */}
@@ -372,7 +452,9 @@ export default function Index() {
               </div>
               <div className="px-2">
                 <Text size="lg" fw={800} c="slate.9" className="leading-none">
-                  {(derived.totalStations / 1000).toFixed(0)}k+
+                  {derived.totalStations > 1000
+                    ? `${(derived.totalStations / 1000).toFixed(0)}k+`
+                    : derived.totalStations.toLocaleString()}
                 </Text>
                 <Text size="xs" c="dimmed" fw={600} tt="uppercase" className="mt-1 tracking-[0.25em]">
                   Stations
@@ -390,30 +472,61 @@ export default function Index() {
           </div>
 
           <section id="atlas" className="mt-4 md:mt-6">
-            <div className="sticky top-[73px] z-30 -mx-4 px-4 py-3 md:-mx-8 md:px-8">
+            <div className="relative -mx-4 px-4 py-3 md:-mx-8 md:px-8">
               <div className="rounded-2xl border border-white/70 bg-white/85 px-4 py-3 shadow-[0_12px_32px_rgba(15,23,42,0.12)] backdrop-blur-xl md:px-6">
                 <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
                   <div>
                     <Title order={2} style={{ fontSize: "1.35rem", fontWeight: 700, color: "#1e293b", marginBottom: "0.15rem" }}>
-                      Chart your path by continent
+                      {searchQuery ? `Search results for "${searchQuery}"` : "Chart your path by continent"}
                     </Title>
-                    <Text size="xs" c="dimmed">
-                      Filter the atlas to the regions that match your listening mood.
-                    </Text>
+                    <div className="flex items-center gap-3">
+                      <Text size="xs" c="dimmed">
+                        {searchQuery ? "Showing matching countries from the global atlas." : "Filter the atlas to the regions that match your listening mood."}
+                      </Text>
+                      {(searchQuery || atlas.activeContinent) && (
+                        <button
+                          onClick={() => {
+                            handleSearch("");
+                            atlas.setActiveContinent(null);
+                          }}
+                          className="text-[10px] font-bold uppercase tracking-widest text-indigo-600 hover:text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-100 transition-all hover:bg-indigo-100"
+                        >
+                          Clear
+                        </button>
+                      )}
+                    </div>
                   </div>
                   <Text size="xs" c="dimmed" className="whitespace-nowrap font-mono tracking-[0.16em] uppercase">
                     Showing {derived.filteredCountries.length.toLocaleString()} of {topCountries.length.toLocaleString()} spotlight countries
                   </Text>
                 </div>
 
-                <div className="mt-3">
+                <div className="mt-3 overflow-x-auto scroll-track border-t border-slate-200/30 pt-4">
                   <AtlasFilters continents={derived.continents} activeContinent={atlas.activeContinent} onContinentSelect={atlas.setActiveContinent} />
                 </div>
               </div>
             </div>
 
             <div className="mt-6 md:mt-8">
-              <AtlasGrid displaySections={derived.displaySections} onPreviewCountry={handlers.handlePreviewCountryPlay} />
+              {derived.filteredCountries.length > 0 ? (
+                <AtlasGrid displaySections={derived.displaySections} onPreviewCountry={handlers.handlePreviewCountryPlay} />
+              ) : (
+                <div className="py-16 text-center bg-white/40 rounded-3xl border-2 border-dashed border-slate-200 backdrop-blur-sm">
+                  <div className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-slate-400 mb-4">
+                    <IconSearch size={24} />
+                  </div>
+                  <Title order={3} size="h4" c="slate.8" fw={800} className="mb-1">No signals found</Title>
+                  <Text size="sm" c="dimmed" className="max-w-xs mx-auto mb-6">
+                    We couldn't find any countries matching "{searchQuery}". Try another name or explore the full atlas.
+                  </Text>
+                  <button
+                    onClick={() => handleSearch("")}
+                    className="px-6 py-2 rounded-full bg-slate-900 text-white text-xs font-bold uppercase tracking-widest hover:bg-black transition-all"
+                  >
+                    Clear Search
+                  </button>
+                </div>
+              )}
             </div>
           </section>
         </>
