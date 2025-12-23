@@ -25,7 +25,7 @@ type MenuItem = {
 
 const MENU_ITEMS: MenuItem[] = [
     { to: "/", label: "Home", icon: IconHome },
-    { to: "/world/cards", label: "World", icon: IconWorld },
+    { to: "/?view=world", label: "World", icon: IconWorld },
     { to: "/about", label: "About", icon: IconCompass },
 ];
 
@@ -141,7 +141,8 @@ export default function MobileSidebarMenu() {
                         <nav className="flex-1 overflow-y-auto p-4">
                             <ul className="space-y-2">
                                 {MENU_ITEMS.map(({ to, label, icon: Icon, badge }) => {
-                                    const isActive = location.pathname === to;
+                                    const isActive = (to === "/" && location.pathname === "/" && !location.search) ||
+                                        (to !== "/" && (location.pathname + location.search).startsWith(to));
                                     return (
                                         <li key={to}>
                                             <Link

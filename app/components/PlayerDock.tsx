@@ -350,7 +350,12 @@ export default function PlayerDock() {
     </div>
   );
 
-  if (!nowPlaying) return null;
+  const [isMounted, setIsMounted] = useState(false);
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  if (!isMounted || !nowPlaying) return null;
 
   // Desktop dock (float bottom-right to avoid covering hero CTAs)
   return (

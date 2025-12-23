@@ -145,7 +145,7 @@ export default function App() {
   }, []);
 
   return (
-    <html lang="en" className="min-h-full">
+    <html lang="en" className="min-h-full" suppressHydrationWarning>
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
@@ -162,6 +162,7 @@ export default function App() {
         style={{
           background: "#e0e5ec",
         }}
+        suppressHydrationWarning
       >
         <MantineProvider theme={theme} defaultColorScheme="light">
           <>
@@ -339,8 +340,8 @@ function GlobalAudioBridge() {
       const reason = isMixedContentStream(url, window.location.protocol)
         ? "mixed_content"
         : current.hls
-        ? "hls_stream"
-        : "audio_error";
+          ? "hls_stream"
+          : "audio_error";
       markFailed(current.uuid, reason);
       autoSkipToNext(current, reason);
     };
@@ -419,8 +420,8 @@ function GlobalAudioBridge() {
           const reason = isMixedContentStream(url, window.location.protocol)
             ? "mixed_content"
             : nowPlaying.hls
-            ? "hls_stream"
-            : "play_rejected";
+              ? "hls_stream"
+              : "play_rejected";
           markFailed(nowPlaying.uuid, reason);
           autoSkipToNext(nowPlaying, reason);
         });

@@ -36,6 +36,7 @@ interface UseEventHandlersProps {
     resetContinent: () => void;
     selectContinent: (continent: string | null) => void;
   };
+  setViewMode: (mode: 'classical' | 'world') => void;
 }
 
 /**
@@ -57,6 +58,7 @@ export function useEventHandlers({
   topCountries,
   countries,
   atlasNavigation,
+  setViewMode,
 }: UseEventHandlersProps) {
   const setIsFetchingExplore = mode.setIsFetchingExplore;
   const setExploreStations = mode.setExploreStations;
@@ -261,10 +263,10 @@ export function useEventHandlers({
   const handleMissionExploreWorld = useCallback(() => {
     mode.setListeningMode("world");
     setIsQuickRetuneOpen(false);
-    navigate("/ai", { preventScrollReset: true });
+    setViewMode("world");
   }, [
     mode,
-    navigate,
+    setViewMode,
     setIsQuickRetuneOpen,
   ]);
 
@@ -313,5 +315,6 @@ export function useEventHandlers({
     handleWorldMoodRefresh,
     handleMissionStayLocal,
     handleToggleListeningMode,
+    handleStartStation,
   };
 }

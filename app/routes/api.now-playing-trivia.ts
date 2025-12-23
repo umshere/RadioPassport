@@ -1,5 +1,6 @@
 import { json, type LoaderFunctionArgs } from "@remix-run/node";
 import type { TrackTriviaResponse, TrackTrivia } from "~/types/trivia";
+import { resolveTrackImage } from "~/utils/imageSearch";
 
 const MUSICBRAINZ_BASE = "https://musicbrainz.org/ws/2";
 const USER_AGENT =
@@ -468,10 +469,16 @@ export async function loader({ request }: LoaderFunctionArgs) {
         : null,
     ].filter(Boolean) as TrackTrivia["links"];
 
+    const imageUrl = await resolveTrackImage(
+      trivia.cleanTitle ?? title ?? "",
+      trivia.cleanArtist ?? artist ?? ""
+    );
+
     const response: TrackTriviaResponse = {
       status: "ok",
       trivia: {
         ...trivia,
+        imageUrl,
         links,
       },
     };
@@ -615,9 +622,14 @@ export async function loader({ request }: LoaderFunctionArgs) {
       : null,
   ].filter(Boolean) as TrackTrivia["links"];
 
-  const imageUrl = releaseId
+  let imageUrl = releaseId
     ? `https://coverartarchive.org/release/${releaseId}/front-250`
     : null;
+
+  // Fallback to Wikipedia/iTunes if MusicBrainz doesn't have an image
+  if (!imageUrl) {
+    imageUrl = await resolveTrackImage(recording.title ?? title ?? "", artistName);
+  }
 
   const trivia: TrackTrivia = {
     summary,

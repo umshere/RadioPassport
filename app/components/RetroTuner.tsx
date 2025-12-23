@@ -267,6 +267,7 @@ export default function RetroTuner({
         if (event.pointerType === "mouse") return;
         const target = event.target as HTMLElement;
         if (target.closest("button, a, [role='slider'], [data-swipe-ignore]")) return;
+        event.preventDefault();
         swipeStartRef.current = { x: event.clientX, y: event.clientY };
         swipeDeltaRef.current = 0;
     }, []);
@@ -302,7 +303,7 @@ export default function RetroTuner({
             exit={{ opacity: 0, y: "100%" }}
             transition={{ type: "spring", damping: 25, stiffness: 200 }}
             className="fixed inset-0 z-50 flex flex-col overflow-hidden bg-[#e0e5ec] text-slate-800"
-            style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+            style={{ paddingBottom: "env(safe-area-inset-bottom)", touchAction: "none" }}
             onPointerDown={handleSwipeStart}
             onPointerMove={handleSwipeMove}
             onPointerUp={handleSwipeEnd}

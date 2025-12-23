@@ -18,13 +18,13 @@ export function useDerivedData(
 
   const continentData = useMemo(
     () =>
-      topCountries.reduce((acc, country) => {
+      countries.reduce((acc, country) => {
         const continent = getContinent(country.iso_3166_1);
         if (!acc[continent]) acc[continent] = [];
         acc[continent].push(country);
         return acc;
       }, {} as Record<string, Country[]>),
-    [topCountries]
+    [countries]
   );
 
   const continents = useMemo(
@@ -35,11 +35,14 @@ export function useDerivedData(
   const filteredCountries = useMemo(
     () =>
       searchQuery
-        ? topCountries.filter((country) =>
-            country.name.toLowerCase().includes(searchQuery)
-          )
+        ? countries
+            .filter((country) =>
+              country?.name?.toLowerCase()?.includes(searchQuery.toLowerCase())
+            )
+            .sort((a, b) => b.stationcount - a.stationcount)
+            .slice(0, 100)
         : topCountries,
-    [searchQuery, topCountries]
+    [searchQuery, countries, topCountries]
   );
 
   const countriesByContinent = useMemo(

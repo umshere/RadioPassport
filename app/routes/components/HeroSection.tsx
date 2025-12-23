@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Tooltip } from "@mantine/core";
-import { IconHeadphones, IconCompass, IconBolt, IconSettings } from "@tabler/icons-react";
+import { IconHeadphones, IconCompass, IconBolt, IconSettings, IconSearch, IconX } from "@tabler/icons-react";
 import type { Country, Station } from "~/types/radio";
 import { usePlayerStore } from "~/state/playerStore";
 
@@ -9,13 +9,6 @@ const HERO_TAGLINES = [
   "Where every station is a new destination.",
   "Stamp your way through the world's soundscapes.",
   "Every country, one click away — your global radio passport.",
-] as const;
-
-// Top genre chips - shown in hero card
-const HERO_GENRE_CHIPS = [
-  { id: 'bollywood', label: 'Bollywood', icon: '🎬' },
-  { id: 'devotional', label: 'Devotional', icon: '🙏' },
-  { id: 'jazz', label: 'Jazz', icon: '🎺' },
 ] as const;
 
 // Bottom genre chips - shown below the card
@@ -30,8 +23,7 @@ type HeroSectionProps = {
   onMissionExploreWorld?: () => void;
   onMissionStayLocal?: () => void;
   onHoverSound?: () => void;
-  onGenreSelect?: (genre: string) => void;
-  selectedGenre?: string | null;
+  onSearch?: (query: string) => void;
 };
 
 export function HeroSection({
@@ -45,8 +37,7 @@ export function HeroSection({
   onMissionExploreWorld,
   onMissionStayLocal,
   onHoverSound,
-  onGenreSelect,
-  selectedGenre,
+  onSearch,
 }: HeroSectionProps) {
   const [heroHovered, setHeroHovered] = useState(false);
   const [heroTaglineIndex, setHeroTaglineIndex] = useState(0);
@@ -288,18 +279,24 @@ export function HeroSection({
           </motion.span>
 
           {/* Brand & Tagline */}
-          <div className="mt-5 flex items-center gap-4">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white font-bold text-xl shadow-lg">
+          <div className="mt-8 flex items-center gap-4">
+            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 via-purple-600 to-pink-500 text-white font-black text-2xl shadow-xl border-2 border-white/20">
               RP
             </div>
-            <motion.h1
-              className="text-[2.2rem] font-black tracking-tight text-slate-900 sm:text-[2.6rem]"
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, ease: "easeOut", delay: 0.18 }}
-            >
-              Radio Passport
-            </motion.h1>
+            <div>
+              <motion.h1
+                className="text-[2.6rem] font-black tracking-tighter text-slate-900 sm:text-[3.2rem] leading-[0.9]"
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, ease: "easeOut", delay: 0.18 }}
+              >
+                Radio Passport
+              </motion.h1>
+              <div className="flex items-center gap-2 mt-1">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">Live Frequency Atlas</span>
+              </div>
+            </div>
           </div>
 
           <AnimatePresence initial={false} mode="wait">
@@ -316,94 +313,58 @@ export function HeroSection({
             </motion.p>
           </AnimatePresence>
 
-          {/* CTA Buttons */}
-          <div className="mt-6 flex flex-wrap items-center gap-3">
-            <Tooltip label="Begin listening with curated picks" position="top" withArrow>
-              <button
-                type="button"
-                className="group flex h-11 items-center gap-2.5 rounded-full bg-slate-900 px-6 text-sm font-semibold text-white shadow-lg transition-all hover:bg-slate-800 hover:scale-[1.02] active:scale-[0.98]"
-                onClick={onStartListening}
-                onMouseEnter={onHoverSound}
-                onFocus={onHoverSound}
-              >
-                <IconHeadphones size={18} className="opacity-80" />
-                Start Your Journey
-              </button>
-            </Tooltip>
-            <Tooltip label="Quickly jump to a region or station" position="top" withArrow>
-              <button
-                type="button"
-                className="flex h-11 items-center gap-2 rounded-full border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-600 transition-all hover:bg-slate-50 hover:border-slate-300 hover:text-slate-900 active:scale-[0.98]"
-                onClick={onQuickRetune}
-              >
-                <IconCompass size={18} className="opacity-70" />
-                Quick Retune
-              </button>
-            </Tooltip>
+          {/* Search Bar Consolidation - The Hero Search is now the primary entry */}
+          <div className="mt-10 max-w-2xl">
+            <div className="relative group">
+              <div className="absolute -inset-1 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-2xl blur opacity-20 group-hover:opacity-40 transition duration-1000"></div>
+              <div className="relative flex items-center bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-xl focus-within:ring-2 focus-within:ring-indigo-500/50 transition-all">
+                <div className="pl-5 text-slate-400">
+                  <IconSearch size={20} />
+                </div>
+                <input
+                  id="hero-search-input"
+                  type="text"
+                  value={searchQueryRaw}
+                  onChange={(e) => onSearch?.(e.target.value)}
+                  placeholder="Find countries, cities, or stations..."
+                  className="w-full bg-transparent px-5 py-5 text-lg font-medium focus:outline-none placeholder:text-slate-300 text-slate-800"
+                />
+                {searchQueryRaw && (
+                  <button
+                    type="button"
+                    onClick={() => onSearch?.('')}
+                    className="mr-2 p-2 text-slate-400 hover:text-slate-600 transition-colors"
+                  >
+                    <IconX size={18} />
+                  </button>
+                )}
+                <div className="pr-4 hidden sm:block">
+                  <span className="text-[10px] font-bold text-slate-400 bg-slate-50 px-2 py-1 rounded border border-slate-100">⌘K</span>
+                </div>
+              </div>
+            </div>
           </div>
 
-          {/* Hero Genre Pills + World Actions */}
-          <div className="mt-6 flex flex-wrap items-center justify-between gap-4">
-            <div className="flex flex-wrap items-center gap-2">
-              {HERO_GENRE_CHIPS.map((chip, i) => (
-                <motion.button
-                  key={chip.id}
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: 0.3 + (i * 0.05) }}
-                  type="button"
-                  onClick={() => onGenreSelect?.(selectedGenre === chip.id ? '' : chip.id)}
-                  whileHover={{ scale: 1.04 }}
-                  whileTap={{ scale: 0.96 }}
-                  className={`flex h-9 items-center gap-1.5 rounded-full px-3.5 text-sm font-medium transition-all ${selectedGenre === chip.id
-                    ? 'bg-slate-900 text-white shadow-md'
-                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                    }`}
-                >
-                  <span className="text-sm">{chip.icon}</span>
-                  <span>{chip.label}</span>
-                </motion.button>
-              ))}
-            </div>
+          {/* CTA Buttons - Simplified */}
+          <div className="mt-8 flex flex-wrap items-center gap-4">
+            <button
+              type="button"
+              className="group flex h-14 items-center gap-3 rounded-full bg-slate-900 px-8 text-base font-black uppercase tracking-widest text-white shadow-2xl transition-all hover:bg-black hover:scale-[1.03] active:scale-[0.97]"
+              onClick={onStartListening}
+              onMouseEnter={onHoverSound}
+            >
+              <IconHeadphones size={20} className="text-indigo-400" />
+              Tune In Now
+            </button>
 
-            {/* World Explore CTA + Action Icons */}
-            <div className="flex items-center gap-2">
-              <motion.button
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.45 }}
-                type="button"
-                onClick={onMissionExploreWorld}
-                whileHover={{ scale: 1.03 }}
-                whileTap={{ scale: 0.97 }}
-                className="flex h-9 items-center gap-2 rounded-full bg-emerald-500 px-4 text-sm font-semibold text-white shadow-md transition-all hover:bg-emerald-600"
-              >
-                <IconBolt size={16} />
-                AI-Curated World
-              </motion.button>
-              <motion.button
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.5 }}
-                type="button"
-                whileHover={{ scale: 1.08 }}
-                whileTap={{ scale: 0.92 }}
-                className="flex h-9 w-9 items-center justify-center rounded-full bg-amber-400 text-white shadow-md transition-all hover:bg-amber-500"
-              >
-                <IconBolt size={16} />
-              </motion.button>
-              <motion.button
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.55 }}
-                type="button"
-                whileHover={{ scale: 1.08 }}
-                whileTap={{ scale: 0.92 }}
-                className="flex h-9 w-9 items-center justify-center rounded-full bg-indigo-500 text-white shadow-md transition-all hover:bg-indigo-600"
-              >
-                <IconSettings size={16} />
-              </motion.button>
-            </div>
+            <button
+              type="button"
+              className="flex h-14 items-center gap-3 rounded-full border-2 border-slate-200 bg-white/50 backdrop-blur-sm px-6 text-base font-bold text-slate-700 transition-all hover:bg-white hover:border-slate-300 active:scale-[0.97]"
+              onClick={onQuickRetune}
+            >
+              <IconCompass size={20} className="text-slate-400" />
+              Quick Retune
+            </button>
           </div>
         </div>
       </motion.section>
