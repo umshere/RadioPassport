@@ -31,7 +31,7 @@ export default function AppHeader() {
 
   return (
     <header className="sticky top-0 z-40 backdrop-blur-xl bg-white/70 transition-all duration-300">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
+      <div className="mx-auto max-w-7xl px-4 pr-12 sm:px-6 sm:pr-6 lg:px-8 lg:pr-8 h-14 flex items-center justify-between gap-4">
         {/* Logo Area */}
         <Link to="/" className="flex items-center gap-3 flex-shrink-0 group" prefetch="intent" aria-label="Radio Passport">
           <div className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-white shadow-sm ring-1 ring-slate-900/5 overflow-hidden transition-transform group-hover:scale-105">
@@ -97,9 +97,6 @@ export default function AppHeader() {
               title="Search"
             >
               <IconSearch size={20} />
-            </ActionIcon>
-            <ActionIcon variant="subtle" color="gray" title="Settings">
-              <IconSettings size={20} />
             </ActionIcon>
           </div>
         </div>

@@ -39,14 +39,14 @@ export default function MobileSidebarMenu() {
             {/* Hamburger Menu Button - Top Left */}
             <button
                 onClick={() => setIsOpen(true)}
-                className="lg:hidden fixed z-50 flex h-11 w-11 items-center justify-center rounded-xl bg-[#e0e5ec] text-slate-700 shadow-[4px_4px_8px_#b8b9be,-4px_-4px_8px_#ffffff] active:shadow-[inset_4px_4px_8px_#b8b9be,inset_-4px_-4px_8px_#ffffff] transition-all"
+                className="lg:hidden fixed z-50 flex h-10 w-10 items-center justify-center rounded-lg bg-transparent text-slate-700 transition-colors hover:text-slate-800 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-slate-300/60"
                 aria-label="Open menu"
                 style={{
-                    top: "calc(env(safe-area-inset-top, 0px) + 8px)",
+                    top: "calc(env(safe-area-inset-top, 0px) + 10px)",
                     right: "calc(env(safe-area-inset-right, 0px) + 16px)",
                 }}
             >
-                <IconMenu2 size={22} stroke={2.5} />
+                <IconMenu2 size={20} stroke={2} />
             </button>
 
             {/* Edge Swipe Trigger (Only when closed) */}

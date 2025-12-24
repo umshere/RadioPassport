@@ -130,6 +130,12 @@ export default function Index() {
   const isCountryViewPending = Boolean(countryParam) && !loaderMatchesSearch;
   const searchQueryRaw = sp.get("q") ?? "";
   const searchQuery = searchQueryRaw.trim().toLowerCase();
+  const [searchDraft, setSearchDraft] = useState(searchQueryRaw);
+  const [catalogStations, setCatalogStations] = useState<Station[] | null>(null);
+  const [isCatalogLoading, setIsCatalogLoading] = useState(false);
+  const [catalogQuery, setCatalogQuery] = useState(searchQueryRaw.trim());
+  const isCatalogSearchActive = catalogQuery.length >= 2;
+  const atlasQuery = isCatalogSearchActive ? "" : searchQuery;
 
   // View configuration
   const viewParam = sp.get("view");
@@ -182,7 +188,7 @@ export default function Index() {
     [countries]
   );
 
-  const derived = useDerivedData(countries, topCountries, searchQuery, atlas.activeContinent);
+  const derived = useDerivedData(countries, topCountries, atlasQuery, atlas.activeContinent);
   const selectedCountryMeta = selectedCountry ? atlas.countryMap.get(selectedCountry) || null : null;
   const stationFilterOptions = useMemo(() => deriveStationFilterOptions(stations), [stations]);
   const failuresById = useStationAvailabilityStore((state) => state.failuresById);
@@ -307,6 +313,13 @@ export default function Index() {
     }, { replace: true, preventScrollReset: true });
   }, [setSp]);
 
+  const handleSearchInput = useCallback((query: string) => {
+    setSearchDraft(query);
+    if (!query.trim()) {
+      handleSearch("");
+    }
+  }, [handleSearch]);
+
   // Card navigation handlers
   const handleCardChange = useCallback((direction: 1 | -1) => {
     if (cards.playerCards.length <= 1) return;
@@ -332,6 +345,55 @@ export default function Index() {
   });
 
   // Side effects
+  useEffect(() => {
+    setSearchDraft(searchQueryRaw);
+  }, [searchQueryRaw]);
+
+  useEffect(() => {
+    const trimmed = searchDraft.trim();
+    const timeout = window.setTimeout(() => {
+      setCatalogQuery(trimmed);
+      if (trimmed !== searchQueryRaw.trim()) {
+        handleSearch(trimmed);
+      }
+    }, 700);
+    return () => window.clearTimeout(timeout);
+  }, [handleSearch, searchDraft, searchQueryRaw]);
+
+  useEffect(() => {
+    const query = catalogQuery.trim();
+    if (query.length < 2) {
+      setCatalogStations(null);
+      setIsCatalogLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    setIsCatalogLoading(true);
+    rbFetchJson<unknown>(
+      `/json/stations/search?name=${encodeURIComponent(query)}&limit=24&hidebroken=true&order=clickcount&reverse=true`,
+      undefined,
+      { softFail: true }
+    )
+      .then((result) => {
+        if (cancelled) return;
+        const normalized = normalizeStations(Array.isArray(result) ? result : []);
+        setCatalogStations(normalized);
+      })
+      .catch((error) => {
+        if (cancelled) return;
+        console.warn("Catalog search failed", error);
+        setCatalogStations([]);
+      })
+      .finally(() => {
+        if (cancelled) return;
+        setIsCatalogLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [catalogQuery]);
   useEffect(() => {
     if (player.nowPlaying) addToRecent(player.nowPlaying);
   }, [player.nowPlaying, addToRecent]);
@@ -427,165 +489,200 @@ export default function Index() {
     }}>
 
       <main
-        className="relative z-10 mx-auto flex w-full max-w-7xl flex-col gap-4 md:gap-6 px-4 pt-0 md:px-6 md:pt-2"
+        className="relative z-10 flex w-full flex-col gap-0 pt-0 md:pt-2"
         {...swipeHandlers}
         {...ariaHidden}
-      >  {isCountryViewPending ? <LoadingView /> : !selectedCountry ? (
-        <>
-          <HeroSection topCountries={topCountries} totalStations={derived.totalStations} continents={derived.continents.length}
-            nowPlaying={player.nowPlaying} searchQueryRaw={searchQueryRaw} onStartListening={handlers.handleStartListening}
-            onQuickRetune={handlers.handleQuickRetune} onMissionExploreWorld={() => setViewMode('world')}
-            onMissionStayLocal={handlers.handleMissionStayLocal} onHoverSound={triggerHoverStatic}
-            onSearch={handleSearch}
-          />
-
-          {/* Stats Bar - Consistent pill surface */}
-          <div className="rounded-2xl border border-white/60 bg-white/90 px-4 py-5 shadow-lg backdrop-blur-sm md:px-8">
-            <div className="grid grid-cols-3 divide-x divide-slate-200/50 text-center">
-              <div className="px-2">
-                <Text size="lg" fw={800} c="slate.9" className="leading-none">
-                  {topCountries.length.toLocaleString()}
-                </Text>
-                <Text size="xs" c="dimmed" fw={600} tt="uppercase" className="mt-1 tracking-[0.25em]">
-                  Countries
-                </Text>
-              </div>
-              <div className="px-2">
-                <Text size="lg" fw={800} c="slate.9" className="leading-none">
-                  {derived.totalStations > 1000
-                    ? `${(derived.totalStations / 1000).toFixed(0)}k+`
-                    : derived.totalStations.toLocaleString()}
-                </Text>
-                <Text size="xs" c="dimmed" fw={600} tt="uppercase" className="mt-1 tracking-[0.25em]">
-                  Stations
-                </Text>
-              </div>
-              <div className="px-2">
-                <Text size="lg" fw={800} c="slate.9" className="leading-none">
-                  {derived.continents.length}
-                </Text>
-                <Text size="xs" c="dimmed" fw={600} tt="uppercase" className="mt-1 tracking-[0.25em]">
-                  Continents
-                </Text>
-              </div>
-            </div>
+      >
+        {isCountryViewPending ? (
+          <div className="mx-auto w-full max-w-7xl px-4 md:px-6">
+            <LoadingView />
           </div>
-
-          <section id="atlas" className="mt-4 md:mt-6">
-            <div className="relative -mx-4 px-4 py-3 md:-mx-8 md:px-8">
-              <div className="rounded-2xl border border-white/70 bg-white/85 px-4 py-3 shadow-[0_12px_32px_rgba(15,23,42,0.12)] backdrop-blur-xl md:px-6">
-                <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-                  <div>
-                    <Title order={2} style={{ fontSize: "1.35rem", fontWeight: 700, color: "#1e293b", marginBottom: "0.15rem" }}>
-                      {searchQuery ? `Search results for "${searchQuery}"` : "Chart your path by continent"}
-                    </Title>
-                    <div className="flex items-center gap-3">
-                      <Text size="xs" c="dimmed">
-                        {searchQuery ? "Showing matching countries from the global atlas." : "Filter the atlas to the regions that match your listening mood."}
-                      </Text>
-                      {(searchQuery || atlas.activeContinent) && (
-                        <button
-                          onClick={() => {
-                            handleSearch("");
-                            atlas.setActiveContinent(null);
-                          }}
-                          className="text-[10px] font-bold uppercase tracking-widest text-indigo-600 hover:text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-100 transition-all hover:bg-indigo-100"
-                        >
-                          Clear
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                  <Text size="xs" c="dimmed" className="whitespace-nowrap font-mono tracking-[0.16em] uppercase">
-                    Showing {derived.filteredCountries.length.toLocaleString()} of {topCountries.length.toLocaleString()} spotlight countries
-                  </Text>
-                </div>
-
-                <div className="mt-3 overflow-x-auto scroll-track border-t border-slate-200/30 pt-4">
-                  <AtlasFilters continents={derived.continents} activeContinent={atlas.activeContinent} onContinentSelect={atlas.setActiveContinent} />
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-6 md:mt-8">
-              {derived.filteredCountries.length > 0 ? (
-                <AtlasGrid displaySections={derived.displaySections} onPreviewCountry={handlers.handlePreviewCountryPlay} />
-              ) : (
-                <div className="py-16 text-center bg-white/40 rounded-3xl border-2 border-dashed border-slate-200 backdrop-blur-sm">
-                  <div className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-slate-400 mb-4">
-                    <IconSearch size={24} />
-                  </div>
-                  <Title order={3} size="h4" c="slate.8" fw={800} className="mb-1">No signals found</Title>
-                  <Text size="sm" c="dimmed" className="max-w-xs mx-auto mb-6">
-                    We couldn't find any countries matching "{searchQuery}". Try another name or explore the full atlas.
-                  </Text>
-                  <button
-                    onClick={() => handleSearch("")}
-                    className="px-6 py-2 rounded-full bg-slate-900 text-white text-xs font-bold uppercase tracking-widest hover:bg-black transition-all"
-                  >
-                    Clear Search
-                  </button>
-                </div>
-              )}
-            </div>
-          </section>
-        </>
-      ) : (
-        <>
-          <section className="-mx-4 sm:-mx-6 md:mx-0 rounded-2xl border border-white/70 bg-white/80 shadow-[0_12px_32px_rgba(15,23,42,0.12)] backdrop-blur-xl">
-            <CountryOverview
-              selectedCountry={selectedCountry}
-              selectedCountryMeta={selectedCountryMeta}
-              stationCount={stations.length}
-              onBack={handlers.handleBackToWorldView}
-              nowPlaying={player.nowPlaying}
-              isPlaying={player.isPlaying}
-              onPlayPause={player.playPause}
-              onNext={playNext}
-              onPrev={playPrevious}
-              queue={player.queue}
-              currentIndex={player.currentStationIndex}
-              onSelectStation={(station) => {
-                player.startStation(station, { preserveQueue: true });
-              }}
-              transparent={false}
+        ) : !selectedCountry ? (
+          <>
+            <HeroSection topCountries={topCountries} totalStations={derived.totalStations} continents={derived.continents.length}
+              nowPlaying={player.nowPlaying} searchQueryRaw={searchDraft} onStartListening={handlers.handleStartListening}
+              onQuickRetune={handlers.handleQuickRetune} onMissionExploreWorld={() => setViewMode('world')}
+              onMissionStayLocal={handlers.handleMissionStayLocal} onHoverSound={triggerHoverStatic}
+              onSearch={handleSearchInput}
             />
 
-            <div className="border-t border-slate-300/30 px-6 py-6 md:px-10">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <Text fw={700} size="sm" c="slate.9">
-                    Stations in {selectedCountry}
-                  </Text>
-                  <Text size="xs" c="dimmed" className="font-mono uppercase tracking-[0.32em]">
-                    {filteredStations.length.toLocaleString()} / {stations.length.toLocaleString()} tuned
-                  </Text>
+            <div className="mx-auto mt-4 flex w-full max-w-7xl flex-col gap-4 px-4 md:mt-6 md:gap-6 md:px-6">
+              {/* Stats Bar - Consistent pill surface */}
+              <div className="rounded-2xl border border-white/60 bg-white/90 px-4 py-5 shadow-lg backdrop-blur-sm md:px-8">
+                <div className="grid grid-cols-3 divide-x divide-slate-200/50 text-center">
+                  <div className="px-2">
+                    <Text size="lg" fw={800} c="slate.9" className="leading-none">
+                      {topCountries.length.toLocaleString()}
+                    </Text>
+                    <Text size="xs" c="dimmed" fw={600} tt="uppercase" className="mt-1 tracking-[0.25em]">
+                      Countries
+                    </Text>
+                  </div>
+                  <div className="px-2">
+                    <Text size="lg" fw={800} c="slate.9" className="leading-none">
+                      {derived.totalStations > 1000
+                        ? `${(derived.totalStations / 1000).toFixed(0)}k+`
+                        : derived.totalStations.toLocaleString()}
+                    </Text>
+                    <Text size="xs" c="dimmed" fw={600} tt="uppercase" className="mt-1 tracking-[0.25em]">
+                      Stations
+                    </Text>
+                  </div>
+                  <div className="px-2">
+                    <Text size="lg" fw={800} c="slate.9" className="leading-none">
+                      {derived.continents.length}
+                    </Text>
+                    <Text size="xs" c="dimmed" fw={600} tt="uppercase" className="mt-1 tracking-[0.25em]">
+                      Continents
+                    </Text>
+                  </div>
                 </div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setIsFilterDrawerOpen(true)}
-                    className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-300 text-slate-600 transition hover:bg-slate-50 md:hidden"
-                    aria-label="Open filters"
-                  >
-                    <IconAdjustmentsHorizontal size={18} />
-                  </button>
+              </div>
+
+              {catalogQuery.length >= 2 && (
+                <section className="space-y-4">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <Title order={2} style={{ fontSize: "1.35rem", fontWeight: 700, color: "#1e293b" }}>
+                      Stations matching "{catalogQuery}"
+                    </Title>
+                    <button
+                      onClick={() => handleSearch("")}
+                      className="text-[10px] font-bold uppercase tracking-widest text-indigo-600 hover:text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-100 transition-all hover:bg-indigo-100"
+                    >
+                      Clear
+                    </button>
+                  </div>
+                  <StationGrid
+                    stations={catalogStations ?? []}
+                    nowPlaying={player.nowPlaying}
+                    stationRefs={stationRefs}
+                    onPlayStation={handleStartStation}
+                    isFetchingExplore={isCatalogLoading}
+                    favoriteStationIds={favoriteStationIds}
+                    onToggleFavorite={handleToggleFavorite}
+                    emptyMessage={`No stations found for "${catalogQuery}". Try another search.`}
+                    unavailableIds={unavailableIds}
+                  />
+                </section>
+              )}
+
+              <section id="atlas" className="mt-4 md:mt-6">
+                <div className="relative -mx-4 px-4 py-3 md:-mx-6 md:px-6">
+                  <div className="rounded-2xl border border-white/70 bg-white/85 px-4 py-3 shadow-[0_12px_32px_rgba(15,23,42,0.12)] backdrop-blur-xl md:px-6">
+                    <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                      <div>
+                        <Title order={2} style={{ fontSize: "1.35rem", fontWeight: 700, color: "#1e293b", marginBottom: "0.15rem" }}>
+                          {atlasQuery ? `Search results for "${atlasQuery}"` : "Chart your path by continent"}
+                        </Title>
+                        <div className="flex items-center gap-3">
+                          <Text size="xs" c="dimmed">
+                            {atlasQuery ? "Showing matching countries from the global atlas." : "Filter the atlas to the regions that match your listening mood."}
+                          </Text>
+                          {(atlasQuery || atlas.activeContinent) && (
+                            <button
+                              onClick={() => {
+                                handleSearch("");
+                                atlas.setActiveContinent(null);
+                              }}
+                              className="text-[10px] font-bold uppercase tracking-widest text-indigo-600 hover:text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-100 transition-all hover:bg-indigo-100"
+                            >
+                              Clear
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                      <Text size="xs" c="dimmed" className="whitespace-nowrap font-mono tracking-[0.16em] uppercase">
+                        Showing {derived.filteredCountries.length.toLocaleString()} of {topCountries.length.toLocaleString()} spotlight countries
+                      </Text>
+                    </div>
+
+                    <div className="mt-3 overflow-x-auto scroll-track border-t border-slate-200/30 pt-4">
+                      <AtlasFilters continents={derived.continents} activeContinent={atlas.activeContinent} onContinentSelect={atlas.setActiveContinent} />
+                    </div>
+                  </div>
                 </div>
-                <div className="hidden flex-wrap items-center gap-2 md:flex">
-                  <button
-                    type="button"
-                    onClick={() => setStationFilters(createDefaultStationFilters())}
-                    className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500 hover:text-slate-900"
-                  >
-                    Reset
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setAdvancedFiltersOpen((prev) => !prev)}
-                    className="rounded-full border border-slate-300 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.25em] text-slate-600 transition hover:bg-slate-50"
-                  >
-                    {isAdvancedFiltersOpen ? "Hide advanced" : "Advanced"}
-                  </button>
+
+                <div className="mt-6 md:mt-8">
+                  {derived.filteredCountries.length > 0 ? (
+                    <AtlasGrid displaySections={derived.displaySections} onPreviewCountry={handlers.handlePreviewCountryPlay} />
+                  ) : (
+                    <div className="py-16 text-center bg-white/40 rounded-3xl border-2 border-dashed border-slate-200 backdrop-blur-sm">
+                      <div className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-slate-400 mb-4">
+                        <IconSearch size={24} />
+                      </div>
+                      <Title order={3} size="h4" c="slate.8" fw={800} className="mb-1">No signals found</Title>
+                      <Text size="sm" c="dimmed" className="max-w-xs mx-auto mb-6">
+                        We couldn't find any countries matching "{atlasQuery}". Try another name or explore the full atlas.
+                      </Text>
+                      <button
+                        onClick={() => handleSearch("")}
+                        className="px-6 py-2 rounded-full bg-slate-900 text-white text-xs font-bold uppercase tracking-widest hover:bg-black transition-all"
+                      >
+                        Clear Search
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </section>
+            </div>
+          </>
+        ) : (
+          <div className="mx-auto w-full max-w-7xl px-4 md:px-6">
+            <section className="-mx-4 sm:-mx-6 md:mx-0 rounded-2xl border border-white/70 bg-white/80 shadow-[0_12px_32px_rgba(15,23,42,0.12)] backdrop-blur-xl">
+              <CountryOverview
+                selectedCountry={selectedCountry}
+                selectedCountryMeta={selectedCountryMeta}
+                stationCount={stations.length}
+                onBack={handlers.handleBackToWorldView}
+                nowPlaying={player.nowPlaying}
+                isPlaying={player.isPlaying}
+                onPlayPause={player.playPause}
+                onNext={playNext}
+                onPrev={playPrevious}
+                queue={player.queue}
+                currentIndex={player.currentStationIndex}
+                onSelectStation={(station) => {
+                  player.startStation(station, { preserveQueue: true });
+                }}
+                transparent={false}
+              />
+
+              <div className="border-t border-slate-300/30 px-6 py-6 md:px-10">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <Text fw={700} size="sm" c="slate.9">
+                      Stations in {selectedCountry}
+                    </Text>
+                    <Text size="xs" c="dimmed" className="font-mono uppercase tracking-[0.32em]">
+                      {filteredStations.length.toLocaleString()} / {stations.length.toLocaleString()} tuned
+                    </Text>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setIsFilterDrawerOpen(true)}
+                      className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-300 text-slate-600 transition hover:bg-slate-50 md:hidden"
+                      aria-label="Open filters"
+                    >
+                      <IconAdjustmentsHorizontal size={18} />
+                    </button>
+                  </div>
+                  <div className="hidden flex-wrap items-center gap-2 md:flex">
+                    <button
+                      type="button"
+                      onClick={() => setStationFilters(createDefaultStationFilters())}
+                      className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500 hover:text-slate-900"
+                    >
+                      Reset
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setAdvancedFiltersOpen((prev) => !prev)}
+                      className="rounded-full border border-slate-300 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.25em] text-slate-600 transition hover:bg-slate-50"
+                    >
+                      {isAdvancedFiltersOpen ? "Hide advanced" : "Advanced"}
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -624,23 +721,22 @@ export default function Index() {
                 />
 
               </div>
-            </div>
-          </section>
+            </section>
 
-          <div>
-            <StationGrid
-              stations={filteredStations}
-              nowPlaying={player.nowPlaying}
-              stationRefs={stationRefs}
-              onPlayStation={handleStartStation}
-              isFetchingExplore={mode.isFetchingExplore}
-              favoriteStationIds={favoriteStationIds}
-              onToggleFavorite={handleToggleFavorite}
-              emptyMessage={filteredEmptyMessage}
-              unavailableIds={unavailableIds}
-            />
+            <div>
+              <StationGrid
+                stations={filteredStations}
+                nowPlaying={player.nowPlaying}
+                stationRefs={stationRefs}
+                onPlayStation={handleStartStation}
+                isFetchingExplore={mode.isFetchingExplore}
+                favoriteStationIds={favoriteStationIds}
+                onToggleFavorite={handleToggleFavorite}
+                emptyMessage={filteredEmptyMessage}
+                unavailableIds={unavailableIds}
+              />
+            </div>
           </div>
-        </>
       )}
       </main>
 

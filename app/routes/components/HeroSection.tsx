@@ -109,18 +109,12 @@ export function HeroSection({
 
   return (
     <div
-      className="flex flex-col min-h-[calc(100vh-120px)] md:min-h-0"
+      className="-mt-4 flex w-full flex-col min-h-0 md:min-h-[calc(100vh-120px)]"
       style={{
         margin: 0,
         border: 'none',
         background: 'transparent',
-        // Mobile: minimal padding, Desktop: more breathing room
-        paddingLeft: 'clamp(4px, 2vw, 40px)',
-        paddingRight: 'clamp(4px, 2vw, 40px)',
-        paddingTop: 'clamp(4px, 1vw, 32px)',
-        // Break out of parent container padding on mobile
-        marginLeft: 'clamp(-16px, -4vw, 0px)',
-        marginRight: 'clamp(-16px, -4vw, 0px)',
+        paddingTop: 0,
       }}
     >
       {/* Hero Image - More visible on mobile, proper aspect ratio */}
@@ -128,10 +122,9 @@ export function HeroSection({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.7, ease: "easeOut" }}
-        className="relative overflow-hidden mb-[-180px] sm:mb-[-200px] md:mb-[-180px] rounded-none sm:rounded-[10px] md:rounded-[20px]"
+        className="relative overflow-hidden mb-[-180px] sm:mb-[-200px] md:mb-[-180px] rounded-none sm:rounded-[10px] md:rounded-[20px] min-h-[26vh] sm:min-h-[40vh] md:min-h-[45vh]"
         style={{
           zIndex: 1,
-          minHeight: '45vh',
           border: 'none',
           outline: 'none',
         }}
@@ -146,12 +139,10 @@ export function HeroSection({
         <img
           src="/RPHERO_WIDE.png"
           alt="Radio Passport - Global music discovery"
-          className="w-full h-full object-cover rounded-none sm:rounded-[10px] md:rounded-[20px]"
+          className="block w-full h-full min-h-[26vh] sm:min-h-[40vh] md:min-h-[45vh] object-cover object-top rounded-none sm:rounded-[10px] md:rounded-[20px]"
           style={{
-            minHeight: '45vh',
             height: 'auto',
             width: '100%',
-            objectPosition: 'center 30%',
             aspectRatio: '16 / 9',
           }}
         />
@@ -163,6 +154,9 @@ export function HeroSection({
             background: 'linear-gradient(to bottom, rgba(255,255,255,0.5) 0%, rgba(255,255,255,0.2) 8%, transparent 20%, transparent 100%)',
           }}
         />
+
+        {/* Subtle bottom fade on mobile to smooth the transition */}
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-white/40 sm:hidden" />
 
         {/* Warm orange glow at bottom right - subtle, no white fade */}
         <div
@@ -230,13 +224,23 @@ export function HeroSection({
         onPointerLeave={() => setHeroHovered(false)}
         style={{
           zIndex: 2,
-          // More transparent glassmorphic gradient to show background image
-          background: 'linear-gradient(to bottom, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.35) 20%, rgba(255,255,255,0.6) 40%, rgba(255,255,255,0.85) 60%, rgba(255,255,255,0.95) 100%)',
           marginBottom: '16px',
-          backdropFilter: 'blur(16px)',
-          WebkitBackdropFilter: 'blur(16px)',
         }}
       >
+        {/* Frosted gradient overlay: clear at top, stronger toward content */}
+        <div
+          className="pointer-events-none absolute inset-0"
+          style={{
+            background:
+              "linear-gradient(to bottom, rgba(255,255,255,0) 0%, rgba(255,255,255,0) 22%, rgba(255,255,255,0.12) 38%, rgba(255,255,255,0.32) 58%, rgba(255,255,255,0.62) 78%, rgba(255,255,255,0.9) 100%)",
+            backdropFilter: "blur(16px)",
+            WebkitBackdropFilter: "blur(16px)",
+            maskImage:
+              "linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,0) 25%, rgba(0,0,0,0.2) 40%, rgba(0,0,0,0.6) 65%, rgba(0,0,0,1) 100%)",
+            WebkitMaskImage:
+              "linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,0) 25%, rgba(0,0,0,0.2) 40%, rgba(0,0,0,0.6) 65%, rgba(0,0,0,1) 100%)",
+          }}
+        />
         {/* Mobile: no border/shadow, Desktop: subtle border/shadow via CSS */}
         <style dangerouslySetInnerHTML={{
           __html: `
@@ -254,7 +258,7 @@ export function HeroSection({
             background: 'radial-gradient(ellipse 50% 40% at 85% 100%, rgba(255,160,100,0.12) 0%, transparent 70%)',
           }}
         />
-        <div className="relative px-4 pt-16 pb-10 sm:px-6 sm:pt-12 md:px-10 md:pt-6 md:pb-12 max-w-7xl mx-auto">
+        <div className="relative -mt-2 px-4 pt-16 pb-10 sm:mt-0 sm:px-6 sm:pt-12 md:px-10 md:pt-6 md:pb-12 max-w-7xl mx-auto">
           {/* Status Ticker */}
           <motion.span
             className="inline-flex h-8 items-center gap-2 rounded-full bg-white/90 px-4 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-700 shadow-sm"
