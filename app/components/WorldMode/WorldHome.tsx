@@ -439,7 +439,7 @@ export function WorldHome({ nowPlaying, onPlayStation, initialStations }: WorldH
 
                     {/* Floating HUD Toggle Button - Mobile only */}
                     {nowPlaying && !terminalOpened && (
-                        <div className="lg:hidden fixed bottom-24 right-6 z-40 animate-fade-in">
+                        <div className="lg:hidden fixed bottom-36 right-6 z-60 animate-fade-in">
                             <Tooltip label="Open Terminal HUD" position="left">
                                 <ActionIcon
                                     size={64}
