@@ -302,7 +302,7 @@ export default function RetroTuner({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: "100%" }}
             transition={{ type: "spring", damping: 25, stiffness: 200 }}
-            className="fixed inset-0 z-50 flex flex-col overflow-hidden bg-[#e0e5ec] text-slate-800"
+            className="fixed inset-0 z-50 flex flex-col overflow-hidden bg-[#0b0c10] text-amber-50"
             style={{ paddingBottom: "env(safe-area-inset-bottom)", touchAction: "none" }}
             onPointerDown={handleSwipeStart}
             onPointerMove={handleSwipeMove}
@@ -313,9 +313,9 @@ export default function RetroTuner({
             <div className="flex items-center justify-between px-6 py-4 md:py-6">
                 <ActionIcon
                     variant="transparent"
-                    color="dark"
+                    color="yellow"
                     onClick={onClose}
-                    className="hidden md:inline-flex opacity-60 hover:opacity-100"
+                    className="hidden md:inline-flex opacity-60 hover:opacity-100 text-amber-100"
                 >
                     <IconChevronDown size={28} />
                 </ActionIcon>
@@ -327,13 +327,13 @@ export default function RetroTuner({
                 <div className="flex flex-col items-center gap-5 px-4 pb-36 pt-0 md:gap-8 md:pb-40 md:pt-2">
                     {/* 1. Giant Frequency Number */}
                     <div className="flex flex-col items-center">
-                        <h1 className="font-mono text-7xl md:text-8xl font-bold tracking-tighter text-slate-900">
+                        <h1 className="font-mono text-7xl md:text-8xl font-bold tracking-tighter text-amber-50">
                             {frequency.toFixed(1)}
                         </h1>
-                        <p className="mt-2 text-sm font-medium uppercase tracking-widest text-slate-500">
+                        <p className="mt-2 text-sm font-medium uppercase tracking-widest text-amber-100/70">
                             {displayStation.name}
                         </p>
-                        <p className="mt-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+                        <p className="mt-2 text-xs font-semibold uppercase tracking-[0.2em] text-amber-100/50">
                             {isPreviewing ? "Tuning preview" : "Now playing"}
                         </p>
                     </div>
@@ -341,7 +341,7 @@ export default function RetroTuner({
                     {/* 2. Radio Tuner Scale & 3. Needle */}
                     <div className="relative w-full max-w-md px-2 md:px-8">
                         {/* Glass Container */}
-                        <div className="relative h-28 md:h-32 w-full overflow-hidden rounded-2xl bg-slate-200/50 shadow-inner backdrop-blur-sm">
+                        <div className="relative h-28 md:h-32 w-full overflow-hidden rounded-2xl bg-[#1b1f2a] shadow-inner">
                             {/* Scale Ticks */}
                             <div className="absolute inset-x-0 top-1/2 flex -translate-y-1/2 justify-between px-6 md:px-8">
                                 {ticks.map((tick, i) => {
@@ -353,11 +353,11 @@ export default function RetroTuner({
                                             style={{ opacity: Math.abs(tick - freqNum) < 1.5 ? 1 : 0.3 }}
                                         >
                                             <div
-                                                className={`w-px bg-slate-400 ${isMajor ? "h-6 md:h-8" : "h-3 md:h-4"
+                                                className={`w-px bg-amber-200/60 ${isMajor ? "h-6 md:h-8" : "h-3 md:h-4"
                                                     }`}
                                             />
                                             {isMajor && (
-                                                <span className="text-[9px] md:text-[10px] font-bold text-slate-500">
+                                                <span className="text-[9px] md:text-[10px] font-bold text-amber-100/70">
                                                     {Math.floor(tick)}
                                                 </span>
                                             )}
@@ -366,22 +366,22 @@ export default function RetroTuner({
                                 })}
                             </div>
 
-                            {/* Red Needle */}
+                            {/* Gold Needle */}
                             <div className="absolute inset-0 flex items-center justify-center">
-                                <div className="h-full w-0.5 bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.6)]" />
+                                <div className="h-full w-0.5 bg-[#f6c86f] shadow-[0_0_12px_rgba(246,200,111,0.6)]" />
                                 {/* Triangle/Marker */}
-                                <div className="absolute top-1/2 h-3 w-3 -translate-y-1/2 rotate-45 bg-red-500" />
+                                <div className="absolute top-1/2 h-3 w-3 -translate-y-1/2 rotate-45 bg-[#f6c86f]" />
                             </div>
                         </div>
 
                         {/* Side Actions */}
                         <div className="absolute top-1/2 -translate-y-1/2 left-2 md:left-2">
-                            <ActionIcon variant="transparent" color="red">
+                            <ActionIcon variant="transparent" color="yellow" className="text-amber-100">
                                 <IconHeart size={20} />
                             </ActionIcon>
                         </div>
                         <div className="absolute top-1/2 -translate-y-1/2 right-2 md:right-2">
-                            <ActionIcon variant="transparent" color="gray">
+                            <ActionIcon variant="transparent" color="gray" className="text-amber-100/70">
                                 <IconShare size={20} />
                             </ActionIcon>
                         </div>
@@ -405,7 +405,7 @@ export default function RetroTuner({
                     <div className="flex items-center justify-center gap-6 md:gap-8">
                         <button
                             onClick={onPrev}
-                            className="flex h-14 w-14 md:h-16 md:w-16 items-center justify-center rounded-2xl bg-[#e0e5ec] text-slate-500 shadow-[6px_6px_12px_#b8b9be,-6px_-6px_12px_#ffffff] active:shadow-[inset_6px_6px_12px_#b8b9be,inset_-6px_-6px_12px_#ffffff]"
+                            className="flex h-14 w-14 md:h-16 md:w-16 items-center justify-center rounded-2xl bg-[#161a22] text-amber-100/70 border border-amber-400/20 shadow-[0_10px_30px_rgba(0,0,0,0.4)] active:scale-95"
                         >
                             <IconPlayerSkipBackFilled size={20} />
                         </button>
@@ -452,7 +452,7 @@ export default function RetroTuner({
                                 event.currentTarget.releasePointerCapture(event.pointerId);
                                 setIsDialing(false);
                             }}
-                            className="relative h-28 w-28 rounded-full bg-[#e0e5ec] shadow-[10px_10px_20px_#b8b9be,-10px_-10px_20px_#ffffff] touch-none"
+                            className="relative h-28 w-28 rounded-full bg-[#161a22] border border-amber-400/25 shadow-[0_18px_40px_rgba(0,0,0,0.55)] touch-none"
                             aria-label="Tuning dial"
                             role="slider"
                             aria-valuemin={0}
@@ -466,10 +466,10 @@ export default function RetroTuner({
                                 }}
                             >
                                 <div
-                                    className="absolute inset-2 rounded-full shadow-[inset_6px_6px_12px_#b8b9be,inset_-6px_-6px_12px_#ffffff]"
+                                    className="absolute inset-2 rounded-full shadow-[inset_2px_2px_10px_rgba(0,0,0,0.55)]"
                                     style={{
                                         backgroundImage:
-                                            "repeating-linear-gradient(90deg, rgba(120,126,136,0.35) 0px, rgba(120,126,136,0.35) 1px, rgba(245,247,252,0.75) 2px, rgba(245,247,252,0.75) 4px)",
+                                            "repeating-linear-gradient(90deg, rgba(255,204,122,0.18) 0px, rgba(255,204,122,0.18) 1px, rgba(20,24,32,0.9) 2px, rgba(20,24,32,0.9) 4px)",
                                     }}
                                 />
                             </div>
@@ -488,7 +488,7 @@ export default function RetroTuner({
                                     event.stopPropagation();
                                     onPlayPause();
                                 }}
-                                className="absolute inset-7 z-10 flex items-center justify-center rounded-full bg-[#d9dee7] text-slate-700 shadow-[6px_6px_12px_#b8b9be,-6px_-6px_12px_#ffffff] active:shadow-[inset_4px_4px_8px_#b8b9be,inset_-4px_-4px_8px_#ffffff]"
+                                className="absolute inset-7 z-10 flex items-center justify-center rounded-full bg-gradient-to-br from-[#f6c86f] to-[#f1aa45] text-slate-900 shadow-[0_12px_24px_rgba(246,200,111,0.5)]"
                                 aria-label={isPlaying ? "Pause" : "Play"}
                             >
                                 {isPlaying ? (
@@ -501,12 +501,12 @@ export default function RetroTuner({
 
                         <button
                             onClick={onNext}
-                            className="flex h-14 w-14 md:h-16 md:w-16 items-center justify-center rounded-2xl bg-[#e0e5ec] text-slate-500 shadow-[6px_6px_12px_#b8b9be,-6px_-6px_12px_#ffffff] active:shadow-[inset_6px_6px_12px_#b8b9be,inset_-6px_-6px_12px_#ffffff]"
+                            className="flex h-14 w-14 md:h-16 md:w-16 items-center justify-center rounded-2xl bg-[#161a22] text-amber-100/70 border border-amber-400/20 shadow-[0_10px_30px_rgba(0,0,0,0.4)] active:scale-95"
                         >
                             <IconPlayerSkipForwardFilled size={20} />
                         </button>
                     </div>
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-slate-400">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-amber-100/50">
                         Rotate to tune / Press to play
                     </p>
                 </div>
@@ -595,12 +595,12 @@ const TrackSpotlight = memo(function TrackSpotlight({
     return (
         <div className="w-full max-w-2xl px-5">
             <div className="flex items-stretch gap-3">
-                <div className="relative h-40 md:h-44 flex-1 overflow-hidden rounded-2xl bg-[#8aa77b] shadow-[inset_6px_6px_12px_rgba(40,58,32,0.5),inset_-6px_-6px_12px_rgba(176,204,160,0.55)]">
+                <div className="relative h-40 md:h-44 flex-1 overflow-hidden rounded-2xl border border-amber-400/20 bg-[#12151c] shadow-[0_18px_40px_rgba(0,0,0,0.5),inset_1px_1px_2px_rgba(255,255,255,0.05)]">
                     <div
                         className="pointer-events-none absolute inset-0 opacity-35"
                         style={{
                             backgroundImage:
-                                "repeating-linear-gradient(0deg, rgba(10,20,10,0.12) 0px, rgba(10,20,10,0.12) 1px, rgba(0,0,0,0) 2px, rgba(0,0,0,0) 3px)",
+                                "repeating-linear-gradient(0deg, rgba(245,193,104,0.08) 0px, rgba(245,193,104,0.08) 1px, rgba(0,0,0,0) 2px, rgba(0,0,0,0) 3px)",
                         }}
                     />
                     <div
@@ -611,12 +611,12 @@ const TrackSpotlight = memo(function TrackSpotlight({
                             backgroundSize: "6px 6px",
                         }}
                     />
-                    <div className="pointer-events-none absolute inset-0 rounded-2xl shadow-[inset_1px_1px_2px_rgba(230,245,210,0.7),inset_-2px_-2px_4px_rgba(25,32,18,0.45)]" />
+                    <div className="pointer-events-none absolute inset-0 rounded-2xl shadow-[inset_1px_1px_2px_rgba(255,255,255,0.06),inset_-2px_-2px_6px_rgba(0,0,0,0.6)]" />
                     <div
                         data-swipe-ignore
-                        className="h-full overflow-hidden px-5 pb-5 pt-4 font-['Courier_New',Courier,monospace] text-[#eff8e6]"
+                        className="h-full overflow-hidden px-5 pb-5 pt-4 font-mono text-amber-50"
                     >
-                    <div className="flex items-center justify-between gap-3 text-[#e2f1d7]">
+                    <div className="flex items-center justify-between gap-3 text-amber-100/60">
                         <div className="text-[11px] font-semibold uppercase tracking-[0.3em]">
                             Track Spotlight
                         </div>
@@ -625,11 +625,11 @@ const TrackSpotlight = memo(function TrackSpotlight({
                         </div>
                     </div>
 
-                    <Text size="xs" className="mt-2 text-[#e5f3dc]">
+                    <Text size="xs" className="mt-2 text-amber-100/70">
                         {triviaTitle}
                     </Text>
                     {freeTrivia.status === "loading" && (
-                        <Text size="xs" className="mt-2 animate-pulse text-[#d7e6cc]">
+                        <Text size="xs" className="mt-2 animate-pulse text-amber-100/60">
                             Updating spotlight…
                         </Text>
                     )}
@@ -638,7 +638,7 @@ const TrackSpotlight = memo(function TrackSpotlight({
                         <Text
                             size="sm"
                             fw={600}
-                            className="mt-3 text-[#f4ffe9]"
+                            className="mt-3 text-amber-50"
                             style={{
                                 display: "-webkit-box",
                                 WebkitLineClamp: showDetails ? 4 : 2,
@@ -653,7 +653,7 @@ const TrackSpotlight = memo(function TrackSpotlight({
                         <Text
                             size="sm"
                             fw={600}
-                            className="mt-3 text-[#f4ffe9]"
+                            className="mt-3 text-amber-50"
                             style={{
                                 display: "-webkit-box",
                                 WebkitLineClamp: showDetails ? 4 : 2,
@@ -665,14 +665,14 @@ const TrackSpotlight = memo(function TrackSpotlight({
                         </Text>
                     )}
                     {showDetails && freeTrivia.trivia?.facts?.length ? (
-                        <div className="mt-2 flex flex-wrap gap-2 text-[11px] text-[#e2f1d7]">
+                        <div className="mt-2 flex flex-wrap gap-2 text-[11px] text-amber-100/70">
                             {freeTrivia.trivia.facts.slice(0, 2).map((fact) => (
                                 <span
                                     key={fact.label}
-                                    className="rounded-full border border-[#c8dab8] px-2 py-0.5 text-[#e7f4dc]"
+                                    className="rounded-full border border-amber-400/20 px-2 py-0.5 text-amber-100/80"
                                 >
                                     <span className="font-semibold">{fact.label}</span>
-                                    <span className="text-[#d5e7c8]"> • </span>
+                                    <span className="text-amber-100/40"> • </span>
                                     <span>{fact.value}</span>
                                 </span>
                             ))}
@@ -708,12 +708,12 @@ const TrackSpotlight = memo(function TrackSpotlight({
                             wheelStartRef.current = null;
                             setWheelNudge(0);
                         }}
-                        className="relative h-20 w-9 rounded-full bg-[#c7ccd4] shadow-[inset_3px_3px_6px_rgba(130,135,145,0.55),inset_-3px_-3px_6px_rgba(255,255,255,0.9),0_8px_12px_rgba(120,125,135,0.28)]"
+                        className="relative h-20 w-9 rounded-full bg-[#171b24] shadow-[inset_2px_2px_6px_rgba(0,0,0,0.5),inset_-2px_-2px_6px_rgba(255,255,255,0.06),0_8px_16px_rgba(0,0,0,0.4)]"
                         style={{
                             transform: `translateY(${wheelNudge * 1.5}px)`,
                             transition: wheelNudge === 0 ? "transform 120ms ease-out" : "transform 80ms ease-in",
                             backgroundImage:
-                                "linear-gradient(90deg, rgba(245,247,250,0.85) 0%, rgba(200,205,214,0.95) 35%, rgba(175,181,191,0.9) 60%, rgba(230,233,239,0.9) 100%), repeating-linear-gradient(90deg, rgba(255,255,255,0.45) 0px, rgba(255,255,255,0.45) 1px, rgba(150,156,166,0.28) 2px, rgba(150,156,166,0.28) 4px)",
+                                "linear-gradient(90deg, rgba(24,28,36,0.95) 0%, rgba(15,18,24,0.9) 45%, rgba(30,34,44,0.95) 100%), repeating-linear-gradient(90deg, rgba(255,204,122,0.2) 0px, rgba(255,204,122,0.2) 1px, rgba(24,28,36,0.6) 2px, rgba(24,28,36,0.6) 4px)",
                         }}
                         aria-label="Spotlight side control"
                         role="slider"
@@ -721,15 +721,15 @@ const TrackSpotlight = memo(function TrackSpotlight({
                         aria-valuemax={100}
                         aria-valuenow={Math.round(wheelPos * 100)}
                     >
-                        <div className="absolute left-2 right-2 top-1.5 h-2 rounded-full bg-[#b2b7c1] shadow-[inset_1px_1px_2px_rgba(120,126,136,0.7),inset_-1px_-1px_2px_rgba(255,255,255,0.7)]" />
-                        <div className="absolute left-2 right-2 bottom-1.5 h-2 rounded-full bg-[#b2b7c1] shadow-[inset_1px_1px_2px_rgba(120,126,136,0.7),inset_-1px_-1px_2px_rgba(255,255,255,0.7)]" />
+                        <div className="absolute left-2 right-2 top-1.5 h-2 rounded-full bg-[#141822] shadow-[inset_1px_1px_2px_rgba(0,0,0,0.6)]" />
+                        <div className="absolute left-2 right-2 bottom-1.5 h-2 rounded-full bg-[#141822] shadow-[inset_1px_1px_2px_rgba(0,0,0,0.6)]" />
                         <div
-                            className="absolute left-1.5 right-1.5 h-5 rounded-full bg-[#f0f2f6]"
+                            className="absolute left-1.5 right-1.5 h-5 rounded-full bg-[#f6c86f]"
                             style={{
                                 top: `${10 + wheelPos * 60}px`,
                                 transform: "translateY(-50%)",
                                 boxShadow:
-                                    "inset 1px 1px 2px rgba(150,155,165,0.6), inset -1px -1px 2px rgba(255,255,255,0.9), 0 2px 4px rgba(120,125,135,0.35)",
+                                    "inset 1px 1px 2px rgba(255,255,255,0.35), 0 2px 6px rgba(0,0,0,0.45)",
                             }}
                         />
                     </div>
@@ -741,7 +741,7 @@ const TrackSpotlight = memo(function TrackSpotlight({
                         {hasMetadata && (
                             <button
                                 type="button"
-                                className="inline-flex items-center gap-2 rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-600 bg-[#e0e5ec] shadow-[inset_2px_2px_4px_#c5c9d1,inset_-2px_-2px_4px_#ffffff]"
+                                className="inline-flex items-center gap-2 rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-amber-100 bg-[#141822] border border-amber-400/20"
                                 onClick={() => {
                                     setShowDetails((prev) => !prev);
                                     if (canExpand) {
@@ -761,7 +761,7 @@ const TrackSpotlight = memo(function TrackSpotlight({
                                     href={link.url}
                                     target="_blank"
                                     rel="noreferrer"
-                                    className="flex h-9 w-9 items-center justify-center rounded-full bg-[#e0e5ec] text-slate-600 shadow-[inset_2px_2px_4px_#c5c9d1,inset_-2px_-2px_4px_#ffffff]"
+                                    className="flex h-9 w-9 items-center justify-center rounded-full bg-[#141822] text-amber-100 border border-amber-400/20"
                                     aria-label={link.label ?? link.kind}
                                     title={link.label ?? link.kind}
                                 >
@@ -775,8 +775,8 @@ const TrackSpotlight = memo(function TrackSpotlight({
                     type="button"
                     className={`ml-auto inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.22em] ${
                         hasMoreContent
-                            ? "text-slate-600 bg-[#e0e5ec] shadow-[inset_2px_2px_4px_#c5c9d1,inset_-2px_-2px_4px_#ffffff]"
-                            : "text-slate-400 bg-[#d5dae2] shadow-[inset_2px_2px_4px_#c5c9d1,inset_-2px_-2px_4px_#ffffff] cursor-not-allowed"
+                            ? "text-amber-100 bg-[#141822] border border-amber-400/20"
+                            : "text-amber-100/40 bg-[#10131a] border border-amber-400/10 cursor-not-allowed"
                     }`}
                     onClick={hasMoreContent ? () => setActionsOpen((prev) => !prev) : undefined}
                     disabled={!hasMoreContent}

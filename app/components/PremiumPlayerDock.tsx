@@ -7,14 +7,11 @@ import {
     IconPlayerSkipBackFilled,
     IconPlayerSkipForwardFilled,
     IconHeart,
-    IconHeartFilled,
     IconVolume,
-    IconChevronUp,
 } from "@tabler/icons-react";
 import { usePlayerStore } from "~/state/playerStore";
 import {
-    generateStationGradient,
-    getStationColors
+    generateStationGradient
 } from "~/utils/colorExtraction";
 
 export function PremiumPlayerDock() {
@@ -30,8 +27,8 @@ export function PremiumPlayerDock() {
     const [isExpanded, setIsExpanded] = useState(false);
 
     const colors = useMemo(() => {
-        return getStationColors(nowPlaying?.tagList ?? null);
-    }, [nowPlaying?.tagList]);
+        return { accent: "#f6c86f", primary: "#f1aa45" };
+    }, []);
 
     const fallbackGradient = useMemo(() => {
         return generateStationGradient(nowPlaying?.name || 'Radio');
@@ -70,7 +67,7 @@ export function PremiumPlayerDock() {
                         background: 'linear-gradient(135deg, rgba(15,23,42,0.95) 0%, rgba(30,41,59,0.9) 100%)',
                         backdropFilter: 'blur(40px) saturate(180%)',
                         WebkitBackdropFilter: 'blur(40px) saturate(180%)',
-                        boxShadow: `0 25px 50px -12px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.1), 0 0 80px -20px ${colors.accent}40`,
+                        boxShadow: `0 25px 50px -12px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,204,122,0.18), 0 0 80px -20px ${colors.accent}30`,
                     }}
                 >
                     {/* Artwork texture background */}
@@ -93,7 +90,7 @@ export function PremiumPlayerDock() {
                                 className="absolute inset-y-0 left-0"
                                 style={{
                                     background: `linear-gradient(90deg, ${colors.accent}, ${colors.primary})`,
-                                    boxShadow: `0 0 15px ${colors.accent}80`,
+                                    boxShadow: `0 0 18px rgba(246,200,111,0.6)`,
                                 }}
                                 initial={{ width: "0%" }}
                                 animate={{ width: "100%" }}
@@ -125,8 +122,8 @@ export function PremiumPlayerDock() {
 
                         {/* Station Info */}
                         <div className="flex-1 min-w-0">
-                            <h4 className="text-white font-semibold truncate">{nowPlaying.name}</h4>
-                            <p className="text-white/50 text-sm truncate">
+                            <h4 className="text-amber-50 font-semibold truncate">{nowPlaying.name}</h4>
+                            <p className="text-amber-100/60 text-sm truncate">
                                 {[nowPlaying.country, nowPlaying.tagList?.[0]].filter(Boolean).join(' • ')}
                             </p>
                         </div>
@@ -134,7 +131,7 @@ export function PremiumPlayerDock() {
                         {/* Controls */}
                         <div className="flex items-center gap-2">
                             <button
-                                className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white/70 hover:bg-white/20 hover:text-white transition-all"
+                                className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-amber-100/70 hover:text-amber-100 transition-all"
                                 onClick={(e) => { e.stopPropagation(); handlePrev(); }}
                                 aria-label="Previous"
                             >
@@ -156,7 +153,7 @@ export function PremiumPlayerDock() {
                             </motion.button>
 
                             <button
-                                className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white/70 hover:bg-white/20 hover:text-white transition-all"
+                                className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-amber-100/70 hover:text-amber-100 transition-all"
                                 onClick={(e) => { e.stopPropagation(); handleNext(); }}
                                 aria-label="Next"
                             >
@@ -166,7 +163,7 @@ export function PremiumPlayerDock() {
                             <div className="w-px h-8 bg-white/10 mx-2" />
 
                             <button
-                                className="flex h-10 w-10 items-center justify-center rounded-full text-white/50 hover:text-rose-400 transition-colors"
+                                className="flex h-10 w-10 items-center justify-center rounded-full text-amber-100/50 hover:text-amber-100 transition-colors"
                                 onClick={(e) => e.stopPropagation()}
                                 aria-label="Favorite"
                             >
@@ -174,7 +171,7 @@ export function PremiumPlayerDock() {
                             </button>
 
                             <button
-                                className="flex h-10 w-10 items-center justify-center rounded-full text-white/50 hover:text-white transition-colors"
+                                className="flex h-10 w-10 items-center justify-center rounded-full text-amber-100/50 hover:text-amber-100 transition-colors"
                                 onClick={(e) => e.stopPropagation()}
                                 aria-label="Volume"
                             >
@@ -256,14 +253,14 @@ export function PremiumPlayerDock() {
 
                         {/* Info */}
                         <div className="min-w-0 flex-1">
-                            <h4 className="text-white text-sm font-semibold truncate">{nowPlaying.name}</h4>
-                            <p className="text-white/50 text-xs truncate">{nowPlaying.country}</p>
+                            <h4 className="text-amber-50 text-sm font-semibold truncate">{nowPlaying.name}</h4>
+                            <p className="text-amber-100/60 text-xs truncate">{nowPlaying.country}</p>
                         </div>
 
                         {/* Mobile Controls */}
                         <div className="flex items-center gap-1">
                             <button
-                                className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-white/70"
+                                className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-amber-100/70"
                                 onClick={(e) => { e.stopPropagation(); handlePrev(); }}
                             >
                                 <IconPlayerSkipBackFilled size={16} />
@@ -282,7 +279,7 @@ export function PremiumPlayerDock() {
                             </motion.button>
 
                             <button
-                                className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-white/70"
+                                className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-amber-100/70"
                                 onClick={(e) => { e.stopPropagation(); handleNext(); }}
                             >
                                 <IconPlayerSkipForwardFilled size={16} />

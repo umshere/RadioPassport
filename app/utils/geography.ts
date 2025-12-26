@@ -71,10 +71,10 @@ export function getContinent(iso2?: string): string {
     NG: "Africa",
     KE: "Africa",
     GH: "Africa",
-    AU: "Oceania",
-    NZ: "Oceania",
-    PG: "Oceania",
-    FJ: "Oceania",
+    AU: "Australia",
+    NZ: "Australia",
+    PG: "Australia",
+    FJ: "Australia",
   };
 
   return continentMap[iso2.toUpperCase()] || "Other";

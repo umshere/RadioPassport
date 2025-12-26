@@ -39,24 +39,24 @@ export default function CompactRetroTuner({
     const ticks = Array.from({ length: 25 }, (_, i) => tickStart + i * 0.2);
 
     return (
-        <div className="rounded-3xl border border-slate-200 bg-white/50 p-6 shadow-sm">
+        <div className="rounded-3xl border border-amber-400/20 bg-[#12151c] p-6 shadow-[0_20px_50px_rgba(0,0,0,0.45)]">
             <div className="flex flex-col gap-6 md:flex-row md:items-center md:gap-8">
                 {/* Left: Frequency Display */}
                 <div className="flex flex-col items-center md:items-start">
-                    <Text size="xs" c="dimmed" fw={600} tt="uppercase" className="mb-2">
+                    <Text size="xs" fw={600} tt="uppercase" className="mb-2 text-amber-100/60">
                         Now Playing
                     </Text>
-                    <h2 className="font-mono text-6xl font-bold tracking-tighter text-slate-900 md:text-7xl">
+                    <h2 className="font-mono text-6xl font-bold tracking-tighter text-amber-50 md:text-7xl">
                         {frequency}
                     </h2>
-                    <Text size="sm" c="dimmed" fw={500} className="mt-1">
+                    <Text size="sm" fw={500} className="mt-1 text-amber-100/60">
                         MHz
                     </Text>
                 </div>
 
                 {/* Center: Tuner Scale */}
                 <div className="flex-1">
-                    <div className="relative h-24 w-full overflow-hidden rounded-2xl bg-slate-100 shadow-inner">
+                    <div className="relative h-24 w-full overflow-hidden rounded-2xl bg-[#1b202b] shadow-inner">
                         {/* Scale Ticks */}
                         <div className="absolute inset-x-0 top-1/2 flex -translate-y-1/2 justify-between px-6">
                             {ticks.map((tick, i) => {
@@ -69,11 +69,11 @@ export default function CompactRetroTuner({
                                         style={{ opacity: isNearCurrent ? 1 : 0.3 }}
                                     >
                                         <div
-                                            className={`w-px bg-slate-400 ${isMajor ? "h-6" : "h-3"
+                                            className={`w-px bg-amber-200/60 ${isMajor ? "h-6" : "h-3"
                                                 }`}
                                         />
                                         {isMajor && (
-                                            <span className="text-[9px] font-bold text-slate-500">
+                                            <span className="text-[9px] font-bold text-amber-100/70">
                                                 {Math.floor(tick)}
                                             </span>
                                         )}
@@ -84,17 +84,17 @@ export default function CompactRetroTuner({
 
                         {/* Red Needle */}
                         <div className="absolute inset-0 flex items-center justify-center">
-                            <div className="h-full w-0.5 bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.6)]" />
-                            <div className="absolute top-1/2 h-3 w-3 -translate-y-1/2 rotate-45 bg-red-500" />
+                            <div className="h-full w-0.5 bg-[#f6c86f] shadow-[0_0_10px_rgba(246,200,111,0.6)]" />
+                            <div className="absolute top-1/2 h-3 w-3 -translate-y-1/2 rotate-45 bg-[#f6c86f]" />
                         </div>
                     </div>
 
                     {/* Station Info */}
                     <div className="mt-4 text-center">
-                        <Text fw={700} size="lg" c="slate.9" lineClamp={1}>
+                        <Text fw={700} size="lg" lineClamp={1} className="text-amber-50">
                             {station.name}
                         </Text>
-                        <Text size="sm" c="dimmed">
+                        <Text size="sm" className="text-amber-100/60">
                             {[station.country, station.state].filter(Boolean).join(" • ")}
                         </Text>
                     </div>
@@ -105,10 +105,8 @@ export default function CompactRetroTuner({
                     <ActionIcon
                         size="lg"
                         radius="xl"
-                        variant="light"
-                        color="gray"
                         onClick={onPrev}
-                        className="bg-slate-100 hover:bg-slate-200"
+                        className="bg-[#161a22] text-amber-100/70 hover:text-amber-100 border border-amber-400/20"
                     >
                         <IconPlayerSkipBackFilled size={20} />
                     </ActionIcon>
@@ -117,7 +115,7 @@ export default function CompactRetroTuner({
                         size="xl"
                         radius="xl"
                         onClick={onPlayPause}
-                        className="bg-slate-900 text-white hover:bg-slate-800 shadow-md"
+                        className="bg-gradient-to-br from-[#f6c86f] to-[#f1aa45] text-slate-900 shadow-[0_10px_24px_rgba(246,200,111,0.45)]"
                     >
                         {isPlaying ? (
                             <IconPlayerPauseFilled size={24} />
@@ -129,10 +127,8 @@ export default function CompactRetroTuner({
                     <ActionIcon
                         size="lg"
                         radius="xl"
-                        variant="light"
-                        color="gray"
                         onClick={onNext}
-                        className="bg-slate-100 hover:bg-slate-200"
+                        className="bg-[#161a22] text-amber-100/70 hover:text-amber-100 border border-amber-400/20"
                     >
                         <IconPlayerSkipForwardFilled size={20} />
                     </ActionIcon>

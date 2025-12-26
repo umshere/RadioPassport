@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import { IconPlayerPlayFilled, IconHeart, IconHeartFilled, IconWaveSine } from "@tabler/icons-react";
 import type { Station } from "~/types/radio";
 import { StationArtwork } from "./StationArtwork";
+import { useEffect, useMemo, useState } from "react";
 
 interface CompactStationCardProps {
     station: Station;
@@ -35,62 +36,62 @@ export function CompactStationCard({
             className="w-full flex items-center gap-4 p-3.5 rounded-2xl relative group mb-3 last:mb-0 overflow-hidden transition-all duration-300"
             style={{
                 background: isPlaying
-                    ? 'rgba(255, 255, 255, 0.85)'
-                    : 'rgba(255, 255, 255, 0.4)',
-                backdropFilter: 'blur(12px)',
-                WebkitBackdropFilter: 'blur(12px)', // Safari support
+                    ? 'rgba(12, 14, 20, 0.85)'
+                    : 'rgba(12, 14, 20, 0.55)',
+                backdropFilter: 'blur(14px)',
+                WebkitBackdropFilter: 'blur(14px)',
                 boxShadow: isPlaying
-                    ? '0 8px 32px rgba(251, 146, 60, 0.25), 0 0 0 1px rgba(251, 146, 60, 0.4) inset'
-                    : '0 4px 16px rgba(0, 0, 0, 0.03), 0 0 0 1px rgba(255, 255, 255, 0.6) inset',
-                border: isPlaying ? '1px solid rgba(251, 146, 60, 0.1)' : '1px solid rgba(255, 255, 255, 0.4)',
+                    ? '0 12px 36px rgba(245, 177, 45, 0.28), 0 0 0 1px rgba(245, 177, 45, 0.35) inset'
+                    : '0 8px 22px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.06) inset',
+                border: isPlaying ? '1px solid rgba(245, 177, 45, 0.35)' : '1px solid rgba(255, 255, 255, 0.08)',
                 transform: isPlaying ? 'scale(1.02)' : 'scale(1)',
                 zIndex: isPlaying ? 10 : 1,
             }}
         >
             {/* Glass Shine Effect */}
-            <div className="absolute inset-0 bg-gradient-to-br from-white/40 via-transparent to-transparent opacity-50 pointer-events-none" />
+            <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-transparent opacity-40 pointer-events-none" />
 
             {/* Active Indicator Glow */}
             {isPlaying && (
-                <div className="absolute -left-1 top-0 bottom-0 w-1.5 bg-orange-500 shadow-[0_0_12px_rgba(249,115,22,0.8)] rounded-r-full" />
+                <div className="absolute -left-1 top-0 bottom-0 w-1.5 bg-[var(--rp-gold)] shadow-[0_0_12px_rgba(245,177,45,0.7)] rounded-r-full" />
             )}
 
             {/* Artwork - Floating Glass */}
             <div
                 className="h-14 w-14 rounded-xl flex-shrink-0 relative overflow-hidden"
                 style={{
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.1), 0 0 0 1px rgba(255,255,255,0.5)',
+                    boxShadow: '0 6px 16px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.12)',
                 }}
             >
                 <StationArtwork
                     station={station}
-                    fallbackClassName="w-full h-full flex items-center justify-center font-bold text-sm text-slate-500 bg-white/80 backdrop-blur"
+                    fallbackClassName="w-full h-full flex items-center justify-center font-bold text-sm text-[var(--rp-muted)] bg-black/40 backdrop-blur"
                 />
             </div>
 
             {/* Station Info */}
             <div className="flex-1 min-w-0 text-left flex flex-col justify-center relative z-10">
-                <div className={`text-[0.95rem] font-bold truncate leading-tight ${isPlaying ? 'text-slate-900' : 'text-slate-800'}`}>
+                <div className={`text-[0.95rem] font-bold truncate leading-tight ${isPlaying ? 'text-[var(--rp-text)]' : 'text-[var(--rp-text)]'}`}>
                     {station.name}
                 </div>
-                <div className="text-xs truncate leading-tight mt-1 font-medium text-slate-500 mix-blend-multiply">
+                <div className="text-xs truncate leading-tight mt-1 font-medium text-[var(--rp-muted)]">
                     {[station.country, station.state].filter(Boolean).join(" • ")}
                 </div>
 
                 <div className="flex gap-2 mt-1.5 items-center">
                     {station.bitrate > 0 && (
-                        <span className="text-[10px] font-bold text-slate-400 bg-white/50 px-1.5 py-0.5 rounded backdrop-blur-sm border border-white/30">
+                        <span className="text-[10px] font-bold text-[var(--rp-muted)] bg-black/40 px-1.5 py-0.5 rounded backdrop-blur-sm border border-white/10">
                             {station.bitrate}
                         </span>
                     )}
                     {(isHlsStream || isHttpStream) && (
-                        <span className="text-[10px] font-bold text-slate-400 opacity-50">•</span>
+                        <span className="text-[10px] font-bold text-[var(--rp-muted-2)] opacity-50">•</span>
                     )}
                     {isHlsStream && (
-                        <span className="text-[10px] font-bold text-indigo-500 bg-indigo-50/50 px-1.5 py-0.5 rounded border border-indigo-100/50">HLS</span>
+                        <span className="text-[10px] font-bold text-[var(--rp-gold)] bg-[rgba(245,177,45,0.12)] px-1.5 py-0.5 rounded border border-[rgba(245,177,45,0.3)]">HLS</span>
                     )}
                     {isHttpStream && (
-                        <span className="text-[10px] font-bold text-rose-500 bg-rose-50/50 px-1.5 py-0.5 rounded border border-rose-100/50">HTTP</span>
+                        <span className="text-[10px] font-bold text-[var(--rp-gold)] bg-[rgba(245,177,45,0.12)] px-1.5 py-0.5 rounded border border-[rgba(245,177,45,0.3)]">HTTP</span>
                     )}
 
                 </div>
@@ -106,16 +107,16 @@ export function CompactStationCard({
                         }}
                         className="flex h-10 w-10 items-center justify-center rounded-full transition-all active:scale-95 disabled:opacity-50"
                         style={{
-                            background: isFavorite ? 'rgba(255, 255, 255, 0.9)' : 'rgba(255, 255, 255, 0.3)',
-                            backdropFilter: 'blur(4px)',
-                            borderTop: '1px solid rgba(255,255,255,0.9)',
-                            borderLeft: '1px solid rgba(255,255,255,0.9)',
-                            borderBottom: '1px solid rgba(0,0,0,0.05)',
-                            borderRight: '1px solid rgba(0,0,0,0.05)',
+                            background: isFavorite ? 'rgba(245, 177, 45, 0.2)' : 'rgba(0, 0, 0, 0.35)',
+                            backdropFilter: 'blur(6px)',
+                            borderTop: '1px solid rgba(255,255,255,0.12)',
+                            borderLeft: '1px solid rgba(255,255,255,0.12)',
+                            borderBottom: '1px solid rgba(0,0,0,0.4)',
+                            borderRight: '1px solid rgba(0,0,0,0.4)',
                             boxShadow: isFavorite
-                                ? 'inset 2px 2px 5px rgba(0,0,0,0.05), 0 1px 0 rgba(255,255,255,1)'
-                                : '6px 6px 12px rgba(0,0,0,0.06), -4px -4px 8px rgba(255,255,255,0.8), inset 0 0 0 1px rgba(255,255,255,0.4)',
-                            color: isFavorite ? '#f43f5e' : '#94a3b8',
+                                ? '0 8px 20px rgba(245,177,45,0.3)'
+                                : '0 8px 18px rgba(0,0,0,0.45)',
+                            color: isFavorite ? 'var(--rp-gold)' : 'rgba(248,243,230,0.7)',
                         }}
                     >
                         {isFavorite ? <IconHeartFilled size={18} /> : <IconHeart size={18} />}
@@ -124,15 +125,15 @@ export function CompactStationCard({
 
                 {!isPlaying && (
                     <div
-                        className="flex h-12 w-12 items-center justify-center rounded-full text-slate-400 group-hover:text-orange-500 transition-all duration-300"
+                        className="flex h-12 w-12 items-center justify-center rounded-full text-[var(--rp-muted-2)] group-hover:text-[var(--rp-gold)] transition-all duration-300"
                         style={{
-                            background: 'rgba(255, 255, 255, 0.35)',
-                            backdropFilter: 'blur(4px)',
-                            borderTop: '1px solid rgba(255,255,255,0.8)',
-                            borderLeft: '1px solid rgba(255,255,255,0.8)',
-                            borderBottom: '1px solid rgba(0,0,0,0.08)',
-                            borderRight: '1px solid rgba(0,0,0,0.08)',
-                            boxShadow: '8px 8px 16px rgba(0,0,0,0.06), -6px -6px 12px rgba(255,255,255,0.8), inset 0 0 0 1px rgba(255,255,255,0.3)',
+                            background: 'rgba(0, 0, 0, 0.4)',
+                            backdropFilter: 'blur(6px)',
+                            borderTop: '1px solid rgba(255,255,255,0.08)',
+                            borderLeft: '1px solid rgba(255,255,255,0.08)',
+                            borderBottom: '1px solid rgba(0,0,0,0.5)',
+                            borderRight: '1px solid rgba(0,0,0,0.5)',
+                            boxShadow: '0 10px 22px rgba(0,0,0,0.5)',
                         }}
                     >
                         <IconPlayerPlayFilled size={20} className="ml-0.5" />
@@ -182,22 +183,29 @@ export function CompactStationList({
         );
     }
 
+    const [visibleCount, setVisibleCount] = useState(8);
+    useEffect(() => {
+        setVisibleCount(8);
+    }, [stations]);
+    const visibleStations = useMemo(() => stations.slice(0, visibleCount), [stations, visibleCount]);
+    const hasMore = stations.length > visibleCount;
+
     return (
         <div
             className="p-5 rounded-[2.5rem] relative overflow-hidden"
             style={{
-                background: 'rgba(255, 255, 255, 0.25)', // More transparent
-                backdropFilter: 'blur(20px)',
-                WebkitBackdropFilter: 'blur(20px)',
-                boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.07)',
-                border: '1px solid rgba(255, 255, 255, 0.6)',
+                background: 'rgba(12, 14, 20, 0.7)',
+                backdropFilter: 'blur(22px)',
+                WebkitBackdropFilter: 'blur(22px)',
+                boxShadow: '0 18px 40px rgba(0, 0, 0, 0.5)',
+                border: '1px solid rgba(255, 255, 255, 0.08)',
             }}
         >
             {/* Subtle noise texture or gradient highlight could go here for extra "scrubbed" feel */}
-            <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/80 to-transparent opacity-70" />
+            <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-70" />
 
             <div className="flex flex-col relative z-10 gap-2">
-                {stations.map((station, index) => (
+                {visibleStations.map((station, index) => (
                     <CompactStationCard
                         key={station.uuid}
                         station={station}
@@ -209,6 +217,29 @@ export function CompactStationList({
                         isUnavailable={unavailableIds?.has(station.uuid) ?? false}
                     />
                 ))}
+            </div>
+            <div className="relative z-10 mt-4 flex flex-wrap items-center justify-center gap-3 text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--rp-muted-2)]">
+                <span>
+                    {Math.min(visibleCount, stations.length)} of {stations.length}
+                </span>
+                {hasMore && (
+                    <button
+                        type="button"
+                        onClick={() => setVisibleCount((prev) => Math.min(prev + 8, stations.length))}
+                        className="inline-flex items-center gap-2 rounded-full border border-[rgba(245,177,45,0.5)] bg-[rgba(245,177,45,0.12)] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--rp-gold)]"
+                    >
+                        Show more
+                    </button>
+                )}
+                {visibleCount > 8 && (
+                    <button
+                        type="button"
+                        onClick={() => setVisibleCount(8)}
+                        className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/40 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--rp-muted)]"
+                    >
+                        Show less
+                    </button>
+                )}
             </div>
         </div>
     );

@@ -6,6 +6,9 @@ type UIState = {
   toggleQuickRetune: () => void;
   aiTriviaExpanded: boolean;
   setAiTriviaExpanded: (isExpanded: boolean) => void;
+  insightsOpen: boolean;
+  setInsightsOpen: (isOpen: boolean) => void;
+  toggleInsightsOpen: () => void;
   // Feature flags
   raptorMiniEnabled: boolean;
   setRaptorMiniEnabled: (isEnabled: boolean) => void;
@@ -18,6 +21,9 @@ export const useUIStore = create<UIState>((set) => ({
     set((state) => ({ isQuickRetuneOpen: !state.isQuickRetuneOpen })),
   aiTriviaExpanded: false,
   setAiTriviaExpanded: (isExpanded) => set({ aiTriviaExpanded: isExpanded }),
+  insightsOpen: false,
+  setInsightsOpen: (isOpen) => set({ insightsOpen: isOpen }),
+  toggleInsightsOpen: () => set((state) => ({ insightsOpen: !state.insightsOpen })),
   // Default to true so the preview is available for QA/clients; can be toggled
   // by the team for rollout control.
   raptorMiniEnabled: true,

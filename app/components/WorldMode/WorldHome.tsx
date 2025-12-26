@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { useSearchParams } from "@remix-run/react";
 import ReactCountryFlag from 'react-country-flag';
 import { Station } from '~/types/radio';
 import { CuratedRow, StationContext, PassportEntry, CurationSegment } from '~/types/world';
@@ -31,6 +32,7 @@ export function WorldHome({ nowPlaying, onPlayStation, initialStations }: WorldH
     const [currentContext, setCurrentContext] = useState<StationContext | null>(null);
     const [isContextLoading, setIsContextLoading] = useState(false);
     const [activeTab, setActiveTab] = useState<'discover' | 'passport' | 'terminal'>('discover');
+    const [searchParams, setSearchParams] = useSearchParams();
     const [terminalOpened, setTerminalOpened] = useState(false);
     const [passport, setPassport] = useState<PassportEntry[]>([]);
     const [aiPrompt, setAiPrompt] = useState('');
@@ -162,7 +164,7 @@ export function WorldHome({ nowPlaying, onPlayStation, initialStations }: WorldH
 
             setSearchResultStations(stations);
             setAiPrompt('');
-            setActiveTab('discover');
+            setTab('discover');
 
         } catch (e) {
             console.error("Search failed", e);
@@ -185,6 +187,23 @@ export function WorldHome({ nowPlaying, onPlayStation, initialStations }: WorldH
             return () => clearInterval(interval);
         }
     }, [agentMessage]);
+
+    useEffect(() => {
+        const tabParam = searchParams.get("tab");
+        if (tabParam === "passport" || tabParam === "discover") {
+            setActiveTab(tabParam);
+        }
+    }, [searchParams]);
+
+    const setTab = useCallback((tab: 'discover' | 'passport') => {
+        setActiveTab(tab);
+        setSearchParams((prev) => {
+            const next = new URLSearchParams(prev);
+            if (tab === "discover") next.delete("tab");
+            else next.set("tab", tab);
+            return next;
+        }, { preventScrollReset: true });
+    }, [setSearchParams]);
 
     const clearSearch = () => {
         setSearchResultStations(null);
@@ -215,59 +234,49 @@ export function WorldHome({ nowPlaying, onPlayStation, initialStations }: WorldH
 
 
     return (
-        <div className="min-h-screen text-slate-200">
-            <div className="sticky top-0 z-40 bg-[#0a0a0c]/80 backdrop-blur-xl border-b border-white/10 px-4 py-4 shadow-2xl">
-                <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-                    <div onClick={clearSearch} className="flex items-center gap-3 cursor-pointer group">
-                        <div className="w-10 h-10 bg-yellow-500 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform">
-                            <IconWorld className="text-black" size={24} />
-                        </div>
-                        <div>
-                            <h1 className="text-lg font-bold tracking-tight text-white leading-none">WORLD <span className="text-yellow-500">MODE</span></h1>
-                            <p className="text-[9px] text-white/40 uppercase tracking-widest font-medium">Frequency Hub</p>
-                        </div>
-                    </div>
-
-                    <div className="flex-1 max-w-xl mx-4 w-full md:w-auto">
-                        <SonicFlightTracker
-                            lastStation={lastStation}
-                            currentStation={nowPlaying}
-                            isTraveling={isTraveling}
-                        />
-                    </div>
-
-                    <div className="flex bg-black/40 backdrop-blur-xl p-1 rounded-xl border border-white/10 shadow-2xl shrink-0">
-                        <button
-                            onClick={() => setActiveTab('discover')}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'discover' ? 'bg-white/10 text-white shadow-inner' : 'text-white/40 hover:text-white/60'}`}
-                        >
-                            Discover
-                        </button>
-                        <button
-                            onClick={() => setActiveTab('passport')}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'passport' ? 'bg-white/10 text-white shadow-inner' : 'text-white/40 hover:text-white/60'}`}
-                        >
-                            Passport
-                        </button>
-                        {nowPlaying && (
-                            <button
-                                onClick={() => setTerminalOpened(true)}
-                                className={`lg:hidden px-3 py-1.5 rounded-lg text-xs font-black uppercase tracking-widest transition-all flex items-center gap-2 ${terminalOpened ? 'bg-yellow-500/20 text-yellow-500' : 'text-yellow-500/50 hover:text-yellow-500'}`}
-                            >
-                                <div className="w-1.5 h-1.5 rounded-full bg-yellow-500 animate-pulse" />
-                                Terminal
-                            </button>
-                        )}
-                    </div>
-                </div>
-            </div>
-
+        <div className="min-h-screen text-[var(--rp-text)]">
             <main className="max-w-7xl mx-auto px-4 py-6">
+                <section className="mb-8 rounded-2xl border border-white/10 bg-[var(--rp-card)] p-4 shadow-[0_18px_40px_rgba(0,0,0,0.5)]">
+                    <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                        <div className="flex-1 max-w-xl w-full md:w-auto">
+                            <SonicFlightTracker
+                                lastStation={lastStation}
+                                currentStation={nowPlaying}
+                                isTraveling={isTraveling}
+                            />
+                        </div>
+
+                        <div className="flex bg-black/60 backdrop-blur-xl p-1 rounded-xl border border-white/10 shadow-2xl shrink-0">
+                            <button
+                                onClick={() => setTab('discover')}
+                                className={`px-3 py-1.5 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'discover' ? 'bg-white/10 text-[var(--rp-text)] shadow-inner' : 'text-[var(--rp-muted-2)] hover:text-[var(--rp-text)]'}`}
+                            >
+                                Discover
+                            </button>
+                            <button
+                                onClick={() => setTab('passport')}
+                                className={`px-3 py-1.5 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'passport' ? 'bg-white/10 text-[var(--rp-text)] shadow-inner' : 'text-[var(--rp-muted-2)] hover:text-[var(--rp-text)]'}`}
+                            >
+                                Passport
+                            </button>
+                            {nowPlaying && (
+                                <button
+                                    onClick={() => setTerminalOpened(true)}
+                                    className={`lg:hidden px-3 py-1.5 rounded-lg text-xs font-black uppercase tracking-widest transition-all flex items-center gap-2 ${terminalOpened ? 'bg-[rgba(245,177,45,0.2)] text-[var(--rp-gold)]' : 'text-[rgba(245,177,45,0.6)] hover:text-[var(--rp-gold)]'}`}
+                                >
+                                    <div className="w-1.5 h-1.5 rounded-full bg-[var(--rp-gold)] animate-pulse" />
+                                    Terminal
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                </section>
+
                 <section className="mb-10 max-w-2xl mx-auto relative group">
-                    <div className="absolute -inset-1 bg-gradient-to-r from-yellow-500/20 to-orange-500/20 rounded-2xl blur opacity-25 group-hover:opacity-100 transition duration-1000"></div>
-                    <form onSubmit={performAiSearch} className="relative flex bg-[#16161e] border border-white/10 rounded-2xl overflow-hidden shadow-2xl">
-                        <div className="pl-5 flex items-center text-white/20">
-                            {isAiLoading ? <Loader size="xs" color="yellow" /> : <IconSparkles size={18} className="text-yellow-500/50" />}
+                    <div className="absolute -inset-1 bg-gradient-to-r from-[rgba(245,177,45,0.25)] to-[rgba(245,177,45,0.1)] rounded-2xl blur opacity-25 group-hover:opacity-100 transition duration-1000"></div>
+                    <form onSubmit={performAiSearch} className="relative flex bg-[var(--rp-card)] border border-white/10 rounded-2xl overflow-hidden shadow-2xl">
+                        <div className="pl-5 flex items-center text-[var(--rp-muted-2)]">
+                            {isAiLoading ? <Loader size="xs" color="yellow" /> : <IconSparkles size={18} className="text-[var(--rp-gold)]/70" />}
                         </div>
                         <input
                             id="hero-search-input"
@@ -275,15 +284,15 @@ export function WorldHome({ nowPlaying, onPlayStation, initialStations }: WorldH
                             value={aiPrompt}
                             onChange={(e) => setAiPrompt(e.target.value)}
                             placeholder="Where to next? (e.g. 'Chill beats from Tokyo')"
-                            className="w-full bg-transparent px-4 py-4 text-base focus:outline-none placeholder:text-white/20 text-white"
+                            className="w-full bg-transparent px-4 py-4 text-base focus:outline-none placeholder:text-[var(--rp-muted-2)] text-[var(--rp-text)]"
                         />
-                        <button type="submit" disabled={isAiLoading || !aiPrompt.trim()} className="px-6 bg-yellow-500 text-black font-bold text-xs uppercase tracking-widest hover:bg-yellow-400 transition-colors">
+                        <button type="submit" disabled={isAiLoading || !aiPrompt.trim()} className="px-6 bg-[var(--rp-gold)] text-black font-bold text-xs uppercase tracking-widest hover:bg-[var(--rp-gold-strong)] transition-colors">
                             GO
                         </button>
                     </form>
 
                     {displayedAgentMessage && (
-                        <div className="mt-3 px-4 py-2 bg-white/5 border border-white/5 rounded-xl text-xs text-yellow-500/90 animate-fade-in flex items-start gap-3">
+                        <div className="mt-3 px-4 py-2 bg-black/40 border border-white/10 rounded-xl text-xs text-[var(--rp-gold)] animate-fade-in flex items-start gap-3">
                             <IconRobot size={14} className="mt-0.5" />
                             <span className="leading-relaxed font-mono">{displayedAgentMessage}</span>
                         </div>
@@ -297,9 +306,9 @@ export function WorldHome({ nowPlaying, onPlayStation, initialStations }: WorldH
                                 {featuredCountries.length > 0 && (
                                     <div className="flex flex-wrap gap-2 animate-fade-in">
                                         {featuredCountries.map((c, idx) => (
-                                            <div key={idx} className="flex items-center gap-2 bg-white/5 border border-white/10 px-2.5 py-1 rounded-md border-dashed cursor-default hover:bg-white/10 transition-colors">
+                                            <div key={idx} className="flex items-center gap-2 bg-black/40 border border-white/10 px-2.5 py-1 rounded-md border-dashed cursor-default hover:bg-black/60 transition-colors">
                                                 <ReactCountryFlag countryCode={c.code} svg style={{ width: '12px', height: '9px' }} />
-                                                <span className="text-[10px] font-bold text-white/50 uppercase tracking-widest">{c.name}</span>
+                                                <span className="text-[10px] font-bold text-[var(--rp-muted)] uppercase tracking-widest">{c.name}</span>
                                             </div>
                                         ))}
                                     </div>
@@ -307,11 +316,11 @@ export function WorldHome({ nowPlaying, onPlayStation, initialStations }: WorldH
 
                                 {searchResultStations ? (
                                     <div className="space-y-6 animate-fade-in">
-                                        <div className="flex items-center justify-between border-b border-white/5 pb-2">
-                                            <h2 className="text-xl font-bold text-white tracking-tighter uppercase flex items-center gap-2">
-                                                <IconRadar size={20} className="text-yellow-500" /> Locked Signals
+                                        <div className="flex items-center justify-between border-b border-white/10 pb-2">
+                                            <h2 className="text-xl font-bold text-[var(--rp-text)] tracking-tighter uppercase flex items-center gap-2">
+                                                <IconRadar size={20} className="text-[var(--rp-gold)]" /> Locked Signals
                                             </h2>
-                                            <button onClick={clearSearch} className="text-[10px] text-yellow-500 uppercase font-bold tracking-widest hover:text-yellow-400 flex items-center gap-1">
+                                            <button onClick={clearSearch} className="text-[10px] text-[var(--rp-gold)] uppercase font-bold tracking-widest hover:text-[var(--rp-gold-strong)] flex items-center gap-1">
                                                 <IconX size={10} /> Clear
                                             </button>
                                         </div>
@@ -319,10 +328,10 @@ export function WorldHome({ nowPlaying, onPlayStation, initialStations }: WorldH
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                 {searchResultStations.map(station => (
                                                     <div key={station.uuid} onClick={() => handlePlay(station)}
-                                                        className={`p-4 rounded-xl border transition-all cursor-pointer group relative overflow-hidden ${nowPlaying?.uuid === station.uuid ? 'bg-yellow-500/10 border-yellow-500/50' : 'bg-white/5 border-white/5 hover:border-white/20'}`}
+                                                        className={`p-4 rounded-xl border transition-all cursor-pointer group relative overflow-hidden ${nowPlaying?.uuid === station.uuid ? 'bg-[rgba(245,177,45,0.12)] border-[rgba(245,177,45,0.4)]' : 'bg-black/40 border-white/10 hover:border-white/20'}`}
                                                     >
                                                         <div className="flex items-start gap-4 relative z-10">
-                                                            <div className="w-12 h-12 rounded-lg bg-black/40 overflow-hidden shrink-0 shadow-lg">
+                                                            <div className="w-12 h-12 rounded-lg bg-black/60 overflow-hidden shrink-0 shadow-lg">
                                                                 {station.favicon ? (
                                                                     <img src={station.favicon} className="w-full h-full object-cover" onError={(e) => (e.currentTarget.style.display = 'none')} />
                                                                 ) : (
@@ -330,8 +339,8 @@ export function WorldHome({ nowPlaying, onPlayStation, initialStations }: WorldH
                                                                 )}
                                                             </div>
                                                             <div className="flex-1 min-w-0">
-                                                                <h3 className={`font-bold truncate ${nowPlaying?.uuid === station.uuid ? 'text-yellow-500' : 'text-white group-hover:text-yellow-200'}`}>{station.name}</h3>
-                                                                <p className="text-xs text-white/40 truncate">{station.country} • {station.tags?.slice(0, 30)}</p>
+                                                                <h3 className={`font-bold truncate ${nowPlaying?.uuid === station.uuid ? 'text-[var(--rp-gold)]' : 'text-[var(--rp-text)] group-hover:text-[var(--rp-gold-strong)]'}`}>{station.name}</h3>
+                                                                <p className="text-xs text-[var(--rp-muted)] truncate">{station.country} • {station.tags?.slice(0, 30)}</p>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -339,7 +348,7 @@ export function WorldHome({ nowPlaying, onPlayStation, initialStations }: WorldH
                                             </div>
                                         ) : (
                                             <div className="p-12 text-center border border-dashed border-white/10 rounded-xl">
-                                                <p className="text-sm text-white/30">No signals found on this frequency.</p>
+                                                <p className="text-sm text-[var(--rp-muted)]">No signals found on this frequency.</p>
                                             </div>
                                         )}
                                     </div>
@@ -347,16 +356,16 @@ export function WorldHome({ nowPlaying, onPlayStation, initialStations }: WorldH
                                     <div className="space-y-12">
                                         {curatedRows.map((row, idx) => (
                                             <div key={idx} className="space-y-4 animate-fade-in">
-                                                <div className="flex flex-col gap-1 border-l-2 border-yellow-500/20 pl-4">
-                                                    <h2 className="text-xl font-bold text-white tracking-tight uppercase">{row.title}</h2>
-                                                    <p className="text-xs text-white/40 font-mono">{row.description}</p>
+                                                <div className="flex flex-col gap-1 border-l-2 border-[rgba(245,177,45,0.3)] pl-4">
+                                                    <h2 className="text-xl font-bold text-[var(--rp-text)] tracking-tight uppercase">{row.title}</h2>
+                                                    <p className="text-xs text-[var(--rp-muted)] font-mono">{row.description}</p>
                                                 </div>
                                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                     {row.stations.map(station => (
                                                         <div key={station.uuid} onClick={() => handlePlay(station)}
-                                                            className={`p-3 rounded-lg border transition-all cursor-pointer group flex items-center gap-3 ${nowPlaying?.uuid === station.uuid ? 'bg-yellow-500/10 border-yellow-500/50' : 'bg-white/5 border-white/5 hover:border-white/20 hover:bg-white/10'}`}
+                                                            className={`p-3 rounded-lg border transition-all cursor-pointer group flex items-center gap-3 ${nowPlaying?.uuid === station.uuid ? 'bg-[rgba(245,177,45,0.12)] border-[rgba(245,177,45,0.4)]' : 'bg-black/40 border-white/10 hover:border-white/20 hover:bg-black/60'}`}
                                                         >
-                                                            <div className="w-10 h-10 rounded bg-black/40 overflow-hidden shrink-0">
+                                                            <div className="w-10 h-10 rounded bg-black/60 overflow-hidden shrink-0">
                                                                 {station.favicon ? (
                                                                     <img src={station.favicon} className="w-full h-full object-cover" onError={(e) => (e.currentTarget.style.display = 'none')} />
                                                                 ) : (
@@ -364,8 +373,8 @@ export function WorldHome({ nowPlaying, onPlayStation, initialStations }: WorldH
                                                                 )}
                                                             </div>
                                                             <div className="min-w-0">
-                                                                <h4 className={`text-sm font-bold truncate ${nowPlaying?.uuid === station.uuid ? 'text-yellow-500' : 'text-slate-200'}`}>{station.name}</h4>
-                                                                <p className="text-[10px] text-white/30 truncate">{station.country}</p>
+                                                                <h4 className={`text-sm font-bold truncate ${nowPlaying?.uuid === station.uuid ? 'text-[var(--rp-gold)]' : 'text-[var(--rp-text)]'}`}>{station.name}</h4>
+                                                                <p className="text-[10px] text-[var(--rp-muted)] truncate">{station.country}</p>
                                                             </div>
                                                         </div>
                                                     ))}
@@ -391,9 +400,9 @@ export function WorldHome({ nowPlaying, onPlayStation, initialStations }: WorldH
                                 />
                             </div>
                         ) : (
-                            <div className="p-12 border-2 border-dashed border-white/5 rounded-3xl flex flex-col items-center justify-center text-center opacity-30 h-[400px]">
-                                <IconSatellite size={48} className="mb-4 text-white/20" />
-                                <p className="text-[10px] uppercase tracking-widest font-bold text-white/40">Awaiting Signal Link...</p>
+                            <div className="p-12 border-2 border-dashed border-white/10 rounded-3xl flex flex-col items-center justify-center text-center opacity-60 h-[400px]">
+                                <IconSatellite size={48} className="mb-4 text-[var(--rp-muted-2)]" />
+                                <p className="text-[10px] uppercase tracking-widest font-bold text-[var(--rp-muted)]">Awaiting Signal Link...</p>
                             </div>
                         )}
                     </aside>
@@ -413,6 +422,10 @@ export function WorldHome({ nowPlaying, onPlayStation, initialStations }: WorldH
                                 borderTopRightRadius: '32px',
                                 overflow: 'hidden'
                             },
+                            body: {
+                                height: '100%',
+                                overflow: 'hidden'
+                            },
                             overlay: {
                                 backdropFilter: 'blur(8px)',
                                 backgroundColor: 'rgba(0,0,0,0.6)'
@@ -424,7 +437,7 @@ export function WorldHome({ nowPlaying, onPlayStation, initialStations }: WorldH
                             <div className="flex justify-center p-3 cursor-pointer" onClick={() => setTerminalOpened(false)}>
                                 <div className="w-12 h-1.5 rounded-full bg-white/20" />
                             </div>
-                            <div className="flex-1 overflow-hidden">
+                            <div className="flex-1 min-h-0 overflow-y-auto">
                                 {nowPlaying && (
                                     <StationDossier
                                         station={nowPlaying}
@@ -444,12 +457,12 @@ export function WorldHome({ nowPlaying, onPlayStation, initialStations }: WorldH
                                 <ActionIcon
                                     size={64}
                                     radius="xl"
-                                    className="bg-yellow-500 shadow-[0_0_30px_rgba(234,179,8,0.4)] border-2 border-white/20 hover:scale-110 active:scale-95 transition-all group"
+                                    className="bg-[var(--rp-gold)] shadow-[0_0_30px_rgba(245,177,45,0.4)] border-2 border-white/20 hover:scale-110 active:scale-95 transition-all group"
                                     onClick={() => setTerminalOpened(true)}
                                 >
                                     <div className="relative">
                                         <IconMicroscope size={28} className="text-black group-hover:animate-bounce" />
-                                        <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-yellow-500 animate-pulse" />
+                                        <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-[var(--rp-gold)] animate-pulse" />
                                     </div>
                                 </ActionIcon>
                             </Tooltip>

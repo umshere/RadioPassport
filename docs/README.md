@@ -5,7 +5,7 @@ Welcome to the Radio Passport documentation. This folder collects all the projec
 ## Core References
 
 - Architecture: [ARCHITECTURE.md](./ARCHITECTURE.md)
-- **User Journey & UI Flow**: [UI_FLOW.md](./UI_FLOW.md) - Visual diagrams of user journeys, API calls, and data flows
+- **User Journey & UI Flow**: [UI_FLOW.md](./UI_FLOW.md) - Current Classic + World Mode user journeys
 - Scene descriptor contract: [SCENE_DESCRIPTOR.md](./SCENE_DESCRIPTOR.md)
 - Player store behavior: [PLAYER_STORE.md](./PLAYER_STORE.md)
 - Environment variables: [ENVIRONMENT.md](./ENVIRONMENT.md)
@@ -14,9 +14,10 @@ Welcome to the Radio Passport documentation. This folder collects all the projec
 ## AI Documentation
 
 - Current AI pipeline: [AI_PIPELINE.md](./AI_PIPELINE.md)
-- AI atlas integration: [AI_ATLAS_INTEGRATION.md](./AI_ATLAS_INTEGRATION.md)
+- AI world mode integration: [AI_ATLAS_INTEGRATION.md](./AI_ATLAS_INTEGRATION.md)
 - AI prompt enhancement: [AI_PROMPT_ENHANCEMENT.md](./AI_PROMPT_ENHANCEMENT.md)
 
 ## Additional Docs
 
 - Changelog: [CHANGELOG.md](./CHANGELOG.md)
+- Design specs: [DESIGN_SPECS.md](./DESIGN_SPECS.md)

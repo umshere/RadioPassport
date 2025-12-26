@@ -6,11 +6,28 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    --rp-bg: #0b0c10;
+    --rp-surface: #0f1118;
+    --rp-card: #151826;
+    --rp-card-2: #1b2031;
+    --rp-border: rgba(255, 255, 255, 0.08);
+    --rp-border-strong: rgba(255, 255, 255, 0.16);
+    --rp-gold: #f5b12d;
+    --rp-gold-strong: #ffc857;
+    --rp-text: #f8f3e6;
+    --rp-muted: rgba(248, 243, 230, 0.65);
+    --rp-muted-2: rgba(248, 243, 230, 0.4);
+    --rp-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
+  }
+
   body {
     @apply antialiased;
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    background: var(--rp-bg);
+    color: var(--rp-text);
   }
 
   .safe-pb {
@@ -521,12 +538,12 @@
   }
 
   .station-card--warn:not(.station-card--active) {
-    background: #fffdfa;
+    background: rgba(245, 177, 45, 0.08);
   }
 
   .station-card--error:not(.station-card--active) {
-    background: #fff8f6;
-    box-shadow: 0 14px 32px -18px rgba(248, 113, 113, 0.55);
+    background: rgba(251, 113, 133, 0.08);
+    box-shadow: 0 14px 32px -18px rgba(248, 113, 133, 0.4);
   }
 
   .station-card--no-stream:not(.station-card--active) {
@@ -1900,8 +1917,8 @@
     border-radius: 9999px;
     background: linear-gradient(
       180deg,
-      rgba(248, 180, 0, 0.9),
-      rgba(91, 142, 191, 0.85)
+      rgba(245, 177, 45, 0.9),
+      rgba(12, 14, 20, 0.9)
     );
     transition: height 0.15s ease, opacity 0.15s ease;
   }
@@ -1911,12 +1928,12 @@
   }
 
   .scroll-track::-webkit-scrollbar-thumb {
-    background: rgba(92, 158, 173, 0.45);
+    background: rgba(245, 177, 45, 0.35);
     border-radius: 9999px;
   }
 
   .scroll-track::-webkit-scrollbar-thumb:hover {
-    background: rgba(209, 73, 91, 0.55);
+    background: rgba(245, 177, 45, 0.55);
   }
 
   .scrollbar-hide {

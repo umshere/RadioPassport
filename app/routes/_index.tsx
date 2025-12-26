@@ -1,7 +1,7 @@
 import { json, type LoaderFunctionArgs } from "@remix-run/node";
 import { useLoaderData, useNavigate, useSearchParams } from "@remix-run/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Collapse, Text, Title } from "@mantine/core";
+import { Collapse, Drawer, Text, Title } from "@mantine/core";
 import { useSwipeable } from "react-swipeable";
 import { IconAdjustmentsHorizontal, IconWorld, IconSearch } from "@tabler/icons-react";
 import { WorldHome } from "~/components/WorldMode/WorldHome";
@@ -26,6 +26,7 @@ import {
 import { isSafariBrowser } from "~/utils/streamHeuristics";
 import { vibrate } from "~/utils/haptics";
 import type { Country, Station } from "~/types/radio";
+import type { PassportEntry } from "~/types/world";
 
 // Components
 import { HeroSection } from "./components/HeroSection";
@@ -39,9 +40,11 @@ import { QuickRetuneWidget } from "./components/QuickRetuneWidget";
 import { LoadingView } from "./components/LoadingView";
 import { CollapsibleSection } from "./components/CollapsibleSection";
 import { MobileFilterDrawer } from "./components/MobileFilterDrawer";
+import { JourneyModule } from "./components/JourneyModule";
 
 
 import Footer from "~/components/Footer";
+import { PassportView } from "~/components/WorldMode/PassportView";
 
 // Custom Hooks
 import { useRadioPlayer } from "~/hooks/useRadioPlayer";
@@ -180,6 +183,8 @@ export default function Index() {
   const [stationFilters, setStationFilters] = useState<StationFilterState>(() => createDefaultStationFilters());
   const [isAdvancedFiltersOpen, setAdvancedFiltersOpen] = useState(false);
   const [isFilterDrawerOpen, setIsFilterDrawerOpen] = useState(false);
+  const [passportEntries, setPassportEntries] = useState<PassportEntry[]>([]);
+  const [isPassportOpen, setPassportOpen] = useState(false);
 
 
   // Derived data
@@ -187,6 +192,13 @@ export default function Index() {
     () => [...countries].sort((a, b) => b.stationcount - a.stationcount).slice(0, 80),
     [countries]
   );
+  const stampedCountryCodes = useMemo(() => {
+    const set = new Set<string>();
+    for (const entry of passportEntries) {
+      if (entry.countryCode) set.add(entry.countryCode);
+    }
+    return set;
+  }, [passportEntries]);
 
   const derived = useDerivedData(countries, topCountries, atlasQuery, atlas.activeContinent);
   const selectedCountryMeta = selectedCountry ? atlas.countryMap.get(selectedCountry) || null : null;
@@ -200,6 +212,60 @@ export default function Index() {
     }
     return set;
   }, [failuresById]);
+
+  const handleOpenPassport = useCallback(() => {
+    setPassportOpen(true);
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const stored = localStorage.getItem("radio_passport");
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored) as PassportEntry[];
+        setPassportEntries(parsed);
+      } catch {
+        setPassportEntries([]);
+      }
+    }
+    const handleStorage = (event: StorageEvent) => {
+      if (event.key !== "radio_passport") return;
+      if (!event.newValue) {
+        setPassportEntries([]);
+        return;
+      }
+      try {
+        const parsed = JSON.parse(event.newValue) as PassportEntry[];
+        setPassportEntries(parsed);
+      } catch {
+        setPassportEntries([]);
+      }
+    };
+    window.addEventListener("storage", handleStorage);
+    return () => window.removeEventListener("storage", handleStorage);
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (!player.nowPlaying) return;
+    const existing = passportEntries.find((entry) => entry.id === player.nowPlaying?.uuid);
+    if (existing) return;
+    const code = (player.nowPlaying as { countryCode?: string | null; countrycode?: string | null }).countryCode
+      ?? (player.nowPlaying as { countrycode?: string | null }).countrycode;
+    const nextEntry: PassportEntry = {
+      id: player.nowPlaying.uuid,
+      stationName: player.nowPlaying.name,
+      country: player.nowPlaying.country,
+      countryCode: code ?? undefined,
+      timestamp: Date.now(),
+      favicon: player.nowPlaying.favicon,
+    };
+    setPassportEntries((prev) => {
+      const next = [nextEntry, ...prev].slice(0, 50);
+      localStorage.setItem("radio_passport", JSON.stringify(next));
+      return next;
+    });
+  }, [passportEntries, player.nowPlaying]);
   const pageProtocol = typeof window !== "undefined" ? window.location.protocol : null;
   const isSafari = typeof navigator === "undefined" ? undefined : isSafariBrowser();
 
@@ -484,9 +550,7 @@ export default function Index() {
   }
 
   return (
-    <div className="app-bg relative min-h-screen text-slate-900 overflow-x-hidden w-full pb-32" style={{
-      background: "linear-gradient(180deg, #d1d5db 0%, #9ca3af 50%, #6b7280 100%)",
-    }}>
+    <div className="app-bg relative min-h-screen text-[var(--rp-text)] overflow-x-hidden w-full pb-32">
 
       <main
         className="relative z-10 flex w-full flex-col gap-0 pt-0 md:pt-2"
@@ -504,35 +568,44 @@ export default function Index() {
               onQuickRetune={handlers.handleQuickRetune} onMissionExploreWorld={() => setViewMode('world')}
               onMissionStayLocal={handlers.handleMissionStayLocal} onHoverSound={triggerHoverStatic}
               onSearch={handleSearchInput}
+              onOpenPassport={handleOpenPassport}
             />
 
             <div className="mx-auto mt-4 flex w-full max-w-7xl flex-col gap-4 px-4 md:mt-6 md:gap-6 md:px-6">
+              <JourneyModule
+                nowPlaying={player.nowPlaying}
+                recentStations={recentStations}
+                topCountries={topCountries}
+                onStartListening={handlers.handleStartListening}
+                onQuickRetune={handlers.handleQuickRetune}
+                onOpenPassport={handleOpenPassport}
+              />
               {/* Stats Bar - Consistent pill surface */}
-              <div className="rounded-2xl border border-white/60 bg-white/90 px-4 py-5 shadow-lg backdrop-blur-sm md:px-8">
-                <div className="grid grid-cols-3 divide-x divide-slate-200/50 text-center">
+              <div className="rounded-2xl border border-white/10 bg-[var(--rp-card)] px-4 py-5 shadow-[0_18px_40px_rgba(0,0,0,0.5)] backdrop-blur-sm md:px-8">
+                <div className="grid grid-cols-3 divide-x divide-white/10 text-center">
                   <div className="px-2">
-                    <Text size="lg" fw={800} c="slate.9" className="leading-none">
+                    <Text size="lg" fw={800} c="var(--rp-text)" className="leading-none">
                       {topCountries.length.toLocaleString()}
                     </Text>
-                    <Text size="xs" c="dimmed" fw={600} tt="uppercase" className="mt-1 tracking-[0.25em]">
+                    <Text size="xs" c="var(--rp-muted-2)" fw={600} tt="uppercase" className="mt-1 tracking-[0.25em]">
                       Countries
                     </Text>
                   </div>
                   <div className="px-2">
-                    <Text size="lg" fw={800} c="slate.9" className="leading-none">
+                    <Text size="lg" fw={800} c="var(--rp-text)" className="leading-none">
                       {derived.totalStations > 1000
                         ? `${(derived.totalStations / 1000).toFixed(0)}k+`
                         : derived.totalStations.toLocaleString()}
                     </Text>
-                    <Text size="xs" c="dimmed" fw={600} tt="uppercase" className="mt-1 tracking-[0.25em]">
+                    <Text size="xs" c="var(--rp-muted-2)" fw={600} tt="uppercase" className="mt-1 tracking-[0.25em]">
                       Stations
                     </Text>
                   </div>
                   <div className="px-2">
-                    <Text size="lg" fw={800} c="slate.9" className="leading-none">
+                    <Text size="lg" fw={800} c="var(--rp-text)" className="leading-none">
                       {derived.continents.length}
                     </Text>
-                    <Text size="xs" c="dimmed" fw={600} tt="uppercase" className="mt-1 tracking-[0.25em]">
+                    <Text size="xs" c="var(--rp-muted-2)" fw={600} tt="uppercase" className="mt-1 tracking-[0.25em]">
                       Continents
                     </Text>
                   </div>
@@ -542,12 +615,12 @@ export default function Index() {
               {catalogQuery.length >= 2 && (
                 <section className="space-y-4">
                   <div className="flex flex-wrap items-center justify-between gap-2">
-                    <Title order={2} style={{ fontSize: "1.35rem", fontWeight: 700, color: "#1e293b" }}>
+                    <Title order={2} style={{ fontSize: "1.35rem", fontWeight: 700, color: "var(--rp-text)" }}>
                       Stations matching "{catalogQuery}"
                     </Title>
                     <button
                       onClick={() => handleSearch("")}
-                      className="text-[10px] font-bold uppercase tracking-widest text-indigo-600 hover:text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-100 transition-all hover:bg-indigo-100"
+                      className="text-[10px] font-bold uppercase tracking-widest text-[var(--rp-gold)] hover:text-[var(--rp-gold-strong)] bg-[rgba(245,177,45,0.12)] px-2 py-0.5 rounded-full border border-[rgba(245,177,45,0.3)] transition-all hover:bg-[rgba(245,177,45,0.2)]"
                     >
                       Clear
                     </button>
@@ -568,14 +641,14 @@ export default function Index() {
 
               <section id="atlas" className="mt-4 md:mt-6">
                 <div className="relative -mx-4 px-4 py-3 md:-mx-6 md:px-6">
-                  <div className="rounded-2xl border border-white/70 bg-white/85 px-4 py-3 shadow-[0_12px_32px_rgba(15,23,42,0.12)] backdrop-blur-xl md:px-6">
+                  <div className="rounded-2xl border border-white/10 bg-[var(--rp-card)] px-4 py-3 shadow-[0_18px_40px_rgba(0,0,0,0.5)] backdrop-blur-xl md:px-6">
                     <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
                       <div>
-                        <Title order={2} style={{ fontSize: "1.35rem", fontWeight: 700, color: "#1e293b", marginBottom: "0.15rem" }}>
+                        <Title order={2} style={{ fontSize: "1.35rem", fontWeight: 700, color: "var(--rp-text)", marginBottom: "0.15rem" }}>
                           {atlasQuery ? `Search results for "${atlasQuery}"` : "Chart your path by continent"}
                         </Title>
                         <div className="flex items-center gap-3">
-                          <Text size="xs" c="dimmed">
+                          <Text size="xs" c="var(--rp-muted)">
                             {atlasQuery ? "Showing matching countries from the global atlas." : "Filter the atlas to the regions that match your listening mood."}
                           </Text>
                           {(atlasQuery || atlas.activeContinent) && (
@@ -584,19 +657,19 @@ export default function Index() {
                                 handleSearch("");
                                 atlas.setActiveContinent(null);
                               }}
-                              className="text-[10px] font-bold uppercase tracking-widest text-indigo-600 hover:text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-100 transition-all hover:bg-indigo-100"
+                              className="text-[10px] font-bold uppercase tracking-widest text-[var(--rp-gold)] hover:text-[var(--rp-gold-strong)] bg-[rgba(245,177,45,0.12)] px-2 py-0.5 rounded-full border border-[rgba(245,177,45,0.3)] transition-all hover:bg-[rgba(245,177,45,0.2)]"
                             >
                               Clear
                             </button>
                           )}
                         </div>
                       </div>
-                      <Text size="xs" c="dimmed" className="whitespace-nowrap font-mono tracking-[0.16em] uppercase">
+                      <Text size="xs" c="var(--rp-muted-2)" className="whitespace-nowrap font-mono tracking-[0.16em] uppercase">
                         Showing {derived.filteredCountries.length.toLocaleString()} of {topCountries.length.toLocaleString()} spotlight countries
                       </Text>
                     </div>
 
-                    <div className="mt-3 overflow-x-auto scroll-track border-t border-slate-200/30 pt-4">
+                    <div className="mt-3 overflow-x-auto scroll-track border-t border-white/10 pt-4">
                       <AtlasFilters continents={derived.continents} activeContinent={atlas.activeContinent} onContinentSelect={atlas.setActiveContinent} />
                     </div>
                   </div>
@@ -604,19 +677,23 @@ export default function Index() {
 
                 <div className="mt-6 md:mt-8">
                   {derived.filteredCountries.length > 0 ? (
-                    <AtlasGrid displaySections={derived.displaySections} onPreviewCountry={handlers.handlePreviewCountryPlay} />
+                    <AtlasGrid
+                      displaySections={derived.displaySections}
+                      onPreviewCountry={handlers.handlePreviewCountryPlay}
+                      stampedCountries={stampedCountryCodes}
+                    />
                   ) : (
-                    <div className="py-16 text-center bg-white/40 rounded-3xl border-2 border-dashed border-slate-200 backdrop-blur-sm">
-                      <div className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-slate-400 mb-4">
+                    <div className="py-16 text-center bg-[var(--rp-card)] rounded-3xl border-2 border-dashed border-white/10 backdrop-blur-sm">
+                      <div className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-black/40 text-[var(--rp-muted)] mb-4">
                         <IconSearch size={24} />
                       </div>
-                      <Title order={3} size="h4" c="slate.8" fw={800} className="mb-1">No signals found</Title>
-                      <Text size="sm" c="dimmed" className="max-w-xs mx-auto mb-6">
+                      <Title order={3} size="h4" c="var(--rp-text)" fw={800} className="mb-1">No signals found</Title>
+                      <Text size="sm" c="var(--rp-muted)" className="max-w-xs mx-auto mb-6">
                         We couldn't find any countries matching "{atlasQuery}". Try another name or explore the full atlas.
                       </Text>
                       <button
                         onClick={() => handleSearch("")}
-                        className="px-6 py-2 rounded-full bg-slate-900 text-white text-xs font-bold uppercase tracking-widest hover:bg-black transition-all"
+                        className="px-6 py-2 rounded-full bg-[var(--rp-gold)] text-black text-xs font-bold uppercase tracking-widest hover:bg-[var(--rp-gold-strong)] transition-all"
                       >
                         Clear Search
                       </button>
@@ -628,11 +705,12 @@ export default function Index() {
           </>
         ) : (
           <div className="mx-auto w-full max-w-7xl px-4 md:px-6">
-            <section className="-mx-4 sm:-mx-6 md:mx-0 rounded-2xl border border-white/70 bg-white/80 shadow-[0_12px_32px_rgba(15,23,42,0.12)] backdrop-blur-xl">
+            <section className="-mx-4 sm:-mx-6 md:mx-0 rounded-2xl border border-white/10 bg-[var(--rp-surface)] shadow-[0_18px_40px_rgba(0,0,0,0.5)] backdrop-blur-xl">
               <CountryOverview
                 selectedCountry={selectedCountry}
                 selectedCountryMeta={selectedCountryMeta}
                 stationCount={stations.length}
+                stations={stations}
                 onBack={handlers.handleBackToWorldView}
                 nowPlaying={player.nowPlaying}
                 isPlaying={player.isPlaying}
@@ -648,6 +726,17 @@ export default function Index() {
               />
 
               <div className="border-t border-slate-300/30 px-6 py-6 md:px-10">
+                <JourneyModule
+                  nowPlaying={player.nowPlaying}
+                  recentStations={recentStations}
+                  topCountries={topCountries}
+                  onStartListening={handlers.handleStartListening}
+                  onQuickRetune={handlers.handleQuickRetune}
+                  onOpenPassport={handleOpenPassport}
+                />
+              </div>
+
+              <div className="border-t border-slate-300/30 px-6 py-6 md:px-10">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
                     <Text fw={700} size="sm" c="slate.9">
@@ -661,10 +750,12 @@ export default function Index() {
                     <button
                       type="button"
                       onClick={() => setIsFilterDrawerOpen(true)}
-                      className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-300 text-slate-600 transition hover:bg-slate-50 md:hidden"
+                      className="md:hidden inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-600 shadow-sm"
                       aria-label="Open filters"
                     >
-                      <IconAdjustmentsHorizontal size={18} />
+                      <IconAdjustmentsHorizontal size={16} />
+                      Filters
+                      {isStationFilterActive && <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />}
                     </button>
                   </div>
                   <div className="hidden flex-wrap items-center gap-2 md:flex">
@@ -745,6 +836,37 @@ export default function Index() {
         countriesByContinent={derived.continentData} topCountries={topCountries}
         onCountrySelect={handlers.handleQuickRetuneCountrySelect} onSurprise={handlers.handleSurpriseRetune}
       />
+
+      <Drawer
+        opened={isPassportOpen}
+        onClose={() => setPassportOpen(false)}
+        position="bottom"
+        size="90%"
+        title="My Passport"
+        overlayProps={{ opacity: 0.25 }}
+        styles={{
+          content: {
+            background: "rgba(255, 255, 255, 0.92)",
+            backdropFilter: "blur(28px)",
+            WebkitBackdropFilter: "blur(28px)",
+            borderTopLeftRadius: "24px",
+            borderTopRightRadius: "24px",
+            overflow: "hidden",
+          },
+          header: {
+            borderBottom: "1px solid rgba(15,23,42,0.08)",
+          },
+          title: {
+            fontWeight: 700,
+            color: "#0f172a",
+            letterSpacing: "0.08em",
+            textTransform: "uppercase",
+            fontSize: "0.7rem",
+          },
+        }}
+      >
+        <PassportView entries={passportEntries} />
+      </Drawer>
 
       <Footer />
 

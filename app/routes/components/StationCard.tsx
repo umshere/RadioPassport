@@ -131,12 +131,12 @@ export function StationCard({
           position: 'relative',
           overflow: 'hidden',
           background: isCurrent
-            ? 'rgba(255, 255, 255, 0.95)'
-            : 'rgba(255, 255, 255, 0.8)',
+            ? 'rgba(12, 14, 20, 0.9)'
+            : 'rgba(12, 14, 20, 0.7)',
           backdropFilter: 'blur(12px)',
           boxShadow: isCurrent
-            ? '0 20px 40px -12px rgba(251, 146, 60, 0.4), 0 8px 16px -8px rgba(251, 146, 60, 0.2)'
-            : '0 10px 30px -10px rgba(0, 0, 0, 0.05), 0 4px 12px -6px rgba(0, 0, 0, 0.02)',
+            ? '0 20px 40px -12px rgba(245, 177, 45, 0.35), 0 8px 16px -8px rgba(0, 0, 0, 0.5)'
+            : '0 12px 28px -12px rgba(0, 0, 0, 0.5)',
         }}
       >
         {/* Subtle nice glow for active state instead of heavy gradient */}
@@ -144,7 +144,7 @@ export function StationCard({
           <div
             className="absolute inset-0 pointer-events-none opacity-20"
             style={{
-              background: 'radial-gradient(circle at 50% 0%, rgba(251,146,60,0.4) 0%, transparent 70%)'
+              background: 'radial-gradient(circle at 50% 0%, rgba(245,177,45,0.4) 0%, transparent 70%)'
             }}
           />
         )}
@@ -192,7 +192,7 @@ export function StationCard({
                 <Text
                   fw={700}
                   size="md"
-                  c="slate.9"
+                  c="var(--rp-text)"
                   lineClamp={1}
                   data-testid="station-name"
                   className="tracking-tight"
@@ -201,18 +201,18 @@ export function StationCard({
                 </Text>
                 {/* User-friendly status badge - simplified */}
                 {statusDisplay && (
-                  <div className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold" style={{ background: 'rgba(0,0,0,0.03)', color: '#78716c' }}>
+                  <div className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold" style={{ background: 'rgba(0,0,0,0.4)', color: 'rgba(248,243,230,0.8)' }}>
                     <span className="opacity-80">{statusDisplay.icon}</span>
                     <span>{statusDisplay.label}</span>
                   </div>
                 )}
                 {isHlsStream && (
-                  <div className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold" style={{ background: "rgba(15, 23, 42, 0.03)", color: "#64748b" }}>
+                  <div className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold" style={{ background: "rgba(245, 177, 45, 0.12)", color: "var(--rp-gold)" }}>
                     HLS
                   </div>
                 )}
                 {isHttpStream && (
-                  <div className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold" style={{ background: "rgba(239, 68, 68, 0.04)", color: "#ef4444" }}>
+                  <div className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold" style={{ background: "rgba(245, 177, 45, 0.12)", color: "var(--rp-gold)" }}>
                     HTTP
                   </div>
                 )}
@@ -238,7 +238,7 @@ export function StationCard({
               </div>
               {/* Single secondary info line */}
               {secondaryInfo && (
-                <Text size="xs" c="dimmed" lineClamp={1} className="text-slate-500 font-medium">
+                <Text size="xs" c="var(--rp-muted)" lineClamp={1} className="font-medium">
                   {secondaryInfo}
                 </Text>
               )}
@@ -256,11 +256,12 @@ export function StationCard({
             className="flex-1 text-white border-0 hover:-translate-y-[1px] transition-all active:translate-y-0"
             style={{
               background: isCurrent
-                ? 'linear-gradient(135deg, #f59e0b 0%, #ea580c 100%)'
-                : 'linear-gradient(135deg, #1e293b 0%, #334155 100%)',
+                ? 'linear-gradient(135deg, #f5b12d 0%, #ffc857 100%)'
+                : 'linear-gradient(135deg, #0f1118 0%, #1b2031 100%)',
+              color: isCurrent ? '#0b0c10' : 'var(--rp-text)',
               boxShadow: isCurrent
-                ? '0 8px 20px -4px rgba(251,146,60,0.5)'
-                : '0 6px 16px -4px rgba(15,23,42,0.25)',
+                ? '0 10px 24px -6px rgba(245,177,45,0.45)'
+                : '0 8px 18px -6px rgba(0,0,0,0.5)',
             }}
             aria-label={hasStream ? `Play ${station.name}` : `Visit ${station.name}`}
             {...primaryActionProps}
@@ -279,9 +280,9 @@ export function StationCard({
               color={isFavorite ? "red" : "gray"}
               className="border-0 transition-all"
               style={{
-                background: isFavorite ? 'linear-gradient(135deg, #fef2f2 0%, #ffe4e6 100%)' : 'rgba(255,255,255,0.5)',
-                color: isFavorite ? '#f43f5e' : '#9ca3af',
-                boxShadow: isFavorite ? '0 4px 12px -4px rgba(244,63,94,0.3)' : 'none',
+                background: isFavorite ? 'rgba(245, 177, 45, 0.18)' : 'rgba(0,0,0,0.45)',
+                color: isFavorite ? 'var(--rp-gold)' : 'rgba(248,243,230,0.6)',
+                boxShadow: isFavorite ? '0 8px 20px -6px rgba(245,177,45,0.35)' : '0 8px 18px -8px rgba(0,0,0,0.5)',
               }}
               aria-pressed={isFavorite}
               aria-label={isFavorite ? `Unfavorite ${station.name}` : `Favorite ${station.name}`}

@@ -7,9 +7,9 @@ export function useAtlasState(
   nowPlaying: { country: string } | null,
   selectedCountry: string | null
 ) {
-  const [activeContinent, setActiveContinent] = useState<string | null>(null);
+  const [activeContinent, setActiveContinent] = useState<string | null>("Asia");
   const [selectedContinent, setSelectedContinent] = useState<string | null>(
-    null
+    "Asia"
   );
 
   const countryMap = useMemo(
@@ -28,7 +28,10 @@ export function useAtlasState(
     if (currentContinent && selectedContinent !== currentContinent) {
       setSelectedContinent(currentContinent);
     }
-  }, [currentContinent, selectedContinent]);
+    if (selectedCountry && currentContinent && activeContinent !== currentContinent) {
+      setActiveContinent(currentContinent);
+    }
+  }, [activeContinent, currentContinent, selectedContinent, selectedCountry]);
 
   return {
     activeContinent,

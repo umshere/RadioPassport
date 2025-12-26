@@ -16,6 +16,7 @@ import type { Country } from "~/types/radio";
 type AtlasGridProps = {
   displaySections: Array<[string, Country[]]>;
   onPreviewCountry?: (countryName: string) => void;
+  stampedCountries?: Set<string>;
 };
 
 const continentIcons: Record<string, JSX.Element> = {
@@ -24,11 +25,11 @@ const continentIcons: Record<string, JSX.Element> = {
   Europe: <IconCompass size={20} />,
   Asia: <IconMapPin size={20} />,
   Africa: <IconGlobe size={20} />,
-  Oceania: <IconHeadphones size={20} />,
+  Australia: <IconHeadphones size={20} />,
   Other: <IconWorld size={20} />,
 };
 
-export function AtlasGrid({ displaySections, onPreviewCountry }: AtlasGridProps) {
+export function AtlasGrid({ displaySections, onPreviewCountry, stampedCountries }: AtlasGridProps) {
   const navigation = useNavigation();
   const pendingSearch = navigation.location?.search ?? "";
   const pendingCountry = (() => {
@@ -42,8 +43,8 @@ export function AtlasGrid({ displaySections, onPreviewCountry }: AtlasGridProps)
 
   if (displaySections.length === 0) {
     return (
-      <div className="rounded-3xl border border-slate-200/30 bg-[#e0e5ec] p-12 text-center shadow-[inset_3px_3px_6px_#b8b9be,inset_-3px_-3px_6px_#ffffff]">
-        <Text size="md" c="dimmed">
+      <div className="rounded-3xl border border-white/10 bg-[var(--rp-card)] p-12 text-center shadow-[0_18px_40px_rgba(0,0,0,0.6)]">
+        <Text size="md" c="var(--rp-muted)">
           No countries match your search. Try a different name or clear the filters to see all regions.
         </Text>
       </div>
@@ -65,7 +66,7 @@ export function AtlasGrid({ displaySections, onPreviewCountry }: AtlasGridProps)
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, amount: 0.1 }}
             transition={{ duration: 0.5, ease: "easeOut" }}
-            className="rounded-2xl border border-white/70 bg-white/70 p-6 shadow-[0_12px_32px_rgba(15,23,42,0.12)] backdrop-blur-xl md:p-7"
+            className="rounded-2xl border border-white/10 bg-[var(--rp-card)] p-6 shadow-[0_18px_40px_rgba(0,0,0,0.5)] backdrop-blur-xl md:p-7"
           >
             <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
               <div className="flex items-start gap-3">
@@ -73,19 +74,19 @@ export function AtlasGrid({ displaySections, onPreviewCountry }: AtlasGridProps)
                   size={44}
                   radius="lg"
                   style={{
-                    background: "#f8fafc",
-                    border: "none",
-                    color: "#64748b",
-                    boxShadow: "0 8px 20px rgba(15,23,42,0.08)",
+                    background: "var(--rp-card-2)",
+                    border: "1px solid rgba(255,255,255,0.08)",
+                    color: "var(--rp-gold)",
+                    boxShadow: "0 12px 24px rgba(0,0,0,0.45)",
                   }}
                 >
                   {continentIcons[continent] ?? <IconWorld size={22} />}
                 </ThemeIcon>
                 <div>
-                  <Title order={3} style={{ fontSize: "1.35rem", fontWeight: 700, color: "#334155" }}>
+                  <Title order={3} style={{ fontSize: "1.35rem", fontWeight: 700, color: "var(--rp-text)" }}>
                     {continent}
                   </Title>
-                  <Text size="sm" c="dimmed">
+                  <Text size="sm" c="var(--rp-muted)">
                     {continentCountries.length} countries • {total.toLocaleString()} stations
                   </Text>
                 </div>
@@ -96,14 +97,16 @@ export function AtlasGrid({ displaySections, onPreviewCountry }: AtlasGridProps)
                 variant="light"
                 color="gray"
                 leftSection={<IconBroadcast size={14} />}
-                className="bg-white/80 text-slate-700 border border-white/80 shadow-[0_6px_18px_rgba(15,23,42,0.08)]"
+                className="bg-black/40 text-[var(--rp-text)] border border-white/10 shadow-[0_10px_24px_rgba(0,0,0,0.45)]"
               >
                 {total.toLocaleString()} tuned-in listeners
               </Badge>
             </div>
 
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 md:gap-4">
-              {continentCountries.map((country, index) => (
+              {continentCountries.map((country, index) => {
+                const isStamped = stampedCountries?.has(country.iso_3166_1) ?? false;
+                return (
                 <motion.div
                   key={country.name}
                   initial={{ opacity: 0, scale: 0.9 }}
@@ -113,11 +116,11 @@ export function AtlasGrid({ displaySections, onPreviewCountry }: AtlasGridProps)
                 >
                   <Link
                     to={`/?country=${encodeURIComponent(country.name)}`}
-                    className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-white/80 bg-white/80 p-4 backdrop-blur-xl transition-all shadow-[0_10px_26px_rgba(15,23,42,0.12)] hover:-translate-y-1 hover:shadow-[0_14px_32px_rgba(15,23,42,0.16)]"
+                    className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-white/10 bg-[var(--rp-card-2)] p-4 backdrop-blur-xl transition-all shadow-[0_14px_32px_rgba(0,0,0,0.45)] hover:-translate-y-1 hover:shadow-[0_18px_40px_rgba(0,0,0,0.6)]"
                     prefetch="intent"
                   >
                     {/* Glass sheen effect */}
-                    <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/50 to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
+                    <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
 
                     <div className="relative z-10 flex flex-1 flex-col gap-3">
                       <div className="flex items-start justify-between gap-2">
@@ -125,22 +128,29 @@ export function AtlasGrid({ displaySections, onPreviewCountry }: AtlasGridProps)
                           iso={country.iso_3166_1}
                           title={`${country.name} flag`}
                           size={42}
-                          className="rounded-lg border border-white/80 shadow-[0_8px_18px_rgba(15,23,42,0.12)]"
+                          className="rounded-lg border border-white/20 shadow-[0_10px_22px_rgba(0,0,0,0.45)]"
                         />
-                        <div className="flex items-center gap-1.5 rounded-full border border-slate-200/80 bg-slate-900/5 px-2.5 py-1 backdrop-blur-sm">
-                          <IconBroadcast size={10} className="text-slate-500" />
-                          <span className="text-[10px] font-bold text-slate-600 font-mono">
-                            {country.stationcount}
-                          </span>
+                        <div className="flex flex-col items-end gap-2">
+                          {isStamped && (
+                            <span className="rounded-full border border-[rgba(245,177,45,0.5)] bg-[rgba(245,177,45,0.12)] px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.2em] text-[var(--rp-gold)]">
+                              Stamped
+                            </span>
+                          )}
+                          <div className="flex items-center gap-1.5 rounded-full border border-white/10 bg-black/40 px-2.5 py-1 backdrop-blur-sm">
+                            <IconBroadcast size={10} className="text-[var(--rp-gold)]" />
+                            <span className="text-[10px] font-bold text-[var(--rp-muted)] font-mono">
+                              {country.stationcount}
+                            </span>
+                          </div>
                         </div>
                       </div>
 
                       <div className="space-y-1">
-                        <Text fw={800} size="md" c="slate.9" className="leading-tight line-clamp-2 group-hover:text-indigo-900 transition-colors">
+                        <Text fw={800} size="md" c="var(--rp-text)" className="leading-tight line-clamp-2 group-hover:text-[var(--rp-gold)] transition-colors">
                           {country.name}
                         </Text>
-                        <Text size="xs" c="dimmed" className="font-medium flex items-center gap-1 text-slate-500">
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block animate-pulse" />
+                        <Text size="xs" c="var(--rp-muted)" className="font-medium flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-[var(--rp-gold)] inline-block animate-pulse" />
                           {country.stationcount > 0 ? 'Live now' : 'No signal'}
                         </Text>
                       </div>
@@ -149,15 +159,16 @@ export function AtlasGrid({ displaySections, onPreviewCountry }: AtlasGridProps)
                     {/* Pending overlay when navigating to this country */}
                     {navigation.state !== "idle" && pendingCountry === country.name && (
                       <div
-                        className="absolute inset-0 z-20 grid place-items-center bg-white/60 backdrop-blur-sm rounded-2xl"
+                        className="absolute inset-0 z-20 grid place-items-center bg-black/60 backdrop-blur-sm rounded-2xl"
                         aria-hidden="true"
                       >
-                        <Loader size="sm" color="dark" />
+                        <Loader size="sm" color="yellow" />
                       </div>
                     )}
                   </Link>
                 </motion.div>
-              ))}
+              );
+              })}
             </div>
           </motion.section>
         );

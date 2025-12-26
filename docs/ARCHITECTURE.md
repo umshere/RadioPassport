@@ -1,12 +1,26 @@
 # Architecture Overview
 
-World Mode connects user intent to persistent playback through a thin Remix stack:
+Radio Passport is a Remix + React app with two parallel discovery surfaces:
 
-1. **Input surfaces** (text field, upcoming voice capture) collect prompts such as "psychedelic jazz from Brazil".
-2. Prompts are sent to `POST /api/ai/recommend`, which resolves a `SceneDescriptor` either from mocks or a provider-backed model.
-3. The API enriches the descriptor (ranking, health checks) and returns it to Remix loaders/actions on the World routes.
-4. `SceneManager` receives the descriptor and lazy-loads the visual scene component specified by `descriptor.visual`.
-5. The scene passes station metadata to the shared `playerStore`, which queues streams and applies playback strategies without interrupting the current audio session.
-6. UI components (explainability chip, Passport stamp) react to the descriptor so the experience feels cohesive.
+- Classic Mode (`/`): Atlas browsing and optional AI world mixes (card stack).
+- World Mode (`/?view=world`): Terminal-style AI discovery via `WorldHome` and `geminiService`.
 
-This flow keeps audio playback centralized while allowing new input surfaces and scenes to plug into the same orchestration.
+## Classic Mode (Atlas + World Mix)
+
+1. Classic Mode loads countries and stations in `app/routes/_index.tsx`.
+2. The hero and atlas UI drive browsing, filtering, and station playback.
+3. When the user requests a world mix, `useEventHandlers` calls `loadWorldDescriptor`.
+4. `/api/ai/recommend` returns a `SceneDescriptor` which seeds the queue and drives the explore stack.
+
+## World Mode (Terminal)
+
+1. The user switches to `/?view=world` using the AppHeader toggle or CTA.
+2. `WorldHome` renders the terminal UI and prompts.
+3. `geminiService` interprets prompts, fetches stations, and returns a short explanation.
+4. Station selection updates the shared PlayerDock and Passport history.
+
+## Shared systems
+
+- `playerStore` keeps playback state persistent across modes.
+- `rbFetchJson` and station normalization utilities ensure consistent data.
+- UI components are split between `app/routes/components` (Classic Mode) and `app/components/WorldMode` (World Mode).

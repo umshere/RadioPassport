@@ -46,8 +46,8 @@ export function StationGrid({
       emptyMessage ??
       "No stations broadcasting from this country right now. Try exploring a neighboring region or use Quick Retune to discover something new.";
     return (
-      <div className="rounded-3xl border border-white/10 bg-white/5 p-12 text-center backdrop-blur">
-        <Text size="md" c="rgba(226,232,240,0.6)">
+      <div className="rounded-3xl border border-white/10 bg-[var(--rp-card)] p-12 text-center backdrop-blur">
+        <Text size="md" c="var(--rp-muted)">
           {message}
         </Text>
       </div>
@@ -72,7 +72,7 @@ export function StationGrid({
 
   // Desktop: Use grid view
   return (
-    <section className="rounded-2xl border border-white/70 bg-white/80 p-6 shadow-[0_12px_32px_rgba(15,23,42,0.12)] backdrop-blur-xl md:p-8">
+    <section className="rounded-2xl border border-white/10 bg-[var(--rp-card)] p-6 shadow-[0_18px_40px_rgba(0,0,0,0.5)] backdrop-blur-xl md:p-8">
       <div id="station-grid" className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {stations.map((station, index) => {
           const isCurrent = nowPlaying?.uuid === station.uuid;

@@ -20,11 +20,11 @@ export function SonicFlightTracker({ lastStation, currentStation, isTraveling }:
     const currentCode = getCode(currentStation);
 
     return (
-        <div className="relative px-4 py-2 bg-white/5 border border-white/5 rounded-2xl overflow-hidden h-14 flex items-center shadow-lg backdrop-blur-md w-full">
+        <div className="relative px-4 py-2 bg-black/50 border border-white/10 rounded-2xl overflow-hidden h-14 flex items-center shadow-[0_12px_24px_rgba(0,0,0,0.5)] backdrop-blur-md w-full">
             <div className="flex items-center justify-between w-full relative z-10 px-2">
                 {/* DEPARTURE */}
                 <div className="flex items-center gap-3 min-w-[100px]">
-                    <div className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center overflow-hidden shrink-0">
+                    <div className="w-8 h-8 rounded-lg bg-black/40 border border-white/10 flex items-center justify-center overflow-hidden shrink-0">
                         {lastStation && lastCode ? (
                             <ReactCountryFlag countryCode={lastCode} svg style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         ) : (
@@ -32,8 +32,8 @@ export function SonicFlightTracker({ lastStation, currentStation, isTraveling }:
                         )}
                     </div>
                     <div className="flex flex-col overflow-hidden">
-                        <span className="text-[8px] uppercase tracking-widest text-white/20 font-bold whitespace-nowrap">Departure</span>
-                        <span className="text-[10px] text-white/60 font-medium truncate w-full">{lastStation?.country || 'Base Station'}</span>
+                        <span className="text-[8px] uppercase tracking-widest text-[var(--rp-muted-2)] font-bold whitespace-nowrap">Departure</span>
+                        <span className="text-[10px] text-[var(--rp-muted)] font-medium truncate w-full">{lastStation?.country || 'Base Station'}</span>
                     </div>
                 </div>
 
@@ -50,7 +50,7 @@ export function SonicFlightTracker({ lastStation, currentStation, isTraveling }:
                     >
                         <IconPlaneDeparture
                             size={16}
-                            className={`text-yellow-500 fill-yellow-500/20 ${isTraveling ? 'animate-pulse' : ''}`}
+                            className={`text-[var(--rp-gold)] fill-[rgba(245,177,45,0.2)] ${isTraveling ? 'animate-pulse' : ''}`}
                         />
                     </div>
                 </div>
@@ -58,14 +58,14 @@ export function SonicFlightTracker({ lastStation, currentStation, isTraveling }:
                 {/* ARRIVAL */}
                 <div className="flex items-center gap-3 min-w-[100px] justify-end text-right">
                     <div className="flex flex-col overflow-hidden items-end">
-                        <span className="text-[8px] uppercase tracking-widest text-yellow-500 font-bold whitespace-nowrap">Arrival</span>
-                        <span className="text-[10px] text-white font-bold truncate w-full">{currentStation?.country || 'Scanning...'}</span>
+                        <span className="text-[8px] uppercase tracking-widest text-[var(--rp-gold)] font-bold whitespace-nowrap">Arrival</span>
+                        <span className="text-[10px] text-[var(--rp-text)] font-bold truncate w-full">{currentStation?.country || 'Scanning...'}</span>
                     </div>
-                    <div className={`w-8 h-8 rounded-lg bg-yellow-500/10 border border-yellow-500/20 flex items-center justify-center overflow-hidden shrink-0 transition-transform ${isTraveling ? 'scale-110 shadow-[0_0_15px_rgba(234,179,8,0.3)]' : ''}`}>
+                    <div className={`w-8 h-8 rounded-lg bg-[rgba(245,177,45,0.12)] border border-[rgba(245,177,45,0.3)] flex items-center justify-center overflow-hidden shrink-0 transition-transform ${isTraveling ? 'scale-110 shadow-[0_0_15px_rgba(245,177,45,0.3)]' : ''}`}>
                         {currentStation && currentCode ? (
                             <ReactCountryFlag countryCode={currentCode} svg style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         ) : (
-                            <IconSatellite size={14} className="text-yellow-500/50" />
+                            <IconSatellite size={14} className="text-[var(--rp-gold)]/60" />
                         )}
                     </div>
                 </div>
@@ -73,7 +73,7 @@ export function SonicFlightTracker({ lastStation, currentStation, isTraveling }:
 
             {/* Background Pulse Effect */}
             <div className="absolute inset-0 opacity-10 flex items-center pointer-events-none">
-                <div className="w-full h-[1px] bg-gradient-to-r from-transparent via-yellow-500 to-transparent animate-[pulse_2s_infinite]"></div>
+                <div className="w-full h-[1px] bg-gradient-to-r from-transparent via-[var(--rp-gold)] to-transparent animate-[pulse_2s_infinite]"></div>
             </div>
         </div>
     );

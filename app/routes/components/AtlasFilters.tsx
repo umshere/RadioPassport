@@ -19,7 +19,7 @@ const continentIcons: Record<string, JSX.Element> = {
   Europe: <IconCompass size={16} />,
   Asia: <IconMapPin size={16} />,
   Africa: <IconGlobe size={16} />,
-  Oceania: <IconHeadphones size={16} />,
+  Australia: <IconHeadphones size={16} />,
   Other: <IconWorld size={16} />,
 };
 
@@ -28,9 +28,9 @@ export function AtlasFilters({
   activeContinent,
   onContinentSelect,
 }: AtlasFiltersProps) {
-  const pillBase = "flex h-11 items-center gap-2 rounded-full px-5 text-sm font-semibold transition-all border shadow-[0_8px_20px_rgba(15,23,42,0.08)]";
-  const inactivePill = "bg-white/70 backdrop-blur-md text-slate-600 border-white/80 hover:bg-white hover:text-slate-900";
-  const activePill = "bg-slate-900 text-white border-slate-900 shadow-[0_10px_24px_rgba(15,23,42,0.16)]";
+  const pillBase = "flex h-11 items-center gap-2 rounded-full px-5 text-sm font-semibold transition-all border shadow-[0_10px_24px_rgba(0,0,0,0.4)]";
+  const inactivePill = "bg-black/40 backdrop-blur-md text-[var(--rp-text)] border-white/10 hover:bg-black/60";
+  const activePill = "bg-[var(--rp-gold)] text-black border-[rgba(245,177,45,0.5)] shadow-[0_14px_28px_rgba(245,177,45,0.25)]";
 
   return (
     <div id="atlas-filters" className="scroll-track overflow-x-auto pb-2 pt-2 pl-1">
@@ -42,11 +42,11 @@ export function AtlasFilters({
         >
           <IconGlobe
             size={18}
-            className={activeContinent === null ? "" : "text-slate-400 group-hover:text-slate-600"}
+            className={activeContinent === null ? "" : "text-[var(--rp-muted-2)]"}
           />
           Reset Map
         </button>
-        <div className="h-6 w-px bg-slate-300/40 mx-1" />
+        <div className="h-6 w-px bg-white/10 mx-1" />
         {continents.map((continent) => {
           const isActive = activeContinent === continent;
           return (
@@ -59,7 +59,7 @@ export function AtlasFilters({
               {continentIcons[continent] ?? <IconWorld size={18} />}
               {continent}
               {isActive && (
-                <span className="ml-1 w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                <span className="ml-1 w-1.5 h-1.5 rounded-full bg-black/70" />
               )}
             </button>
           );

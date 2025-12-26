@@ -25,12 +25,12 @@ export function PassportView({ entries }: PassportViewProps) {
     return (
         <div className="p-4 md:p-8 animate-fade-in">
             <div className="flex items-center gap-4 mb-10 border-b border-white/10 pb-6">
-                <div className="w-12 h-12 bg-yellow-500 rounded-xl flex items-center justify-center shadow-lg shadow-yellow-500/20">
+                <div className="w-12 h-12 bg-[var(--rp-gold)] rounded-xl flex items-center justify-center shadow-[0_12px_24px_rgba(245,177,45,0.35)]">
                     <IconPlaneDeparture className="text-black" size={24} />
                 </div>
                 <div>
-                    <Text size="xl" fw={900} tt="uppercase" className="leading-none text-white tracking-tight">My Passport</Text>
-                    <Text size="xs" c="dimmed" tt="uppercase" mt={4} style={{ letterSpacing: '0.2em' }}>
+                    <Text size="xl" fw={900} tt="uppercase" className="leading-none text-[var(--rp-text)] tracking-tight">My Passport</Text>
+                    <Text size="xs" c="var(--rp-muted-2)" tt="uppercase" mt={4} style={{ letterSpacing: '0.2em' }}>
                         {entries.length} Destinations Visited
                     </Text>
                 </div>
@@ -50,7 +50,7 @@ export function PassportView({ entries }: PassportViewProps) {
                         <Card
                             radius="lg"
                             p="md"
-                            className="bg-white/5 border border-white/5 hover:bg-white/10 hover:border-white/10 transition-all duration-300 group cursor-pointer backdrop-blur-sm"
+                            className="bg-black/40 border border-white/10 hover:bg-black/60 hover:border-white/20 transition-all duration-300 group cursor-pointer backdrop-blur-sm"
                         >
                             <Group justify="space-between" wrap="nowrap">
                                 <div className="flex items-start gap-3">
@@ -58,19 +58,19 @@ export function PassportView({ entries }: PassportViewProps) {
                                         <Avatar src={entry.favicon} radius="sm" size="md" className="opacity-80 group-hover:opacity-100 transition-opacity" />
                                     )}
                                     <div>
-                                        <Text size="sm" fw={700} c="white" className="leading-tight group-hover:text-yellow-400 transition-colors">
+                                        <Text size="sm" fw={700} c="var(--rp-text)" className="leading-tight group-hover:text-[var(--rp-gold)] transition-colors">
                                             {entry.stationName}
                                         </Text>
-                                        <Text size="xs" c="dimmed" mt={2} className="flex items-center gap-1">
+                                        <Text size="xs" c="var(--rp-muted)" mt={2} className="flex items-center gap-1">
                                             <IconMusic size={10} /> {entry.country}
                                         </Text>
                                     </div>
                                 </div>
                                 <div className="text-right">
-                                    <Badge variant="light" color="gray" size="xs" radius="sm" className="bg-white/5 text-slate-400">
+                                    <Badge variant="light" color="gray" size="xs" radius="sm" className="bg-black/40 text-[var(--rp-muted)] border border-white/10">
                                         {new Date(entry.timestamp).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                                     </Badge>
-                                    <Text size="xs" c="dimmed" mt={2} className="font-mono opacity-50">
+                                    <Text size="xs" c="var(--rp-muted-2)" mt={2} className="font-mono opacity-70">
                                         {new Date(entry.timestamp).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
                                     </Text>
                                 </div>

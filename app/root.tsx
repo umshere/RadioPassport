@@ -19,7 +19,11 @@ export const links: LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
   {
     rel: "stylesheet",
-    href: "https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@500;600;700&family=Poppins:wght@500;600;700&display=swap",
+    href: "https://api.fontshare.com/v2/css?f[]=general-sans@400,500,600,700,800&display=swap",
+  },
+  {
+    rel: "stylesheet",
+    href: "https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap",
   },
   { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
   { rel: "manifest", href: "/manifest.json" },
@@ -88,12 +92,12 @@ const theme = createTheme({
   primaryShade: 8,
   defaultRadius: "xl",
   fontFamily:
-    '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif',
+    '"General Sans", "SF Pro Text", -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif',
   fontFamilyMonospace:
-    '"Roboto Mono", "IBM Plex Mono", "SF Mono", Monaco, "Cascadia Code", "Courier New", monospace',
+    '"IBM Plex Mono", "SF Mono", Monaco, "Cascadia Code", "Courier New", monospace',
   headings: {
     fontFamily:
-      '"Inter", "Satoshi", -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif',
+      '"General Sans", "SF Pro Text", -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif',
     fontWeight: "700",
   },
   shadows: {
@@ -149,18 +153,19 @@ export default function App() {
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-        <meta name="theme-color" content="#e0e5ec" />
+        <meta name="theme-color" content="#0b0c10" />
         <meta name="description" content="Radio Passport: Explore the world's radio stations with an elegant, minimal interface" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Roboto+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+        <link href="https://api.fontshare.com/v2/css?f[]=general-sans@400,500,600,700,800&display=swap" rel="stylesheet" />
+        <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
         <Meta />
         <Links />
       </head>
       <body
-        className="min-h-screen text-slate-900 bg-[#e0e5ec]"
+        className="min-h-screen text-[var(--rp-text)] bg-[var(--rp-bg)]"
         style={{
-          background: "#e0e5ec",
+          background: "var(--rp-bg)",
         }}
         suppressHydrationWarning
       >
@@ -168,8 +173,8 @@ export default function App() {
           <>
             {/* Loading progress bar */}
             {isNavigating && (
-              <div className="fixed top-0 left-0 right-0 z-[200] h-1 bg-[#e0e5ec]">
-                <div className="h-full bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 animate-[loading_1s_ease-in-out_infinite]"
+              <div className="fixed top-0 left-0 right-0 z-[200] h-1 bg-[#0b0c10]">
+                <div className="h-full bg-gradient-to-r from-[#f6c86f] via-[#f1aa45] to-[#e99f2b] animate-[loading_1s_ease-in-out_infinite]"
                   style={{
                     animation: "loading 1s ease-in-out infinite",
                     transformOrigin: "left"

@@ -10,9 +10,16 @@ export default function AppHeader() {
   const isPlaying = usePlayerStore((state) => state.isPlaying);
   const audioLevel = usePlayerStore((state) => state.audioLevel);
   const [isMounted, setIsMounted] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
 
   useEffect(() => {
     setIsMounted(true);
+  }, []);
+  useEffect(() => {
+    const onScroll = () => setIsScrolled(window.scrollY > 12);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
   const currentView = searchParams.get("view") === "world" ? "world" : "classical";
@@ -30,33 +37,37 @@ export default function AppHeader() {
   };
 
   return (
-    <header className="sticky top-0 z-40 backdrop-blur-xl bg-white/70 transition-all duration-300">
-      <div className="mx-auto max-w-7xl px-4 pr-12 sm:px-6 sm:pr-6 lg:px-8 lg:pr-8 h-14 flex items-center justify-between gap-4">
+    <header
+      className={`sticky top-0 z-50 backdrop-blur-xl bg-[var(--rp-surface)]/90 border-b border-white/10 transition-all duration-300 ${
+        isScrolled ? "shadow-[0_12px_30px_rgba(0,0,0,0.45)]" : ""
+      }`}
+    >
+      <div className={`mx-auto max-w-7xl px-4 pr-12 sm:px-6 sm:pr-6 lg:px-8 lg:pr-8 flex items-center justify-between gap-4 transition-all duration-300 ${isScrolled ? "h-12" : "h-14"}`}>
         {/* Logo Area */}
         <Link to="/" className="flex items-center gap-3 flex-shrink-0 group" prefetch="intent" aria-label="Radio Passport">
-          <div className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-white shadow-sm ring-1 ring-slate-900/5 overflow-hidden transition-transform group-hover:scale-105">
-            <span className="relative text-sm font-black tracking-wider z-10 text-slate-800">RP</span>
+          <div className={`relative flex items-center justify-center rounded-xl bg-[var(--rp-card-2)] shadow-[0_12px_24px_rgba(0,0,0,0.5)] ring-1 ring-white/10 overflow-hidden transition-transform group-hover:scale-105 ${isScrolled ? "h-8 w-8" : "h-10 w-10"}`}>
+            <span className="relative text-sm font-black tracking-wider z-10 text-[var(--rp-gold)]">RP</span>
           </div>
           <div className="hidden lg:flex flex-col">
-            <span className="text-base font-black tracking-tight text-slate-800 leading-tight whitespace-nowrap">Radio Passport</span>
-            <span className="text-[9px] text-slate-500 font-bold uppercase tracking-widest leading-tight whitespace-nowrap">Global sound atlas</span>
+            <span className={`font-black tracking-tight text-[var(--rp-text)] leading-tight whitespace-nowrap ${isScrolled ? "text-sm" : "text-base"}`}>Radio Passport</span>
+            <span className={`text-[9px] text-[var(--rp-muted-2)] font-bold uppercase tracking-widest leading-tight whitespace-nowrap ${isScrolled ? "opacity-70" : ""}`}>Global sound atlas</span>
           </div>
         </Link>
 
         {/* Center: Now Playing Status - Gated by isMounted to prevent hydration mismatch */}
         <div className="flex-1 flex items-center justify-center overflow-hidden px-2">
           {isMounted && nowPlaying ? (
-            <div className="flex items-center gap-2 text-[11px] text-slate-600 max-w-full">
+            <div className="flex items-center gap-2 text-[11px] text-[var(--rp-muted)] max-w-full">
               <HeaderAudioMeter level={audioLevel} active={isPlaying} />
               <div className="flex flex-col leading-tight overflow-hidden">
-                <span className="truncate font-bold text-slate-800">{nowPlaying.name}</span>
-                <span className="truncate text-[10px] text-slate-500 opacity-80">{nowPlaying.country}</span>
+                <span className="truncate font-bold text-[var(--rp-text)]">{nowPlaying.name}</span>
+                <span className="truncate text-[10px] text-[var(--rp-muted-2)] opacity-80">{nowPlaying.country}</span>
               </div>
-              <Badge variant="dot" color="red" radius="xl" size="xs" className="font-mono ml-2 hidden sm:flex">LIVE</Badge>
+              <Badge variant="dot" color="yellow" radius="xl" size="xs" className="font-mono ml-2 hidden sm:flex">LIVE</Badge>
             </div>
           ) : (
-            <div className="flex items-center gap-1.5 opacity-50">
-              <span className="text-[11px] font-bold tracking-wide uppercase text-slate-400">Radio Passport</span>
+            <div className="flex items-center gap-1.5 opacity-70">
+              <span className="text-[11px] font-bold tracking-wide uppercase text-[var(--rp-muted-2)]">Radio Passport</span>
             </div>
           )}
         </div>
@@ -74,10 +85,10 @@ export default function AppHeader() {
               size="xs"
               radius="xl"
               transitionDuration={300}
-              color="indigo"
               classNames={{
-                root: "bg-slate-100 p-0.5 sm:p-1 border border-slate-200 shadow-inner",
-                label: "font-black uppercase tracking-widest text-[9px] sm:text-[10px] px-2 sm:px-3"
+                root: "bg-black/50 p-0.5 sm:p-1 border border-white/10 shadow-[0_10px_24px_rgba(0,0,0,0.5)]",
+                label: "font-black uppercase tracking-widest text-[9px] sm:text-[10px] px-2 sm:px-3 text-[var(--rp-muted-2)] data-[active=true]:text-black",
+                indicator: "bg-[var(--rp-gold)]"
               }}
             />
           </div>
@@ -95,6 +106,7 @@ export default function AppHeader() {
                 }
               }}
               title="Search"
+              className="text-[var(--rp-muted)] hover:text-[var(--rp-gold)]"
             >
               <IconSearch size={20} />
             </ActionIcon>

@@ -18,8 +18,8 @@ export default function Footer() {
                             <Link to="/" className="text-slate-600 hover:text-slate-900 transition-colors">
                                 Home
                             </Link>
-                            <Link to="/world/cards" className="text-slate-600 hover:text-slate-900 transition-colors">
-                                World Map
+                            <Link to="/?view=world" className="text-slate-600 hover:text-slate-900 transition-colors">
+                                World Mode
                             </Link>
                             <Link to="/about" className="text-slate-600 hover:text-slate-900 transition-colors">
                                 About
