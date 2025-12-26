@@ -185,8 +185,8 @@ export function CompactStationList({
 
     const [visibleCount, setVisibleCount] = useState(8);
     useEffect(() => {
-        setVisibleCount(8);
-    }, [stations]);
+        setVisibleCount((prev) => Math.min(prev, stations.length));
+    }, [stations.length]);
     const visibleStations = useMemo(() => stations.slice(0, visibleCount), [stations, visibleCount]);
     const hasMore = stations.length > visibleCount;
 

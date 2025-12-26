@@ -127,6 +127,8 @@ export function CountryOverview({
     const localTime = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
     return { topLanguages, topGenres, timeZoneName, localTime };
   }, [stations]);
+  const [showAllLanguages, setShowAllLanguages] = useState(false);
+  const [showAllGenres, setShowAllGenres] = useState(false);
 
   const syncDialFromIndex = useCallback((index: number) => {
     const bounded = Math.max(0, Math.min(index, totalStations - 1));
@@ -270,27 +272,8 @@ export function CountryOverview({
     : "";
 
   useEffect(() => {
-    if (nowPlaying) {
-      setTunerExpanded(true);
-    }
-  }, [nowPlaying]);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const media = window.matchMedia("(max-width: 1024px)");
-    const handleScroll = () => {
-      if (!media.matches) return;
-      const currentY = window.scrollY;
-      const delta = currentY - lastScrollYRef.current;
-      lastScrollYRef.current = currentY;
-      if (!tunerExpanded) return;
-      if (currentY > 80 && delta > 6) {
-        setTunerExpanded(false);
-      }
-    };
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, [tunerExpanded]);
+    lastScrollYRef.current = typeof window !== "undefined" ? window.scrollY : 0;
+  }, []);
 
   useEffect(() => {
     if (freeTrivia.status === "ready" && freeTrivia.trivia) {
@@ -440,9 +423,30 @@ export function CountryOverview({
                     <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--rp-muted-2)]">
                       Languages
                     </div>
-                    <div className="truncate text-sm font-medium text-[var(--rp-text)]">
-                      {insights.topLanguages.length > 0 ? insights.topLanguages.join(", ") : "Mixed"}
-                    </div>
+                    {insights.topLanguages.length > 0 ? (
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {(showAllLanguages ? insights.topLanguages : insights.topLanguages.slice(0, 4)).map((label) => (
+                          <span
+                            key={label}
+                            className="rounded-full border border-white/10 bg-black/40 px-2 py-0.5 text-[11px] font-semibold text-[var(--rp-text)]"
+                            title={label}
+                          >
+                            {label}
+                          </span>
+                        ))}
+                        {insights.topLanguages.length > 4 && (
+                          <button
+                            type="button"
+                            onClick={() => setShowAllLanguages((prev) => !prev)}
+                            className="rounded-full border border-white/10 bg-black/40 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--rp-muted-2)]"
+                          >
+                            {showAllLanguages ? "Show less" : `+${insights.topLanguages.length - 4} more`}
+                          </button>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="text-sm font-medium text-[var(--rp-text)]">Mixed</div>
+                    )}
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
@@ -453,9 +457,30 @@ export function CountryOverview({
                     <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--rp-muted-2)]">
                       Top Genres
                     </div>
-                    <div className="truncate text-sm font-medium text-[var(--rp-text)]">
-                      {insights.topGenres.length > 0 ? insights.topGenres.join(", ") : "Curated mix"}
-                    </div>
+                    {insights.topGenres.length > 0 ? (
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {(showAllGenres ? insights.topGenres : insights.topGenres.slice(0, 4)).map((label) => (
+                          <span
+                            key={label}
+                            className="rounded-full border border-white/10 bg-black/40 px-2 py-0.5 text-[11px] font-semibold text-[var(--rp-text)]"
+                            title={label}
+                          >
+                            {label}
+                          </span>
+                        ))}
+                        {insights.topGenres.length > 4 && (
+                          <button
+                            type="button"
+                            onClick={() => setShowAllGenres((prev) => !prev)}
+                            className="rounded-full border border-white/10 bg-black/40 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--rp-muted-2)]"
+                          >
+                            {showAllGenres ? "Show less" : `+${insights.topGenres.length - 4} more`}
+                          </button>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="text-sm font-medium text-[var(--rp-text)]">Curated mix</div>
+                    )}
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
