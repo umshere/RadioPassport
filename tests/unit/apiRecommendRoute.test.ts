@@ -177,6 +177,12 @@ describe("POST /api/ai/recommend", () => {
     const payload = await response.json();
     expect(payload.descriptor.visual).toBe("atlas");
     expect(payload.descriptor.stations[0]?.uuid).toBe("station-route-1");
-    expect(fetchMock).toHaveBeenCalledTimes(3);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(fetchMock.mock.calls[0]?.[0]?.toString()).toContain(
+      "/v1beta/models/non-existent-model"
+    );
+    expect(fetchMock.mock.calls[1]?.[0]?.toString()).toContain(
+      "/v1beta/models/gemini-2.5-flash-lite"
+    );
   });
 });
