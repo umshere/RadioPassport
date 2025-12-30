@@ -1,5 +1,4 @@
 import { Drawer, ScrollArea } from "@mantine/core";
-import { IconX } from "@tabler/icons-react";
 import type { StationFilterOptions, StationFilterState } from "~/utils/stationFilters";
 import { StationFiltersPanel } from "./StationFiltersPanel";
 
@@ -30,14 +29,14 @@ export function MobileFilterDrawer({
             onClose={onClose}
             position="bottom"
             size="90%"
-            title={<span className="font-bold text-slate-800">Filters</span>}
+            title={<span className="font-bold text-[var(--rp-text)]">Filters</span>}
             padding="md"
             radius="lg"
             transitionProps={{ duration: 250, timingFunction: "ease" }}
             styles={{
-                header: { paddingBottom: 16, borderBottom: "1px solid #e2e8f0" },
-                body: { padding: 0, paddingTop: 16 },
-                content: { borderRadius: "24px 24px 0 0" }
+                header: { paddingBottom: 16, borderBottom: "1px solid rgba(255,255,255,0.08)" },
+                body: { padding: 0, paddingTop: 16, background: "var(--rp-card)" },
+                content: { borderRadius: "24px 24px 0 0", background: "var(--rp-card)" }
             }}
         >
             <ScrollArea h="100%" type="never" style={{ paddingBottom: 80 }}>
@@ -54,7 +53,7 @@ export function MobileFilterDrawer({
                     <div className="mt-8 flex justify-end pb-8">
                         <button
                             onClick={onClose}
-                            className="w-full rounded-xl bg-slate-900 py-3.5 text-sm font-bold text-white shadow-lg active:scale-[0.98]"
+                            className="w-full rounded-xl border border-[rgba(245,177,45,0.5)] bg-[rgba(245,177,45,0.2)] py-3.5 text-sm font-bold text-[var(--rp-gold)] shadow-[0_16px_36px_rgba(245,177,45,0.18)] active:scale-[0.98]"
                         >
                             Done
                         </button>

@@ -1,4 +1,5 @@
-import { IconArrowRight, IconPlaneDeparture, IconSparkles } from "@tabler/icons-react";
+import { IconArrowRight, IconPlaneDeparture, IconSparkles, IconPlane } from "@tabler/icons-react";
+import { motion } from "framer-motion";
 import type { Country, Station } from "~/types/radio";
 import { CountryFlag } from "~/components/CountryFlag";
 
@@ -41,6 +42,8 @@ export function JourneyModule({
 }: JourneyModuleProps) {
   const departure = resolveDeparture(nowPlaying, recentStations);
   const nextCountry = resolveNextCountry(nowPlaying, departure, topCountries);
+  const departureTitle = departure?.country ?? "Home Base";
+  const departureSubtitle = departure?.name ?? (recentStations.length ? "Recent stamp" : "Passport log");
 
   if (!nowPlaying) {
     return (
@@ -97,13 +100,13 @@ export function JourneyModule({
           />
           <div className="min-w-0">
             <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--rp-muted-2)]">
-              Departure
+              Passport
             </div>
             <div className="truncate text-sm font-semibold text-[var(--rp-text)]">
-              {departure?.country ?? "Home Base"}
+              {departureTitle}
             </div>
             <div className="truncate text-xs text-[var(--rp-muted)]">
-              {departure?.name ?? "First tune awaits"}
+              {departureSubtitle}
             </div>
           </div>
         </button>
@@ -154,7 +157,14 @@ export function JourneyModule({
       </div>
 
       <div className="relative mt-4 hidden gap-4 sm:grid sm:grid-cols-3">
-        <div className="absolute left-8 right-8 top-1/2 hidden h-px -translate-y-1/2 bg-gradient-to-r from-transparent via-slate-200 to-transparent sm:block" />
+        <div className="absolute left-8 right-8 top-1/2 hidden h-px -translate-y-1/2 bg-gradient-to-r from-transparent via-[rgba(245,177,45,0.4)] to-transparent sm:block" />
+        <motion.div
+          className="absolute left-[22%] top-1/2 hidden h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full border border-[rgba(245,177,45,0.5)] bg-black/60 text-[var(--rp-gold)] shadow-[0_0_18px_rgba(245,177,45,0.35)] sm:flex"
+          animate={{ x: [0, 140, 0] }}
+          transition={{ duration: 4.5, repeat: Infinity, ease: "easeInOut" }}
+        >
+          <IconPlane size={12} />
+        </motion.div>
 
         <button
           type="button"
@@ -171,13 +181,13 @@ export function JourneyModule({
           />
           <div className="min-w-0">
             <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--rp-muted-2)]">
-              Departure
+              Passport
             </div>
             <div className="truncate text-sm font-semibold text-[var(--rp-text)]">
-              {departure?.country ?? "Home Base"}
+              {departureTitle}
             </div>
             <div className="truncate text-xs text-[var(--rp-muted)]">
-              {departure?.name ?? "First tune awaits"}
+              {departureSubtitle}
             </div>
           </div>
         </button>

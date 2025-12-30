@@ -241,6 +241,19 @@ export function HeroSection({
                 </button>
               )}
             </div>
+            <div className="mt-6 flex flex-wrap items-center gap-3 text-[11px] font-semibold uppercase tracking-[0.28em] text-[var(--rp-muted-2)]">
+              <span className="rounded-full border border-white/10 bg-black/40 px-4 py-2 text-[var(--rp-text)] shadow-[0_12px_28px_rgba(0,0,0,0.5)]">
+                {topCountries.length.toLocaleString()} Countries
+              </span>
+              <span className="rounded-full border border-white/10 bg-black/40 px-4 py-2 text-[var(--rp-text)] shadow-[0_12px_28px_rgba(0,0,0,0.5)]">
+                {totalStations > 1000
+                  ? `${(totalStations / 1000).toFixed(0)}k+ Stations`
+                  : `${totalStations.toLocaleString()} Stations`}
+              </span>
+              <span className="rounded-full border border-white/10 bg-black/40 px-4 py-2 text-[var(--rp-text)] shadow-[0_12px_28px_rgba(0,0,0,0.5)]">
+                {continents} Continents
+              </span>
+            </div>
           </div>
 
           <div className="lg:col-span-5">

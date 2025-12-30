@@ -505,17 +505,10 @@ export default function PlayerDock() {
           {/* Progress Bar - Vibrant gradient */}
           <div className="relative h-1.5 w-full bg-gradient-to-r from-[#1b1f28] via-[#222833] to-[#1b1f28]">
             {isPlaying && (
-              <motion.div
-                className="absolute inset-y-0 left-0 bg-gradient-to-r from-[#f6c86f] via-[#f1aa45] to-[#f7d18b]"
+              <div
+                className="absolute inset-y-0 left-0 w-16 bg-gradient-to-r from-[#f6c86f] via-[#f1aa45] to-[#f7d18b]"
                 style={{
                   boxShadow: '0 0 16px rgba(246,200,111,0.45)',
-                }}
-                initial={{ width: "0%" }}
-                animate={{ width: "100%" }}
-                transition={{
-                  duration: 60,
-                  ease: "linear",
-                  repeat: Infinity
                 }}
               />
             )}
@@ -759,23 +752,12 @@ export default function PlayerDock() {
             {/* Glass Shine Overlay */}
             <div className="absolute inset-0 bg-gradient-to-b from-white/5 to-transparent opacity-40 pointer-events-none" />
 
-            {/* Progress bar at top - integrated */}
-            <div className="absolute top-0 left-0 right-0 h-[3px] bg-white/10 overflow-hidden">
-              {isPlaying && (
-                <motion.div
-                  className="h-full bg-gradient-to-r from-[#f6c86f] via-[#f1aa45] to-[#f7d18b] shadow-[0_0_10px_rgba(246,200,111,0.45)]"
-                  initial={{ width: "0%" }}
-                  animate={{ width: "100%" }}
-                  transition={{ duration: 30, ease: "linear", repeat: Infinity }}
-                />
-              )}
-            </div>
+            {/* Static status bar */}
+            <div className="absolute top-0 left-0 right-0 h-[3px] bg-white/10" />
 
             <div className="flex items-center gap-3.5 relative z-10 pt-1 px-1">
-              <motion.div
+              <div
                 className={`${raptorMiniEnabled ? 'h-10 w-10' : 'h-12 w-12'} overflow-visible flex items-center justify-center text-sm flex-shrink-0 relative`}
-                animate={isPlaying ? { scale: [1, 1.05, 1] } : {}}
-                transition={{ duration: 1, repeat: Infinity }}
               >
                 <div
                   className="w-full h-full rounded-xl overflow-hidden relative z-0"
@@ -799,7 +781,7 @@ export default function PlayerDock() {
                   <IconSparkles size={12} />
                   AI
                 </button>
-              </motion.div>
+              </div>
 
               <div className="min-w-0 flex-1 flex flex-col justify-center">
                 <div className="flex items-center gap-2">

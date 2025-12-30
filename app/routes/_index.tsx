@@ -1,7 +1,7 @@
 import { json, type LoaderFunctionArgs } from "@remix-run/node";
 import { useLoaderData, useNavigate, useSearchParams } from "@remix-run/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Collapse, Drawer, Text, Title } from "@mantine/core";
+import { Collapse, Drawer, ScrollArea, Text, Title } from "@mantine/core";
 import { useSwipeable } from "react-swipeable";
 import { IconAdjustmentsHorizontal, IconWorld, IconSearch } from "@tabler/icons-react";
 import { WorldHome } from "~/components/WorldMode/WorldHome";
@@ -44,7 +44,6 @@ import { JourneyModule } from "./components/JourneyModule";
 
 
 import Footer from "~/components/Footer";
-import { PassportView } from "~/components/WorldMode/PassportView";
 
 // Custom Hooks
 import { useRadioPlayer } from "~/hooks/useRadioPlayer";
@@ -572,7 +571,7 @@ export default function Index() {
               onOpenPassport={handleOpenPassport}
             />
 
-            <div className="mx-auto mt-4 flex w-full max-w-7xl flex-col gap-4 px-4 md:mt-6 md:gap-6 md:px-6">
+            <div className="mx-auto mt-4 flex w-full max-w-7xl flex-col gap-6 px-4 md:mt-6 md:gap-8 md:px-6">
               <JourneyModule
                 nowPlaying={player.nowPlaying}
                 recentStations={recentStations}
@@ -581,37 +580,6 @@ export default function Index() {
                 onQuickRetune={handlers.handleQuickRetune}
                 onOpenPassport={handleOpenPassport}
               />
-              {/* Stats Bar - Consistent pill surface */}
-              <div className="rounded-2xl border border-white/10 bg-[var(--rp-card)] px-4 py-5 shadow-[0_18px_40px_rgba(0,0,0,0.5)] backdrop-blur-sm md:px-8">
-                <div className="grid grid-cols-3 divide-x divide-white/10 text-center">
-                  <div className="px-2">
-                    <Text size="lg" fw={800} c="var(--rp-text)" className="leading-none">
-                      {topCountries.length.toLocaleString()}
-                    </Text>
-                    <Text size="xs" c="var(--rp-muted-2)" fw={600} tt="uppercase" className="mt-1 tracking-[0.25em]">
-                      Countries
-                    </Text>
-                  </div>
-                  <div className="px-2">
-                    <Text size="lg" fw={800} c="var(--rp-text)" className="leading-none">
-                      {derived.totalStations > 1000
-                        ? `${(derived.totalStations / 1000).toFixed(0)}k+`
-                        : derived.totalStations.toLocaleString()}
-                    </Text>
-                    <Text size="xs" c="var(--rp-muted-2)" fw={600} tt="uppercase" className="mt-1 tracking-[0.25em]">
-                      Stations
-                    </Text>
-                  </div>
-                  <div className="px-2">
-                    <Text size="lg" fw={800} c="var(--rp-text)" className="leading-none">
-                      {derived.continents.length}
-                    </Text>
-                    <Text size="xs" c="var(--rp-muted-2)" fw={600} tt="uppercase" className="mt-1 tracking-[0.25em]">
-                      Continents
-                    </Text>
-                  </div>
-                </div>
-              </div>
 
               {catalogQuery.length >= 2 && (
                 <section className="space-y-4">
@@ -640,7 +608,7 @@ export default function Index() {
                 </section>
               )}
 
-              <section id="atlas" className="mt-4 md:mt-6">
+              <section id="atlas">
                 <div className="relative -mx-4 px-4 py-3 md:-mx-6 md:px-6">
                   <div className="rounded-2xl border border-white/10 bg-[var(--rp-card)] px-4 py-3 shadow-[0_18px_40px_rgba(0,0,0,0.5)] backdrop-blur-xl md:px-6">
                     <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
@@ -838,36 +806,165 @@ export default function Index() {
         onCountrySelect={handlers.handleQuickRetuneCountrySelect} onSurprise={handlers.handleSurpriseRetune}
       />
 
-      <Drawer
-        opened={isPassportOpen}
-        onClose={() => setPassportOpen(false)}
-        position="bottom"
-        size="90%"
-        title="My Passport"
-        overlayProps={{ opacity: 0.25 }}
-        styles={{
-          content: {
-            background: "rgba(255, 255, 255, 0.92)",
-            backdropFilter: "blur(28px)",
-            WebkitBackdropFilter: "blur(28px)",
-            borderTopLeftRadius: "24px",
-            borderTopRightRadius: "24px",
-            overflow: "hidden",
-          },
-          header: {
-            borderBottom: "1px solid rgba(15,23,42,0.08)",
-          },
-          title: {
-            fontWeight: 700,
-            color: "#0f172a",
-            letterSpacing: "0.08em",
-            textTransform: "uppercase",
-            fontSize: "0.7rem",
-          },
-        }}
-      >
-        <PassportView entries={passportEntries} />
-      </Drawer>
+      <div className="hidden md:block">
+        <Drawer
+          opened={isPassportOpen}
+          onClose={() => setPassportOpen(false)}
+          position="right"
+          size={420}
+          padding={0}
+          styles={{
+            content: {
+              backgroundColor: "var(--rp-card)",
+              borderLeft: "1px solid rgba(255,255,255,0.08)",
+            },
+            header: {
+              padding: 0,
+              borderBottom: "1px solid rgba(255,255,255,0.08)",
+            },
+            body: {
+              padding: 0,
+              backgroundColor: "var(--rp-card)",
+            },
+            overlay: {
+              backgroundColor: "rgba(2,6,12,0.6)",
+              backdropFilter: "blur(6px)",
+            },
+          }}
+        >
+          <div className="px-5 py-5">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <Text size="xs" fw={800} tt="uppercase" className="tracking-[0.32em] text-[var(--rp-muted-2)]">
+                  My Passport
+                </Text>
+                <Text size="lg" fw={700} c="var(--rp-text)">
+                  Latest stamps across the dial.
+                </Text>
+                <Text size="xs" c="var(--rp-muted)" className="font-mono uppercase tracking-[0.2em]">
+                  {passportEntries.length.toLocaleString()} destinations visited
+                </Text>
+              </div>
+              <a
+                href="/?view=world&tab=passport"
+                className="inline-flex h-9 items-center justify-center rounded-full border border-[rgba(245,177,45,0.5)] bg-[rgba(245,177,45,0.12)] px-4 text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--rp-gold)] shadow-[0_12px_24px_rgba(0,0,0,0.45)] hover:bg-[rgba(245,177,45,0.2)]"
+              >
+                Full passport
+              </a>
+            </div>
+          </div>
+          <ScrollArea h="calc(100vh - 140px)" type="never">
+            <div className="px-5 pb-6">
+              {passportEntries.length > 0 ? (
+                <div className="space-y-3">
+                  {passportEntries.slice(0, 20).map((entry) => (
+                    <div
+                      key={`${entry.id}-${entry.timestamp}`}
+                      className="flex items-center gap-3 rounded-2xl border border-white/10 bg-black/40 px-4 py-3 shadow-[0_10px_22px_rgba(0,0,0,0.45)]"
+                    >
+                      <div className="h-10 w-10 overflow-hidden rounded-xl border border-white/10 bg-black/60">
+                        {entry.favicon ? (
+                          <img src={entry.favicon} alt="" className="h-full w-full object-cover" />
+                        ) : null}
+                      </div>
+                      <div className="min-w-0">
+                        <Text size="sm" fw={700} c="var(--rp-text)" className="truncate">
+                          {entry.stationName}
+                        </Text>
+                        <Text size="xs" c="var(--rp-muted)" className="truncate">
+                          {entry.country}
+                        </Text>
+                      </div>
+                      <div className="ml-auto text-right">
+                        <Text size="xs" c="var(--rp-muted-2)" className="font-mono">
+                          {new Date(entry.timestamp).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+                        </Text>
+                        <Text size="xs" c="var(--rp-muted-2)" className="font-mono opacity-70">
+                          {new Date(entry.timestamp).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })}
+                        </Text>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="rounded-2xl border border-white/10 bg-black/30 px-5 py-6 text-sm text-[var(--rp-muted)]">
+                  No passport stamps yet. Start listening to capture your first destination.
+                </div>
+              )}
+            </div>
+          </ScrollArea>
+        </Drawer>
+      </div>
+
+      <div className="md:hidden">
+        <Drawer
+          opened={isPassportOpen}
+          onClose={() => setPassportOpen(false)}
+          position="bottom"
+          size="70%"
+          padding={0}
+          styles={{
+            content: {
+              backgroundColor: "var(--rp-card)",
+              borderTopLeftRadius: "24px",
+              borderTopRightRadius: "24px",
+            },
+            header: {
+              padding: 0,
+              borderBottom: "1px solid rgba(255,255,255,0.08)",
+            },
+            body: {
+              padding: 0,
+              backgroundColor: "var(--rp-card)",
+            },
+            overlay: {
+              backgroundColor: "rgba(2,6,12,0.6)",
+              backdropFilter: "blur(6px)",
+            },
+          }}
+        >
+          <div className="px-5 py-4">
+            <Text size="xs" fw={800} tt="uppercase" className="tracking-[0.32em] text-[var(--rp-muted-2)]">
+              My Passport
+            </Text>
+            <Text size="lg" fw={700} c="var(--rp-text)">
+              Latest stamps across the dial.
+            </Text>
+          </div>
+          <ScrollArea h="calc(70vh - 80px)" type="never">
+            <div className="px-5 pb-6">
+              {passportEntries.length > 0 ? (
+                <div className="space-y-3">
+                  {passportEntries.slice(0, 12).map((entry) => (
+                    <div
+                      key={`${entry.id}-${entry.timestamp}`}
+                      className="flex items-center gap-3 rounded-2xl border border-white/10 bg-black/40 px-4 py-3"
+                    >
+                      <div className="h-10 w-10 overflow-hidden rounded-xl border border-white/10 bg-black/60">
+                        {entry.favicon ? (
+                          <img src={entry.favicon} alt="" className="h-full w-full object-cover" />
+                        ) : null}
+                      </div>
+                      <div className="min-w-0">
+                        <Text size="sm" fw={700} c="var(--rp-text)" className="truncate">
+                          {entry.stationName}
+                        </Text>
+                        <Text size="xs" c="var(--rp-muted)" className="truncate">
+                          {entry.country}
+                        </Text>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="rounded-2xl border border-white/10 bg-black/30 px-5 py-6 text-sm text-[var(--rp-muted)]">
+                  No passport stamps yet. Start listening to capture your first destination.
+                </div>
+              )}
+            </div>
+          </ScrollArea>
+        </Drawer>
+      </div>
 
       <Footer />
 
