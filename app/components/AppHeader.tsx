@@ -29,6 +29,8 @@ export default function AppHeader() {
       const next = new URLSearchParams(prev);
       if (value === "world") {
         next.set("view", "world");
+        next.delete("country");
+        next.delete("q");
       } else {
         next.delete("view");
       }

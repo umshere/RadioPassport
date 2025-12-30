@@ -61,8 +61,9 @@ import { useEventHandlers } from "~/hooks/useEventHandlers";
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const url = new URL(request.url);
-  const country = url.searchParams.get("country");
   const view = url.searchParams.get("view");
+  const isWorldView = view === "world";
+  const country = isWorldView ? null : url.searchParams.get("country");
 
   try {
     const stationsPath = country
