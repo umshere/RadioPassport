@@ -87,6 +87,51 @@
   }
 }
 
+@keyframes header-shadow {
+  from { box-shadow: none; }
+  to { box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45); }
+}
+
+@keyframes header-height {
+  from { height: 56px; }
+  to { height: 48px; }
+}
+
+@keyframes header-logo {
+  from { width: 40px; height: 40px; transform: scale(1); }
+  to { width: 32px; height: 32px; transform: scale(0.96); }
+}
+
+@keyframes header-title {
+  from { transform: scale(1); opacity: 1; }
+  to { transform: scale(0.94); opacity: 0.9; }
+}
+
+@keyframes header-subtitle {
+  from { opacity: 1; transform: translateY(0); }
+  to { opacity: 0.75; transform: translateY(-2px); }
+}
+
+@keyframes hero-condense {
+  from { padding-top: 2rem; padding-bottom: 2.5rem; }
+  to { padding-top: 1.25rem; padding-bottom: 2rem; }
+}
+
+@keyframes hero-condense-lg {
+  from { padding-top: 3rem; padding-bottom: 4rem; }
+  to { padding-top: 2.25rem; padding-bottom: 3.25rem; }
+}
+
+@keyframes hero-shadow {
+  from { box-shadow: none; }
+  to { box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45); }
+}
+
+@keyframes hero-content {
+  from { transform: translateY(0); opacity: 1; }
+  to { transform: translateY(-10px); opacity: 0.98; }
+}
+
 @keyframes fade-in {
   from {
     opacity: 0;
@@ -112,6 +157,103 @@
 }
 
 @layer components {
+  .app-header__inner {
+    height: 56px;
+  }
+
+  .app-header__logo {
+    width: 40px;
+    height: 40px;
+  }
+
+  .app-header__title,
+  .app-header__subtitle,
+  .app-header__logo {
+    transform-origin: left center;
+    will-change: transform;
+  }
+
+  .hero-morph__inner {
+    padding-top: 2rem;
+    padding-bottom: 2.5rem;
+  }
+
+  @media (min-width: 1024px) {
+    .hero-morph__inner {
+      padding-top: 3rem;
+      padding-bottom: 4rem;
+    }
+  }
+
+  @supports (animation-timeline: scroll()) {
+    .scroll-morph-header {
+      animation: header-shadow linear both;
+      animation-timeline: scroll();
+      animation-range: 0 160px;
+    }
+
+    .app-header__inner {
+      animation: header-height linear both;
+      animation-timeline: scroll();
+      animation-range: 0 160px;
+    }
+
+    .app-header__logo {
+      animation: header-logo linear both;
+      animation-timeline: scroll();
+      animation-range: 0 160px;
+    }
+
+    .app-header__title {
+      animation: header-title linear both;
+      animation-timeline: scroll();
+      animation-range: 0 160px;
+    }
+
+    .app-header__subtitle {
+      animation: header-subtitle linear both;
+      animation-timeline: scroll();
+      animation-range: 0 160px;
+    }
+
+    .hero-morph {
+      animation: hero-shadow linear both;
+      animation-timeline: scroll();
+      animation-range: 0 280px;
+    }
+
+    .hero-morph__inner {
+      animation: hero-condense linear both;
+      animation-timeline: scroll();
+      animation-range: 0 280px;
+    }
+
+    @media (min-width: 1024px) {
+      .hero-morph__inner {
+        animation-name: hero-condense-lg;
+      }
+    }
+
+    .hero-morph__content {
+      animation: hero-content linear both;
+      animation-timeline: scroll();
+      animation-range: 0 280px;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .scroll-morph-header,
+    .app-header__inner,
+    .app-header__logo,
+    .app-header__title,
+    .app-header__subtitle,
+    .hero-morph,
+    .hero-morph__inner,
+    .hero-morph__content {
+      animation: none;
+    }
+  }
+
   .app-bg {
     position: relative;
     background: radial-gradient(

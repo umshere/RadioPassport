@@ -544,6 +544,17 @@ export default function Index() {
           onPlayStation={(s) => handlers.handleStartStation(s, { autoPlay: true })}
           initialStations={stations}
         />
+        <QuickRetuneWidget
+          isOpen={isQuickRetuneOpen}
+          onOpenChange={setQuickRetuneOpen}
+          continents={derived.continents}
+          activeContinent={atlas.activeContinent}
+          onContinentSelect={handlers.handleContinentSelect}
+          countriesByContinent={derived.continentData}
+          topCountries={topCountries}
+          onCountrySelect={handlers.handleQuickRetuneCountrySelect}
+          onSurprise={handlers.handleSurpriseRetune}
+        />
         <Footer />
       </div>
     );

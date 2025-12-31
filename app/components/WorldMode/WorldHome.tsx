@@ -98,6 +98,18 @@ export function WorldHome({ nowPlaying, onPlayStation, initialStations }: WorldH
         loadAiCuration();
     }, [initialStations]);
 
+    useEffect(() => {
+        if (typeof window === "undefined") return;
+        if (window.sessionStorage.getItem("focusSearch") === "1") {
+            window.sessionStorage.removeItem("focusSearch");
+            const searchInput = document.getElementById("hero-search-input") as HTMLInputElement | null;
+            if (searchInput) {
+                searchInput.focus();
+                searchInput.scrollIntoView({ behavior: "smooth", block: "center" });
+            }
+        }
+    }, []);
+
     // Track Station Changes
     const [trackedStationUuid, setTrackedStationUuid] = useState<string | null>(null);
 

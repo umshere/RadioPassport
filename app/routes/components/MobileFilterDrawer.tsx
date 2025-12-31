@@ -34,9 +34,15 @@ export function MobileFilterDrawer({
             radius="lg"
             transitionProps={{ duration: 250, timingFunction: "ease" }}
             styles={{
-                header: { paddingBottom: 16, borderBottom: "1px solid rgba(255,255,255,0.08)" },
+                header: {
+                    paddingBottom: 16,
+                    borderBottom: "1px solid rgba(255,255,255,0.08)",
+                    background: "var(--rp-card)",
+                },
+                title: { color: "var(--rp-text)" },
+                close: { color: "var(--rp-muted-2)" },
                 body: { padding: 0, paddingTop: 16, background: "var(--rp-card)" },
-                content: { borderRadius: "24px 24px 0 0", background: "var(--rp-card)" }
+                content: { borderRadius: "24px 24px 0 0", background: "var(--rp-card)" },
             }}
         >
             <ScrollArea h="100%" type="never" style={{ paddingBottom: 80 }}>

@@ -1,40 +1,52 @@
-import { Container, Title, Text, Group, Button, Stack, Card, SimpleGrid, ThemeIcon } from "@mantine/core";
+import { Container, Title, Text, Group, Button, Stack, Card, SimpleGrid, ThemeIcon, Divider, Tooltip } from "@mantine/core";
 import { Link } from "@remix-run/react";
 import {
-    IconRadio,
-    IconGlobe,
-    IconMicrophone,
-    IconHeadphones,
-    IconBroadcast,
     IconArrowRight,
+    IconBolt,
+    IconBrandFacebook,
+    IconBrandGithub,
+    IconBrandInstagram,
+    IconCompass,
+    IconHeadphones,
+    IconMail,
+    IconRadio,
+    IconSparkles,
 } from "@tabler/icons-react";
 
 export const meta = () => [
     { title: "About Radio Passport | Discover Global Radio" },
-    { name: "description", content: "Explore the world's radio stations with an elegant, minimal interface." },
+    { name: "description", content: "Radio Passport is a global radio discovery experience built for curious listeners." },
 ];
 
 export default function About() {
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 py-12 lg:py-20">
+        <div
+            className="min-h-screen py-14 lg:py-20"
+            style={{
+                background:
+                    "radial-gradient(circle at 12% 10%, rgba(245, 177, 45, 0.16), transparent 55%), radial-gradient(circle at 80% 0%, rgba(92, 158, 173, 0.18), transparent 45%), linear-gradient(180deg, #0b0c10 0%, #0f1118 100%)",
+            }}
+        >
             <Container size="lg">
                 {/* Hero Section */}
                 <Stack gap="xl" align="center" mb={60}>
                     <div className="text-center">
+                        <Text className="text-[10px] font-semibold uppercase tracking-[0.4em] text-[var(--rp-muted-2)]">
+                            About the Studio
+                        </Text>
                         <Title
                             order={1}
-                            className="text-4xl lg:text-6xl font-bold text-slate-900 mb-4"
-                            style={{ lineHeight: 1.2 }}
+                            className="text-4xl lg:text-6xl font-semibold text-[var(--rp-text)] mt-3"
+                            style={{ lineHeight: 1.08 }}
                         >
-                            Explore the World's Radio
+                            Radio Passport is a global listening atlas.
                         </Title>
                         <Text
                             size="lg"
-                            c="dimmed"
-                            className="text-slate-600 max-w-2xl mx-auto"
+                            className="text-[var(--rp-muted)] max-w-2xl mx-auto mt-4"
                         >
-                            Radio Passport brings the world's radio stations to your fingertips with an elegant,
-                            intuitive interface. Discover new voices, music, and cultures from across the globe.
+                            Built to make radio feel cinematic again — a calm, focused space to drift through stations,
+                            cultures, and late-night signals from anywhere.
                         </Text>
                     </div>
                 </Stack>
@@ -45,24 +57,23 @@ export default function About() {
                     radius="xl"
                     p="xl"
                     mb={60}
-                    className="border-slate-200 bg-white/50 backdrop-blur-sm"
+                    className="border-white/10 bg-white/5 backdrop-blur-lg shadow-[0_24px_60px_rgba(0,0,0,0.35)]"
                 >
                     <Stack gap="md">
                         <div>
-                            <Title order={2} className="text-2xl font-bold text-slate-900 mb-3">
-                                Our Vision
+                            <Title order={2} className="text-2xl font-semibold text-[var(--rp-text)] mb-3">
+                                The Vision
                             </Title>
-                            <Text size="md" c="dimmed" className="text-slate-700 leading-relaxed">
-                                We believe radio is a timeless medium that connects people across borders.
-                                Our mission is to democratize access to global radio by building a beautiful,
-                                AI-enhanced discovery platform that celebrates the diversity of voices and
-                                perspectives from every corner of the world.
+                            <Text size="md" className="text-[var(--rp-muted)] leading-relaxed">
+                                Radio is still the most human medium. This project is about honoring that
+                                magic with a modern, thoughtful interface that makes it effortless to explore
+                                stations across borders and time zones.
                             </Text>
                         </div>
-                        <div className="pt-4 border-t border-slate-200">
-                            <Text size="md" c="dimmed" className="text-slate-700 leading-relaxed italic">
-                                "From local community stations to international broadcasters, Radio Passport
-                                transforms how you discover, explore, and connect with the world through radio."
+                        <div className="pt-4 border-t border-white/10">
+                            <Text size="md" className="text-[var(--rp-muted)] leading-relaxed italic">
+                                "From small community stations to global broadcasters, Radio Passport turns
+                                discovery into a nightly ritual."
                             </Text>
                         </div>
                     </Stack>
@@ -70,78 +81,133 @@ export default function About() {
 
                 {/* Core Features */}
                 <div className="mb-60">
-                    <Title order={2} className="text-3xl font-bold text-slate-900 mb-8 text-center">
-                        What Makes Us Different
+                    <Title order={2} className="text-3xl font-semibold text-[var(--rp-text)] mb-8 text-center">
+                        What Makes It Feel Different
                     </Title>
                     <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }} spacing="lg">
                         <FeatureCard
-                            icon={<IconGlobe size={24} />}
-                            title="Global Coverage"
-                            description="Access over 40,000 radio stations from 200+ countries and territories."
+                            icon={<IconCompass size={24} />}
+                            title="Guided Discovery"
+                            description="Browse stations by place, mood, and sound — no clutter, just intent."
                         />
                         <FeatureCard
-                            icon={<IconMicrophone size={24} />}
-                            title="AI-Powered Discovery"
-                            description="Intelligent recommendations powered by Gemini AI help you discover stations matched to your interests."
+                            icon={<IconSparkles size={24} />}
+                            title="Smart Curation"
+                            description="AI-assisted discovery helps you land on stations that fit your moment."
                         />
                         <FeatureCard
                             icon={<IconHeadphones size={24} />}
-                            title="Minimal Interface"
-                            description="Clean, light-first aesthetic designed for distraction-free listening and exploration."
+                            title="Cinematic UI"
+                            description="Dark, focused, and calm — tuned for long sessions and late-night listening."
                         />
                         <FeatureCard
                             icon={<IconRadio size={24} />}
-                            title="Real-Time Streaming"
-                            description="Seamless audio streaming with robust error handling and fallback mechanisms."
+                            title="Reliable Streaming"
+                            description="Fast station playback with resilience for dropouts and unreliable streams."
                         />
                         <FeatureCard
-                            icon={<IconBroadcast size={24} />}
-                            title="Curated Collections"
-                            description="Explore hand-picked station collections organized by genre, language, and region."
+                            icon={<IconBolt size={24} />}
+                            title="Live Status"
+                            description="We surface what's live and healthy so you can stay in the flow."
                         />
                         <FeatureCard
                             icon={<IconHeadphones size={24} />}
-                            title="Cross-Device Sync"
-                            description="Continue listening across desktop and mobile with synchronized playback history."
+                            title="Device Friendly"
+                            description="Works smoothly on desktop and mobile with a shared visual language."
                         />
                     </SimpleGrid>
                 </div>
 
-                {/* Tech Stack */}
+                {/* Current Status + Contact */}
                 <Card
                     withBorder
                     radius="xl"
                     p="xl"
                     mb={60}
-                    className="border-slate-200 bg-white/50 backdrop-blur-sm"
+                    className="border-white/10 bg-white/5 backdrop-blur-lg"
                 >
-                    <Stack gap="md">
-                        <Title order={2} className="text-2xl font-bold text-slate-900">
-                            Built With Modern Tech
-                        </Title>
-                        <SimpleGrid cols={{ base: 2, sm: 3, md: 4 }} spacing="md">
-                            <TechBadge name="React" />
-                            <TechBadge name="Remix" />
-                            <TechBadge name="TypeScript" />
-                            <TechBadge name="Tailwind CSS" />
-                            <TechBadge name="Mantine UI" />
-                            <TechBadge name="Framer Motion" />
-                            <TechBadge name="Zustand" />
-                            <TechBadge name="Gemini AI" />
-                        </SimpleGrid>
-                    </Stack>
+                    <SimpleGrid cols={{ base: 1, md: 2 }} spacing="xl">
+                        <div>
+                            <Title order={2} className="text-2xl font-semibold text-[var(--rp-text)]">
+                                Current Status
+                            </Title>
+                            <Text className="text-[var(--rp-muted)] mt-3 leading-relaxed">
+                                Radio Passport is in active development with a live streaming core, evolving discovery
+                                flows, and regular UI refinements. The focus right now is stability, speed, and a better
+                                listening ritual across desktop and mobile.
+                            </Text>
+                            <Divider my="lg" color="rgba(255,255,255,0.08)" />
+                            <Group>
+                                <Button
+                                    component="a"
+                                    href="https://github.com/umshere/RadioPassport/"
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    radius="xl"
+                                    className="bg-[var(--rp-gold)] text-black hover:bg-[var(--rp-gold-strong)]"
+                                    leftSection={<IconBrandGithub size={18} />}
+                                >
+                                    GitHub
+                                </Button>
+                                <Button
+                                    component={Link}
+                                    to="/"
+                                    radius="xl"
+                                    variant="light"
+                                    className="text-[var(--rp-text)] border border-white/10 bg-white/5 hover:bg-white/10"
+                                    rightSection={<IconArrowRight size={18} />}
+                                >
+                                    Enter the Atlas
+                                </Button>
+                            </Group>
+                        </div>
+                        <div>
+                            <Title order={3} className="text-xl font-semibold text-[var(--rp-text)]">
+                                Contact + Connect
+                            </Title>
+                            <Text className="text-[var(--rp-muted)] mt-3">
+                                Reach out for collaborations, feedback, or press.
+                            </Text>
+                            <Group gap="sm" mt="lg">
+                                <IconLink
+                                    icon={<IconMail size={18} />}
+                                    label="Email"
+                                    href="mailto:umshere@gmail.com"
+                                    description="umshere@gmail.com"
+                                />
+                                <IconLink
+                                    icon={<IconBrandGithub size={18} />}
+                                    label="GitHub"
+                                    href="https://github.com/umshere/RadioPassport/"
+                                    description="github.com/umshere/RadioPassport"
+                                />
+                                <IconLink
+                                    icon={<IconBrandFacebook size={18} />}
+                                    label="Facebook"
+                                    href="https://www.facebook.com/umesh.mc.79/"
+                                    description="facebook.com/umesh.mc.79"
+                                />
+                                <IconLink
+                                    icon={<IconBrandInstagram size={18} />}
+                                    label="Instagram"
+                                    href="https://www.instagram.com/umshere/"
+                                    description="instagram.com/umshere"
+                                />
+                            </Group>
+                        </div>
+                    </SimpleGrid>
                 </Card>
 
                 {/* CTA Section */}
                 <Stack gap="md" align="center" mb={40}>
-                    <Title order={2} className="text-2xl font-bold text-slate-900 text-center">
-                        Ready to Explore?
+                    <Title order={2} className="text-2xl font-semibold text-[var(--rp-text)] text-center">
+                        Ready to Explore Tonight?
                     </Title>
                     <Link to="/">
                         <Button
                             size="lg"
                             radius="xl"
-                            className="bg-slate-900 hover:bg-slate-800 text-white"
+                            className="bg-[var(--rp-gold)] hover:bg-[var(--rp-gold-strong)] text-black"
                             rightSection={<IconArrowRight size={20} />}
                         >
                             Start Discovering
@@ -150,9 +216,9 @@ export default function About() {
                 </Stack>
 
                 {/* Footer Info */}
-                <div className="text-center pt-12 border-t border-slate-200">
-                    <Text size="sm" c="dimmed" className="text-slate-600">
-                        Radio Passport © 2024–2025. Built with ❤️ for radio enthusiasts everywhere.
+                <div className="text-center pt-12 border-t border-white/10">
+                    <Text size="sm" className="text-[var(--rp-muted-2)]">
+                        Radio Passport © 2024–2025. Built with care for night owls and radio lovers.
                     </Text>
                 </div>
             </Container>
@@ -174,32 +240,50 @@ function FeatureCard({
             withBorder
             radius="xl"
             p="md"
-            className="border-slate-200 bg-white/50 backdrop-blur-sm hover:bg-white/80 transition-colors"
+            className="border-white/10 bg-white/5 backdrop-blur-lg hover:bg-white/10 transition-colors"
         >
             <Group mb="xs">
                 <ThemeIcon
                     size="lg"
                     radius="md"
                     variant="light"
-                    className="bg-slate-100 text-slate-700"
+                    className="bg-white/10 text-[var(--rp-gold)]"
                 >
                     {icon}
                 </ThemeIcon>
             </Group>
-            <Text fw={600} size="md" className="text-slate-900 mb-2">
+            <Text fw={600} size="md" className="text-[var(--rp-text)] mb-2">
                 {title}
             </Text>
-            <Text size="sm" c="dimmed" className="text-slate-600">
+            <Text size="sm" className="text-[var(--rp-muted)]">
                 {description}
             </Text>
         </Card>
     );
 }
 
-function TechBadge({ name }: { name: string }) {
+function IconLink({
+    icon,
+    label,
+    href,
+    description,
+}: {
+    icon: React.ReactNode;
+    label: string;
+    href: string;
+    description: string;
+}) {
     return (
-        <div className="px-3 py-2 rounded-lg bg-slate-100 text-slate-700 text-sm font-medium text-center">
-            {name}
-        </div>
+        <Tooltip label={`${label} • ${description}`} position="top" withArrow>
+            <a
+                href={href}
+                target="_blank"
+                rel="noreferrer"
+                aria-label={`${label}: ${description}`}
+                className="flex h-12 w-12 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-[var(--rp-gold)] transition hover:bg-white/10 hover:text-[var(--rp-gold-strong)]"
+            >
+                {icon}
+            </a>
+        </Tooltip>
     );
 }

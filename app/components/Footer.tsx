@@ -39,7 +39,7 @@ export default function Footer() {
                                 <IconExternalLink size={11} className="opacity-60" />
                             </a>
                             <a
-                                href="https://github.com"
+                                href="https://github.com/umshere/RadioPassport/"
                                 target="_blank"
                                 rel="noreferrer"
                                 className="flex items-center gap-1 text-[var(--rp-muted)] hover:text-[var(--rp-text)] transition-colors"

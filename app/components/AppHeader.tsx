@@ -1,25 +1,38 @@
 import { useMemo, useState, useEffect } from "react";
-import { Link, useSearchParams } from "@remix-run/react";
+import { Link, useLocation, useNavigate, useSearchParams } from "@remix-run/react";
 import { ActionIcon, Badge, SegmentedControl, Group } from "@mantine/core";
 import { IconSettings, IconSearch, IconWorld, IconRadio } from "@tabler/icons-react";
+import { motion, useReducedMotion, useScroll, useTransform } from "framer-motion";
 import { usePlayerStore } from "~/state/playerStore";
 
 export default function AppHeader() {
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const location = useLocation();
   const nowPlaying = usePlayerStore((state) => state.nowPlaying);
   const isPlaying = usePlayerStore((state) => state.isPlaying);
   const audioLevel = usePlayerStore((state) => state.audioLevel);
   const [isMounted, setIsMounted] = useState(false);
-  const [isScrolled, setIsScrolled] = useState(false);
+  const [useFallback, setUseFallback] = useState(false);
+  const shouldReduceMotion = useReducedMotion();
+
+  const { scrollY } = useScroll();
+  const headerShadow = useTransform(scrollY, [0, 160], ["none", "0 12px 30px rgba(0,0,0,0.45)"]);
+  const headerHeight = useTransform(scrollY, [0, 160], [56, 48]);
+  const logoSize = useTransform(scrollY, [0, 160], [40, 32]);
+  const logoScale = useTransform(scrollY, [0, 160], [1, 0.96]);
+  const titleScale = useTransform(scrollY, [0, 160], [1, 0.94]);
+  const titleOpacity = useTransform(scrollY, [0, 160], [1, 0.9]);
+  const subtitleOpacity = useTransform(scrollY, [0, 160], [1, 0.75]);
+  const subtitleY = useTransform(scrollY, [0, 160], [0, -2]);
 
   useEffect(() => {
     setIsMounted(true);
   }, []);
+
   useEffect(() => {
-    const onScroll = () => setIsScrolled(window.scrollY > 12);
-    onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
+    if (typeof window === "undefined" || typeof CSS === "undefined") return;
+    setUseFallback(!CSS.supports("animation-timeline: scroll()"));
   }, []);
 
   const currentView = searchParams.get("view") === "world" ? "world" : "classical";
@@ -38,25 +51,42 @@ export default function AppHeader() {
     }, { preventScrollReset: true });
   };
 
+  const enableFallback = useFallback && !shouldReduceMotion;
+
   return (
-    <header
-      className={`sticky top-0 z-50 backdrop-blur-xl bg-[var(--rp-surface)]/90 border-b border-white/10 transition-all duration-300 ${
-        isScrolled ? "shadow-[0_12px_30px_rgba(0,0,0,0.45)]" : ""
-      }`}
+    <motion.header
+      className="scroll-morph-header sticky top-0 z-50 backdrop-blur-xl bg-[var(--rp-surface)]/90 border-b border-white/10"
+      style={enableFallback ? { boxShadow: headerShadow } : undefined}
     >
-      <div className={`mx-auto max-w-7xl px-4 pr-12 sm:px-6 sm:pr-6 lg:px-8 lg:pr-8 flex items-center justify-between gap-4 transition-all duration-300 ${isScrolled ? "h-12" : "h-14"}`}>
+      <motion.div
+        className="app-header__inner mx-auto max-w-7xl px-4 pr-12 sm:px-6 sm:pr-6 lg:px-8 lg:pr-8 flex items-center justify-between gap-4 transition-all duration-300"
+        style={enableFallback ? { height: headerHeight } : undefined}
+      >
         {/* Logo Area */}
         <Link to="/" className="flex items-center gap-3 flex-shrink-0 group" prefetch="intent" aria-label="Radio Passport">
-          <div className={`relative flex items-center justify-center rounded-xl bg-transparent shadow-[0_10px_20px_rgba(0,0,0,0.4)] ring-1 ring-white/5 overflow-hidden transition-transform group-hover:scale-105 ${isScrolled ? "h-8 w-8" : "h-10 w-10"}`}>
+          <motion.div
+            className="app-header__logo relative flex items-center justify-center rounded-xl bg-transparent shadow-[0_10px_20px_rgba(0,0,0,0.4)] ring-1 ring-white/5 overflow-hidden transition-transform group-hover:scale-105"
+            style={enableFallback ? { width: logoSize, height: logoSize, scale: logoScale } : undefined}
+          >
             <img
               src="/RP180.png"
               alt="Radio Passport"
               className="h-full w-full object-cover scale-[1.16] translate-y-0"
             />
-          </div>
+          </motion.div>
           <div className="flex flex-col">
-            <span className={`font-black tracking-tight text-[var(--rp-text)] leading-tight whitespace-nowrap ${isScrolled ? "text-xs sm:text-sm" : "text-sm sm:text-base"}`}>Radio Passport</span>
-            <span className={`hidden sm:block text-[9px] text-[var(--rp-muted-2)] font-bold uppercase tracking-widest leading-tight whitespace-nowrap ${isScrolled ? "opacity-70" : ""}`}>Global sound atlas</span>
+            <motion.span
+              className="app-header__title font-black tracking-tight text-[var(--rp-text)] leading-tight whitespace-nowrap text-sm sm:text-base"
+              style={enableFallback ? { scale: titleScale, opacity: titleOpacity } : undefined}
+            >
+              Radio Passport
+            </motion.span>
+            <motion.span
+              className="app-header__subtitle hidden sm:block text-[9px] text-[var(--rp-muted-2)] font-bold uppercase tracking-widest leading-tight whitespace-nowrap"
+              style={enableFallback ? { opacity: subtitleOpacity, y: subtitleY } : undefined}
+            >
+              Global sound atlas
+            </motion.span>
           </div>
         </Link>
 
@@ -105,11 +135,16 @@ export default function AppHeader() {
               color="gray"
               onClick={() => {
                 // Focus search or trigger overlay
-                const searchInput = document.getElementById('hero-search-input');
+                const searchInput = document.getElementById('hero-search-input') as HTMLInputElement | null;
                 if (searchInput) {
                   searchInput.focus();
                   searchInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  return;
                 }
+                if (typeof window !== "undefined") {
+                  window.sessionStorage.setItem("focusSearch", "1");
+                }
+                navigate(location.pathname.startsWith("/world") ? "/world" : "/", { preventScrollReset: true });
               }}
               title="Search"
               className="text-[var(--rp-muted)] hover:text-[var(--rp-gold)]"
@@ -118,8 +153,8 @@ export default function AppHeader() {
             </ActionIcon>
           </div>
         </div>
-      </div>
-    </header>
+      </motion.div>
+    </motion.header>
   );
 }
 

@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion, useScroll, useTransform } from "framer-motion";
 import { IconHeadphones, IconCompass, IconSearch, IconSparkles, IconBook, IconX } from "@tabler/icons-react";
+import { useMediaQuery } from "@mantine/hooks";
 import type { Country, Station } from "~/types/radio";
 
 const HERO_TAGLINES = [
@@ -41,7 +42,17 @@ export function HeroSection({
 }: HeroSectionProps) {
   const [heroTaglineIndex, setHeroTaglineIndex] = useState(0);
   const [heroTickerIndex, setHeroTickerIndex] = useState(0);
-  const [isCondensed, setIsCondensed] = useState(false);
+  const [useFallback, setUseFallback] = useState(false);
+  const isLg = useMediaQuery("(min-width: 1024px)", false, { getInitialValueInEffect: true });
+  const shouldReduceMotion = useReducedMotion();
+  const { scrollY } = useScroll();
+  const heroShadow = useTransform(scrollY, [0, 280], ["none", "0 18px 40px rgba(0,0,0,0.45)"]);
+  const heroTranslate = useTransform(scrollY, [0, 280], [0, -10]);
+  const heroOpacity = useTransform(scrollY, [0, 280], [1, 0.98]);
+  const heroTopRange = isLg ? [48, 36] : [32, 20];
+  const heroBottomRange = isLg ? [64, 52] : [40, 32];
+  const heroPaddingTop = useTransform(scrollY, [0, 280], heroTopRange);
+  const heroPaddingBottom = useTransform(scrollY, [0, 280], heroBottomRange);
 
   const heroTickerItems = useMemo(() => {
     const headlineCountry = topCountries[0]?.name ?? "Global";
@@ -82,17 +93,25 @@ export function HeroSection({
     setHeroTickerIndex(0);
   }, [heroTickerItems.length]);
   useEffect(() => {
-    const onScroll = () => setIsCondensed(window.scrollY > 120);
-    onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
+    if (typeof window === "undefined" || typeof CSS === "undefined") return;
+    setUseFallback(!CSS.supports("animation-timeline: scroll()"));
   }, []);
-
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (window.sessionStorage.getItem("focusSearch") === "1") {
+      window.sessionStorage.removeItem("focusSearch");
+      const searchInput = document.getElementById("hero-search-input") as HTMLInputElement | null;
+      if (searchInput) {
+        searchInput.focus();
+        searchInput.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+    }
+  }, []);
+  const enableFallback = useFallback && !shouldReduceMotion;
   return (
-    <section
-      className={`relative -mt-4 w-full overflow-hidden transition-shadow duration-300 ${
-        isCondensed ? "shadow-[0_18px_40px_rgba(0,0,0,0.45)]" : ""
-      }`}
+    <motion.section
+      className="hero-morph relative -mt-4 w-full overflow-hidden"
+      style={enableFallback ? { boxShadow: heroShadow } : undefined}
     >
       <div
         className="absolute inset-0"
@@ -101,16 +120,16 @@ export function HeroSection({
             "radial-gradient(circle at 20% 20%, rgba(255, 200, 90, 0.18), transparent 55%), radial-gradient(circle at 80% 0%, rgba(255, 200, 90, 0.12), transparent 45%), linear-gradient(180deg, #0b0c10 0%, #0f1118 100%)",
         }}
       />
-      <div
-        className={`relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 transition-all duration-300 ${
-          isCondensed ? "pb-8 pt-5 lg:pb-12 lg:pt-8" : "pb-10 pt-8 lg:pb-16 lg:pt-12"
-        }`}
+      <motion.div
+        className="hero-morph__inner relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 transition-all duration-300"
+        style={enableFallback ? { paddingTop: heroPaddingTop, paddingBottom: heroPaddingBottom } : undefined}
       >
         <motion.div
           initial={{ opacity: 0, y: 18 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: "easeOut" }}
-          className="grid gap-8 lg:grid-cols-12 lg:items-center"
+          className="hero-morph__content grid gap-8 lg:grid-cols-12 lg:items-center"
+          style={enableFallback ? { y: heroTranslate, opacity: heroOpacity } : undefined}
         >
           <div className="lg:col-span-7">
             <motion.span
@@ -306,7 +325,7 @@ export function HeroSection({
             </div>
           </div>
         </motion.div>
-      </div>
-    </section>
+      </motion.div>
+    </motion.section>
   );
 }
