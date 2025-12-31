@@ -25,7 +25,7 @@ export const links: LinksFunction = () => [
     rel: "stylesheet",
     href: "https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap",
   },
-  { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
+  { rel: "icon", type: "image/png", sizes: "48x48", href: "/favicon48.png" },
   { rel: "manifest", href: "/manifest.json" },
 ];
 
@@ -220,6 +220,11 @@ function GlobalAudioBridge() {
     setAudioLevel,
     isPlaying,
     nowPlaying,
+    queue,
+    currentStationIndex,
+    startStation,
+    playPause,
+    stop,
   } = usePlayerStore();
   const markFailed = useStationAvailabilityStore((state) => state.markFailed);
   const clearFailure = useStationAvailabilityStore((state) => state.clearFailure);
@@ -372,6 +377,77 @@ function GlobalAudioBridge() {
   useEffect(() => {
     nowPlayingRef.current = nowPlaying;
   }, [nowPlaying]);
+
+  useEffect(() => {
+    if (typeof navigator === "undefined") return;
+    if (!("mediaSession" in navigator)) return;
+
+    const mediaSession = navigator.mediaSession;
+
+    const safeSetHandler = (
+      action: MediaSessionAction,
+      handler: MediaSessionActionHandler | null
+    ) => {
+      try {
+        mediaSession.setActionHandler(action, handler);
+      } catch {
+        // Some browsers throw on unsupported actions; ignore.
+      }
+    };
+
+    safeSetHandler("play", () => playPause());
+    safeSetHandler("pause", () => playPause());
+    safeSetHandler("stop", () => stop());
+    safeSetHandler("previoustrack", () => {
+      if (!queue.length) return;
+      const currentIndex = Math.max(0, currentStationIndex);
+      const prevIndex = (currentIndex - 1 + queue.length) % queue.length;
+      const station = queue[prevIndex];
+      if (!station) return;
+      startStation(station, { preserveQueue: true, autoPlay: true });
+    });
+    safeSetHandler("nexttrack", () => {
+      if (!queue.length) return;
+      const currentIndex = Math.max(0, currentStationIndex);
+      const nextIndex = (currentIndex + 1) % queue.length;
+      const station = queue[nextIndex];
+      if (!station) return;
+      startStation(station, { preserveQueue: true, autoPlay: true });
+    });
+
+    return () => {
+      safeSetHandler("play", null);
+      safeSetHandler("pause", null);
+      safeSetHandler("stop", null);
+      safeSetHandler("previoustrack", null);
+      safeSetHandler("nexttrack", null);
+    };
+  }, [queue, currentStationIndex, startStation, playPause, stop]);
+
+  useEffect(() => {
+    if (typeof navigator === "undefined") return;
+    if (!("mediaSession" in navigator)) return;
+    const mediaSession = navigator.mediaSession;
+
+    if (!nowPlaying) {
+      mediaSession.metadata = null;
+      mediaSession.playbackState = "none";
+      return;
+    }
+
+    const artwork = nowPlaying.favicon
+      ? [{ src: nowPlaying.favicon, sizes: "512x512", type: "image/png" }]
+      : [];
+
+    mediaSession.metadata = new MediaMetadata({
+      title: nowPlaying.name ?? "Radio Passport",
+      artist: nowPlaying.country ?? "Global Sound Atlas",
+      album: "Radio Passport",
+      artwork,
+    });
+
+    mediaSession.playbackState = isPlaying ? "playing" : "paused";
+  }, [nowPlaying, isPlaying]);
 
   useEffect(() => {
     const audio = audioRef.current;
