@@ -136,8 +136,12 @@ export function HeroSection({
             </motion.span>
 
             <div className="mt-6 flex items-center gap-4">
-              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[var(--rp-card)] text-[var(--rp-gold)] text-xl font-black tracking-tight shadow-[0_18px_40px_rgba(0,0,0,0.6)]">
-                RP
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-transparent text-[var(--rp-gold)] text-xl font-black tracking-tight shadow-[0_16px_32px_rgba(0,0,0,0.5)] overflow-hidden">
+                <img
+                  src="/RP180.png"
+                  alt="Radio Passport"
+                  className="h-full w-full object-cover scale-[1.16] translate-y-0"
+                />
               </div>
               <div className="text-[10px] font-semibold uppercase tracking-[0.32em] text-[var(--rp-muted-2)]">
                 Passport Premium

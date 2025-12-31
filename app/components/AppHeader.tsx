@@ -47,12 +47,16 @@ export default function AppHeader() {
       <div className={`mx-auto max-w-7xl px-4 pr-12 sm:px-6 sm:pr-6 lg:px-8 lg:pr-8 flex items-center justify-between gap-4 transition-all duration-300 ${isScrolled ? "h-12" : "h-14"}`}>
         {/* Logo Area */}
         <Link to="/" className="flex items-center gap-3 flex-shrink-0 group" prefetch="intent" aria-label="Radio Passport">
-          <div className={`relative flex items-center justify-center rounded-xl bg-[var(--rp-card-2)] shadow-[0_12px_24px_rgba(0,0,0,0.5)] ring-1 ring-white/10 overflow-hidden transition-transform group-hover:scale-105 ${isScrolled ? "h-8 w-8" : "h-10 w-10"}`}>
-            <span className="relative text-sm font-black tracking-wider z-10 text-[var(--rp-gold)]">RP</span>
+          <div className={`relative flex items-center justify-center rounded-xl bg-transparent shadow-[0_10px_20px_rgba(0,0,0,0.4)] ring-1 ring-white/5 overflow-hidden transition-transform group-hover:scale-105 ${isScrolled ? "h-8 w-8" : "h-10 w-10"}`}>
+            <img
+              src="/RP180.png"
+              alt="Radio Passport"
+              className="h-full w-full object-cover scale-[1.16] translate-y-0"
+            />
           </div>
-          <div className="hidden lg:flex flex-col">
-            <span className={`font-black tracking-tight text-[var(--rp-text)] leading-tight whitespace-nowrap ${isScrolled ? "text-sm" : "text-base"}`}>Radio Passport</span>
-            <span className={`text-[9px] text-[var(--rp-muted-2)] font-bold uppercase tracking-widest leading-tight whitespace-nowrap ${isScrolled ? "opacity-70" : ""}`}>Global sound atlas</span>
+          <div className="flex flex-col">
+            <span className={`font-black tracking-tight text-[var(--rp-text)] leading-tight whitespace-nowrap ${isScrolled ? "text-xs sm:text-sm" : "text-sm sm:text-base"}`}>Radio Passport</span>
+            <span className={`hidden sm:block text-[9px] text-[var(--rp-muted-2)] font-bold uppercase tracking-widest leading-tight whitespace-nowrap ${isScrolled ? "opacity-70" : ""}`}>Global sound atlas</span>
           </div>
         </Link>
 
