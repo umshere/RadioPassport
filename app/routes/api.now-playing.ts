@@ -52,10 +52,21 @@ function concatChunks(a: Uint8Array, b: Uint8Array) {
   return merged;
 }
 
+function sanitizeMetadata(raw: string) {
+  return raw.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, " ").trim();
+}
+
+function decodeMetadataPayload(payload: Uint8Array) {
+  const utf8 = new TextDecoder("utf-8").decode(payload);
+  const needsFallback = /\uFFFD/.test(utf8) || /[\u0000-\u0008\u000B\u000C\u000E-\u001F]/.test(utf8);
+  if (!needsFallback) return sanitizeMetadata(utf8);
+  const latin1 = new TextDecoder("iso-8859-1").decode(payload);
+  return sanitizeMetadata(latin1);
+}
+
 async function readIcyMetadata(stream: ReadableStream<Uint8Array>, metaint: number) {
   const reader = stream.getReader();
   let buffer = new Uint8Array(0);
-  const decoder = new TextDecoder("utf-8");
 
   const readBytes = async (length: number): Promise<Uint8Array | null> => {
     while (buffer.length < length) {
@@ -77,7 +88,7 @@ async function readIcyMetadata(stream: ReadableStream<Uint8Array>, metaint: numb
     if (!metaLen) continue;
     const metaPayload = await readBytes(metaLen);
     if (!metaPayload) return null;
-    const raw = decoder.decode(metaPayload).replace(/\0+$/, "").trim();
+    const raw = decodeMetadataPayload(metaPayload).replace(/\0+$/, "").trim();
     if (raw) return raw;
   }
 

@@ -58,6 +58,17 @@ import { useAtlasNavigation } from "~/hooks/useAtlasNavigation";
 import { useDerivedData } from "~/hooks/useDerivedData";
 import { useEventHandlers } from "~/hooks/useEventHandlers";
 
+const MAX_EXPANDED_LANGUAGES = 4;
+const ENGLISH_TOKENS = new Set(["english", "en", "eng", "en-us", "en-gb", "en-uk"]);
+
+function normalizeLanguageToken(value: string) {
+  return value.trim().toLowerCase();
+}
+
+function isEnglishLanguage(value: string) {
+  return ENGLISH_TOKENS.has(normalizeLanguageToken(value));
+}
+
 export async function loader({ request }: LoaderFunctionArgs) {
   const url = new URL(request.url);
   const view = url.searchParams.get("view");
@@ -129,7 +140,14 @@ export default function Index() {
   const countryParam = sp.get("country");
   const loaderMatchesSearch = (countryParam ?? null) === (loaderSelectedCountry ?? null);
   const selectedCountry = loaderMatchesSearch ? loaderSelectedCountry : null;
-  const stations = loaderMatchesSearch ? loaderStations : [];
+  const [expandedCountryStations, setExpandedCountryStations] = useState<Station[] | null>(null);
+  const [expandedCountryLanguages, setExpandedCountryLanguages] = useState<string[] | null>(null);
+  const [expandedCountryTags, setExpandedCountryTags] = useState<string[] | null>(null);
+  const stations = useMemo(() => {
+    if (!loaderMatchesSearch) return [];
+    if (!selectedCountry) return loaderStations;
+    return expandedCountryStations ?? loaderStations;
+  }, [expandedCountryStations, loaderMatchesSearch, loaderStations, selectedCountry]);
   const isCountryViewPending = Boolean(countryParam) && !loaderMatchesSearch;
   const searchQueryRaw = sp.get("q") ?? "";
   const searchQuery = searchQueryRaw.trim().toLowerCase();
@@ -212,6 +230,101 @@ export default function Index() {
     }
     return set;
   }, [failuresById]);
+
+  useEffect(() => {
+    if (!selectedCountry || !loaderMatchesSearch) {
+      setExpandedCountryLanguages(null);
+      setExpandedCountryTags(null);
+      setExpandedCountryStations(null);
+      return;
+    }
+    let cancelled = false;
+
+    const loadLanguages = async () => {
+      const payload = await rbFetchJson<Array<{ name: string }>>(
+        `/json/languages/bycountry/${encodeURIComponent(selectedCountry)}?limit=12&order=stationcount&reverse=true`,
+        undefined,
+        { softFail: true }
+      );
+      if (cancelled) return;
+      const rawLanguages = Array.isArray(payload) ? payload : [];
+      const nonEnglish = rawLanguages
+        .map((item) => item?.name)
+        .filter((name): name is string => Boolean(name && name.trim()))
+        .map((name) => name.trim())
+        .filter((name) => !isEnglishLanguage(name));
+      const topLanguages = nonEnglish.slice(0, MAX_EXPANDED_LANGUAGES);
+      const selectedLanguage = stationFilters.language?.trim();
+      if (selectedLanguage && !topLanguages.some((lang) => normalizeLanguageToken(lang) === normalizeLanguageToken(selectedLanguage))) {
+        topLanguages.unshift(selectedLanguage);
+      }
+      setExpandedCountryLanguages(topLanguages.length ? topLanguages : null);
+    };
+
+    loadLanguages();
+
+    const selectedTag = stationFilters.mood?.trim();
+    setExpandedCountryTags(selectedTag ? [selectedTag] : null);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [loaderMatchesSearch, selectedCountry, stationFilters.language, stationFilters.mood]);
+
+  useEffect(() => {
+    if (!selectedCountry || !loaderMatchesSearch) {
+      setExpandedCountryStations(null);
+      return;
+    }
+    if ((!expandedCountryLanguages || expandedCountryLanguages.length === 0) && (!expandedCountryTags || expandedCountryTags.length === 0)) {
+      setExpandedCountryStations(null);
+      return;
+    }
+
+    let cancelled = false;
+
+    const loadExpanded = async () => {
+      const languageRequests = (expandedCountryLanguages ?? []).map((language) =>
+        rbFetchJson<unknown>(
+          `/json/stations/bylanguage/${encodeURIComponent(language)}?limit=80&hidebroken=true&order=clickcount&reverse=true`,
+          undefined,
+          { softFail: true }
+        )
+      );
+      const tagRequests = (expandedCountryTags ?? []).map((tag) =>
+        rbFetchJson<unknown>(
+          `/json/stations/bytag/${encodeURIComponent(tag)}?limit=80&hidebroken=true&order=clickcount&reverse=true`,
+          undefined,
+          { softFail: true }
+        )
+      );
+      const requests = [...languageRequests, ...tagRequests];
+
+      const results = await Promise.allSettled(requests);
+      if (cancelled) return;
+
+      const merged = new Map<string, Station>();
+      for (const station of loaderStations) {
+        merged.set(station.uuid, station);
+      }
+
+      for (const result of results) {
+        if (result.status !== "fulfilled") continue;
+        const normalized = normalizeStations(Array.isArray(result.value) ? result.value : []);
+        for (const station of normalized) {
+          merged.set(station.uuid, station);
+        }
+      }
+
+      setExpandedCountryStations(rankStations(Array.from(merged.values())));
+    };
+
+    loadExpanded();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [expandedCountryLanguages, expandedCountryTags, loaderMatchesSearch, loaderStations, selectedCountry]);
 
   const handleOpenPassport = useCallback(() => {
     setPassportOpen(true);
