@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import type { Country } from "~/types/radio";
 import { getContinent } from "~/utils/geography";
 
@@ -22,14 +22,20 @@ export function useAtlasState(
     : nowPlaying
     ? getContinent(countryMap.get(nowPlaying.country)?.iso_3166_1)
     : null;
+  const lastSelectedCountryRef = useRef<string | null>(null);
 
   // Sync selected continent with current context
   useEffect(() => {
-    if (currentContinent && selectedContinent !== currentContinent) {
-      setSelectedContinent(currentContinent);
+    if (selectedCountry !== lastSelectedCountryRef.current) {
+      lastSelectedCountryRef.current = selectedCountry;
+      if (currentContinent) {
+        setSelectedContinent(currentContinent);
+        setActiveContinent(currentContinent);
+      }
+      return;
     }
-    if (selectedCountry && currentContinent && activeContinent !== currentContinent) {
-      setActiveContinent(currentContinent);
+    if (!selectedCountry && currentContinent && selectedContinent !== currentContinent) {
+      setSelectedContinent(currentContinent);
     }
   }, [activeContinent, currentContinent, selectedContinent, selectedCountry]);
 

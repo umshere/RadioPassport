@@ -61,7 +61,7 @@ export function CountryOverview({
   onSelectStation,
   transparent = false,
 }: CountryOverviewProps) {
-  const { setAiTriviaExpanded, setInsightsOpen } = useUIStore();
+  const { aiTriviaExpanded, setAiTriviaExpanded, setInsightsOpen } = useUIStore();
   const isDesktop = useMediaQuery("(min-width: 1024px)");
   const { scrollY } = useScroll();
   const parallaxDistance = isDesktop ? 90 : 0;
@@ -247,10 +247,20 @@ export function CountryOverview({
   const tickStart = Math.floor(freqNum) - 2;
   const ticks = Array.from({ length: 25 }, (_, i) => tickStart + i * 0.2);
   const nowPlayingMeta = useNowPlayingMetadata(nowPlaying ?? null, Boolean(isPlaying));
+  const [cachedFreeTrivia, setCachedFreeTrivia] = useState<TrackTrivia | null>(null);
   const freeTrivia = useTrackTrivia({
     track: nowPlayingMeta.track,
     source: "free",
     enabled: Boolean(nowPlaying),
+  });
+  const aiTrivia = useTrackTrivia({
+    track: nowPlayingMeta.track,
+    source: "ai",
+    enabled: aiTriviaExpanded,
+    context: {
+      summary: freeTrivia.trivia?.summary ?? cachedFreeTrivia?.summary ?? null,
+      facts: freeTrivia.trivia?.facts ?? cachedFreeTrivia?.facts ?? [],
+    },
   });
   const trackLine =
     nowPlayingMeta.status === "ready" && nowPlayingMeta.track
@@ -264,7 +274,6 @@ export function CountryOverview({
           : nowPlayingMeta.status === "error"
             ? "Track info unavailable"
             : "Listening live";
-  const [cachedFreeTrivia, setCachedFreeTrivia] = useState<TrackTrivia | null>(null);
   const lastTrackKeyRef = useRef<string>("");
   const lastStationRef = useRef<string | null>(null);
   const trackKey = nowPlayingMeta.track
@@ -285,6 +294,7 @@ export function CountryOverview({
     const stationId = nowPlaying?.uuid ?? null;
     if (stationId !== lastStationRef.current) {
       lastStationRef.current = stationId;
+      setCachedFreeTrivia(null);
       if (trackKey) {
         lastTrackKeyRef.current = trackKey;
       }
@@ -292,6 +302,7 @@ export function CountryOverview({
     }
     if (trackKey && trackKey !== lastTrackKeyRef.current) {
       lastTrackKeyRef.current = trackKey;
+      setCachedFreeTrivia(null);
     }
   }, [nowPlaying?.uuid, trackKey]);
 
@@ -632,7 +643,8 @@ export function CountryOverview({
                         </Text>
                       </div>
                       {(() => {
-                        const display = freeTrivia.status === "ready" ? freeTrivia.trivia : cachedFreeTrivia;
+                        const aiDisplay = aiTriviaExpanded && aiTrivia.status === "ready" ? aiTrivia.trivia : null;
+                        const display = aiDisplay ?? (freeTrivia.status === "ready" ? freeTrivia.trivia : cachedFreeTrivia);
                         const hasContent =
                           Boolean(display?.summary) ||
                           Boolean(display?.imageUrl) ||
@@ -701,7 +713,7 @@ export function CountryOverview({
                                 )}
                               </>
                             )}
-                            {!hasContent && freeTrivia.status !== "loading" && (
+                            {!hasContent && freeTrivia.status !== "loading" && !aiTriviaExpanded && (
                               <div className="flex flex-col items-start gap-2 text-left">
                                 <Text size="xs" c="var(--rp-text)" fw={600}>
                                   Spotlight is warming up.
@@ -711,7 +723,12 @@ export function CountryOverview({
                                 </Text>
                               </div>
                             )}
-                            {canRequestAi && (
+                            {aiTriviaExpanded && aiTrivia.status === "loading" && (
+                              <Text size="xs" c="var(--rp-muted)" className="mt-3 animate-pulse">
+                                Fetching AI insights…
+                              </Text>
+                            )}
+                            {canRequestAi && !aiTriviaExpanded && (
                               <button
                                 type="button"
                                 className="mt-3 inline-flex items-center gap-2 rounded-full border border-[rgba(245,177,45,0.5)] bg-[rgba(245,177,45,0.12)] px-3 py-1 text-[11px] font-semibold text-[var(--rp-gold)] shadow-[0_10px_20px_rgba(0,0,0,0.45)]"

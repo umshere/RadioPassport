@@ -673,76 +673,74 @@ export default function Index() {
             </div>
           </>
         ) : (
-          <div className="mx-auto w-full max-w-7xl px-4 md:px-6">
-            <section className="-mx-4 sm:-mx-6 md:mx-0 rounded-2xl border border-white/10 bg-[var(--rp-surface)] shadow-[0_18px_40px_rgba(0,0,0,0.5)] backdrop-blur-xl">
-              <CountryOverview
-                selectedCountry={selectedCountry}
-                selectedCountryMeta={selectedCountryMeta}
-                stationCount={stations.length}
-                stations={stations}
-                onBack={handlers.handleBackToWorldView}
+          <div className="mx-auto w-full max-w-7xl px-4 md:px-6 space-y-6 md:space-y-8">
+            <CountryOverview
+              selectedCountry={selectedCountry}
+              selectedCountryMeta={selectedCountryMeta}
+              stationCount={stations.length}
+              stations={stations}
+              onBack={handlers.handleBackToWorldView}
+              nowPlaying={player.nowPlaying}
+              isPlaying={player.isPlaying}
+              onPlayPause={player.playPause}
+              onNext={playNext}
+              onPrev={playPrevious}
+              queue={player.queue}
+              currentIndex={player.currentStationIndex}
+              onSelectStation={(station) => {
+                player.startStation(station, { preserveQueue: true });
+              }}
+              transparent={false}
+            />
+
+            <section className="rounded-3xl border border-white/10 bg-[var(--rp-surface)] px-6 py-6 md:px-10 md:py-8 shadow-[0_18px_40px_rgba(0,0,0,0.5)] backdrop-blur-xl">
+              <JourneyModule
                 nowPlaying={player.nowPlaying}
-                isPlaying={player.isPlaying}
-                onPlayPause={player.playPause}
-                onNext={playNext}
-                onPrev={playPrevious}
-                queue={player.queue}
-                currentIndex={player.currentStationIndex}
-                onSelectStation={(station) => {
-                  player.startStation(station, { preserveQueue: true });
-                }}
-                transparent={false}
+                recentStations={recentStations}
+                topCountries={topCountries}
+                onStartListening={handlers.handleStartListening}
+                onQuickRetune={handlers.handleQuickRetune}
+                onOpenPassport={handleOpenPassport}
               />
+            </section>
 
-              <div className="border-t border-slate-300/30 px-6 py-6 md:px-10">
-                <JourneyModule
-                  nowPlaying={player.nowPlaying}
-                  recentStations={recentStations}
-                  topCountries={topCountries}
-                  onStartListening={handlers.handleStartListening}
-                  onQuickRetune={handlers.handleQuickRetune}
-                  onOpenPassport={handleOpenPassport}
-                />
-              </div>
-
-              <div className="border-t border-slate-300/30 px-6 py-6 md:px-10">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div>
-                    <Text fw={700} size="sm" c="slate.9">
-                      Stations in {selectedCountry}
-                    </Text>
-                    <Text size="xs" c="dimmed" className="font-mono uppercase tracking-[0.32em]">
-                      {filteredStations.length.toLocaleString()} / {stations.length.toLocaleString()} tuned
-                    </Text>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setIsFilterDrawerOpen(true)}
-                      className="md:hidden inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-600 shadow-sm"
-                      aria-label="Open filters"
-                    >
-                      <IconAdjustmentsHorizontal size={16} />
-                      Filters
-                      {isStationFilterActive && <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />}
-                    </button>
-                  </div>
-                  <div className="hidden flex-wrap items-center gap-2 md:flex">
-                    <button
-                      type="button"
-                      onClick={() => setStationFilters(createDefaultStationFilters())}
-                      className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500 hover:text-slate-900"
-                    >
-                      Reset
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setAdvancedFiltersOpen((prev) => !prev)}
-                      className="rounded-full border border-slate-300 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.25em] text-slate-600 transition hover:bg-slate-50"
-                    >
-                      {isAdvancedFiltersOpen ? "Hide advanced" : "Advanced"}
-                    </button>
-                  </div>
+            <section className="rounded-3xl border border-white/10 bg-[var(--rp-surface)] px-6 py-6 md:px-10 md:py-8 shadow-[0_18px_40px_rgba(0,0,0,0.5)] backdrop-blur-xl">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <Text fw={700} size="sm" c="slate.9">
+                    Stations in {selectedCountry}
+                  </Text>
+                  <Text size="xs" c="dimmed" className="font-mono uppercase tracking-[0.32em]">
+                    {filteredStations.length.toLocaleString()} / {stations.length.toLocaleString()} tuned
+                  </Text>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsFilterDrawerOpen(true)}
+                    className="md:hidden inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-600 shadow-sm"
+                    aria-label="Open filters"
+                  >
+                    <IconAdjustmentsHorizontal size={16} />
+                    Filters
+                    {isStationFilterActive && <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />}
+                  </button>
+                </div>
+                <div className="hidden flex-wrap items-center gap-2 md:flex">
+                  <button
+                    type="button"
+                    onClick={() => setStationFilters(createDefaultStationFilters())}
+                    className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500 hover:text-slate-900"
+                  >
+                    Reset
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setAdvancedFiltersOpen((prev) => !prev)}
+                    className="rounded-full border border-slate-300 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.25em] text-slate-600 transition hover:bg-slate-50"
+                  >
+                    {isAdvancedFiltersOpen ? "Hide advanced" : "Advanced"}
+                  </button>
                 </div>
               </div>
 
@@ -779,23 +777,22 @@ export default function Index() {
                   onChange={setStationFilters}
                   onReset={() => setStationFilters(createDefaultStationFilters())}
                 />
+              </div>
 
+              <div className="mt-6">
+                <StationGrid
+                  stations={filteredStations}
+                  nowPlaying={player.nowPlaying}
+                  stationRefs={stationRefs}
+                  onPlayStation={handleStartStation}
+                  isFetchingExplore={mode.isFetchingExplore}
+                  favoriteStationIds={favoriteStationIds}
+                  onToggleFavorite={handleToggleFavorite}
+                  emptyMessage={filteredEmptyMessage}
+                  unavailableIds={unavailableIds}
+                />
               </div>
             </section>
-
-            <div>
-              <StationGrid
-                stations={filteredStations}
-                nowPlaying={player.nowPlaying}
-                stationRefs={stationRefs}
-                onPlayStation={handleStartStation}
-                isFetchingExplore={mode.isFetchingExplore}
-                favoriteStationIds={favoriteStationIds}
-                onToggleFavorite={handleToggleFavorite}
-                emptyMessage={filteredEmptyMessage}
-                unavailableIds={unavailableIds}
-              />
-            </div>
           </div>
       )}
       </main>

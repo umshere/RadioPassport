@@ -533,10 +533,6 @@ const TrackSpotlight = memo(function TrackSpotlight({
     aiTriviaExpanded,
     onExpand,
 }: TrackSpotlightProps) {
-    const wheelRef = useRef<HTMLDivElement | null>(null);
-    const wheelStartRef = useRef<number | null>(null);
-    const [wheelPos, setWheelPos] = useState(0);
-    const [wheelNudge, setWheelNudge] = useState(0);
     const [actionsOpen, setActionsOpen] = useState(false);
     const [showDetails, setShowDetails] = useState(false);
     const renderLinkIcon = (kind?: string) => {
@@ -579,10 +575,14 @@ const TrackSpotlight = memo(function TrackSpotlight({
     const canExpand =
         !aiTriviaExpanded &&
         (freeTrivia.status === "ready" && freeTrivia.trivia || Boolean(trackLine));
+    const aiReady = aiTriviaExpanded && aiTrivia.status === "ready" && aiTrivia.trivia;
+    const displayTrivia = aiReady ? aiTrivia.trivia : freeTrivia.trivia;
+    const displayFacts = displayTrivia?.facts ?? [];
+    const displayImage = displayTrivia?.imageUrl ?? null;
     const hasMetadata =
         Boolean(trackLine) ||
-        Boolean(freeTrivia.trivia?.summary) ||
-        Boolean(freeTrivia.trivia?.facts?.length);
+        Boolean(displayTrivia?.summary) ||
+        displayFacts.length > 0;
     const hasMoreContent = availableLinks.length > 0 || hasMetadata;
 
     useEffect(() => {
@@ -591,6 +591,12 @@ const TrackSpotlight = memo(function TrackSpotlight({
             setShowDetails(false);
         }
     }, [hasMoreContent]);
+    useEffect(() => {
+        if (aiTriviaExpanded) {
+            setShowDetails(true);
+            setActionsOpen(true);
+        }
+    }, [aiTriviaExpanded]);
 
     return (
         <div className="w-full max-w-2xl px-5">
@@ -614,7 +620,7 @@ const TrackSpotlight = memo(function TrackSpotlight({
                     <div className="pointer-events-none absolute inset-0 rounded-2xl shadow-[inset_1px_1px_2px_rgba(255,255,255,0.06),inset_-2px_-2px_6px_rgba(0,0,0,0.6)]" />
                     <div
                         data-swipe-ignore
-                        className="h-full overflow-hidden px-5 pb-5 pt-4 font-mono text-amber-50"
+                        className="h-full overflow-y-auto px-5 pb-5 pt-4 font-mono text-amber-50 touch-pan-y"
                     >
                     <div className="flex items-center justify-between gap-3 text-amber-100/60">
                         <div className="text-[11px] font-semibold uppercase tracking-[0.3em]">
@@ -633,18 +639,17 @@ const TrackSpotlight = memo(function TrackSpotlight({
                             Updating spotlight…
                         </Text>
                     )}
+                    {aiTriviaExpanded && aiTrivia.status === "loading" && (
+                        <Text size="xs" className="mt-2 animate-pulse text-amber-100/70">
+                            Fetching AI insights…
+                        </Text>
+                    )}
 
                     {freeTrivia.status === "ready" && freeTrivia.trivia && (
                         <Text
                             size="sm"
                             fw={600}
                             className="mt-3 text-amber-50"
-                            style={{
-                                display: "-webkit-box",
-                                WebkitLineClamp: showDetails ? 4 : 2,
-                                WebkitBoxOrient: "vertical",
-                                overflow: "hidden",
-                            }}
                         >
                             {freeTrivia.trivia.summary}
                         </Text>
@@ -654,19 +659,23 @@ const TrackSpotlight = memo(function TrackSpotlight({
                             size="sm"
                             fw={600}
                             className="mt-3 text-amber-50"
-                            style={{
-                                display: "-webkit-box",
-                                WebkitLineClamp: showDetails ? 4 : 2,
-                                WebkitBoxOrient: "vertical",
-                                overflow: "hidden",
-                            }}
                         >
                             {aiTrivia.trivia.summary}
                         </Text>
                     )}
-                    {showDetails && freeTrivia.trivia?.facts?.length ? (
-                        <div className="mt-2 flex flex-wrap gap-2 text-[11px] text-amber-100/70">
-                            {freeTrivia.trivia.facts.slice(0, 2).map((fact) => (
+                    {showDetails && (displayFacts.length > 0 || displayImage) ? (
+                        <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px] text-amber-100/70">
+                            {displayImage && (
+                                <img
+                                    src={displayImage}
+                                    alt="Track artwork"
+                                    className="h-9 w-9 rounded-lg border border-amber-400/20 object-cover shadow-[0_6px_14px_rgba(0,0,0,0.45)]"
+                                    onError={(event) => {
+                                        event.currentTarget.style.display = "none";
+                                    }}
+                                />
+                            )}
+                            {displayFacts.slice(0, 3).map((fact) => (
                                 <span
                                     key={fact.label}
                                     className="rounded-full border border-amber-400/20 px-2 py-0.5 text-amber-100/80"
@@ -678,60 +687,6 @@ const TrackSpotlight = memo(function TrackSpotlight({
                             ))}
                         </div>
                     ) : null}
-                    </div>
-                </div>
-                <div className="flex items-center">
-                    <div
-                        ref={wheelRef}
-                        data-swipe-ignore
-                        onPointerDown={(event) => {
-                            event.currentTarget.setPointerCapture(event.pointerId);
-                            wheelStartRef.current = event.clientY;
-                        }}
-                        onPointerMove={(event) => {
-                            if (wheelStartRef.current === null || !wheelRef.current) return;
-                            const delta = event.clientY - wheelStartRef.current;
-                            const rect = wheelRef.current.getBoundingClientRect();
-                            const trackRange = Math.max(1, rect.height - 28);
-                            const nextPos = Math.min(1, Math.max(0, wheelPos + delta / trackRange));
-                            setWheelPos(nextPos);
-                            wheelStartRef.current = event.clientY;
-                            setWheelNudge(delta > 0 ? 1 : -1);
-                        }}
-                        onPointerUp={(event) => {
-                            event.currentTarget.releasePointerCapture(event.pointerId);
-                            wheelStartRef.current = null;
-                            setWheelNudge(0);
-                        }}
-                        onPointerCancel={(event) => {
-                            event.currentTarget.releasePointerCapture(event.pointerId);
-                            wheelStartRef.current = null;
-                            setWheelNudge(0);
-                        }}
-                        className="relative h-20 w-9 rounded-full bg-[#171b24] shadow-[inset_2px_2px_6px_rgba(0,0,0,0.5),inset_-2px_-2px_6px_rgba(255,255,255,0.06),0_8px_16px_rgba(0,0,0,0.4)]"
-                        style={{
-                            transform: `translateY(${wheelNudge * 1.5}px)`,
-                            transition: wheelNudge === 0 ? "transform 120ms ease-out" : "transform 80ms ease-in",
-                            backgroundImage:
-                                "linear-gradient(90deg, rgba(24,28,36,0.95) 0%, rgba(15,18,24,0.9) 45%, rgba(30,34,44,0.95) 100%), repeating-linear-gradient(90deg, rgba(255,204,122,0.2) 0px, rgba(255,204,122,0.2) 1px, rgba(24,28,36,0.6) 2px, rgba(24,28,36,0.6) 4px)",
-                        }}
-                        aria-label="Spotlight side control"
-                        role="slider"
-                        aria-valuemin={0}
-                        aria-valuemax={100}
-                        aria-valuenow={Math.round(wheelPos * 100)}
-                    >
-                        <div className="absolute left-2 right-2 top-1.5 h-2 rounded-full bg-[#141822] shadow-[inset_1px_1px_2px_rgba(0,0,0,0.6)]" />
-                        <div className="absolute left-2 right-2 bottom-1.5 h-2 rounded-full bg-[#141822] shadow-[inset_1px_1px_2px_rgba(0,0,0,0.6)]" />
-                        <div
-                            className="absolute left-1.5 right-1.5 h-5 rounded-full bg-[#f6c86f]"
-                            style={{
-                                top: `${10 + wheelPos * 60}px`,
-                                transform: "translateY(-50%)",
-                                boxShadow:
-                                    "inset 1px 1px 2px rgba(255,255,255,0.35), 0 2px 6px rgba(0,0,0,0.45)",
-                            }}
-                        />
                     </div>
                 </div>
             </div>
@@ -752,6 +707,11 @@ const TrackSpotlight = memo(function TrackSpotlight({
                                 <IconMusic size={12} />
                                 Track
                             </button>
+                        )}
+                        {actionsOpen && displayTrivia && (displayTrivia.links?.length ?? 0) === 0 && availableLinks.length === 0 && (
+                            <span className="text-[11px] text-amber-100/60">
+                                No extra links available.
+                            </span>
                         )}
                         {availableLinks.map((link) => {
                             const Icon = renderLinkIcon(link.kind);
@@ -778,7 +738,20 @@ const TrackSpotlight = memo(function TrackSpotlight({
                             ? "text-amber-100 bg-[#141822] border border-amber-400/20"
                             : "text-amber-100/40 bg-[#10131a] border border-amber-400/10 cursor-not-allowed"
                     }`}
-                    onClick={hasMoreContent ? () => setActionsOpen((prev) => !prev) : undefined}
+                    onClick={
+                        hasMoreContent
+                            ? () => {
+                                  if (!aiTriviaExpanded && canExpand) {
+                                      onExpand();
+                                  }
+                                  setActionsOpen((prev) => {
+                                      const next = !prev;
+                                      setShowDetails(next);
+                                      return next;
+                                  });
+                              }
+                            : undefined
+                    }
                     disabled={!hasMoreContent}
                 >
                     More

@@ -157,11 +157,12 @@ export function JourneyModule({
       </div>
 
       <div className="relative mt-4 hidden gap-4 sm:grid sm:grid-cols-3">
-        <div className="absolute left-8 right-8 top-1/2 hidden h-px -translate-y-1/2 bg-gradient-to-r from-transparent via-[rgba(245,177,45,0.4)] to-transparent sm:block" />
         <motion.div
+          key={nowPlaying.uuid}
           className="absolute left-[22%] top-1/2 hidden h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full border border-[rgba(245,177,45,0.5)] bg-black/60 text-[var(--rp-gold)] shadow-[0_0_18px_rgba(245,177,45,0.35)] sm:flex"
-          animate={{ x: [0, 140, 0] }}
-          transition={{ duration: 4.5, repeat: Infinity, ease: "easeInOut" }}
+          initial={{ x: 0, opacity: 0.4, y: -6 }}
+          animate={{ x: 156, opacity: [0.6, 1, 0], y: -6 }}
+          transition={{ duration: 2, ease: "easeOut", times: [0, 0.7, 1] }}
         >
           <IconPlane size={12} />
         </motion.div>
