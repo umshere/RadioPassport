@@ -5,6 +5,12 @@ import { useCallback, useEffect, useRef } from "react";
 import { usePlayerStore } from "~/state/playerStore";
 import { isStationTemporarilyUnavailable, useStationAvailabilityStore } from "~/state/stationAvailabilityStore";
 import { isMixedContentStream } from "~/utils/streamHeuristics";
+import {
+  canRetryPlayback,
+  getRetryDelayMs,
+  MAX_PLAYBACK_RECOVERY_ATTEMPTS,
+  withRetryToken,
+} from "~/utils/playbackRecovery";
 import stylesheet from "./tailwind.css?url";
 import AppHeader from "~/components/AppHeader";
 import PlayerDock from "~/components/PlayerDock";
@@ -210,6 +216,11 @@ export default function App() {
 function GlobalAudioBridge() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const nowPlayingRef = useRef<ReturnType<typeof usePlayerStore.getState>["nowPlaying"]>(null);
+  const retryRef = useRef<{ stationId: string | null; attempts: number; timer: number | null }>({
+    stationId: null,
+    attempts: 0,
+    timer: null,
+  });
   const autoSkipRef = useRef<{ lastSkipAt: number; recentFailures: number[] }>({
     lastSkipAt: 0,
     recentFailures: [],
@@ -229,6 +240,14 @@ function GlobalAudioBridge() {
   const markFailed = useStationAvailabilityStore((state) => state.markFailed);
   const clearFailure = useStationAvailabilityStore((state) => state.clearFailure);
   const setNotice = usePlayerNoticeStore((state) => state.setNotice);
+
+  const clearRetryTimer = useCallback(() => {
+    const active = retryRef.current.timer;
+    if (active !== null && typeof window !== "undefined") {
+      window.clearTimeout(active);
+    }
+    retryRef.current.timer = null;
+  }, []);
 
   const normalizeStreamUrl = useCallback((url?: string | null) => {
     if (!url) return "";
@@ -322,6 +341,53 @@ function GlobalAudioBridge() {
     [setNotice]
   );
 
+  const tryPlaybackRecovery = useCallback(
+    (station: Station, reason: Parameters<typeof markFailed>[1]): boolean => {
+      if (!canRetryPlayback(reason)) return false;
+      if (!audioRef.current) return false;
+
+      const retryState = retryRef.current;
+      if (retryState.stationId !== station.uuid) {
+        clearRetryTimer();
+        retryState.stationId = station.uuid;
+        retryState.attempts = 0;
+      }
+
+      if (retryState.attempts >= MAX_PLAYBACK_RECOVERY_ATTEMPTS) {
+        return false;
+      }
+
+      retryState.attempts += 1;
+      const retryAttempt = retryState.attempts;
+      const delay = getRetryDelayMs(retryAttempt);
+      const streamUrl = normalizeStreamUrl(station.streamUrl ?? station.url ?? "");
+      if (!streamUrl) return false;
+
+      setNotice({
+        kind: "info",
+        message: `Signal unstable for “${station.name}”. Retrying (${retryAttempt}/${MAX_PLAYBACK_RECOVERY_ATTEMPTS})…`,
+        durationMs: Math.max(2500, delay + 1200),
+      });
+
+      clearRetryTimer();
+      retryState.timer = window.setTimeout(() => {
+        const current = nowPlayingRef.current;
+        if (!current || current.uuid !== station.uuid) return;
+        const audio = audioRef.current;
+        if (!audio) return;
+
+        const retryToken = `${Date.now()}-${retryAttempt}`;
+        audio.src = withRetryToken(streamUrl, retryToken);
+        void audio.play().catch(() => {
+          // Let normal error handlers decide whether to keep retrying or skip.
+        });
+      }, delay);
+
+      return true;
+    },
+    [clearRetryTimer, normalizeStreamUrl, setNotice]
+  );
+
   useEffect(() => {
     const element = audioRef.current;
     if (element) {
@@ -332,6 +398,7 @@ function GlobalAudioBridge() {
     setAudioElement(element ?? null);
 
     return () => {
+      clearRetryTimer();
       setAudioElement(null);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -352,6 +419,9 @@ function GlobalAudioBridge() {
         : current.hls
           ? "hls_stream"
           : "audio_error";
+      if (tryPlaybackRecovery(current, reason)) {
+        return;
+      }
       markFailed(current.uuid, reason);
       autoSkipToNext(current, reason);
     };
@@ -360,6 +430,9 @@ function GlobalAudioBridge() {
       if (!current) return;
       clearFailure(current.uuid);
       autoSkipRef.current.recentFailures = [];
+      clearRetryTimer();
+      retryRef.current.stationId = current.uuid;
+      retryRef.current.attempts = 0;
     };
 
     audio.addEventListener("ended", handleEnded);
@@ -372,11 +445,14 @@ function GlobalAudioBridge() {
       audio.removeEventListener("playing", handlePlaying);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [autoSkipToNext, clearFailure, clearRetryTimer, markFailed, setIsPlaying, tryPlaybackRecovery]);
 
   useEffect(() => {
     nowPlayingRef.current = nowPlaying;
-  }, [nowPlaying]);
+    clearRetryTimer();
+    retryRef.current.stationId = nowPlaying?.uuid ?? null;
+    retryRef.current.attempts = 0;
+  }, [clearRetryTimer, nowPlaying]);
 
   useEffect(() => {
     if (typeof navigator === "undefined") return;
@@ -503,6 +579,9 @@ function GlobalAudioBridge() {
             : nowPlaying.hls
               ? "hls_stream"
               : "play_rejected";
+          if (tryPlaybackRecovery(nowPlaying, reason)) {
+            return;
+          }
           markFailed(nowPlaying.uuid, reason);
           autoSkipToNext(nowPlaying, reason);
         });
@@ -510,7 +589,7 @@ function GlobalAudioBridge() {
       audio.pause();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isPlaying, nowPlaying]);
+  }, [autoSkipToNext, isPlaying, markFailed, nowPlaying, setIsPlaying, tryPlaybackRecovery]);
 
   useEffect(() => {
     if (!isPlaying) {
