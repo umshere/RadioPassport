@@ -42,6 +42,7 @@ import { CollapsibleSection } from "./components/CollapsibleSection";
 import { MobileFilterDrawer } from "./components/MobileFilterDrawer";
 import { JourneyModule } from "./components/JourneyModule";
 import { AISplashScreen, shouldShowAISplash } from "./components/AISplashScreen";
+import { SignalField } from "~/components/SignalField";
 
 
 import Footer from "~/components/Footer";
@@ -686,6 +687,7 @@ export default function Index() {
   return (
     <div className="app-bg relative min-h-screen text-[var(--rp-text)] overflow-x-hidden w-full pb-32">
       {showSplash ? <AISplashScreen onComplete={() => setShowSplash(false)} /> : null}
+      <SignalField />
 
       <main
         className={`relative z-10 flex w-full flex-col gap-0 pt-0 md:pt-2 ${

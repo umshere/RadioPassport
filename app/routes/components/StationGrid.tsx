@@ -81,7 +81,6 @@ export function StationGrid({
             <StationCard
               key={`${station.uuid}-${index}`}
               station={station}
-              index={index}
               isCurrent={isCurrent}
               onPlay={onPlayStation}
               isFavorite={isFavorite}

@@ -1,4 +1,3 @@
-import { motion } from "framer-motion";
 import { useMemo } from "react";
 import { Text, ActionIcon, Button, Tooltip } from "@mantine/core";
 import { IconPlayerPlayFilled, IconHeart, IconInfoCircle } from "@tabler/icons-react";
@@ -8,7 +7,6 @@ import { deriveStationHealth } from "~/utils/stationMeta";
 
 type StationCardProps = {
   station: Station;
-  index: number;
   isCurrent: boolean;
   onPlay: (station: Station) => void;
   isFavorite?: boolean;
@@ -56,7 +54,6 @@ function getStatusDisplay(status?: string | null): { icon: string; label: string
 
 export function StationCard({
   station,
-  index,
   isCurrent,
   onPlay,
   isFavorite = false,
@@ -117,14 +114,7 @@ export function StationCard({
     };
 
   return (
-    <motion.div
-      ref={stationRef}
-      initial={{ opacity: 0, scale: 0.95 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{ delay: index * 0.02 }}
-      whileHover={{ y: -4 }}
-      className="h-full"
-    >
+    <div ref={stationRef} className="h-full">
       <div
         className={`station-card group h-full flex flex-col rounded-[2rem] p-5 transition-all duration-300 hover:-translate-y-1.5 ${cardStatusClass}`}
         style={{
@@ -162,30 +152,25 @@ export function StationCard({
                   : '0 4px 12px -4px rgba(0, 0, 0, 0.08)',
               }}
             >
-              {station.favicon ? (
-                <img
-                  src={station.favicon}
-                  alt={station.name}
-                  className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                  loading="lazy"
-                  onError={(e) => {
-                    // Hide broken image and show fallback
-                    e.currentTarget.style.display = 'none';
-                    const fallback = e.currentTarget.nextElementSibling as HTMLElement;
-                    if (fallback) fallback.style.display = 'flex';
-                  }}
-                />
-              ) : null}
-              {/* Always render fallback, hidden when favicon exists and loads */}
               <div
                 className="absolute inset-0 flex h-full w-full items-center justify-center text-white font-bold text-base sm:text-lg"
                 style={{
                   background: fallbackGradient,
-                  display: station.favicon ? 'none' : 'flex'
                 }}
               >
                 {initials}
               </div>
+              {station.favicon ? (
+                <img
+                  src={station.favicon}
+                  alt={station.name}
+                  className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                  loading="lazy"
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none';
+                  }}
+                />
+              ) : null}
             </div>
             <div className="flex min-w-0 flex-1 flex-col gap-1.5">
               <div className="flex flex-wrap items-center gap-2">
@@ -292,7 +277,7 @@ export function StationCard({
           )}
         </div>
       </div>
-    </motion.div>
+    </div>
   );
 }
 
