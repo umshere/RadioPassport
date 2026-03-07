@@ -134,7 +134,7 @@ import { useUIStore } from "~/state/uiStore";
 
 export default function Index() {
   const hydrated = useHydrated();
-  const [showSplash, setShowSplash] = useState(false);
+  const [showSplash, setShowSplash] = useState<boolean | null>(null);
 
   useEffect(() => {
     if (!hydrated) return;
@@ -685,10 +685,12 @@ export default function Index() {
 
   return (
     <div className="app-bg relative min-h-screen text-[var(--rp-text)] overflow-x-hidden w-full pb-32">
-      {showSplash && <AISplashScreen onComplete={() => setShowSplash(false)} />}
+      {showSplash ? <AISplashScreen onComplete={() => setShowSplash(false)} /> : null}
 
       <main
-        className="relative z-10 flex w-full flex-col gap-0 pt-0 md:pt-2"
+        className={`relative z-10 flex w-full flex-col gap-0 pt-0 md:pt-2 ${
+          showSplash === null ? "opacity-0" : ""
+        }`}
         {...swipeHandlers}
         {...ariaHidden}
       >
