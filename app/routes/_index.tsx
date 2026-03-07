@@ -41,6 +41,7 @@ import { LoadingView } from "./components/LoadingView";
 import { CollapsibleSection } from "./components/CollapsibleSection";
 import { MobileFilterDrawer } from "./components/MobileFilterDrawer";
 import { JourneyModule } from "./components/JourneyModule";
+import { AISplashScreen, shouldShowAISplash } from "./components/AISplashScreen";
 
 
 import Footer from "~/components/Footer";
@@ -57,6 +58,7 @@ import { useStationNavigation } from "~/hooks/useStationNavigation";
 import { useAtlasNavigation } from "~/hooks/useAtlasNavigation";
 import { useDerivedData } from "~/hooks/useDerivedData";
 import { useEventHandlers } from "~/hooks/useEventHandlers";
+import { useHydrated } from "~/hooks/useHydrated";
 
 const MAX_EXPANDED_LANGUAGES = 4;
 const ENGLISH_TOKENS = new Set(["english", "en", "eng", "en-us", "en-gb", "en-uk"]);
@@ -131,6 +133,14 @@ export async function loader({ request }: LoaderFunctionArgs) {
 import { useUIStore } from "~/state/uiStore";
 
 export default function Index() {
+  const hydrated = useHydrated();
+  const [showSplash, setShowSplash] = useState(false);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    setShowSplash(shouldShowAISplash());
+  }, [hydrated]);
+
   // Remix hooks
   const { countries, stations: loaderStations, selectedCountry: loaderSelectedCountry, initialView } = useLoaderData<typeof loader>();
   const [sp, setSp] = useSearchParams();
@@ -675,6 +685,7 @@ export default function Index() {
 
   return (
     <div className="app-bg relative min-h-screen text-[var(--rp-text)] overflow-x-hidden w-full pb-32">
+      {showSplash && <AISplashScreen onComplete={() => setShowSplash(false)} />}
 
       <main
         className="relative z-10 flex w-full flex-col gap-0 pt-0 md:pt-2"
