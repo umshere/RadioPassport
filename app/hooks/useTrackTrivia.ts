@@ -90,7 +90,7 @@ export function useTrackTrivia({
       .then((data) => {
         if (controller.signal.aborted) return;
         if (data.status === "ok") {
-          const nextState = { status: "ready", trivia: data.trivia, message: null };
+          const nextState: TriviaState = { status: "ready", trivia: data.trivia, message: null };
           if (source === "ai" && aiCacheKey) {
             AI_TRIVIA_CACHE.set(aiCacheKey, nextState);
           }
@@ -99,7 +99,7 @@ export function useTrackTrivia({
         }
         if (data.status === "empty") {
           // Keep UI minimal; no explicit unavailable text
-          const nextState = { status: "empty", trivia: null, message: null };
+          const nextState: TriviaState = { status: "empty", trivia: null, message: null };
           if (source === "ai" && aiCacheKey) {
             AI_TRIVIA_CACHE.set(aiCacheKey, nextState);
           }
@@ -107,7 +107,7 @@ export function useTrackTrivia({
           return;
         }
         // Hide error details in UI; treat as empty to avoid noisy UX
-        const nextState = { status: "empty", trivia: null, message: null };
+        const nextState: TriviaState = { status: "empty", trivia: null, message: null };
         if (source === "ai" && aiCacheKey) {
           AI_TRIVIA_CACHE.set(aiCacheKey, nextState);
         }
@@ -116,7 +116,7 @@ export function useTrackTrivia({
       .catch((error) => {
         if (controller.signal.aborted) return;
         if ((error as Error).name === "AbortError") return;
-        const nextState = { status: "empty", trivia: null, message: null };
+        const nextState: TriviaState = { status: "empty", trivia: null, message: null };
         if (source === "ai" && aiCacheKey) {
           AI_TRIVIA_CACHE.set(aiCacheKey, nextState);
         }

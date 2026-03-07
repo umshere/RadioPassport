@@ -27,7 +27,7 @@ export function StationFilterQuickBar({
             input:
               "bg-black/40 border-white/10 text-[var(--rp-text)] placeholder:text-[var(--rp-muted-2)]",
             dropdown: "bg-[#10131a] border-white/10",
-            item: "text-[var(--rp-text)] data-[selected=true]:bg-[rgba(245,177,45,0.2)] data-[selected=true]:text-[var(--rp-gold)]",
+            option: "text-[var(--rp-text)] data-[selected=true]:bg-[rgba(245,177,45,0.2)] data-[selected=true]:text-[var(--rp-gold)]",
           }}
           data={options.languages.map((item) => ({
             value: item.value,
@@ -48,7 +48,7 @@ export function StationFilterQuickBar({
             input:
               "bg-black/40 border-white/10 text-[var(--rp-text)] placeholder:text-[var(--rp-muted-2)]",
             dropdown: "bg-[#10131a] border-white/10",
-            item: "text-[var(--rp-text)] data-[selected=true]:bg-[rgba(245,177,45,0.2)] data-[selected=true]:text-[var(--rp-gold)]",
+            option: "text-[var(--rp-text)] data-[selected=true]:bg-[rgba(245,177,45,0.2)] data-[selected=true]:text-[var(--rp-gold)]",
           }}
           data={options.regions.map((item) => ({
             value: item.value,

@@ -143,12 +143,12 @@ function collectMatches(
 export function extractPromptIntent(prompt: string | null | undefined): PromptIntent {
   const normalized = normalize(prompt);
   if (!normalized) {
-    return { countries: [], languages: [], genres: [], confidence: "none" };
+    return { countries: [], languages: [], tags: [], confidence: "none" };
   }
 
   const tokens = tokenize(normalized);
   if (tokens.length === 0) {
-    return { countries: [], languages: [], genres: [], confidence: "none" };
+    return { countries: [], languages: [], tags: [], confidence: "none" };
   }
 
   const countries = collectMatches(tokens, COUNTRY_KEYWORDS, normalized);

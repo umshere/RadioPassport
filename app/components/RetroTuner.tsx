@@ -555,7 +555,7 @@ const TrackSpotlight = memo(function TrackSpotlight({
     const canShowAi =
         !aiTriviaExpanded &&
         (freeTrivia.status === "ready" && freeTrivia.trivia || Boolean(trackLine));
-    const linkPresets = [
+    const linkPresets: Array<{ kind: "track" | "youtube" | "artist" | "release" | "info"; label: string }> = [
         { kind: "youtube", label: "YouTube" },
         { kind: "artist", label: "Artist" },
         { kind: "release", label: "Release" },
