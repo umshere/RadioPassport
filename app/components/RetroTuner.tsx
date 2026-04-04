@@ -1,6 +1,7 @@
 import type { PointerEvent as ReactPointerEvent } from "react";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ActionIcon, Text } from "@mantine/core";
+import { useElementSize } from "@mantine/hooks";
 import {
     IconPlayerPauseFilled,
     IconPlayerPlayFilled,
@@ -17,10 +18,23 @@ import {
     IconExternalLink,
 } from "@tabler/icons-react";
 import { motion } from "framer-motion";
+import { PretextMeasuredText } from "~/components/PretextMeasuredText";
 import type { Station } from "~/types/radio";
 import { useNowPlayingMetadata } from "~/hooks/useNowPlayingMetadata";
 import { useTrackTrivia } from "~/hooks/useTrackTrivia";
 import { useUIStore } from "~/state/uiStore";
+import { fitsPretextWidth, getPretextLineCount } from "~/utils/pretextLayout";
+
+const RETRO_STATION_FONT =
+    '500 14px "General Sans", "SF Pro Text", "Segoe UI", "Helvetica Neue", Arial, sans-serif';
+const RETRO_STATUS_FONT =
+    '500 12px "General Sans", "SF Pro Text", "Segoe UI", "Helvetica Neue", Arial, sans-serif';
+const RETRO_SPOTLIGHT_TITLE_FONT =
+    '500 12px "IBM Plex Mono", "SFMono-Regular", Menlo, Monaco, Consolas, monospace';
+const RETRO_SPOTLIGHT_BODY_FONT =
+    '600 15px "IBM Plex Mono", "SFMono-Regular", Menlo, Monaco, Consolas, monospace';
+const RETRO_ACTION_FONT =
+    '600 11px "General Sans", "SF Pro Text", "Segoe UI", "Helvetica Neue", Arial, sans-serif';
 
 interface RetroTunerProps {
     station: Station;
@@ -46,6 +60,7 @@ export default function RetroTuner({
     onSelectStation,
 }: RetroTunerProps) {
     const { aiTriviaExpanded, setAiTriviaExpanded } = useUIStore();
+    const { ref: stationMetaRef, width: stationMetaWidth } = useElementSize();
     const nowPlayingMeta = useNowPlayingMetadata(station, isPlaying);
     const freeTrivia = useTrackTrivia({
         track: nowPlayingMeta.track,
@@ -133,6 +148,17 @@ export default function RetroTuner({
     const clampedIndex = Math.max(0, Math.min(currentIndex, totalStations - 1));
     const displayStation = boundedQueue[dialIndex] ?? station;
     const isPreviewing = displayStation.uuid !== station.uuid;
+    const compactStationMeta = useMemo(() => {
+        if (stationMetaWidth <= 0) return false;
+        const stationLineCount = getPretextLineCount(displayStation.name, RETRO_STATION_FONT, Math.floor(stationMetaWidth), 22);
+        const statusFits = fitsPretextWidth(
+            isPreviewing ? "Tuning preview" : "Now playing",
+            RETRO_STATUS_FONT,
+            Math.floor(stationMetaWidth),
+            0
+        );
+        return stationLineCount > 1 || !statusFits;
+    }, [displayStation.name, isPreviewing, stationMetaWidth]);
 
     const syncDialFromIndex = useCallback((index: number) => {
         const bounded = Math.max(0, Math.min(index, totalStations - 1));
@@ -326,13 +352,21 @@ export default function RetroTuner({
             <div className="relative flex-1">
                 <div className="flex flex-col items-center gap-5 px-4 pb-36 pt-0 md:gap-8 md:pb-40 md:pt-2">
                     {/* 1. Giant Frequency Number */}
-                    <div className="flex flex-col items-center">
+                    <div ref={stationMetaRef} className="flex w-full max-w-[24rem] flex-col items-center">
                         <h1 className="font-mono text-7xl md:text-8xl font-bold tracking-tighter text-amber-50">
                             {frequency.toFixed(1)}
                         </h1>
-                        <p className="mt-2 text-sm font-medium uppercase tracking-widest text-amber-100/70">
-                            {displayStation.name}
-                        </p>
+                        <div className="mt-2 w-full max-w-[18rem] text-center">
+                            <PretextMeasuredText
+                                text={displayStation.name}
+                                font={RETRO_STATION_FONT}
+                                lineHeight={22}
+                                collapsedLines={compactStationMeta ? 2 : 1}
+                                className="w-full"
+                                lineClassName="text-sm font-medium uppercase tracking-widest text-amber-100/70"
+                                fallbackClassName="text-sm font-medium uppercase tracking-widest text-amber-100/70"
+                            />
+                        </div>
                         <p className="mt-2 text-xs font-semibold uppercase tracking-[0.2em] text-amber-100/50">
                             {isPreviewing ? "Tuning preview" : "Now playing"}
                         </p>
@@ -535,6 +569,7 @@ const TrackSpotlight = memo(function TrackSpotlight({
 }: TrackSpotlightProps) {
     const [actionsOpen, setActionsOpen] = useState(false);
     const [showDetails, setShowDetails] = useState(false);
+    const { ref: spotlightRef, width: spotlightWidth } = useElementSize();
     const renderLinkIcon = (kind?: string) => {
         switch (kind) {
             case "youtube":
@@ -579,11 +614,29 @@ const TrackSpotlight = memo(function TrackSpotlight({
     const displayTrivia = aiReady ? aiTrivia.trivia : freeTrivia.trivia;
     const displayFacts = displayTrivia?.facts ?? [];
     const displayImage = displayTrivia?.imageUrl ?? null;
+    const displaySummary = displayTrivia?.summary ?? null;
     const hasMetadata =
         Boolean(trackLine) ||
-        Boolean(displayTrivia?.summary) ||
+        Boolean(displaySummary) ||
         displayFacts.length > 0;
     const hasMoreContent = availableLinks.length > 0 || hasMetadata;
+    const summaryWidth = Math.max(180, spotlightWidth - 48);
+    const titleLineCount = useMemo(
+        () => getPretextLineCount(triviaTitle, RETRO_SPOTLIGHT_TITLE_FONT, summaryWidth, 18),
+        [summaryWidth, triviaTitle]
+    );
+    const summaryLineCount = useMemo(
+        () => (displaySummary ? getPretextLineCount(displaySummary, RETRO_SPOTLIGHT_BODY_FONT, summaryWidth, 22) : 0),
+        [displaySummary, summaryWidth]
+    );
+    const compactSpotlight = spotlightWidth > 0 && (spotlightWidth < 620 || titleLineCount > 1 || summaryLineCount > 4);
+    const visibleFactCount = compactSpotlight ? 2 : 3;
+    const moreLabel = useMemo(() => {
+        if (!hasMoreContent) return "More";
+        if (actionsOpen) return compactSpotlight ? "Less" : "Close details";
+        const fullFits = fitsPretextWidth("More details", RETRO_ACTION_FONT, 122, 28);
+        return compactSpotlight || !fullFits ? "More" : "More details";
+    }, [actionsOpen, compactSpotlight, hasMoreContent]);
 
     useEffect(() => {
         if (!hasMoreContent) {
@@ -601,7 +654,10 @@ const TrackSpotlight = memo(function TrackSpotlight({
     return (
         <div className="w-full max-w-2xl px-5">
             <div className="flex items-stretch gap-3">
-                <div className="relative h-40 md:h-44 flex-1 overflow-hidden rounded-2xl border border-amber-400/20 bg-[#12151c] shadow-[0_18px_40px_rgba(0,0,0,0.5),inset_1px_1px_2px_rgba(255,255,255,0.05)]">
+                <div
+                    ref={spotlightRef}
+                    className="relative h-40 md:h-44 flex-1 overflow-hidden rounded-2xl border border-amber-400/20 bg-[#12151c] shadow-[0_18px_40px_rgba(0,0,0,0.5),inset_1px_1px_2px_rgba(255,255,255,0.05)]"
+                >
                     <div
                         className="pointer-events-none absolute inset-0 opacity-35"
                         style={{
@@ -631,9 +687,17 @@ const TrackSpotlight = memo(function TrackSpotlight({
                         </div>
                     </div>
 
-                    <Text size="xs" className="mt-2 text-amber-100/70">
-                        {triviaTitle}
-                    </Text>
+                    <div className="mt-2">
+                        <PretextMeasuredText
+                            text={triviaTitle}
+                            font={RETRO_SPOTLIGHT_TITLE_FONT}
+                            lineHeight={18}
+                            collapsedLines={compactSpotlight ? 2 : 1}
+                            className="w-full"
+                            lineClassName="text-xs text-amber-100/70"
+                            fallbackClassName="text-xs text-amber-100/70"
+                        />
+                    </div>
                     {freeTrivia.status === "loading" && (
                         <Text size="xs" className="mt-2 animate-pulse text-amber-100/60">
                             Updating spotlight…
@@ -645,23 +709,21 @@ const TrackSpotlight = memo(function TrackSpotlight({
                         </Text>
                     )}
 
-                    {freeTrivia.status === "ready" && freeTrivia.trivia && (
-                        <Text
-                            size="sm"
-                            fw={600}
-                            className="mt-3 text-amber-50"
-                        >
-                            {freeTrivia.trivia.summary}
-                        </Text>
-                    )}
-                    {aiTriviaExpanded && aiTrivia.status === "ready" && aiTrivia.trivia && (
-                        <Text
-                            size="sm"
-                            fw={600}
-                            className="mt-3 text-amber-50"
-                        >
-                            {aiTrivia.trivia.summary}
-                        </Text>
+                    {displaySummary && (
+                        <div className="mt-3">
+                            <PretextMeasuredText
+                                text={displaySummary}
+                                font={RETRO_SPOTLIGHT_BODY_FONT}
+                                lineHeight={22}
+                                collapsedLines={compactSpotlight ? 3 : 4}
+                                expandable={showDetails && summaryLineCount > (compactSpotlight ? 3 : 4)}
+                                className="w-full"
+                                lineClassName="text-sm font-semibold text-amber-50"
+                                fallbackClassName="text-sm font-semibold text-amber-50"
+                                moreLabel="Expand text"
+                                lessLabel="Collapse text"
+                            />
+                        </div>
                     )}
                     {showDetails && (displayFacts.length > 0 || displayImage) ? (
                         <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px] text-amber-100/70">
@@ -675,7 +737,7 @@ const TrackSpotlight = memo(function TrackSpotlight({
                                     }}
                                 />
                             )}
-                            {displayFacts.slice(0, 3).map((fact) => (
+                            {displayFacts.slice(0, visibleFactCount).map((fact) => (
                                 <span
                                     key={fact.label}
                                     className="rounded-full border border-amber-400/20 px-2 py-0.5 text-amber-100/80"
@@ -754,7 +816,7 @@ const TrackSpotlight = memo(function TrackSpotlight({
                     }
                     disabled={!hasMoreContent}
                 >
-                    More
+                    {moreLabel}
                 </button>
             </div>
         </div>

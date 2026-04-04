@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate, useSearchParams } from "@remix-run/reac
 import { ActionIcon, Badge, SegmentedControl, Group } from "@mantine/core";
 import { IconSettings, IconSearch, IconWorld, IconRadio } from "@tabler/icons-react";
 import { motion, useReducedMotion, useScroll, useTransform } from "framer-motion";
+import { CountryFlag } from "~/components/CountryFlag";
 import { usePlayerStore } from "~/state/playerStore";
 
 export default function AppHeader() {
@@ -95,6 +96,13 @@ export default function AppHeader() {
           {isMounted && nowPlaying ? (
             <div className="flex items-center gap-2 text-[11px] text-[var(--rp-muted)] max-w-full">
               <HeaderAudioMeter level={audioLevel} active={isPlaying} />
+              <CountryFlag
+                iso={nowPlaying.countryCode ?? undefined}
+                title={nowPlaying.country}
+                width={20}
+                height={15}
+                className="rounded-[4px] border border-white/10 shadow-[0_4px_10px_rgba(0,0,0,0.24)]"
+              />
               <div className="flex flex-col leading-tight overflow-hidden">
                 <span className="truncate font-bold text-[var(--rp-text)]">{nowPlaying.name}</span>
                 <span className="truncate text-[10px] text-[var(--rp-muted-2)] opacity-80">{nowPlaying.country}</span>

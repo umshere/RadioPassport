@@ -23,7 +23,17 @@ import { useUIStore } from "~/state/uiStore";
 import { usePlayerNoticeStore } from "~/state/playerNoticeStore";
 import { useNowPlayingMetadata } from "~/hooks/useNowPlayingMetadata";
 import { useTrackTrivia } from "~/hooks/useTrackTrivia";
-import { useMediaQuery } from "@mantine/hooks";
+import { useElementSize, useMediaQuery } from "@mantine/hooks";
+import { fitsPretextWidth, getPretextLineCount, getPretextTightWidth } from "~/utils/pretextLayout";
+
+const DOCK_TITLE_FONT =
+  '700 14px "General Sans", "SF Pro Text", "Segoe UI", "Helvetica Neue", Arial, sans-serif';
+const DOCK_SUBTITLE_FONT =
+  '500 12px "General Sans", "SF Pro Text", "Segoe UI", "Helvetica Neue", Arial, sans-serif';
+const DOCK_TRIVIA_FONT =
+  '500 12px "General Sans", "SF Pro Text", "Segoe UI", "Helvetica Neue", Arial, sans-serif';
+const DOCK_BUTTON_FONT =
+  '600 11px "General Sans", "SF Pro Text", "Segoe UI", "Helvetica Neue", Arial, sans-serif';
 
 export default function PlayerDock() {
   const location = useLocation();
@@ -123,6 +133,7 @@ export default function PlayerDock() {
 
   const [isExpanded, setIsExpanded] = useState(false);
   const isMobile = useMediaQuery("(max-width: 1024px)");
+  const { ref: desktopMetaRef, width: desktopMetaWidth } = useElementSize();
   const miniSwipeStartRef = useRef<{ x: number; y: number } | null>(null);
   const miniSwipeDeltaRef = useRef(0);
 
@@ -204,6 +215,32 @@ export default function PlayerDock() {
           ? "Track info unavailable"
           : null;
   const triviaTitle = trackLine ?? statusHint ?? "Listening live";
+  const stackedDesktopMeta = useMemo(() => {
+    if (!desktopMetaWidth || !title) return false;
+    const titleFitsInline = getPretextLineCount(title, DOCK_TITLE_FONT, Math.floor(desktopMetaWidth * 0.52), 18) <= 1;
+    const subtitleFitsInline = !subtitle || getPretextLineCount(subtitle, DOCK_SUBTITLE_FONT, Math.floor(desktopMetaWidth * 0.32), 16) <= 1;
+    return !(titleFitsInline && subtitleFitsInline);
+  }, [desktopMetaWidth, subtitle, title]);
+  const desktopInsightsLabel = useMemo(() => {
+    if (desktopMetaWidth <= 0) return "AI Insights";
+
+    const titleWidth = title ? getPretextTightWidth(title, DOCK_TITLE_FONT) : 0;
+    const subtitleWidth = subtitle ? getPretextTightWidth(subtitle, DOCK_SUBTITLE_FONT) : 0;
+    const triviaWidth = triviaTitle ? Math.min(getPretextTightWidth(triviaTitle, DOCK_TRIVIA_FONT), 260) : 0;
+    const metadataPressure = titleWidth + subtitleWidth + triviaWidth;
+    const labelBudget = Math.floor(desktopMetaWidth * (stackedDesktopMeta ? 0.38 : 0.32));
+
+    if (
+      metadataPressure < desktopMetaWidth * 1.55 &&
+      fitsPretextWidth("AI Insights", DOCK_BUTTON_FONT, labelBudget, 34)
+    ) {
+      return "AI Insights";
+    }
+    if (fitsPretextWidth("Insights", DOCK_BUTTON_FONT, Math.max(labelBudget, 86), 30)) {
+      return "Insights";
+    }
+    return "AI";
+  }, [desktopMetaWidth, stackedDesktopMeta, subtitle, title, triviaTitle]);
   const lastTrackKeyRef = useRef<string>("");
   const lastStationRef = useRef<string | null>(null);
 
@@ -532,8 +569,8 @@ export default function PlayerDock() {
             </div>
 
             {/* Station Info & Tuner */}
-            <div className="flex-1 min-w-0 flex flex-col justify-center gap-1.5">
-              <div className="flex items-baseline gap-3">
+            <div ref={desktopMetaRef} className="flex-1 min-w-0 flex flex-col justify-center gap-1.5">
+              <div className={stackedDesktopMeta ? "space-y-0.5" : "flex items-baseline gap-3"}>
                 <Text size="sm" fw={700} className="truncate text-amber-50">
                   {title}
                 </Text>
@@ -545,42 +582,9 @@ export default function PlayerDock() {
                 <Text size="xs" className="truncate text-amber-100/70">
                   {triviaTitle}
                 </Text>
-                {isMobile ? (
-                  <button
-                    type="button"
-                    className="inline-flex items-center gap-2 rounded-full border border-amber-400/50 bg-amber-500/15 px-2.5 py-1 text-[11px] font-semibold text-amber-100 hover:border-amber-400/70"
-                    onClick={handleOpenInsights}
-                    aria-label="Open AI insights"
-                  >
-                    <IconSparkles size={12} />
-                    AI Insights
-                  </button>
-                ) : (
-                  <Popover
-                    opened={insightsOpen}
-                    onChange={setInsightsOpen}
-                    position="top"
-                    withArrow
-                    shadow="md"
-                    width={280}
-                    withinPortal
-                  >
-                    <Popover.Target>
-                      <button
-                        type="button"
-                        className="inline-flex items-center gap-2 rounded-full border border-amber-400/50 bg-amber-500/15 px-2.5 py-1 text-[11px] font-semibold text-amber-100 hover:border-amber-400/70"
-                        onClick={handleToggleInsights}
-                        aria-label="Toggle AI insights"
-                      >
-                        <IconSparkles size={12} />
-                        AI Insights
-                      </button>
-                    </Popover.Target>
-                    <Popover.Dropdown className="border border-amber-400/20 bg-[#12151c] shadow-2xl">
-                      {triviaContent}
-                    </Popover.Dropdown>
-                  </Popover>
-                )}
+                <Text size="xs" className="font-mono uppercase tracking-[0.22em] text-amber-100/50">
+                  {frequency} MHz
+                </Text>
               </div>
               {notice && (
                 <div
@@ -655,68 +659,95 @@ export default function PlayerDock() {
             </div>
 
             {/* Controls - Vibrant style */}
-            <div className="flex items-center gap-2">
-              <Tooltip label="Quick Retune" position="top" withArrow>
-                <button
-                  className="flex h-10 w-10 items-center justify-center rounded-full border border-amber-400/30 bg-[#161a22] text-amber-100 hover:border-amber-400/60 transition-all active:scale-95 shadow-md"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    toggleQuickRetune();
-                  }}
-                  aria-label="Quick Retune"
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 rounded-full border border-white/10 bg-[#141822] px-2 py-2 shadow-[0_8px_20px_rgba(0,0,0,0.28)]">
+                <Popover
+                  opened={insightsOpen}
+                  onChange={setInsightsOpen}
+                  position="top"
+                  withArrow
+                  shadow="md"
+                  width={280}
+                  withinPortal
                 >
-                  <IconMapPin size={18} />
-                </button>
-              </Tooltip>
+                  <Popover.Target>
+                    <button
+                      type="button"
+                      className="inline-flex h-9 items-center gap-2 rounded-full border border-amber-400/35 bg-amber-500/12 px-3 text-[11px] font-semibold text-amber-100 hover:border-amber-400/70"
+                      onClick={handleToggleInsights}
+                      aria-label="Toggle AI insights"
+                    >
+                      <IconSparkles size={12} />
+                      {desktopInsightsLabel}
+                    </button>
+                  </Popover.Target>
+                  <Popover.Dropdown className="border border-amber-400/20 bg-[#12151c] shadow-2xl">
+                    {triviaContent}
+                  </Popover.Dropdown>
+                </Popover>
 
-              <div className="h-8 w-px bg-white/10 mx-1" />
+                <Tooltip label="Quick Retune" position="top" withArrow>
+                  <button
+                    className="flex h-9 w-9 items-center justify-center rounded-full border border-amber-400/22 bg-[#161a22] text-amber-100 hover:border-amber-400/60 transition-all active:scale-95 shadow-md"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleQuickRetune();
+                    }}
+                    aria-label="Quick Retune"
+                  >
+                    <IconMapPin size={17} />
+                  </button>
+                </Tooltip>
+              </div>
 
-              <Tooltip label="Previous" position="top" withArrow>
-                <button
-                  className="flex h-10 w-10 items-center justify-center rounded-full bg-[#151922] text-amber-100/70 hover:text-amber-100 transition-all active:scale-95 shadow-sm"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handlePrev();
-                  }}
-                  aria-label="Previous"
-                >
-                  <IconPlayerSkipBackFilled size={18} />
-                </button>
-              </Tooltip>
+              <div className="flex items-center gap-2 rounded-full border border-white/10 bg-[#141822] px-2 py-2 shadow-[0_8px_20px_rgba(0,0,0,0.28)]">
+                <Tooltip label="Previous" position="top" withArrow>
+                  <button
+                    className="flex h-10 w-10 items-center justify-center rounded-full bg-[#151922] text-amber-100/70 hover:text-amber-100 transition-all active:scale-95 shadow-sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handlePrev();
+                    }}
+                    aria-label="Previous"
+                  >
+                    <IconPlayerSkipBackFilled size={18} />
+                  </button>
+                </Tooltip>
 
-              <Tooltip label={isPlaying ? "Pause" : "Play"} position="top" withArrow>
-                <motion.button
-                  className="flex h-14 w-14 items-center justify-center rounded-full text-white transition-all"
-                  style={{
-                    background: 'linear-gradient(135deg, #f6c86f 0%, #f1aa45 55%, #e99f2b 100%)',
-                    boxShadow: '0 10px 30px -6px rgba(246,200,111,0.45), 0 0 0 2px rgba(255,210,136,0.2)',
-                  }}
-                  whileHover={{ scale: 1.08 }}
-                  whileTap={{ scale: 0.95 }}
-                  animate={isPlaying ? { boxShadow: ['0 10px 30px -6px rgba(246,200,111,0.45)', '0 12px 36px -6px rgba(246,200,111,0.7)', '0 10px 30px -6px rgba(246,200,111,0.45)'] } : {}}
-                  transition={isPlaying ? { duration: 1.5, repeat: Infinity } : {}}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    togglePlay();
-                  }}
-                  aria-label={isPlaying ? "Pause" : "Play"}
-                >
-                  {isPlaying ? <IconPlayerPauseFilled size={24} /> : <IconPlayerPlayFilled size={24} className="ml-0.5" />}
-                </motion.button>
-              </Tooltip>
+                <Tooltip label={isPlaying ? "Pause" : "Play"} position="top" withArrow>
+                  <motion.button
+                    className="flex h-14 w-14 items-center justify-center rounded-full text-white transition-all"
+                    style={{
+                      background: 'linear-gradient(135deg, #f6c86f 0%, #f1aa45 55%, #e99f2b 100%)',
+                      boxShadow: '0 10px 30px -6px rgba(246,200,111,0.45), 0 0 0 2px rgba(255,210,136,0.2)',
+                    }}
+                    whileHover={{ scale: 1.08 }}
+                    whileTap={{ scale: 0.95 }}
+                    animate={isPlaying ? { boxShadow: ['0 10px 30px -6px rgba(246,200,111,0.45)', '0 12px 36px -6px rgba(246,200,111,0.7)', '0 10px 30px -6px rgba(246,200,111,0.45)'] } : {}}
+                    transition={isPlaying ? { duration: 1.5, repeat: Infinity } : {}}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      togglePlay();
+                    }}
+                    aria-label={isPlaying ? "Pause" : "Play"}
+                  >
+                    {isPlaying ? <IconPlayerPauseFilled size={24} /> : <IconPlayerPlayFilled size={24} className="ml-0.5" />}
+                  </motion.button>
+                </Tooltip>
 
-              <Tooltip label="Next" position="top" withArrow>
-                <button
-                  className="flex h-10 w-10 items-center justify-center rounded-full bg-[#151922] text-amber-100/70 hover:text-amber-100 transition-all active:scale-95 shadow-sm"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleNext();
-                  }}
-                  aria-label="Next"
-                >
-                  <IconPlayerSkipForwardFilled size={18} />
-                </button>
-              </Tooltip>
+                <Tooltip label="Next" position="top" withArrow>
+                  <button
+                    className="flex h-10 w-10 items-center justify-center rounded-full bg-[#151922] text-amber-100/70 hover:text-amber-100 transition-all active:scale-95 shadow-sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleNext();
+                    }}
+                    aria-label="Next"
+                  >
+                    <IconPlayerSkipForwardFilled size={18} />
+                  </button>
+                </Tooltip>
+              </div>
             </div>
           </div>
         </motion.div>

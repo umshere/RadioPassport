@@ -20,13 +20,22 @@ import {
   IconClock,
 } from "@tabler/icons-react";
 import { CountryFlag } from "~/components/CountryFlag";
+import { PretextMeasuredText } from "~/components/PretextMeasuredText";
 import type { Country, Station } from "~/types/radio";
 import type { TrackTrivia } from "~/types/trivia";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNowPlayingMetadata } from "~/hooks/useNowPlayingMetadata";
 import { useTrackTrivia } from "~/hooks/useTrackTrivia";
 import { useUIStore } from "~/state/uiStore";
-import { useMediaQuery } from "@mantine/hooks";
+import { useElementSize, useMediaQuery } from "@mantine/hooks";
+import { fitsPretextWidth } from "~/utils/pretextLayout";
+
+const PRETEXT_SPOTLIGHT_FONT =
+  '600 12px "General Sans", "SF Pro Text", "Segoe UI", "Helvetica Neue", Arial, sans-serif';
+const COUNTRY_ACTION_FONT =
+  '600 12px "General Sans", "SF Pro Text", "Segoe UI", "Helvetica Neue", Arial, sans-serif';
+const COUNTRY_CHIP_FONT =
+  '600 10px "General Sans", "SF Pro Text", "Segoe UI", "Helvetica Neue", Arial, sans-serif';
 
 type CountryOverviewProps = {
   selectedCountry: string;
@@ -63,6 +72,8 @@ export function CountryOverview({
 }: CountryOverviewProps) {
   const { aiTriviaExpanded, setAiTriviaExpanded, setInsightsOpen } = useUIStore();
   const isDesktop = useMediaQuery("(min-width: 1024px)");
+  const { ref: topActionRef, width: topActionWidth } = useElementSize();
+  const { ref: mobileHeaderRef, width: mobileHeaderWidth } = useElementSize();
   const { scrollY } = useScroll();
   const parallaxDistance = isDesktop ? 90 : 0;
   const leftColumnY = useTransform(scrollY, [0, 600], [0, -parallaxDistance]);
@@ -129,6 +140,31 @@ export function CountryOverview({
   }, [stations]);
   const [showAllLanguages, setShowAllLanguages] = useState(false);
   const [showAllGenres, setShowAllGenres] = useState(false);
+  const starterStations = useMemo(() => stations.slice(0, 3), [stations]);
+  const backButtonLabel = useMemo(() => {
+    if (topActionWidth <= 0) return "Back to Atlas";
+    const stationBadgeLabel = `${stationCount.toLocaleString()} stations`;
+    const fullFits =
+      fitsPretextWidth("Back to Atlas", COUNTRY_ACTION_FONT, Math.floor(topActionWidth), 62) &&
+      fitsPretextWidth(stationBadgeLabel, COUNTRY_ACTION_FONT, Math.floor(topActionWidth * 0.45), 58);
+    return fullFits ? "Back to Atlas" : "Back";
+  }, [stationCount, topActionWidth]);
+  const mobileInsightsLabel = useMemo(() => {
+    if (mobileHeaderWidth <= 0) return "Insights";
+    const countryWidth = selectedCountry
+      ? Math.min(220, Math.ceil(selectedCountry.length * 8.2))
+      : 0;
+    const stationWidth = displayStation?.name
+      ? Math.min(240, Math.ceil(displayStation.name.length * 7.2))
+      : 120;
+    const reservedWidth = 36 + 24 + countryWidth + stationWidth + 34;
+    const fullFits = fitsPretextWidth("Insights", COUNTRY_CHIP_FONT, Math.floor(mobileHeaderWidth - reservedWidth), 34);
+    return fullFits ? "Insights" : "AI";
+  }, [displayStation?.name, mobileHeaderWidth, selectedCountry]);
+  const spotlightActionLabel = useMemo(() => {
+    const hasTightSpotlight = !isDesktop || Boolean(displayStation?.name && displayStation.name.length > 24);
+    return hasTightSpotlight ? "AI insights" : "Open AI insights";
+  }, [displayStation?.name, isDesktop]);
 
   const syncDialFromIndex = useCallback((index: number) => {
     const bounded = Math.max(0, Math.min(index, totalStations - 1));
@@ -336,14 +372,14 @@ export function CountryOverview({
       style={{ position: 'relative' }}
     >
       <div className="relative z-10 space-y-6">
-        <div className="flex flex-wrap items-center justify-between gap-3">
+        <div ref={topActionRef} className="flex flex-wrap items-center justify-between gap-3">
           <button
             type="button"
             onClick={onBack}
             className="inline-flex h-10 items-center gap-2 rounded-full border border-white/10 bg-black/40 px-4 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--rp-text)] shadow-[0_10px_24px_rgba(0,0,0,0.45)] hover:bg-black/60"
           >
             <IconArrowLeft size={14} />
-            Back to Atlas
+            {backButtonLabel}
           </button>
           <Badge
             radius="xl"
@@ -357,7 +393,7 @@ export function CountryOverview({
 
         <div className="sticky top-4 z-20 md:hidden">
           <div className="rounded-2xl border border-white/10 bg-black/60 px-3 py-2 shadow-[0_10px_24px_rgba(0,0,0,0.6)] backdrop-blur">
-            <div className="flex items-center gap-3">
+            <div ref={mobileHeaderRef} className="flex items-center gap-3">
               <CountryFlag
                 iso={selectedCountryMeta?.iso_3166_1}
                 title={`${selectedCountry} flag`}
@@ -381,7 +417,7 @@ export function CountryOverview({
                 }}
               >
                 <IconSparkles size={12} />
-                Insights
+                {mobileInsightsLabel}
               </button>
             </div>
           </div>
@@ -661,9 +697,18 @@ export function CountryOverview({
                             {hasContent && (
                               <>
                                 {display?.summary && (
-                                  <Text size="xs" c="var(--rp-text)" fw={600} lineClamp={2}>
-                                    {display?.summary}
-                                  </Text>
+                                  <PretextMeasuredText
+                                    text={display.summary}
+                                    font={PRETEXT_SPOTLIGHT_FONT}
+                                    lineHeight={18}
+                                    collapsedLines={2}
+                                    expandable
+                                    className="text-xs"
+                                    lineClassName="text-[var(--rp-text)] font-semibold"
+                                    fallbackClassName="text-[var(--rp-text)] font-semibold text-xs"
+                                    moreLabel="Expand brief"
+                                    lessLabel="Collapse brief"
+                                  />
                                 )}
                                 {(display?.imageUrl || (display?.facts?.length ?? 0) > 0) && (
                                   <div className="mt-2 flex flex-wrap items-center gap-3">
@@ -738,7 +783,7 @@ export function CountryOverview({
                                 }}
                               >
                                 <IconSparkles size={12} />
-                                Open AI insights
+                                {spotlightActionLabel}
                               </button>
                             )}
                             {!canRequestAi && !hasContent && freeTrivia.status !== "loading" && (
@@ -878,8 +923,41 @@ export function CountryOverview({
                 )}
               </div>
             ) : (
-              <div className="rounded-3xl border border-white/10 bg-[var(--rp-card)] p-6 text-sm text-[var(--rp-muted)] shadow-[0_12px_24px_rgba(0,0,0,0.45)]">
-                Play any station to unlock tuning controls and local insights.
+              <div className="rounded-3xl border border-white/10 bg-[var(--rp-card)] p-5 shadow-[0_12px_24px_rgba(0,0,0,0.45)] md:p-6">
+                <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--rp-muted-2)]">
+                  Signal Primer
+                </div>
+                <div className="mt-3 grid gap-5 md:grid-cols-[1.1fr_0.9fr]">
+                  <div>
+                    <Title order={3} className="text-xl font-semibold text-[var(--rp-text)]">
+                      Choose a first station to open the local tuning console.
+                    </Title>
+                    <Text size="sm" c="var(--rp-muted)" className="mt-3 max-w-md leading-7">
+                      Start with one of the strongest signals in {selectedCountry}. Once you tune in, the spotlight,
+                      track context, and AI notes will lock to the active station.
+                    </Text>
+                  </div>
+                  <div className="space-y-2">
+                    {starterStations.map((station) => (
+                      <button
+                        key={station.uuid}
+                        type="button"
+                        onClick={() => onSelectStation(station)}
+                        className="flex w-full items-center justify-between gap-3 rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-left transition hover:bg-black/45"
+                      >
+                        <div className="min-w-0">
+                          <div className="truncate text-sm font-semibold text-[var(--rp-text)]">{station.name}</div>
+                          <div className="truncate text-[11px] font-medium text-[var(--rp-muted)]">
+                            {[station.language, station.state].filter(Boolean).join(" • ") || "Live station"}
+                          </div>
+                        </div>
+                        <span className="rounded-full border border-[rgba(245,177,45,0.35)] bg-[rgba(245,177,45,0.12)] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--rp-gold)]">
+                          Tune in
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
             )}
           </div>
@@ -913,7 +991,7 @@ export function CountryOverview({
               </div>
             ) : (
               <div className="rounded-3xl border border-white/10 bg-[var(--rp-card)] p-4 text-sm text-[var(--rp-muted)] shadow-[0_12px_24px_rgba(0,0,0,0.45)]">
-                Choose a station to unlock your local listening ritual.
+                Pick one of the starter stations to unlock local track notes, tuning controls, and the active spotlight.
               </div>
             )}
           </motion.div>

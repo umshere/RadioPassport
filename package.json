@@ -12,6 +12,7 @@
         "test": "vitest run"
     },
     "dependencies": {
+        "@chenglou/pretext": "^0.0.3",
         "@emotion/react": "^11.14.0",
         "@google/genai": "^1.0.0",
         "@mantine/carousel": "^8.3.5",
