@@ -21,7 +21,7 @@ const OPENROUTER_TRIVIA_MODELS = (
   .split(",")
   .map((model) => model.trim())
   .filter(Boolean);
-const GEMINI_MODEL = process.env.GEMINI_MODEL ?? "gemini-2.0-flash";
+const GEMINI_MODEL = process.env.GEMINI_MODEL ?? "gemini-2.5-flash-lite";
 const GEMINI_API_VERSION = process.env.GEMINI_API_VERSION ?? "v1beta";
 const OLLAMA_MODEL = process.env.OLLAMA_MODEL ?? "radio-passport";
 const OLLAMA_URL = process.env.OLLAMA_URL ?? "";

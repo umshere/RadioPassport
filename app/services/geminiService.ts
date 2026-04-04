@@ -20,6 +20,10 @@ const getApiKey = () => {
 
 const apiKey = getApiKey();
 const ai = apiKey ? new GoogleGenAI({ apiKey }) : null;
+const GEMINI_MODEL =
+  (typeof import.meta !== "undefined" && import.meta.env?.VITE_GEMINI_MODEL) ||
+  (typeof process !== "undefined" && (process.env?.VITE_GEMINI_MODEL || process.env?.GEMINI_MODEL)) ||
+  "gemini-2.5-flash-lite";
 
 const DEFAULT_SEGMENTS: CurationSegment[] = [
   { title: "Global Top 40", description: "The most listened frequencies worldwide.", query: { tag: "pop" } },
@@ -72,7 +76,7 @@ export const geminiService = {
 
     try {
       const response = await callAiWithRetry({
-        model: "gemini-2.0-flash-lite-preview-02-05", // Updated model
+        model: GEMINI_MODEL,
         contents: prompt,
         config: {
           systemInstruction: `You are the RadioPassport AI Agent. Translate human requests into search parameters.
@@ -118,7 +122,7 @@ export const geminiService = {
 
     try {
       const response = await callAiWithRetry({
-        model: "gemini-2.0-flash-lite-preview-02-05",
+        model: GEMINI_MODEL,
         contents: promptText,
         config: {
           systemInstruction: `You are the RadioPassport Captain. You provide sonic travel intelligence.
@@ -191,7 +195,7 @@ export const geminiService = {
     if (!apiKey) return DEFAULT_SEGMENTS;
     try {
       const response = await callAiWithRetry({
-        model: "gemini-2.0-flash-lite-preview-02-05",
+        model: GEMINI_MODEL,
         contents: "Generate 4 creative 'Sonic Playlists' for a global radio app. Return a JSON array of objects with title, description, and query (country/tag).",
         config: {
           systemInstruction: "Generate 4 creative 'Sonic Playlists' for a radio explorer. Return ONLY a JSON array of CurationSegment objects.",

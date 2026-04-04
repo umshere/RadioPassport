@@ -817,7 +817,7 @@ export function HeroSection({
       {
         id: "dial",
         zone: "right",
-        label: heroInsightLinks.length ? "links" : "dial",
+        label: heroInsightLinks.length ? "sources" : "dial",
         text: tagOrLinkText,
         compactText: heroInsightLinks[0]?.label ?? "dial cues",
         width: 220,
@@ -1032,7 +1032,7 @@ export function HeroSection({
           <motion.div
             animate={{ opacity: activeSignalZone === "right" ? 0.95 : 0.62, y: activeSignalZone === "right" ? -2 : 0 }}
             transition={{ duration: 0.22, ease: "easeOut" }}
-            className="pointer-events-auto absolute left-[72%] top-[58%] flex items-center gap-2"
+            className="pointer-events-auto absolute left-[72%] top-[58%] z-20 flex items-center gap-2"
           >
             {heroInsightLinks.map((link) => {
               const Icon = renderHeroLinkIcon(link.kind);
@@ -1042,9 +1042,11 @@ export function HeroSection({
                   href={link.url}
                   target="_blank"
                   rel="noreferrer"
-                  className="flex h-9 w-9 items-center justify-center rounded-full border border-[rgba(245,177,45,0.18)] bg-[rgba(8,10,16,0.42)] text-[var(--rp-gold)] shadow-[0_10px_22px_rgba(0,0,0,0.24)] backdrop-blur-sm"
+                  className="pointer-events-auto flex h-9 w-9 items-center justify-center rounded-full border border-[rgba(245,177,45,0.18)] bg-[rgba(8,10,16,0.42)] text-[var(--rp-gold)] shadow-[0_10px_22px_rgba(0,0,0,0.24)] backdrop-blur-sm"
                   aria-label={link.label}
                   title={link.label}
+                  onPointerDown={(event) => event.stopPropagation()}
+                  onClick={(event) => event.stopPropagation()}
                 >
                   <Icon size={16} />
                 </a>

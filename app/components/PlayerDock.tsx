@@ -219,6 +219,45 @@ export default function PlayerDock() {
           ? "Track info unavailable"
           : null;
   const triviaTitle = trackLine ?? statusHint ?? "Listening live";
+  const stationFactItems = useMemo(
+    () =>
+      [
+        nowPlaying?.country ? { label: "Country", value: nowPlaying.country } : null,
+        nowPlaying?.state ? { label: "Region", value: nowPlaying.state } : null,
+        nowPlaying?.language ? { label: "Language", value: nowPlaying.language } : null,
+        nowPlaying?.bitrate ? { label: "Quality", value: `${nowPlaying.bitrate} kbps` } : null,
+        nowPlaying?.codec ? { label: "Codec", value: nowPlaying.codec.toUpperCase() } : null,
+      ].filter(Boolean) as Array<{ label: string; value: string }>,
+    [nowPlaying?.bitrate, nowPlaying?.codec, nowPlaying?.country, nowPlaying?.language, nowPlaying?.state]
+  );
+  const mergedTrivia = useMemo(() => {
+    const primary = aiTrivia.trivia ?? freeTrivia.trivia;
+    const summary = aiTrivia.trivia?.summary ?? freeTrivia.trivia?.summary ?? null;
+    const imageUrl = aiTrivia.trivia?.imageUrl ?? freeTrivia.trivia?.imageUrl ?? null;
+    const facts = [
+      ...(aiTrivia.trivia?.facts ?? []),
+      ...(freeTrivia.trivia?.facts ?? []),
+      ...stationFactItems,
+    ].filter((fact, index, list) => {
+      return list.findIndex(
+        (candidate) =>
+          candidate.label.toLowerCase() === fact.label.toLowerCase() &&
+          candidate.value.toLowerCase() === fact.value.toLowerCase()
+      ) === index;
+    });
+    const links = [...(aiTrivia.trivia?.links ?? []), ...(freeTrivia.trivia?.links ?? [])].filter(
+      (link, index, list) => list.findIndex((candidate) => candidate.url === link.url) === index
+    );
+    return primary || summary || facts.length || links.length || imageUrl
+      ? {
+          source: aiTrivia.trivia ? "ai" : freeTrivia.trivia ? "free" : "station",
+          summary,
+          imageUrl,
+          facts,
+          links,
+        }
+      : null;
+  }, [aiTrivia.trivia, freeTrivia.trivia, stationFactItems]);
   const canInlineDesktopMeta = useMemo(() => {
     if (!desktopMetaWidth || !title) return false;
     const titleFitsInline =
@@ -262,7 +301,6 @@ export default function PlayerDock() {
     const stationId = nowPlaying?.uuid ?? null;
     if (stationId !== lastStationRef.current) {
       setAiTriviaExpanded(false);
-      setInsightsOpen(false);
       setWarmupSeen(false);
       lastStationRef.current = stationId;
       if (trackKey) {
@@ -272,7 +310,6 @@ export default function PlayerDock() {
     }
     if (trackKey && trackKey !== lastTrackKeyRef.current) {
       setAiTriviaExpanded(false);
-      setInsightsOpen(false);
       setWarmupSeen(false);
       lastTrackKeyRef.current = trackKey;
     }
@@ -393,21 +430,71 @@ export default function PlayerDock() {
         <Text size="xs" className="text-amber-100/70">
           {triviaTitle}
         </Text>
-        {renderTriviaBody(freeTrivia, "details")}
+        {mergedTrivia ? (
+          <div className="space-y-2">
+            {mergedTrivia.imageUrl && mergedTrivia.summary ? (
+              <div className="flex items-center gap-3">
+                <img
+                  src={mergedTrivia.imageUrl}
+                  alt="Track artwork"
+                  className="h-12 w-12 rounded-lg object-cover shadow-sm"
+                  onError={(event) => {
+                    event.currentTarget.style.display = "none";
+                  }}
+                />
+                <div className="min-w-0">
+                  <Text size="sm" fw={600} className="text-amber-50">
+                    {mergedTrivia.summary}
+                  </Text>
+                </div>
+              </div>
+            ) : mergedTrivia.summary ? (
+              <Text size="sm" fw={600} className="text-amber-50">
+                {mergedTrivia.summary}
+              </Text>
+            ) : null}
+            <div className="space-y-1 text-xs text-amber-100/70">
+              {mergedTrivia.facts.slice(0, 6).map((fact) => (
+                <div key={`${fact.label}-${fact.value}`} className="flex items-center gap-2">
+                  <span className="font-semibold text-amber-50">{fact.label}</span>
+                  <span className="text-amber-100/50">•</span>
+                  <span>{fact.value}</span>
+                </div>
+              ))}
+            </div>
+            {mergedTrivia.links.length > 0 && (
+              <div className="flex flex-wrap gap-2 text-[11px]">
+                {mergedTrivia.links.map((link) => {
+                  const Icon = renderLinkIcon(link.kind);
+                  return (
+                    <a
+                      key={link.url}
+                      href={link.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-amber-400/30 bg-[#141822] text-amber-100/80 hover:border-amber-400/60 hover:text-amber-100"
+                      aria-label={link.label}
+                      title={link.label}
+                    >
+                      <Icon size={16} />
+                    </a>
+                  );
+                })}
+              </div>
+            )}
+            <Text size="xs" className="text-amber-100/60">
+              Source: {mergedTrivia.source === "ai" ? "AI + metadata" : mergedTrivia.source === "free" ? "MusicBrainz + station" : "Station metadata"}
+            </Text>
+          </div>
+        ) : (
+          renderTriviaBody(freeTrivia, "details")
+        )}
         {showEmptyHint && !warmupSeen && (
           <div className="rounded-lg border border-amber-400/30 bg-[#151922] px-3 py-2 text-[11px] text-amber-100/70 shadow-sm">
             <div className="font-semibold text-amber-50">Spotlight is warming up.</div>
             <div className="text-amber-100/60">Ask AI for quick facts while we wait for metadata.</div>
           </div>
         )}
-        {aiTriviaExpanded && (() => {
-          const content = renderTriviaBody(aiTrivia, "AI insights");
-          return content ? (
-            <div className="rounded-xl border border-amber-400/20 bg-[#141822] px-3 py-2 shadow-sm">
-              {content}
-            </div>
-          ) : null;
-        })()}
         {!aiTriviaExpanded && canRequestAi && (
           <button
             type="button"
