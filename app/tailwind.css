@@ -257,16 +257,21 @@
   .app-bg {
     position: relative;
     background: radial-gradient(
-        180% 140% at 8% 12%,
-        rgba(92, 158, 173, 0.18) 0%,
-        transparent 60%
+        140% 120% at 14% 10%,
+        rgba(245, 177, 45, 0.12) 0%,
+        transparent 42%
       ),
       radial-gradient(
-        140% 120% at 90% 8%,
-        rgba(209, 73, 91, 0.12) 0%,
+        110% 100% at 88% 8%,
+        rgba(92, 158, 173, 0.08) 0%,
         transparent 65%
       ),
-      linear-gradient(180deg, #010b17 0%, #031f3c 52%, #02182d 100%);
+      radial-gradient(
+        120% 120% at 50% 42%,
+        rgba(15, 20, 28, 0.32) 0%,
+        transparent 60%
+      ),
+      linear-gradient(180deg, #05070c 0%, #071019 52%, #07111b 100%);
     color: rgba(244, 237, 224, 0.9);
     overflow: hidden;
   }
@@ -277,17 +282,17 @@
     inset: -20%;
     pointer-events: none;
     background: radial-gradient(
-        120% 120% at 25% 15%,
-        rgba(92, 158, 173, 0.18) 0%,
-        transparent 65%
+        120% 120% at 24% 10%,
+        rgba(245, 177, 45, 0.12) 0%,
+        transparent 52%
       ),
       radial-gradient(
-        120% 120% at 75% 10%,
-        rgba(244, 237, 224, 0.12) 0%,
+        120% 120% at 78% 14%,
+        rgba(92, 158, 173, 0.08) 0%,
         transparent 70%
       );
     mix-blend-mode: screen;
-    opacity: 0.7;
+    opacity: 0.42;
     z-index: 0;
   }
 
@@ -297,10 +302,10 @@
     inset: 0;
     pointer-events: none;
     background: radial-gradient(
-      circle at 50% 35%,
+      circle at 50% 38%,
       transparent 0%,
-      rgba(2, 12, 25, 0.55) 68%,
-      rgba(1, 6, 14, 0.85) 100%
+      rgba(3, 10, 18, 0.42) 70%,
+      rgba(2, 7, 14, 0.74) 100%
     );
     z-index: 0;
   }

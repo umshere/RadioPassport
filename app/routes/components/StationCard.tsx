@@ -1,14 +1,15 @@
-import { motion } from "framer-motion";
 import { useMemo } from "react";
+import { useElementSize } from "@mantine/hooks";
 import { Text, ActionIcon, Button, Tooltip } from "@mantine/core";
 import { IconPlayerPlayFilled, IconHeart, IconInfoCircle } from "@tabler/icons-react";
+import { PretextMeasuredText } from "~/components/PretextMeasuredText";
 import type { Station } from "~/types/radio";
 import { vibrate } from "~/utils/haptics";
 import { deriveStationHealth } from "~/utils/stationMeta";
+import { getPretextLineCount } from "~/utils/pretextLayout";
 
 type StationCardProps = {
   station: Station;
-  index: number;
   isCurrent: boolean;
   onPlay: (station: Station) => void;
   isFavorite?: boolean;
@@ -16,6 +17,20 @@ type StationCardProps = {
   stationRef?: (element: HTMLDivElement | null) => void;
   isUnavailable?: boolean;
 };
+
+const STATION_TITLE_FONT =
+  '700 17px "General Sans", "SF Pro Text", "Segoe UI", "Helvetica Neue", Arial, sans-serif';
+const STATION_NOTE_FONT =
+  '600 12px "General Sans", "SF Pro Text", "Segoe UI", "Helvetica Neue", Arial, sans-serif';
+
+function compactSignalLabel(label?: string | null, isUnavailable = false): string | null {
+  if (isUnavailable) return "Unavailable";
+  if (!label) return null;
+  return label
+    .replace("Last checked OK · ", "")
+    .replace("Last check failed · ", "Failed · ")
+    .replace("Stream unavailable", "Unavailable");
+}
 
 // Generate a vibrant gradient background for stations without favicons
 function generateFallbackGradient(name: string): string {
@@ -56,7 +71,6 @@ function getStatusDisplay(status?: string | null): { icon: string; label: string
 
 export function StationCard({
   station,
-  index,
   isCurrent,
   onPlay,
   isFavorite = false,
@@ -64,18 +78,35 @@ export function StationCard({
   stationRef,
   isUnavailable = false,
 }: StationCardProps) {
+  const { ref: contentRef, width: contentWidth } = useElementSize();
   const hasStream = Boolean(station.streamUrl);
   const healthMeta = deriveStationHealth(station);
   const streamCandidate = (station.streamUrl ?? station.url ?? "").trim().toLowerCase();
   const isHttpStream = streamCandidate.startsWith("http://");
   const isHlsStream = Boolean(station.hls);
-
-  // Simplified: show only language OR primary genre (not both)
-  const secondaryInfo = useMemo(() => {
-    if (station.language) return station.language;
-    if (station.tagList?.length) return station.tagList[0];
-    return null;
-  }, [station.language, station.tagList]);
+  const signalLine = compactSignalLabel(healthMeta?.label, isUnavailable);
+  const languageLine = station.language?.trim() || "Mixed";
+  const regionLine = station.state?.trim() || "National";
+  const usableWidth = Math.max(140, Math.floor(contentWidth || 0));
+  const titleLineCount = useMemo(() => {
+    if (!usableWidth) return 1;
+    return getPretextLineCount(station.name, STATION_TITLE_FONT, usableWidth, 22) || 1;
+  }, [station.name, usableWidth]);
+  const compactMeta = usableWidth < 220 || titleLineCount > 1;
+  const qualityLine = useMemo(() => {
+    const parts: string[] = [];
+    if (station.bitrate > 0) parts.push(`${station.bitrate} kbps`);
+    if (station.codec && !compactMeta) parts.push(station.codec.toUpperCase());
+    if (parts.length === 0 && station.codec) parts.push(station.codec.toUpperCase());
+    return parts.join(" • ") || "Open stream";
+  }, [compactMeta, station.bitrate, station.codec]);
+  const styleLine = useMemo(() => {
+    if (!station.tagList?.length) return null;
+    const visibleCount = compactMeta ? 2 : 4;
+    const visible = station.tagList.slice(0, visibleCount);
+    const remaining = station.tagList.length - visible.length;
+    return remaining > 0 ? `${visible.join(", ")} +${remaining}` : visible.join(", ");
+  }, [compactMeta, station.tagList]);
 
   // Diagnostics for tooltip (hidden by default)
   const diagnosticInfo = useMemo(() => {
@@ -117,14 +148,7 @@ export function StationCard({
     };
 
   return (
-    <motion.div
-      ref={stationRef}
-      initial={{ opacity: 0, scale: 0.95 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{ delay: index * 0.02 }}
-      whileHover={{ y: -4 }}
-      className="h-full"
-    >
+    <div ref={stationRef} className="h-full">
       <div
         className={`station-card group h-full flex flex-col rounded-[2rem] p-5 transition-all duration-300 hover:-translate-y-1.5 ${cardStatusClass}`}
         style={{
@@ -162,44 +186,41 @@ export function StationCard({
                   : '0 4px 12px -4px rgba(0, 0, 0, 0.08)',
               }}
             >
-              {station.favicon ? (
-                <img
-                  src={station.favicon}
-                  alt={station.name}
-                  className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                  loading="lazy"
-                  onError={(e) => {
-                    // Hide broken image and show fallback
-                    e.currentTarget.style.display = 'none';
-                    const fallback = e.currentTarget.nextElementSibling as HTMLElement;
-                    if (fallback) fallback.style.display = 'flex';
-                  }}
-                />
-              ) : null}
-              {/* Always render fallback, hidden when favicon exists and loads */}
               <div
                 className="absolute inset-0 flex h-full w-full items-center justify-center text-white font-bold text-base sm:text-lg"
                 style={{
                   background: fallbackGradient,
-                  display: station.favicon ? 'none' : 'flex'
                 }}
               >
                 {initials}
               </div>
+              {station.favicon ? (
+                <img
+                  src={station.favicon}
+                  alt={station.name}
+                  className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                  loading="lazy"
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none';
+                  }}
+                />
+              ) : null}
             </div>
-            <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+            <div ref={contentRef} className="flex min-w-0 flex-1 flex-col gap-2">
+              <div className="min-w-0" data-testid="station-name">
+                <PretextMeasuredText
+                  text={station.name}
+                  font={STATION_TITLE_FONT}
+                  lineHeight={22}
+                  collapsedLines={2}
+                  lineClassName="text-[15px] font-bold tracking-tight text-[var(--rp-text)]"
+                  fallbackClassName="text-[15px] font-bold tracking-tight text-[var(--rp-text)]"
+                />
+              </div>
+              <Text size="xs" c="var(--rp-muted-2)" className="font-semibold uppercase tracking-[0.18em]">
+                {regionLine}
+              </Text>
               <div className="flex flex-wrap items-center gap-2">
-                <Text
-                  fw={700}
-                  size="md"
-                  c="var(--rp-text)"
-                  lineClamp={1}
-                  data-testid="station-name"
-                  className="tracking-tight"
-                >
-                  {station.name}
-                </Text>
-                {/* User-friendly status badge - simplified */}
                 {statusDisplay && (
                   <div className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold" style={{ background: 'rgba(0,0,0,0.4)', color: 'rgba(248,243,230,0.8)' }}>
                     <span className="opacity-80">{statusDisplay.icon}</span>
@@ -236,11 +257,50 @@ export function StationCard({
                   </Tooltip>
                 )}
               </div>
-              {/* Single secondary info line */}
-              {secondaryInfo && (
-                <Text size="xs" c="var(--rp-muted)" lineClamp={1} className="font-medium">
-                  {secondaryInfo}
-                </Text>
+
+              <div className="grid grid-cols-2 gap-x-3 gap-y-3 pt-1">
+                <div className="min-w-0">
+                  <div className="text-[9px] font-semibold uppercase tracking-[0.18em] text-[var(--rp-muted-2)]">
+                    Language
+                  </div>
+                  <Text size="sm" c="var(--rp-text)" fw={600} className="mt-1 leading-5">
+                    {languageLine}
+                  </Text>
+                </div>
+                <div className="min-w-0">
+                  <div className="text-[9px] font-semibold uppercase tracking-[0.18em] text-[var(--rp-muted-2)]">
+                    Quality
+                  </div>
+                  <Text size="sm" c="var(--rp-text)" fw={600} className="mt-1 leading-5">
+                    {qualityLine}
+                  </Text>
+                </div>
+                <div className="min-w-0 col-span-2">
+                  <div className="text-[9px] font-semibold uppercase tracking-[0.18em] text-[var(--rp-muted-2)]">
+                    Signal
+                  </div>
+                  <Text size="sm" c="var(--rp-text)" fw={600} className="mt-1 leading-5">
+                    {signalLine ?? "Awaiting check"}
+                  </Text>
+                </div>
+              </div>
+
+              {styleLine && (
+                <div className="rounded-[1.2rem] border border-white/8 bg-black/20 px-3 py-2.5">
+                  <div className="text-[9px] font-semibold uppercase tracking-[0.18em] text-[var(--rp-muted-2)]">
+                    Style
+                  </div>
+                  <div className="mt-1">
+                    <PretextMeasuredText
+                      text={styleLine}
+                      font={STATION_NOTE_FONT}
+                      lineHeight={17}
+                      collapsedLines={2}
+                      lineClassName="text-[12px] font-semibold text-[var(--rp-muted)]"
+                      fallbackClassName="text-[12px] font-semibold text-[var(--rp-muted)]"
+                    />
+                  </div>
+                </div>
               )}
             </div>
           </div>
@@ -292,7 +352,7 @@ export function StationCard({
           )}
         </div>
       </div>
-    </motion.div>
+    </div>
   );
 }
 

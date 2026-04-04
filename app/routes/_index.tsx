@@ -42,6 +42,8 @@ import { CollapsibleSection } from "./components/CollapsibleSection";
 import { MobileFilterDrawer } from "./components/MobileFilterDrawer";
 import { JourneyModule } from "./components/JourneyModule";
 import { AISplashScreen, shouldShowAISplash } from "./components/AISplashScreen";
+import { SignalField } from "~/components/SignalField";
+import { SignalBand } from "./components/SignalBand";
 
 
 import Footer from "~/components/Footer";
@@ -134,7 +136,7 @@ import { useUIStore } from "~/state/uiStore";
 
 export default function Index() {
   const hydrated = useHydrated();
-  const [showSplash, setShowSplash] = useState(false);
+  const [showSplash, setShowSplash] = useState<boolean | null>(null);
 
   useEffect(() => {
     if (!hydrated) return;
@@ -685,10 +687,13 @@ export default function Index() {
 
   return (
     <div className="app-bg relative min-h-screen text-[var(--rp-text)] overflow-x-hidden w-full pb-32">
-      {showSplash && <AISplashScreen onComplete={() => setShowSplash(false)} />}
+      {showSplash ? <AISplashScreen onComplete={() => setShowSplash(false)} /> : null}
+      <SignalField />
 
       <main
-        className="relative z-10 flex w-full flex-col gap-0 pt-0 md:pt-2"
+        className={`relative z-10 flex w-full flex-col gap-0 pt-0 md:pt-2 ${
+          showSplash === null ? "opacity-0" : ""
+        }`}
         {...swipeHandlers}
         {...ariaHidden}
       >
@@ -699,22 +704,27 @@ export default function Index() {
         ) : !selectedCountry ? (
           <>
             <HeroSection topCountries={topCountries} totalStations={derived.totalStations} continents={derived.continents.length}
-              nowPlaying={player.nowPlaying} searchQueryRaw={searchDraft} onStartListening={handlers.handleStartListening}
+              nowPlaying={player.nowPlaying} isPlaying={player.isPlaying} searchQueryRaw={searchDraft} onStartListening={handlers.handleStartListening}
               onQuickRetune={handlers.handleQuickRetune} onMissionExploreWorld={() => setViewMode('world')}
               onMissionStayLocal={handlers.handleMissionStayLocal} onHoverSound={triggerHoverStatic}
               onSearch={handleSearchInput}
               onOpenPassport={handleOpenPassport}
             />
 
-            <div className="mx-auto mt-4 flex w-full max-w-7xl flex-col gap-6 px-4 md:mt-6 md:gap-8 md:px-6">
-              <JourneyModule
-                nowPlaying={player.nowPlaying}
-                recentStations={recentStations}
-                topCountries={topCountries}
-                onStartListening={handlers.handleStartListening}
-                onQuickRetune={handlers.handleQuickRetune}
-                onOpenPassport={handleOpenPassport}
-              />
+            <div className="relative z-20 mx-auto -mt-6 flex w-full max-w-7xl flex-col gap-7 px-4 md:-mt-8 md:gap-8 md:px-6">
+              <section className="relative -mx-4 px-4 pt-5 md:-mx-6 md:px-6 md:pt-6">
+                <div className="pointer-events-none absolute left-4 top-5 h-[13rem] w-[30rem] max-w-full rounded-full bg-[radial-gradient(circle_at_16%_18%,rgba(245,177,45,0.11),transparent_46%),radial-gradient(circle_at_72%_58%,rgba(113,154,204,0.06),transparent_36%)] blur-2xl" />
+                <div className="relative">
+                  <JourneyModule
+                    nowPlaying={player.nowPlaying}
+                    recentStations={recentStations}
+                    topCountries={topCountries}
+                    onStartListening={handlers.handleStartListening}
+                    onQuickRetune={handlers.handleQuickRetune}
+                    onOpenPassport={handleOpenPassport}
+                  />
+                </div>
+              </section>
 
               {catalogQuery.length >= 2 && (
                 <section className="space-y-4">
@@ -744,16 +754,20 @@ export default function Index() {
               )}
 
               <section id="atlas">
-                <div className="relative -mx-4 px-4 py-3 md:-mx-6 md:px-6">
-                  <div className="rounded-2xl border border-white/10 bg-[var(--rp-card)] px-4 py-3 shadow-[0_18px_40px_rgba(0,0,0,0.5)] backdrop-blur-xl md:px-6">
+                <div className="relative overflow-hidden rounded-[2.2rem] border border-white/8 bg-[linear-gradient(180deg,rgba(8,12,18,0.56)_0%,rgba(8,12,18,0.42)_100%)] px-4 py-5 shadow-[0_18px_42px_rgba(0,0,0,0.28)] backdrop-blur-md md:px-6 md:py-6">
+                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(245,177,45,0.1),transparent_26%),radial-gradient(circle_at_bottom_left,rgba(245,177,45,0.04),transparent_22%)]" />
+                  <div className="relative px-1 py-2 md:px-2">
                     <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
                       <div>
-                        <Title order={2} style={{ fontSize: "1.35rem", fontWeight: 700, color: "var(--rp-text)", marginBottom: "0.15rem" }}>
-                          {atlasQuery ? `Search results for "${atlasQuery}"` : "Chart your path by continent"}
+                        <Text size="xs" c="var(--rp-muted-2)" className="font-semibold uppercase tracking-[0.32em]">
+                          {atlas.activeContinent ? `${atlas.activeContinent} route` : "Atlas guide"}
+                        </Text>
+                        <Title order={2} style={{ fontSize: "1.6rem", fontWeight: 700, color: "var(--rp-text)", marginBottom: "0.15rem" }}>
+                          {atlasQuery ? `Search results for "${atlasQuery}"` : atlas.activeContinent ? `Start in ${atlas.activeContinent}` : "Choose a region, then enter a country flow"}
                         </Title>
                         <div className="flex items-center gap-3">
                           <Text size="xs" c="var(--rp-muted)">
-                            {atlasQuery ? "Showing matching countries from the global atlas." : "Filter the atlas to the regions that match your listening mood."}
+                            {atlasQuery ? "Showing matching countries from the global atlas." : atlas.activeContinent ? "The first countries carry the strongest route into live stations, country notes, and listening context." : "Pick a region first. The atlas then narrows into curated country routes instead of a flat directory."}
                           </Text>
                           {(atlasQuery || atlas.activeContinent) && (
                             <button
@@ -768,18 +782,21 @@ export default function Index() {
                           )}
                         </div>
                       </div>
-                      <Text size="xs" c="var(--rp-muted-2)" className="whitespace-nowrap font-mono tracking-[0.16em] uppercase">
-                        Showing {derived.filteredCountries.length.toLocaleString()} of {topCountries.length.toLocaleString()} spotlight countries
-                      </Text>
+                      <div className="text-right">
+                        <Text size="xs" c="var(--rp-text)" className="whitespace-nowrap font-semibold uppercase tracking-[0.22em]">
+                          {atlas.activeContinent ?? "Global atlas"}
+                        </Text>
+                        <Text size="xs" c="var(--rp-muted-2)" className="whitespace-nowrap font-mono tracking-[0.16em] uppercase">
+                          {derived.filteredCountries.length.toLocaleString()} of {topCountries.length.toLocaleString()} spotlight countries
+                        </Text>
+                      </div>
                     </div>
 
-                    <div className="mt-3 overflow-x-auto scroll-track border-t border-white/10 pt-4">
+                    <div className="mt-4 overflow-x-auto scroll-track pt-4">
                       <AtlasFilters continents={derived.continents} activeContinent={atlas.activeContinent} onContinentSelect={atlas.setActiveContinent} />
                     </div>
                   </div>
-                </div>
-
-                <div className="mt-6 md:mt-8">
+                  <div className="relative mt-6 md:mt-8">
                   {derived.filteredCountries.length > 0 ? (
                     <AtlasGrid
                       displaySections={derived.displaySections}
@@ -803,8 +820,15 @@ export default function Index() {
                       </button>
                     </div>
                   )}
+                  </div>
                 </div>
               </section>
+
+              <SignalBand
+                topCountries={topCountries}
+                nowPlaying={player.nowPlaying}
+                recentStations={recentStations}
+              />
             </div>
           </>
         ) : (
@@ -828,16 +852,18 @@ export default function Index() {
               transparent={false}
             />
 
-            <section className="rounded-3xl border border-white/10 bg-[var(--rp-surface)] px-6 py-6 md:px-10 md:py-8 shadow-[0_18px_40px_rgba(0,0,0,0.5)] backdrop-blur-xl">
-              <JourneyModule
-                nowPlaying={player.nowPlaying}
-                recentStations={recentStations}
-                topCountries={topCountries}
-                onStartListening={handlers.handleStartListening}
-                onQuickRetune={handlers.handleQuickRetune}
-                onOpenPassport={handleOpenPassport}
-              />
-            </section>
+            {player.nowPlaying && (
+              <section className="rounded-3xl border border-white/10 bg-[var(--rp-surface)] px-6 py-6 md:px-10 md:py-8 shadow-[0_18px_40px_rgba(0,0,0,0.5)] backdrop-blur-xl">
+                <JourneyModule
+                  nowPlaying={player.nowPlaying}
+                  recentStations={recentStations}
+                  topCountries={topCountries}
+                  onStartListening={handlers.handleStartListening}
+                  onQuickRetune={handlers.handleQuickRetune}
+                  onOpenPassport={handleOpenPassport}
+                />
+              </section>
+            )}
 
             <section className="rounded-3xl border border-white/10 bg-[var(--rp-surface)] px-6 py-6 md:px-10 md:py-8 shadow-[0_18px_40px_rgba(0,0,0,0.5)] backdrop-blur-xl">
               <div className="flex flex-wrap items-center justify-between gap-3">

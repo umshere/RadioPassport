@@ -28,8 +28,8 @@ const OLLAMA_URL = process.env.OLLAMA_URL ?? "";
 
 const AI_SYSTEM_PROMPT = `You are a music trivia assistant.
 Return JSON only with:
-- summary: 1 sentence (max 22 words), high-confidence, factual, written to sound engaging.
-- facts: 3 items, each { label, value } (short, factual).
+- summary: 1 or 2 short sentences (max 34 words total), high-confidence, factual, written to sound engaging.
+- facts: 4 items, each { label, value } (short, factual).
 - cleanTitle: cleaned song title for search (no extra tags like "lyrics", "HQ", "live").
 - cleanArtist: cleaned artist name for search (no extra tags).
 Prioritize: release year, album, genre/style, artist origin, notable chart info, writers/producers, or awards.
@@ -102,7 +102,7 @@ function normalizeTriviaPayload(
 
   return {
     summary,
-    facts: facts.slice(0, 3),
+    facts: facts.slice(0, 4),
     links: options?.links,
     imageUrl: options?.imageUrl ?? null,
     cleanTitle,
@@ -380,6 +380,190 @@ async function fetchJson<T>(url: string): Promise<T | null> {
   }
 }
 
+async function fetchMusicBrainzEnrichment(
+  title?: string | null,
+  artist?: string | null
+): Promise<{
+  facts: TrackTrivia["facts"];
+  links: TrackTrivia["links"];
+  imageUrl: string | null;
+}> {
+  const queryParts = [];
+  if (title) queryParts.push(`recording:"${escapeQueryValue(title)}"`);
+  if (artist) queryParts.push(`artist:"${escapeQueryValue(artist)}"`);
+  const query = queryParts.join(" AND ");
+  if (!query) {
+    return { facts: [], links: [], imageUrl: null };
+  }
+
+  const searchUrl = new URL(`${MUSICBRAINZ_BASE}/recording/`);
+  searchUrl.searchParams.set("query", query);
+  searchUrl.searchParams.set("fmt", "json");
+  searchUrl.searchParams.set("limit", "1");
+  searchUrl.searchParams.set("inc", "artists+releases+tags");
+
+  const searchData = await fetchJson<{
+    recordings?: Array<{
+      id?: string;
+      title?: string;
+      length?: number;
+      "first-release-date"?: string;
+      releases?: Array<{ id?: string; title?: string; date?: string }>;
+      "artist-credit"?: Array<{
+        name?: string;
+        artist?: { id?: string; name?: string };
+      }>;
+      tags?: Array<{ name: string }>;
+    }>;
+  }>(searchUrl.toString());
+
+  const recording = searchData?.recordings?.[0];
+  if (!recording) {
+    const fallbackQuery = buildSearchQuery(title ?? "", artist ?? "");
+    const fallbackYoutubeUrl = fallbackQuery
+      ? `https://www.youtube.com/results?search_query=${encodeURIComponent(fallbackQuery)}`
+      : null;
+    const fallbackWikipediaUrl = fallbackQuery
+      ? `https://en.wikipedia.org/wiki/Special:Search?search=${encodeURIComponent(fallbackQuery)}`
+      : null;
+    return {
+      facts: [],
+      links: [
+        fallbackYoutubeUrl
+          ? { label: "YouTube", url: fallbackYoutubeUrl, kind: "youtube" as const }
+          : null,
+        fallbackWikipediaUrl
+          ? { label: "Wiki", url: fallbackWikipediaUrl, kind: "info" as const }
+          : null,
+      ].filter(Boolean) as TrackTrivia["links"],
+      imageUrl: await resolveTrackImage(title ?? "", artist ?? ""),
+    };
+  }
+
+  const artistCredit = recording["artist-credit"]?.[0];
+  const artistName =
+    artistCredit?.name ??
+    artistCredit?.artist?.name ??
+    artist ??
+    "Unknown artist";
+  const artistId = artistCredit?.artist?.id ?? null;
+  const release = recording.releases?.[0];
+  const releaseTitle = release?.title ?? null;
+  const releaseId = release?.id ?? null;
+  const recordingId = recording.id ?? null;
+  const releaseDate = recording["first-release-date"] ?? release?.date ?? null;
+  const releaseYear = pickReleaseYear(releaseDate);
+  const duration = formatDuration(recording.length ?? null);
+
+  let artistArea: string | null = null;
+  let artistTags: string[] = [];
+  if (artistId) {
+    const artistUrl = `${MUSICBRAINZ_BASE}/artist/${artistId}?fmt=json&inc=tags`;
+    const artistData = await fetchJson<{
+      area?: { name?: string };
+      country?: string;
+      tags?: Array<{ name: string }>;
+    }>(artistUrl);
+    artistArea = artistData?.area?.name ?? artistData?.country ?? null;
+    artistTags = (artistData?.tags ?? []).map((tag) => tag.name).slice(0, 3);
+  }
+
+  const recordingTags = (recording.tags ?? []).map((tag) => tag.name).slice(0, 3);
+  const tags = [...recordingTags, ...artistTags].filter(Boolean);
+
+  const facts: TrackTrivia["facts"] = [];
+  if (releaseTitle) facts.push({ label: "Release", value: releaseTitle });
+  if (releaseYear) facts.push({ label: "Year", value: releaseYear });
+  if (artistArea) facts.push({ label: "Origin", value: artistArea });
+  if (duration) facts.push({ label: "Length", value: duration });
+  if (tags.length > 0) facts.push({ label: "Style", value: tags.slice(0, 2).join(", ") });
+
+  const searchQuery = buildSearchQuery(recording.title ?? title ?? "", artistName);
+  const youtubeUrl = searchQuery
+    ? `https://www.youtube.com/results?search_query=${encodeURIComponent(searchQuery)}`
+    : null;
+  const wikipediaUrl = searchQuery
+    ? `https://en.wikipedia.org/wiki/Special:Search?search=${encodeURIComponent(searchQuery)}`
+    : null;
+
+  const links = [
+    youtubeUrl
+      ? { label: "YouTube", url: youtubeUrl, kind: "youtube" as const }
+      : null,
+    recordingId
+      ? {
+          label: "Track",
+          url: `https://musicbrainz.org/recording/${recordingId}`,
+          kind: "track" as const,
+        }
+      : null,
+    releaseId
+      ? {
+          label: "Release",
+          url: `https://musicbrainz.org/release/${releaseId}`,
+          kind: "release" as const,
+        }
+      : null,
+    artistId
+      ? {
+          label: "Artist",
+          url: `https://musicbrainz.org/artist/${artistId}`,
+          kind: "artist" as const,
+        }
+      : null,
+    wikipediaUrl
+      ? {
+          label: "Wiki",
+          url: wikipediaUrl,
+          kind: "info" as const,
+        }
+      : null,
+  ].filter(Boolean) as TrackTrivia["links"];
+
+  let imageUrl = releaseId
+    ? `https://coverartarchive.org/release/${releaseId}/front-250`
+    : null;
+  if (!imageUrl) {
+    imageUrl = await resolveTrackImage(recording.title ?? title ?? "", artistName);
+  }
+
+  return {
+    facts,
+    links,
+    imageUrl,
+  };
+}
+
+function mergeTriviaFacts(
+  primaryFacts: TrackTrivia["facts"] = [],
+  secondaryFacts: TrackTrivia["facts"] = []
+) {
+  const seen = new Set<string>();
+  const merged: TrackTrivia["facts"] = [];
+  for (const fact of [...primaryFacts, ...secondaryFacts]) {
+    const key = `${fact.label.toLowerCase()}::${fact.value.toLowerCase()}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    merged.push(fact);
+  }
+  return merged.slice(0, 5);
+}
+
+function mergeTriviaLinks(
+  primaryLinks: TrackTrivia["links"] = [],
+  secondaryLinks: TrackTrivia["links"] = []
+) {
+  const seen = new Set<string>();
+  const merged: TrackTrivia["links"] = [];
+  for (const link of [...primaryLinks, ...secondaryLinks]) {
+    const key = `${link.kind}:${link.url}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    merged.push(link);
+  }
+  return merged;
+}
+
 export async function loader({ request }: LoaderFunctionArgs) {
   const url = new URL(request.url);
   const title = url.searchParams.get("title");
@@ -445,31 +629,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
       });
       return json(response, { status: 500 });
     }
-
-    const searchQuery = buildSearchQuery(
-      trivia.cleanTitle ?? title ?? "",
-      trivia.cleanArtist ?? artist ?? ""
-    );
-    const youtubeUrl = searchQuery
-      ? `https://www.youtube.com/results?search_query=${encodeURIComponent(
-          searchQuery
-        )}`
-      : null;
-    const wikipediaUrl = searchQuery
-      ? `https://en.wikipedia.org/wiki/Special:Search?search=${encodeURIComponent(
-          searchQuery
-        )}`
-      : null;
-    const links = [
-      youtubeUrl
-        ? { label: "YouTube", url: youtubeUrl, kind: "youtube" as const }
-        : null,
-      wikipediaUrl
-        ? { label: "Wiki", url: wikipediaUrl, kind: "info" as const }
-        : null,
-    ].filter(Boolean) as TrackTrivia["links"];
-
-    const imageUrl = await resolveTrackImage(
+    const enrichment = await fetchMusicBrainzEnrichment(
       trivia.cleanTitle ?? title ?? "",
       trivia.cleanArtist ?? artist ?? ""
     );
@@ -478,8 +638,9 @@ export async function loader({ request }: LoaderFunctionArgs) {
       status: "ok",
       trivia: {
         ...trivia,
-        imageUrl,
-        links,
+        facts: mergeTriviaFacts(trivia.facts, enrichment.facts),
+        imageUrl: enrichment.imageUrl ?? trivia.imageUrl ?? null,
+        links: mergeTriviaLinks(trivia.links, enrichment.links),
       },
     };
     triviaCache.set(cacheKey, {
@@ -489,33 +650,27 @@ export async function loader({ request }: LoaderFunctionArgs) {
     return json(response);
   }
 
-  const queryParts = [];
-  if (title) queryParts.push(`recording:"${escapeQueryValue(title)}"`);
-  if (artist) queryParts.push(`artist:"${escapeQueryValue(artist)}"`);
-  const query = queryParts.join(" AND ");
-
-  const searchUrl = new URL(`${MUSICBRAINZ_BASE}/recording/`);
-  searchUrl.searchParams.set("query", query);
-  searchUrl.searchParams.set("fmt", "json");
-  searchUrl.searchParams.set("limit", "1");
-  searchUrl.searchParams.set("inc", "artists+releases+tags");
-
-  const searchData = await fetchJson<{
-    recordings?: Array<{
-      id?: string;
-      title?: string;
-      length?: number;
-      "first-release-date"?: string;
-      releases?: Array<{ id?: string; title?: string; date?: string }>;
-      "artist-credit"?: Array<{
-        name?: string;
-        artist?: { id?: string; name?: string };
-      }>;
-      tags?: Array<{ name: string }>;
-    }>;
-  }>(searchUrl.toString());
-
-  const recording = searchData?.recordings?.[0];
+  const enrichment = await fetchMusicBrainzEnrichment(title, artist);
+  const mbTrackLink = enrichment.links?.find((link) => link.kind === "track");
+  const recordingId = mbTrackLink?.url.split("/").pop() ?? null;
+  const mbReleaseLink = enrichment.links?.find((link) => link.kind === "release");
+  const releaseId = mbReleaseLink?.url.split("/").pop() ?? null;
+  const mbArtistLink = enrichment.links?.find((link) => link.kind === "artist");
+  const artistId = mbArtistLink?.url.split("/").pop() ?? null;
+  const recording = recordingId
+    ? await fetchJson<{
+        id?: string;
+        title?: string;
+        length?: number;
+        "first-release-date"?: string;
+        releases?: Array<{ id?: string; title?: string; date?: string }>;
+        "artist-credit"?: Array<{
+          name?: string;
+          artist?: { id?: string; name?: string };
+        }>;
+        tags?: Array<{ name: string }>;
+      }>(`${MUSICBRAINZ_BASE}/recording/${recordingId}?fmt=json&inc=artists+releases+tags`)
+    : null;
   if (!recording) {
     const response: TrackTriviaResponse = {
       status: "empty",
@@ -534,19 +689,19 @@ export async function loader({ request }: LoaderFunctionArgs) {
     artistCredit?.artist?.name ??
     artist ??
     "Unknown artist";
-  const artistId = artistCredit?.artist?.id ?? null;
+  const resolvedArtistId = artistCredit?.artist?.id ?? artistId ?? null;
   const release = recording.releases?.[0];
   const releaseTitle = release?.title ?? null;
-  const releaseId = release?.id ?? null;
-  const recordingId = recording.id ?? null;
+  const resolvedReleaseId = release?.id ?? releaseId ?? null;
+  const resolvedRecordingId = recording.id ?? recordingId ?? null;
   const releaseDate = recording["first-release-date"] ?? release?.date ?? null;
   const releaseYear = pickReleaseYear(releaseDate);
   const duration = formatDuration(recording.length ?? null);
 
   let artistArea: string | null = null;
   let artistTags: string[] = [];
-  if (artistId) {
-    const artistUrl = `${MUSICBRAINZ_BASE}/artist/${artistId}?fmt=json&inc=tags`;
+  if (resolvedArtistId) {
+    const artistUrl = `${MUSICBRAINZ_BASE}/artist/${resolvedArtistId}?fmt=json&inc=tags`;
     const artistData = await fetchJson<{
       area?: { name?: string };
       country?: string;
@@ -574,68 +729,11 @@ export async function loader({ request }: LoaderFunctionArgs) {
   if (releaseYear) summaryPieces.push(`(${releaseYear})`);
   const summary = summaryPieces.join(" ");
 
-  const searchQuery = buildSearchQuery(
-    recording.title ?? title ?? "",
-    artistName
-  );
-  const youtubeUrl = searchQuery
-    ? `https://www.youtube.com/results?search_query=${encodeURIComponent(
-        searchQuery
-      )}`
-    : null;
-  const wikipediaUrl = searchQuery
-    ? `https://en.wikipedia.org/wiki/Special:Search?search=${encodeURIComponent(
-        searchQuery
-      )}`
-    : null;
-  const links = [
-    youtubeUrl
-      ? { label: "YouTube", url: youtubeUrl, kind: "youtube" as const }
-      : null,
-    recordingId
-      ? {
-          label: "Track",
-          url: `https://musicbrainz.org/recording/${recordingId}`,
-          kind: "track" as const,
-        }
-      : null,
-    releaseId
-      ? {
-          label: "Release",
-          url: `https://musicbrainz.org/release/${releaseId}`,
-          kind: "release" as const,
-        }
-      : null,
-    artistId
-      ? {
-          label: "Artist",
-          url: `https://musicbrainz.org/artist/${artistId}`,
-          kind: "artist" as const,
-        }
-      : null,
-    wikipediaUrl
-      ? {
-          label: "Wiki",
-          url: wikipediaUrl,
-          kind: "info" as const,
-        }
-      : null,
-  ].filter(Boolean) as TrackTrivia["links"];
-
-  let imageUrl = releaseId
-    ? `https://coverartarchive.org/release/${releaseId}/front-250`
-    : null;
-
-  // Fallback to Wikipedia/iTunes if MusicBrainz doesn't have an image
-  if (!imageUrl) {
-    imageUrl = await resolveTrackImage(recording.title ?? title ?? "", artistName);
-  }
-
   const trivia: TrackTrivia = {
     summary,
-    facts: facts.slice(0, 3),
-    links,
-    imageUrl,
+    facts: mergeTriviaFacts(facts, enrichment.facts),
+    links: mergeTriviaLinks([], enrichment.links),
+    imageUrl: enrichment.imageUrl,
     source: "free",
     fetchedAt: new Date().toISOString(),
   };

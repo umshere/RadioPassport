@@ -66,7 +66,7 @@ export function AtlasGrid({ displaySections, onPreviewCountry, stampedCountries 
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, amount: 0.1 }}
             transition={{ duration: 0.5, ease: "easeOut" }}
-            className="rounded-2xl border border-white/10 bg-[var(--rp-card)] p-6 shadow-[0_18px_40px_rgba(0,0,0,0.5)] backdrop-blur-xl md:p-7"
+            className="overflow-hidden rounded-[1.9rem] border border-white/10 bg-[linear-gradient(180deg,rgba(10,13,20,0.88)_0%,rgba(12,16,25,0.82)_100%)] p-6 shadow-[0_18px_40px_rgba(0,0,0,0.42)] backdrop-blur-xl md:p-7"
           >
             <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
               <div className="flex items-start gap-3">
@@ -83,11 +83,14 @@ export function AtlasGrid({ displaySections, onPreviewCountry, stampedCountries 
                   {continentIcons[continent] ?? <IconWorld size={22} />}
                 </ThemeIcon>
                 <div>
+                  <Text size="xs" c="var(--rp-muted-2)" className="font-semibold uppercase tracking-[0.26em]">
+                    Route cluster
+                  </Text>
                   <Title order={3} style={{ fontSize: "1.35rem", fontWeight: 700, color: "var(--rp-text)" }}>
                     {continent}
                   </Title>
                   <Text size="sm" c="var(--rp-muted)">
-                    {continentCountries.length} countries • {total.toLocaleString()} stations
+                    {continentCountries.length} countries • {total.toLocaleString()} stations ready to explore
                   </Text>
                 </div>
               </div>
@@ -106,6 +109,8 @@ export function AtlasGrid({ displaySections, onPreviewCountry, stampedCountries 
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 md:gap-4">
               {continentCountries.map((country, index) => {
                 const isStamped = stampedCountries?.has(country.iso_3166_1) ?? false;
+                const isLead = index === 0;
+                const isFeatured = index > 0 && index < 3;
                 return (
                 <motion.div
                   key={country.name}
@@ -116,11 +121,17 @@ export function AtlasGrid({ displaySections, onPreviewCountry, stampedCountries 
                 >
                   <Link
                     to={`/?country=${encodeURIComponent(country.name)}`}
-                    className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-white/10 bg-[var(--rp-card-2)] p-4 backdrop-blur-xl transition-all shadow-[0_14px_32px_rgba(0,0,0,0.45)] hover:-translate-y-1 hover:shadow-[0_18px_40px_rgba(0,0,0,0.6)]"
+                    className={`group relative flex h-full flex-col overflow-hidden rounded-[1.4rem] border p-4 backdrop-blur-xl transition-all shadow-[0_14px_32px_rgba(0,0,0,0.32)] hover:-translate-y-1 hover:shadow-[0_18px_40px_rgba(0,0,0,0.46)] ${
+                      isLead
+                        ? "border-[rgba(245,177,45,0.22)] bg-[linear-gradient(180deg,rgba(18,14,7,0.42)_0%,rgba(8,12,18,0.58)_100%)] md:col-span-2"
+                        : isFeatured
+                          ? "border-white/12 bg-[rgba(8,12,18,0.52)]"
+                          : "border-white/10 bg-[rgba(5,8,14,0.4)]"
+                    }`}
                     prefetch="intent"
                   >
                     {/* Glass sheen effect */}
-                    <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
+                    <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/8 to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
 
                     <div className="relative z-10 flex flex-1 flex-col gap-3">
                       <div className="flex items-start justify-between gap-2">
@@ -136,7 +147,7 @@ export function AtlasGrid({ displaySections, onPreviewCountry, stampedCountries 
                               Stamped
                             </span>
                           )}
-                          <div className="flex items-center gap-1.5 rounded-full border border-white/10 bg-black/40 px-2.5 py-1 backdrop-blur-sm">
+                          <div className="flex items-center gap-1.5 rounded-full border border-white/10 bg-black/30 px-2.5 py-1 backdrop-blur-sm">
                             <IconBroadcast size={10} className="text-[var(--rp-gold)]" />
                             <span className="text-[10px] font-bold text-[var(--rp-muted)] font-mono">
                               {country.stationcount}
@@ -146,13 +157,18 @@ export function AtlasGrid({ displaySections, onPreviewCountry, stampedCountries 
                       </div>
 
                       <div className="space-y-1">
-                        <Text fw={800} size="md" c="var(--rp-text)" className="leading-tight line-clamp-2 group-hover:text-[var(--rp-gold)] transition-colors">
+                        <Text fw={800} size={isLead ? "lg" : "md"} c="var(--rp-text)" className="leading-tight line-clamp-2 group-hover:text-[var(--rp-gold)] transition-colors">
                           {country.name}
                         </Text>
                         <Text size="xs" c="var(--rp-muted)" className="font-medium flex items-center gap-1">
                           <span className="w-1.5 h-1.5 rounded-full bg-[var(--rp-gold)] inline-block animate-pulse" />
                           {country.stationcount > 0 ? 'Live now' : 'No signal'}
                         </Text>
+                        {isLead && (
+                          <Text size="xs" c="var(--rp-muted)" className="max-w-[26ch] leading-5">
+                            Strongest entry point in this region. Start here for the clearest route into local stations and country-level notes.
+                          </Text>
+                        )}
                       </div>
                     </div>
 

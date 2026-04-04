@@ -30,7 +30,7 @@ function parseStreamTitle(raw: string) {
   }
 
   const separator = separatorMatch[0];
-  const [left, ...rest] = cleaned.split(separator);
+  const [left = "", ...rest] = cleaned.split(separator);
   const right = rest.join(separator).trim();
   const leftTrimmed = left.trim();
 
@@ -84,7 +84,9 @@ async function readIcyMetadata(stream: ReadableStream<Uint8Array>, metaint: numb
     if (!skipped) return null;
     const metaLenByte = await readBytes(1);
     if (!metaLenByte) return null;
-    const metaLen = metaLenByte[0] * 16;
+    const metaLenSize = metaLenByte[0];
+    if (metaLenSize === undefined) return null;
+    const metaLen = metaLenSize * 16;
     if (!metaLen) continue;
     const metaPayload = await readBytes(metaLen);
     if (!metaPayload) return null;

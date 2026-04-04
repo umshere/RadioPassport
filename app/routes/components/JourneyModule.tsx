@@ -1,4 +1,4 @@
-import { IconArrowRight, IconPlaneDeparture, IconSparkles, IconPlane } from "@tabler/icons-react";
+import { IconArrowRight, IconPlaneDeparture, IconPlane } from "@tabler/icons-react";
 import { motion } from "framer-motion";
 import type { Country, Station } from "~/types/radio";
 import { CountryFlag } from "~/components/CountryFlag";
@@ -47,17 +47,17 @@ export function JourneyModule({
 
   if (!nowPlaying) {
     return (
-      <section className="rounded-3xl border border-white/10 bg-[var(--rp-card)] px-6 py-5 shadow-[0_18px_40px_rgba(0,0,0,0.5)] backdrop-blur-xl">
+      <section className="relative overflow-hidden py-5">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <div className="text-[11px] font-semibold uppercase tracking-[0.32em] text-[var(--rp-muted-2)]">
-              Journey
+              Itinerary
             </div>
-            <div className="mt-2 text-lg font-semibold text-[var(--rp-text)]">
-              Start your journey to stamp your first destination.
+            <div className="mt-2 text-xl font-semibold text-[var(--rp-text)]">
+              Start your route and the passport begins keeping score.
             </div>
             <div className="mt-1 text-sm text-[var(--rp-muted)]">
-              Tune in and we will track your departure and arrival.
+              Tune in and the homepage will turn your first station into a departure, arrival, and next-stop story.
             </div>
           </div>
           <button
@@ -73,23 +73,26 @@ export function JourneyModule({
   }
 
   return (
-    <section className="relative rounded-3xl border border-white/10 bg-[var(--rp-card)] px-5 py-4 shadow-[0_18px_40px_rgba(0,0,0,0.5)] backdrop-blur-xl">
-      <div className="flex items-center justify-between gap-3">
-        <div className="text-[11px] font-semibold uppercase tracking-[0.32em] text-[var(--rp-muted-2)]">
-          Journey
-        </div>
-        <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--rp-gold)]">
-          <IconSparkles size={14} />
-          Live
-        </div>
+    <section className="relative overflow-hidden py-5">
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-x-0 top-8 h-40 bg-[radial-gradient(circle_at_18%_30%,rgba(245,177,45,0.07),transparent_38%),radial-gradient(circle_at_62%_52%,rgba(116,162,212,0.05),transparent_32%)]"
+      />
+
+      <div className="relative text-[11px] font-semibold uppercase tracking-[0.32em] text-[var(--rp-muted-2)]">
+        Itinerary
       </div>
 
-      <div className="mt-4 flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2 sm:hidden">
+      <div className="relative mt-4 max-w-xl text-sm leading-6 text-[var(--rp-muted)]">
+        The current listening path is staged like a route card: where you came from, where you are, and the next country worth stamping.
+      </div>
+
+      <div className="relative mt-5 flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2 sm:hidden">
         <button
           type="button"
           onClick={onOpenPassport}
           disabled={!onOpenPassport}
-          className="flex min-w-[75%] snap-start items-center gap-3 rounded-2xl border border-white/10 bg-black/40 px-3 py-3 text-left transition enabled:hover:bg-black/60 disabled:cursor-default disabled:opacity-70"
+          className="flex min-w-[75%] snap-start items-center gap-3 rounded-[1.5rem] border border-white/6 bg-[linear-gradient(180deg,rgba(16,11,7,0.2)_0%,rgba(8,12,18,0.18)_100%)] px-3 py-3 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.03)] backdrop-blur-[2px] transition enabled:hover:bg-[rgba(14,12,10,0.42)] disabled:cursor-default disabled:opacity-70"
           aria-label="Open passport history"
         >
           <CountryFlag
@@ -111,7 +114,7 @@ export function JourneyModule({
           </div>
         </button>
 
-        <div className="flex min-w-[75%] snap-start items-center gap-3 rounded-2xl border border-[rgba(245,177,45,0.5)] bg-black/60 px-3 py-3 shadow-[0_16px_34px_rgba(245,177,45,0.2)]">
+        <div className="flex min-w-[75%] snap-start items-center gap-3 rounded-[1.5rem] border border-[rgba(245,177,45,0.2)] bg-[linear-gradient(180deg,rgba(26,18,10,0.26)_0%,rgba(12,16,24,0.22)_100%)] px-3 py-3 shadow-[0_16px_34px_rgba(245,177,45,0.08),inset_0_1px_0_rgba(245,177,45,0.06)] backdrop-blur-[2px]">
           <CountryFlag
             iso={nowPlaying.countryCode ?? undefined}
             title={nowPlaying.country}
@@ -135,7 +138,7 @@ export function JourneyModule({
         <button
           type="button"
           onClick={onQuickRetune}
-          className="flex min-w-[75%] snap-start items-center gap-3 rounded-2xl border border-white/10 bg-black/40 px-3 py-3 text-left transition hover:bg-black/60"
+          className="flex min-w-[75%] snap-start items-center gap-3 rounded-[1.5rem] border border-white/6 bg-[linear-gradient(180deg,rgba(16,11,7,0.2)_0%,rgba(8,12,18,0.18)_100%)] px-3 py-3 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.03)] backdrop-blur-[2px] transition hover:bg-[rgba(14,12,10,0.42)]"
         >
           <CountryFlag
             iso={nextCountry?.iso_3166_1 ?? undefined}
@@ -156,12 +159,12 @@ export function JourneyModule({
         </button>
       </div>
 
-      <div className="relative mt-4 hidden gap-4 sm:grid sm:grid-cols-3">
+      <div className="relative mt-5 hidden gap-3 sm:grid sm:grid-cols-3">
         <motion.div
           key={nowPlaying.uuid}
-          className="absolute left-[22%] top-1/2 hidden h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full border border-[rgba(245,177,45,0.5)] bg-black/60 text-[var(--rp-gold)] shadow-[0_0_18px_rgba(245,177,45,0.35)] sm:flex"
+          className="absolute left-[28%] top-1/2 hidden h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full border border-[rgba(245,177,45,0.5)] bg-[rgba(18,14,7,0.8)] text-[var(--rp-gold)] shadow-[0_0_18px_rgba(245,177,45,0.28)] sm:flex"
           initial={{ x: 0, opacity: 0.4, y: -6 }}
-          animate={{ x: 156, opacity: [0.6, 1, 0], y: -6 }}
+          animate={{ x: 188, opacity: [0.6, 1, 0], y: -6 }}
           transition={{ duration: 2, ease: "easeOut", times: [0, 0.7, 1] }}
         >
           <IconPlane size={12} />
@@ -171,7 +174,7 @@ export function JourneyModule({
           type="button"
           onClick={onOpenPassport}
           disabled={!onOpenPassport}
-          className="flex w-full items-center gap-3 rounded-2xl border border-white/10 bg-black/40 px-3 py-3 text-left transition enabled:hover:bg-black/60 disabled:cursor-default disabled:opacity-70"
+          className="flex w-full items-center gap-3 rounded-[1.7rem] border border-white/6 bg-[linear-gradient(180deg,rgba(20,14,8,0.12)_0%,rgba(8,12,18,0.16)_100%)] px-5 py-5 text-left shadow-[0_14px_30px_rgba(0,0,0,0.14),inset_0_1px_0_rgba(255,255,255,0.03)] backdrop-blur-[2px] transition enabled:hover:bg-[rgba(20,14,8,0.18)] disabled:cursor-default disabled:opacity-70"
           aria-label="Open passport history"
         >
           <CountryFlag
@@ -193,7 +196,7 @@ export function JourneyModule({
           </div>
         </button>
 
-        <div className="flex items-center gap-3 rounded-2xl border border-[rgba(245,177,45,0.5)] bg-black/60 px-3 py-3 shadow-[0_16px_34px_rgba(245,177,45,0.2)]">
+        <div className="flex items-center gap-3 rounded-[1.7rem] border border-[rgba(245,177,45,0.16)] bg-[linear-gradient(180deg,rgba(26,18,10,0.2)_0%,rgba(12,16,24,0.22)_100%)] px-5 py-5 shadow-[0_16px_30px_rgba(0,0,0,0.16),inset_0_1px_0_rgba(245,177,45,0.05)] backdrop-blur-[2px]">
           <CountryFlag
             iso={nowPlaying.countryCode ?? undefined}
             title={nowPlaying.country}
@@ -217,7 +220,7 @@ export function JourneyModule({
         <button
           type="button"
           onClick={onQuickRetune}
-          className="flex items-center gap-3 rounded-2xl border border-white/10 bg-black/40 px-3 py-3 text-left transition hover:bg-black/60"
+          className="flex items-center gap-3 rounded-[1.7rem] border border-white/6 bg-[linear-gradient(180deg,rgba(20,14,8,0.12)_0%,rgba(8,12,18,0.16)_100%)] px-5 py-5 text-left shadow-[0_14px_30px_rgba(0,0,0,0.14),inset_0_1px_0_rgba(255,255,255,0.03)] backdrop-blur-[2px] transition hover:bg-[rgba(20,14,8,0.18)]"
         >
           <CountryFlag
             iso={nextCountry?.iso_3166_1 ?? undefined}
