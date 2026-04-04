@@ -34,6 +34,9 @@ const DOCK_TRIVIA_FONT =
   '500 12px "General Sans", "SF Pro Text", "Segoe UI", "Helvetica Neue", Arial, sans-serif';
 const DOCK_BUTTON_FONT =
   '600 11px "General Sans", "SF Pro Text", "Segoe UI", "Helvetica Neue", Arial, sans-serif';
+const DESKTOP_INSIGHTS_BUTTON_WIDTH = 152;
+const DESKTOP_META_INLINE_ENTER_WIDTH = 520;
+const DESKTOP_META_STACK_EXIT_WIDTH = 460;
 
 export default function PlayerDock() {
   const location = useLocation();
@@ -134,6 +137,7 @@ export default function PlayerDock() {
   const [isExpanded, setIsExpanded] = useState(false);
   const isMobile = useMediaQuery("(max-width: 1024px)");
   const { ref: desktopMetaRef, width: desktopMetaWidth } = useElementSize();
+  const [desktopMetaMode, setDesktopMetaMode] = useState<"stacked" | "inline">("stacked");
   const miniSwipeStartRef = useRef<{ x: number; y: number } | null>(null);
   const miniSwipeDeltaRef = useRef(0);
 
@@ -215,32 +219,42 @@ export default function PlayerDock() {
           ? "Track info unavailable"
           : null;
   const triviaTitle = trackLine ?? statusHint ?? "Listening live";
-  const stackedDesktopMeta = useMemo(() => {
+  const canInlineDesktopMeta = useMemo(() => {
     if (!desktopMetaWidth || !title) return false;
-    const titleFitsInline = getPretextLineCount(title, DOCK_TITLE_FONT, Math.floor(desktopMetaWidth * 0.52), 18) <= 1;
-    const subtitleFitsInline = !subtitle || getPretextLineCount(subtitle, DOCK_SUBTITLE_FONT, Math.floor(desktopMetaWidth * 0.32), 16) <= 1;
-    return !(titleFitsInline && subtitleFitsInline);
+    const titleFitsInline =
+      getPretextLineCount(title, DOCK_TITLE_FONT, Math.floor(desktopMetaWidth * 0.56), 18) <= 1;
+    const subtitleFitsInline =
+      !subtitle ||
+      getPretextLineCount(subtitle, DOCK_SUBTITLE_FONT, Math.floor(desktopMetaWidth * 0.34), 16) <= 1;
+    return titleFitsInline && subtitleFitsInline;
   }, [desktopMetaWidth, subtitle, title]);
+  const stackedDesktopMeta = desktopMetaMode === "stacked";
+
+  useEffect(() => {
+    if (!desktopMetaWidth || !title) return;
+    setDesktopMetaMode((current) => {
+      if (current === "stacked") {
+        return canInlineDesktopMeta && desktopMetaWidth >= DESKTOP_META_INLINE_ENTER_WIDTH
+          ? "inline"
+          : "stacked";
+      }
+      return !canInlineDesktopMeta && desktopMetaWidth <= DESKTOP_META_STACK_EXIT_WIDTH
+        ? "stacked"
+        : "inline";
+    });
+  }, [canInlineDesktopMeta, desktopMetaWidth, title]);
+
   const desktopInsightsLabel = useMemo(() => {
-    if (desktopMetaWidth <= 0) return "AI Insights";
-
-    const titleWidth = title ? getPretextTightWidth(title, DOCK_TITLE_FONT) : 0;
-    const subtitleWidth = subtitle ? getPretextTightWidth(subtitle, DOCK_SUBTITLE_FONT) : 0;
-    const triviaWidth = triviaTitle ? Math.min(getPretextTightWidth(triviaTitle, DOCK_TRIVIA_FONT), 260) : 0;
-    const metadataPressure = titleWidth + subtitleWidth + triviaWidth;
-    const labelBudget = Math.floor(desktopMetaWidth * (stackedDesktopMeta ? 0.38 : 0.32));
-
-    if (
-      metadataPressure < desktopMetaWidth * 1.55 &&
-      fitsPretextWidth("AI Insights", DOCK_BUTTON_FONT, labelBudget, 34)
-    ) {
+    if (desktopMetaWidth <= 0) return "Insights";
+    const labelBudget = DESKTOP_INSIGHTS_BUTTON_WIDTH - 34;
+    if (desktopMetaWidth >= DESKTOP_META_INLINE_ENTER_WIDTH && fitsPretextWidth("AI Insights", DOCK_BUTTON_FONT, labelBudget, 0)) {
       return "AI Insights";
     }
-    if (fitsPretextWidth("Insights", DOCK_BUTTON_FONT, Math.max(labelBudget, 86), 30)) {
+    if (fitsPretextWidth("Insights", DOCK_BUTTON_FONT, labelBudget, 0)) {
       return "Insights";
     }
     return "AI";
-  }, [desktopMetaWidth, stackedDesktopMeta, subtitle, title, triviaTitle]);
+  }, [desktopMetaWidth]);
   const lastTrackKeyRef = useRef<string>("");
   const lastStationRef = useRef<string | null>(null);
 
@@ -569,8 +583,8 @@ export default function PlayerDock() {
             </div>
 
             {/* Station Info & Tuner */}
-            <div ref={desktopMetaRef} className="flex-1 min-w-0 flex flex-col justify-center gap-1.5">
-              <div className={stackedDesktopMeta ? "space-y-0.5" : "flex items-baseline gap-3"}>
+            <div ref={desktopMetaRef} className="flex-1 min-w-0 flex flex-col justify-center gap-1.5 min-h-[78px]">
+              <div className={stackedDesktopMeta ? "min-h-[38px] space-y-0.5" : "min-h-[38px] flex items-baseline gap-3"}>
                 <Text size="sm" fw={700} className="truncate text-amber-50">
                   {title}
                 </Text>
@@ -578,7 +592,7 @@ export default function PlayerDock() {
                   {subtitle}
                 </Text>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="min-h-[18px] flex items-center gap-2">
                 <Text size="xs" className="truncate text-amber-100/70">
                   {triviaTitle}
                 </Text>
@@ -673,7 +687,7 @@ export default function PlayerDock() {
                   <Popover.Target>
                     <button
                       type="button"
-                      className="inline-flex h-9 items-center gap-2 rounded-full border border-amber-400/35 bg-amber-500/12 px-3 text-[11px] font-semibold text-amber-100 hover:border-amber-400/70"
+                      className="inline-flex h-9 w-[152px] shrink-0 items-center justify-center gap-2 rounded-full border border-amber-400/35 bg-amber-500/12 px-3 text-[11px] font-semibold text-amber-100 hover:border-amber-400/70"
                       onClick={handleToggleInsights}
                       aria-label="Toggle AI insights"
                     >

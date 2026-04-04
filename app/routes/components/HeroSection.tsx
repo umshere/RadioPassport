@@ -76,6 +76,7 @@ type ElasticParticleSpring = {
 function ElasticHeroParticle({
   token,
   anchorRef,
+  measureKey,
   pointerX,
   pointerY,
   pointerVelocity,
@@ -91,6 +92,7 @@ function ElasticHeroParticle({
 }: {
   token: string;
   anchorRef: RefObject<HTMLElement | null>;
+  measureKey?: number;
   pointerX: MotionValue<number>;
   pointerY: MotionValue<number>;
   pointerVelocity: MotionValue<number>;
@@ -123,7 +125,7 @@ function ElasticHeroParticle({
     measure();
     window.addEventListener("resize", measure);
     return () => window.removeEventListener("resize", measure);
-  }, [anchorRef, token]);
+  }, [anchorRef, token, measureKey]);
 
   const offsetX = useTransform(() => {
     if (!enabled || !home) return 0;
@@ -183,6 +185,7 @@ function ElasticHeroText({
   as = "div",
   text,
   anchorRef,
+  measureKey,
   pointerX,
   pointerY,
   pointerVelocity,
@@ -201,6 +204,7 @@ function ElasticHeroText({
   as?: "h1" | "p" | "div";
   text: string;
   anchorRef: RefObject<HTMLElement | null>;
+  measureKey?: number;
   pointerX: MotionValue<number>;
   pointerY: MotionValue<number>;
   pointerVelocity: MotionValue<number>;
@@ -242,6 +246,7 @@ function ElasticHeroText({
                 key={`${token.id}-${character}-${characterIndex}`}
                 token={character}
                 anchorRef={anchorRef}
+                measureKey={measureKey}
                 pointerX={pointerX}
                 pointerY={pointerY}
                 pointerVelocity={pointerVelocity}
@@ -263,6 +268,7 @@ function ElasticHeroText({
             key={token.id}
             token={token.value}
             anchorRef={anchorRef}
+            measureKey={measureKey}
             pointerX={pointerX}
             pointerY={pointerY}
             pointerVelocity={pointerVelocity}
@@ -494,6 +500,8 @@ export function HeroSection({
 }: HeroSectionProps) {
   const [heroTickerIndex, setHeroTickerIndex] = useState(0);
   const [useFallback, setUseFallback] = useState(false);
+  const [isHydrated, setIsHydrated] = useState(false);
+  const [measureVersion, setMeasureVersion] = useState(0);
   const [heroSignalText, setHeroSignalText] = useState<string | null>(null);
   const [hoverNotes, setHoverNotes] = useState<FallingHeroNote[]>([]);
   const [activeSignalZone, setActiveSignalZone] = useState<"left" | "center" | "right" | null>(null);
@@ -504,7 +512,6 @@ export function HeroSection({
   const insightsOpen = useUIStore((state) => state.insightsOpen);
   const aiTriviaExpanded = useUIStore((state) => state.aiTriviaExpanded);
   const isLg = useMediaQuery("(min-width: 1024px)", false, { getInitialValueInEffect: true });
-  const isFinePointer = useMediaQuery("(pointer: fine)", false, { getInitialValueInEffect: true });
   const shouldReduceMotion = useReducedMotion();
   const noteIdRef = useRef(0);
   const lastPointerPulseRef = useRef(0);
@@ -526,6 +533,10 @@ export function HeroSection({
   const heroBottomRange = isLg ? [64, 52] : [40, 32];
   const heroPaddingTop = useTransform(scrollY, [0, 280], heroTopRange);
   const heroPaddingBottom = useTransform(scrollY, [0, 280], heroBottomRange);
+  const hydratedNowPlaying = isHydrated ? nowPlaying : null;
+  const hydratedIsPlaying = isHydrated ? isPlaying : false;
+  const hydratedInsightsOpen = isHydrated ? insightsOpen : false;
+  const hydratedAiTriviaExpanded = isHydrated ? aiTriviaExpanded : false;
 
   const heroTickerItems = useMemo(() => {
     const headlineCountry = topCountries[0]?.name ?? "Global";
@@ -543,24 +554,24 @@ export function HeroSection({
   const currentHeroTicker = heroTickerItems.length
     ? heroTickerItems[heroTickerIndex % heroTickerItems.length]
     : "Global radio passport updates";
-  const nowPlayingMeta = useNowPlayingMetadata(nowPlaying, isPlaying);
+  const nowPlayingMeta = useNowPlayingMetadata(hydratedNowPlaying, hydratedIsPlaying);
   const freeTrivia = useTrackTrivia({
     track: nowPlayingMeta.track,
     source: "free",
-    enabled: Boolean(isPlaying && nowPlayingMeta.track),
+    enabled: Boolean(hydratedIsPlaying && nowPlayingMeta.track),
   });
   const aiTrivia = useTrackTrivia({
     track: nowPlayingMeta.track,
     source: "ai",
-    enabled: Boolean(isPlaying && nowPlayingMeta.track && insightsOpen && aiTriviaExpanded),
+    enabled: Boolean(hydratedIsPlaying && nowPlayingMeta.track && hydratedInsightsOpen && hydratedAiTriviaExpanded),
     context: {
       summary: freeTrivia.trivia?.summary ?? null,
       facts: freeTrivia.trivia?.facts ?? [],
     },
   });
   const featureCountry = topCountries[0] ?? null;
-  const featureCountryLabel = nowPlaying?.country ?? featureCountry?.name ?? "Japan";
-  const featureCountryCode = nowPlaying?.countryCode ?? featureCountry?.iso_3166_1;
+  const featureCountryLabel = hydratedNowPlaying?.country ?? featureCountry?.name ?? "Japan";
+  const featureCountryCode = hydratedNowPlaying?.countryCode ?? featureCountry?.iso_3166_1;
   const displayTrivia = aiTrivia.status === "ready" && aiTrivia.trivia ? aiTrivia.trivia : freeTrivia.trivia;
   const heroInsightLinks = useMemo(() => (displayTrivia?.links ?? []).slice(0, 4), [displayTrivia?.links]);
   const heroInsightImage = displayTrivia?.imageUrl ?? null;
@@ -573,28 +584,37 @@ export function HeroSection({
   );
   const heroSignalFacts = useMemo(() => {
     const pieces = [
-      nowPlaying?.language ? `language ${nowPlaying.language}` : null,
-      nowPlaying?.bitrate ? `${nowPlaying.bitrate} kbps` : null,
-      nowPlaying?.codec ? nowPlaying.codec.toUpperCase() : null,
-      nowPlaying?.state || null,
+      hydratedNowPlaying?.language ? `language ${hydratedNowPlaying.language}` : null,
+      hydratedNowPlaying?.bitrate ? `${hydratedNowPlaying.bitrate} kbps` : null,
+      hydratedNowPlaying?.codec ? hydratedNowPlaying.codec.toUpperCase() : null,
+      hydratedNowPlaying?.state || null,
     ].filter(Boolean);
     return pieces.slice(0, 3).join(" • ");
-  }, [nowPlaying?.bitrate, nowPlaying?.codec, nowPlaying?.language, nowPlaying?.state]);
+  }, [
+    hydratedNowPlaying?.bitrate,
+    hydratedNowPlaying?.codec,
+    hydratedNowPlaying?.language,
+    hydratedNowPlaying?.state,
+  ]);
   const heroTagLine = useMemo(() => {
-    const tags = nowPlaying?.tagList?.length
-      ? nowPlaying.tagList
-      : (nowPlaying?.tags ?? "")
+    const tags = hydratedNowPlaying?.tagList?.length
+      ? hydratedNowPlaying.tagList
+      : (hydratedNowPlaying?.tags ?? "")
           .split(",")
           .map((value) => value.trim())
           .filter(Boolean);
     return tags.slice(0, 3).join(" • ");
-  }, [nowPlaying?.tagList, nowPlaying?.tags]);
+  }, [hydratedNowPlaying?.tagList, hydratedNowPlaying?.tags]);
   const signalNote = displayTrivia?.summary
     ?? (heroTrackLine
       ? `${heroTrackLine} is on air from ${featureCountryLabel}. ${heroSignalFacts ? `${heroSignalFacts}.` : ""} This note field is driven by live station and track metadata.`
-      : nowPlaying
-        ? `${nowPlaying.name} is live from ${featureCountryLabel}. ${heroTagLine ? `${heroTagLine}.` : ""} The hero can adapt to live metadata without losing its composition.`
+      : hydratedNowPlaying
+        ? `${hydratedNowPlaying.name} is live from ${featureCountryLabel}. ${heroTagLine ? `${heroTagLine}.` : ""} The hero can adapt to live metadata without losing its composition.`
         : `${featureCountryLabel} is a strong first stop. Pick a station, then move through the atlas with route cards, country notes, and live context that adapt to the signal.`);
+
+  useEffect(() => {
+    setIsHydrated(true);
+  }, []);
 
   useEffect(() => {
     if (heroTickerItems.length === 0) return;
@@ -609,6 +629,35 @@ export function HeroSection({
   useEffect(() => {
     setHeroTickerIndex(0);
   }, [heroTickerItems.length]);
+  useEffect(() => {
+    if (typeof window === "undefined" || !isHydrated) return;
+    const bump = () => {
+      window.requestAnimationFrame(() => {
+        window.requestAnimationFrame(() => {
+          setMeasureVersion((value) => value + 1);
+        });
+      });
+    };
+
+    bump();
+    window.addEventListener("load", bump);
+
+    let resizeObserver: ResizeObserver | null = null;
+    if (typeof ResizeObserver !== "undefined" && heroSectionRef.current) {
+      resizeObserver = new ResizeObserver(() => bump());
+      resizeObserver.observe(heroSectionRef.current);
+    }
+
+    const fonts = (document as Document & { fonts?: FontFaceSet }).fonts;
+    if (fonts?.ready) {
+      void fonts.ready.then(() => bump()).catch(() => {});
+    }
+
+    return () => {
+      window.removeEventListener("load", bump);
+      resizeObserver?.disconnect();
+    };
+  }, [isHydrated]);
   useEffect(() => {
     if (typeof window === "undefined" || typeof CSS === "undefined") return;
     setUseFallback(!CSS.supports("animation-timeline: scroll()"));
@@ -648,13 +697,13 @@ export function HeroSection({
     const availableWidth = Math.max(96, Math.floor(heroNoteWidth - chromeAllowance - statusWidth));
     return compactCountryLabel(featureCountryLabel, availableWidth);
   }, [featureCountryLabel, heroNoteStatus, heroNoteWidth]);
-  const canUseInteractiveNotes = isFinePointer && !shouldReduceMotion;
+  const canUseInteractiveNotes = !shouldReduceMotion;
   const heroSignalOptions = useMemo(() => {
     const country = featureCountryLabel;
     const leftPhrases = [
-      nowPlaying?.name ? `${nowPlaying.name} is carrying ${heroTagLine || "local radio texture"} from ${country}.` : null,
+      hydratedNowPlaying?.name ? `${hydratedNowPlaying.name} is carrying ${heroTagLine || "local radio texture"} from ${country}.` : null,
       heroSignalFacts ? `Signal lane: ${heroSignalFacts}.` : null,
-      nowPlaying?.homepage ? `Station ledger includes a direct station source.` : null,
+      hydratedNowPlaying?.homepage ? `Station ledger includes a direct station source.` : null,
     ].filter(Boolean) as string[];
     const centerPhrases = [
       heroTrackLine ? `Live track: ${heroTrackLine}.` : null,
@@ -697,8 +746,8 @@ export function HeroSection({
     heroSignalFacts,
     heroTagLine,
     heroTrackLine,
-    nowPlaying?.homepage,
-    nowPlaying?.name,
+    hydratedNowPlaying?.homepage,
+    hydratedNowPlaying?.name,
     nowPlayingMeta.status,
   ]);
   const manuscriptSnippets = useMemo<HeroManuscriptSnippet[]>(() => {
@@ -712,7 +761,7 @@ export function HeroSection({
       ? heroInsightLinks.map((link) => link.label).join(" • ")
       : heroTagLine || "country notes • live station tags • route context";
     const compactTrackText = nowPlayingMeta.track?.title
-      ?? nowPlaying?.name
+      ?? hydratedNowPlaying?.name
       ?? "live track";
     const compactSummaryText = displayTrivia?.facts?.[0]
       ? `${displayTrivia.facts[0].label}: ${displayTrivia.facts[0].value}`
@@ -725,8 +774,8 @@ export function HeroSection({
         id: "station",
         zone: "left",
         label: "station",
-        text: `${featureCountryLabel} • ${nowPlaying?.name ?? "Global route signal"}`,
-        compactText: nowPlaying?.name ?? featureCountryLabel,
+        text: `${featureCountryLabel} • ${hydratedNowPlaying?.name ?? "Global route signal"}`,
+        compactText: hydratedNowPlaying?.name ?? featureCountryLabel,
         width: 290,
         xPercent: 46,
         yPercent: 18,
@@ -786,10 +835,33 @@ export function HeroSection({
     heroInsightLinks,
     heroTagLine,
     heroTrackLine,
-    nowPlaying?.name,
+    hydratedNowPlaying?.name,
     nowPlayingMeta.track?.title,
     signalNote,
   ]);
+  const manuscriptZoneBounds = useMemo(() => {
+    const leftPositions = manuscriptSnippets
+      .filter((snippet) => snippet.zone === "left")
+      .map((snippet) => snippet.xPercent / 100);
+    const centerPositions = manuscriptSnippets
+      .filter((snippet) => snippet.zone === "center")
+      .map((snippet) => snippet.xPercent / 100);
+    const rightPositions = manuscriptSnippets
+      .filter((snippet) => snippet.zone === "right")
+      .map((snippet) => snippet.xPercent / 100);
+
+    const average = (values: number[], fallback: number) =>
+      values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : fallback;
+
+    const leftCenter = average(leftPositions, 0.4);
+    const centerCenter = average(centerPositions, 0.58);
+    const rightCenter = average(rightPositions, 0.74);
+
+    return {
+      leftMax: (leftCenter + centerCenter) / 2,
+      centerMax: (centerCenter + rightCenter) / 2,
+    };
+  }, [manuscriptSnippets]);
   const heroSignalPrompt = "Move through the signal field to wake the manuscript.";
   const heroSignalDisplayText = heroSignalText ?? heroSignalPrompt;
   const heroSpotlight = useMotionTemplate`radial-gradient(240px circle at ${spotlightX}px ${spotlightY}px, rgba(245,177,45,0.18), rgba(245,177,45,0.08) 28%, transparent 72%)`;
@@ -852,7 +924,11 @@ export function HeroSection({
     spotlightOpacity.set(1);
 
     const zone =
-      ratio < 0.36 ? "left" : ratio > 0.68 ? "right" : "center";
+      ratio < manuscriptZoneBounds.leftMax
+        ? "left"
+        : ratio > manuscriptZoneBounds.centerMax
+          ? "right"
+          : "center";
     if (zone !== lastPointerZoneRef.current) {
       lastPointerZoneRef.current = zone;
       setActiveSignalZone(zone);
@@ -886,6 +962,7 @@ export function HeroSection({
         src="/pretext-atlas-hero.png"
         alt=""
         aria-hidden="true"
+        onLoad={() => setMeasureVersion((value) => value + 1)}
         className="absolute inset-0 h-full w-full object-cover object-[68%_center]"
       />
       <div
@@ -1038,6 +1115,7 @@ export function HeroSection({
                 as="h1"
                 text="A listening atlas for people who travel by sound."
                 anchorRef={heroSectionRef}
+                measureKey={measureVersion}
                 pointerX={pointerX}
                 pointerY={pointerY}
                 pointerVelocity={pointerVelocity}
@@ -1059,6 +1137,7 @@ export function HeroSection({
               as="p"
               text="Tune into live radio from every country, then follow a clear route into local stations, listening notes, and country-level discovery."
               anchorRef={heroSectionRef}
+              measureKey={measureVersion}
               pointerX={pointerX}
               pointerY={pointerY}
               pointerVelocity={pointerVelocity}
@@ -1078,6 +1157,7 @@ export function HeroSection({
                 as="div"
                 text={`${topCountries.length.toLocaleString()} countries`}
                 anchorRef={heroSectionRef}
+                measureKey={measureVersion}
                 pointerX={pointerX}
                 pointerY={pointerY}
                 pointerVelocity={pointerVelocity}
@@ -1098,6 +1178,7 @@ export function HeroSection({
                   ? `${(totalStations / 1000).toFixed(0)}k+ live stations`
                   : `${totalStations.toLocaleString()} live stations`}
                 anchorRef={heroSectionRef}
+                measureKey={measureVersion}
                 pointerX={pointerX}
                 pointerY={pointerY}
                 pointerVelocity={pointerVelocity}
@@ -1116,6 +1197,7 @@ export function HeroSection({
                 as="div"
                 text={`${continents} continents on the dial`}
                 anchorRef={heroSectionRef}
+                measureKey={measureVersion}
                 pointerX={pointerX}
                 pointerY={pointerY}
                 pointerVelocity={pointerVelocity}
