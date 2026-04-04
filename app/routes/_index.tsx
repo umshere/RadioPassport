@@ -73,6 +73,25 @@ function isEnglishLanguage(value: string) {
   return ENGLISH_TOKENS.has(normalizeLanguageToken(value));
 }
 
+function matchesCatalogSearch(station: Station, query: string) {
+  const normalizedQuery = query.trim().toLowerCase();
+  if (!normalizedQuery) return false;
+  const tokens = normalizedQuery.split(/\s+/).filter(Boolean);
+  const haystack = [
+    station.name,
+    station.country,
+    station.state,
+    station.language,
+    station.tags,
+    station.tagList?.join(" "),
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+
+  return tokens.every((token) => haystack.includes(token));
+}
+
 export async function loader({ request }: LoaderFunctionArgs) {
   const url = new URL(request.url);
   const view = url.searchParams.get("view");
@@ -561,15 +580,26 @@ export default function Index() {
 
     let cancelled = false;
     setIsCatalogLoading(true);
-    rbFetchJson<unknown>(
-      `/json/stations/search?name=${encodeURIComponent(query)}&limit=24&hidebroken=true&order=clickcount&reverse=true`,
-      undefined,
-      { softFail: true }
-    )
-      .then((result) => {
+    fetch(`/api/radio-catalog?stations=4000`, {
+      headers: {
+        Accept: "application/json",
+      },
+    })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`Catalog snapshot failed with ${response.status}`);
+        }
+        return response.json() as Promise<{ stations?: Station[] }>;
+      })
+      .then((snapshot) => {
         if (cancelled) return;
-        const normalized = normalizeStations(Array.isArray(result) ? result : []);
-        setCatalogStations(normalized);
+        const snapshotStations = normalizeStations(
+          Array.isArray(snapshot?.stations) ? snapshot.stations : []
+        );
+        const matches = snapshotStations
+          .filter((station) => matchesCatalogSearch(station, query))
+          .slice(0, 24);
+        setCatalogStations(matches);
       })
       .catch((error) => {
         if (cancelled) return;
