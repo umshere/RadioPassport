@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useCallback, useState, useRef, type MouseEvent } from "react";
 import { useLocation } from "@remix-run/react";
-import { Drawer, Popover, Text, Tooltip } from "@mantine/core";
+import { Drawer, Text, Tooltip } from "@mantine/core";
 import { motion, AnimatePresence } from "framer-motion";
 import RetroTuner from "./RetroTuner";
 import { StationArtwork } from "./StationArtwork";
@@ -25,6 +25,7 @@ import { useNowPlayingMetadata } from "~/hooks/useNowPlayingMetadata";
 import { useTrackTrivia } from "~/hooks/useTrackTrivia";
 import { useElementSize, useMediaQuery } from "@mantine/hooks";
 import { fitsPretextWidth, getPretextLineCount, getPretextTightWidth } from "~/utils/pretextLayout";
+import { scrollToId } from "~/utils/scrollHelpers";
 
 const DOCK_TITLE_FONT =
   '700 14px "General Sans", "SF Pro Text", "Segoe UI", "Helvetica Neue", Arial, sans-serif';
@@ -43,24 +44,19 @@ export default function PlayerDock() {
   const isAiRoute = location.pathname.startsWith("/ai");
   const notice = usePlayerNoticeStore((state) => state.notice);
   const clearNotice = usePlayerNoticeStore((state) => state.clearNotice);
+  const nowPlaying = usePlayerStore((state) => state.nowPlaying);
+  const isPlaying = usePlayerStore((state) => state.isPlaying);
+  const togglePlay = usePlayerStore((state) => state.togglePlay);
+  const queue = usePlayerStore((state) => state.queue);
+  const currentStationIndex = usePlayerStore((state) => state.currentStationIndex);
+  const startStation = usePlayerStore((state) => state.startStation);
 
-  const {
-    nowPlaying,
-    isPlaying,
-    togglePlay,
-    queue,
-    currentStationIndex,
-    startStation
-  } = usePlayerStore();
-
-  const {
-    toggleQuickRetune,
-    raptorMiniEnabled,
-    aiTriviaExpanded,
-    setAiTriviaExpanded,
-    insightsOpen,
-    setInsightsOpen,
-  } = useUIStore();
+  const toggleQuickRetune = useUIStore((state) => state.toggleQuickRetune);
+  const raptorMiniEnabled = useUIStore((state) => state.raptorMiniEnabled);
+  const aiTriviaExpanded = useUIStore((state) => state.aiTriviaExpanded);
+  const setAiTriviaExpanded = useUIStore((state) => state.setAiTriviaExpanded);
+  const insightsOpen = useUIStore((state) => state.insightsOpen);
+  const setInsightsOpen = useUIStore((state) => state.setInsightsOpen);
 
   const title = useMemo(() => nowPlaying?.name ?? "", [nowPlaying?.name]);
   const subtitle = useMemo(
@@ -165,23 +161,31 @@ export default function PlayerDock() {
     }
   }, []);
   const nowPlayingMeta = useNowPlayingMetadata(nowPlaying, isPlaying);
+  const scrollHeroIntoView = useCallback(() => {
+    if (location.pathname !== "/") return;
+    window.requestAnimationFrame(() => {
+      scrollToId("home-hero", "start");
+    });
+  }, [location.pathname]);
   const handleOpenInsights = useCallback(
     (event?: MouseEvent) => {
       event?.stopPropagation();
       setAiTriviaExpanded(true);
       setInsightsOpen(true);
+      scrollHeroIntoView();
     },
-    [setAiTriviaExpanded, setInsightsOpen]
+    [scrollHeroIntoView, setAiTriviaExpanded, setInsightsOpen]
   );
   const handleToggleInsights = useCallback(
     (event: MouseEvent) => {
       event.stopPropagation();
       if (!insightsOpen) {
         setAiTriviaExpanded(true);
+        scrollHeroIntoView();
       }
       setInsightsOpen(!insightsOpen);
     },
-    [insightsOpen, setAiTriviaExpanded, setInsightsOpen]
+    [insightsOpen, scrollHeroIntoView, setAiTriviaExpanded, setInsightsOpen]
   );
   const freeTrivia = useTrackTrivia({
     track: nowPlayingMeta.track,
@@ -762,30 +766,20 @@ export default function PlayerDock() {
             {/* Controls - Vibrant style */}
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-2 rounded-full border border-white/10 bg-[#141822] px-2 py-2 shadow-[0_8px_20px_rgba(0,0,0,0.28)]">
-                <Popover
-                  opened={insightsOpen}
-                  onChange={setInsightsOpen}
-                  position="top"
-                  withArrow
-                  shadow="md"
-                  width={280}
-                  withinPortal
+                <button
+                  type="button"
+                  className={`inline-flex h-9 w-[152px] shrink-0 items-center justify-center gap-2 rounded-full border px-3 text-[11px] font-semibold transition-colors ${
+                    insightsOpen
+                      ? "border-amber-300/80 bg-amber-500/18 text-amber-50 shadow-[0_0_0_1px_rgba(255,214,127,0.14)_inset]"
+                      : "border-amber-400/35 bg-amber-500/12 text-amber-100 hover:border-amber-400/70"
+                  }`}
+                  onClick={handleToggleInsights}
+                  aria-label="Toggle hero insights"
+                  aria-pressed={insightsOpen}
                 >
-                  <Popover.Target>
-                    <button
-                      type="button"
-                      className="inline-flex h-9 w-[152px] shrink-0 items-center justify-center gap-2 rounded-full border border-amber-400/35 bg-amber-500/12 px-3 text-[11px] font-semibold text-amber-100 hover:border-amber-400/70"
-                      onClick={handleToggleInsights}
-                      aria-label="Toggle AI insights"
-                    >
-                      <IconSparkles size={12} />
-                      {desktopInsightsLabel}
-                    </button>
-                  </Popover.Target>
-                  <Popover.Dropdown className="border border-amber-400/20 bg-[#12151c] shadow-2xl">
-                    {triviaContent}
-                  </Popover.Dropdown>
-                </Popover>
+                  <IconSparkles size={12} />
+                  {insightsOpen ? "Insights On" : desktopInsightsLabel}
+                </button>
 
                 <Tooltip label="Quick Retune" position="top" withArrow>
                   <button

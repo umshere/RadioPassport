@@ -1,9 +1,9 @@
 import { Text } from "@mantine/core";
+import { useMediaQuery } from "@mantine/hooks";
 import { StationCard } from "./StationCard";
 import { SkeletonGrid } from "./SkeletonCard";
 import { CompactStationList } from "~/components/CompactStationList";
 import type { Station } from "~/types/radio";
-import { useState, useEffect } from "react";
 
 type StationGridProps = {
   stations: Station[];
@@ -28,14 +28,7 @@ export function StationGrid({
   emptyMessage,
   unavailableIds,
 }: StationGridProps) {
-  const [isMobile, setIsMobile] = useState(false);
-
-  useEffect(() => {
-    const checkMobile = () => setIsMobile(window.innerWidth < 640);
-    checkMobile();
-    window.addEventListener("resize", checkMobile);
-    return () => window.removeEventListener("resize", checkMobile);
-  }, []);
+  const isMobile = useMediaQuery("(max-width: 639px)");
 
   if (isFetchingExplore) {
     return <SkeletonGrid count={6} />;
@@ -72,7 +65,7 @@ export function StationGrid({
 
   // Desktop: Use grid view
   return (
-    <section className="rounded-2xl border border-white/10 bg-[var(--rp-card)] p-6 shadow-[0_18px_40px_rgba(0,0,0,0.5)] backdrop-blur-xl md:p-8">
+    <section className="rounded-2xl border border-white/10 bg-[var(--rp-card)] p-6 shadow-[0_18px_40px_rgba(0,0,0,0.5)] md:p-8">
       <div id="station-grid" className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {stations.map((station, index) => {
           const isCurrent = nowPlaying?.uuid === station.uuid;

@@ -15,14 +15,12 @@ import {
 } from "~/utils/colorExtraction";
 
 export function PremiumPlayerDock() {
-    const {
-        nowPlaying,
-        isPlaying,
-        togglePlay,
-        queue,
-        currentStationIndex,
-        startStation
-    } = usePlayerStore();
+    const nowPlaying = usePlayerStore((state) => state.nowPlaying);
+    const isPlaying = usePlayerStore((state) => state.isPlaying);
+    const togglePlay = usePlayerStore((state) => state.togglePlay);
+    const queue = usePlayerStore((state) => state.queue);
+    const currentStationIndex = usePlayerStore((state) => state.currentStationIndex);
+    const startStation = usePlayerStore((state) => state.startStation);
 
     const [isExpanded, setIsExpanded] = useState(false);
 

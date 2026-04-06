@@ -566,7 +566,7 @@ export default function Index() {
       if (trimmed !== searchQueryRaw.trim()) {
         handleSearch(trimmed);
       }
-    }, 700);
+    }, 1000);
     return () => window.clearTimeout(timeout);
   }, [handleSearch, searchDraft, searchQueryRaw]);
 
@@ -580,7 +580,7 @@ export default function Index() {
 
     let cancelled = false;
     setIsCatalogLoading(true);
-    fetch(`/api/radio-catalog?stations=4000`, {
+    fetch(`/api/radio-catalog?stations=8000&q=${encodeURIComponent(query)}`, {
       headers: {
         Accept: "application/json",
       },
@@ -653,7 +653,7 @@ export default function Index() {
     const loadStation = async () => {
       try {
         const raw = await rbFetchJson<unknown>(
-          `/json/stations/byname/Radio Schizoid - Dub Techno?limit=1&hidebroken=true`
+          `/json/stations/byname/Radio Caprice - Neo-progressive Rock?limit=1&hidebroken=true`
         );
         const station = pickTopStation(normalizeStations(Array.isArray(raw) ? raw : []));
         if (!station || cancelled) return;
@@ -718,7 +718,7 @@ export default function Index() {
   return (
     <div className="app-bg relative min-h-screen text-[var(--rp-text)] overflow-x-hidden w-full pb-32">
       {showSplash ? <AISplashScreen onComplete={() => setShowSplash(false)} /> : null}
-      <SignalField />
+      <SignalField quality={selectedCountry ? "lite" : "full"} />
 
       <main
         className={`relative z-10 flex w-full flex-col gap-0 pt-0 md:pt-2 ${
@@ -743,7 +743,7 @@ export default function Index() {
 
             <div className="relative z-20 mx-auto -mt-6 flex w-full max-w-7xl flex-col gap-7 px-4 md:-mt-8 md:gap-8 md:px-6">
               <section className="relative -mx-4 px-4 pt-5 md:-mx-6 md:px-6 md:pt-6">
-                <div className="pointer-events-none absolute left-4 top-5 h-[13rem] w-[30rem] max-w-full rounded-full bg-[radial-gradient(circle_at_16%_18%,rgba(245,177,45,0.11),transparent_46%),radial-gradient(circle_at_72%_58%,rgba(113,154,204,0.06),transparent_36%)] blur-2xl" />
+                <div className="pointer-events-none absolute left-4 top-5 h-[13rem] w-[30rem] max-w-full rounded-full bg-[radial-gradient(circle_at_16%_18%,rgba(245,177,45,0.11),transparent_46%),radial-gradient(circle_at_72%_58%,rgba(136,116,99,0.08),transparent_36%)] blur-2xl" />
                 <div className="relative">
                   <JourneyModule
                     nowPlaying={player.nowPlaying}

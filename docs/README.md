@@ -16,6 +16,7 @@ Welcome to the Radio Passport documentation. This folder collects all the projec
 - Current AI pipeline: [AI_PIPELINE.md](./AI_PIPELINE.md)
 - AI world mode integration: [AI_ATLAS_INTEGRATION.md](./AI_ATLAS_INTEGRATION.md)
 - AI prompt enhancement: [AI_PROMPT_ENHANCEMENT.md](./AI_PROMPT_ENHANCEMENT.md)
+- Hero insights + Pretext architecture: [PRETEXT_HERO_INSIGHTS.md](./PRETEXT_HERO_INSIGHTS.md)
 
 ## Additional Docs
 

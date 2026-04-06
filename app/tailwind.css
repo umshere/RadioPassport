@@ -7,14 +7,17 @@
 
 @layer base {
   :root {
-    --rp-bg: #0b0c10;
-    --rp-surface: #0f1118;
-    --rp-card: #151826;
-    --rp-card-2: #1b2031;
+    --rp-bg: #060913;
+    --rp-surface: #11151d;
+    --rp-card: #171b22;
+    --rp-card-2: #1d2129;
     --rp-border: rgba(255, 255, 255, 0.08);
     --rp-border-strong: rgba(255, 255, 255, 0.16);
     --rp-gold: #f5b12d;
     --rp-gold-strong: #ffc857;
+    --rp-midnight: #0f1827;
+    --rp-bronze: #705040;
+    --rp-bronze-soft: #887463;
     --rp-text: #f8f3e6;
     --rp-muted: rgba(248, 243, 230, 0.65);
     --rp-muted-2: rgba(248, 243, 230, 0.4);
@@ -257,21 +260,21 @@
   .app-bg {
     position: relative;
     background: radial-gradient(
-        140% 120% at 14% 10%,
-        rgba(245, 177, 45, 0.12) 0%,
-        transparent 42%
+        138% 118% at 14% 10%,
+        rgba(245, 177, 45, 0.11) 0%,
+        transparent 40%
       ),
       radial-gradient(
-        110% 100% at 88% 8%,
-        rgba(92, 158, 173, 0.08) 0%,
-        transparent 65%
+        112% 104% at 84% 8%,
+        rgba(112, 80, 64, 0.14) 0%,
+        transparent 62%
       ),
       radial-gradient(
-        120% 120% at 50% 42%,
-        rgba(15, 20, 28, 0.32) 0%,
+        124% 122% at 52% 40%,
+        rgba(17, 21, 29, 0.36) 0%,
         transparent 60%
       ),
-      linear-gradient(180deg, #05070c 0%, #071019 52%, #07111b 100%);
+      linear-gradient(180deg, #050812 0%, #08101a 54%, #0c1420 100%);
     color: rgba(244, 237, 224, 0.9);
     overflow: hidden;
   }
@@ -282,14 +285,14 @@
     inset: -20%;
     pointer-events: none;
     background: radial-gradient(
-        120% 120% at 24% 10%,
+        118% 118% at 22% 10%,
         rgba(245, 177, 45, 0.12) 0%,
-        transparent 52%
+        transparent 50%
       ),
       radial-gradient(
         120% 120% at 78% 14%,
-        rgba(92, 158, 173, 0.08) 0%,
-        transparent 70%
+        rgba(136, 116, 99, 0.12) 0%,
+        transparent 68%
       );
     mix-blend-mode: screen;
     opacity: 0.42;
@@ -304,16 +307,16 @@
     background: radial-gradient(
       circle at 50% 38%,
       transparent 0%,
-      rgba(3, 10, 18, 0.42) 70%,
-      rgba(2, 7, 14, 0.74) 100%
+      rgba(4, 10, 18, 0.4) 68%,
+      rgba(3, 8, 15, 0.72) 100%
     );
     z-index: 0;
   }
 
   .nav-shell {
     @apply fixed top-0 left-0 right-0 z-50 w-full backdrop-blur;
-    background: rgba(3, 24, 43, 0.82);
-    border-bottom: 1px solid rgba(92, 158, 173, 0.18);
+    background: rgba(6, 13, 24, 0.82);
+    border-bottom: 1px solid rgba(136, 116, 99, 0.18);
     box-shadow: 0 18px 42px rgba(1, 10, 22, 0.45);
   }
 
@@ -348,12 +351,12 @@
 
   .hero-surface {
     @apply relative overflow-hidden rounded-3xl border shadow-xl;
-    border-color: rgba(92, 158, 173, 0.28);
+    border-color: rgba(136, 116, 99, 0.24);
     background: linear-gradient(
       145deg,
-      rgba(4, 18, 34, 0.92) 0%,
-      rgba(4, 32, 53, 0.9) 55%,
-      rgba(5, 40, 67, 0.88) 100%
+      rgba(8, 13, 23, 0.94) 0%,
+      rgba(17, 21, 29, 0.92) 54%,
+      rgba(34, 29, 26, 0.88) 100%
     );
     box-shadow: 0 32px 68px -28px rgba(1, 10, 22, 0.75);
   }
@@ -365,7 +368,7 @@
     height: 70%;
     background: radial-gradient(
       circle at 35% 45%,
-      rgba(92, 158, 173, 0.22) 0%,
+      rgba(136, 116, 99, 0.18) 0%,
       transparent 65%
     );
     opacity: 0.55;

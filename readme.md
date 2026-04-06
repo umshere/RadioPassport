@@ -7,6 +7,7 @@ Radio Passport is a beautiful, web-based radio player that lets you explore and 
 > Documentation: Start with [docs/README.md](./docs/README.md) for the full doc index.  
 > AI assistant guide: [LLM.md](./LLM.md) summarizes the architecture, commands, and key contracts.  
 > **User Journey & API Flows**: See [docs/UI_FLOW.md](./docs/UI_FLOW.md) for visual diagrams and flow charts.
+> **Hero / Pretext Debugging Context**: See [docs/PRETEXT_HERO_INSIGHTS.md](./docs/PRETEXT_HERO_INSIGHTS.md) before starting a new hero debugging thread.
 
 ## ✨ Features
 

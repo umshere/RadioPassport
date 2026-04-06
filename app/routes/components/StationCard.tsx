@@ -148,7 +148,11 @@ export function StationCard({
     };
 
   return (
-    <div ref={stationRef} className="h-full">
+    <div
+      ref={stationRef}
+      className="h-full"
+      style={{ contentVisibility: "auto", containIntrinsicSize: "360px" }}
+    >
       <div
         className={`station-card group h-full flex flex-col rounded-[2rem] p-5 transition-all duration-300 hover:-translate-y-1.5 ${cardStatusClass}`}
         style={{
@@ -157,7 +161,6 @@ export function StationCard({
           background: isCurrent
             ? 'rgba(12, 14, 20, 0.9)'
             : 'rgba(12, 14, 20, 0.7)',
-          backdropFilter: 'blur(12px)',
           boxShadow: isCurrent
             ? '0 20px 40px -12px rgba(245, 177, 45, 0.35), 0 8px 16px -8px rgba(0, 0, 0, 0.5)'
             : '0 12px 28px -12px rgba(0, 0, 0, 0.5)',

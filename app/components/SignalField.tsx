@@ -7,7 +7,7 @@ type Particle = {
   vy: number;
   radius: number;
   alpha: number;
-  hue: "gold" | "blue" | "ivory";
+  hue: "gold" | "midnight" | "copper" | "ivory";
 };
 
 type Note = {
@@ -24,18 +24,25 @@ type Note = {
 };
 
 const GOLD = "245, 177, 45";
-const BLUE = "92, 158, 173";
+const MIDNIGHT = "48, 63, 86";
+const COPPER = "112, 80, 64";
+const COPPER_SOFT = "136, 116, 99";
 const IVORY = "244, 237, 224";
 const NOTE_GLYPHS: Note["glyph"][] = ["♪", "♫", "♬"];
 
-function getParticleCount(width: number) {
-  if (width < 640) return 34;
-  if (width < 1024) return 52;
-  return 72;
+function getParticleCount(width: number, quality: "full" | "lite") {
+  if (quality === "lite") {
+    if (width < 640) return 10;
+    if (width < 1024) return 16;
+    return 24;
+  }
+  if (width < 640) return 22;
+  if (width < 1024) return 34;
+  return 48;
 }
 
-function createParticles(width: number, height: number) {
-  const count = getParticleCount(width);
+function createParticles(width: number, height: number, quality: "full" | "lite") {
+  const count = getParticleCount(width, quality);
   const particles: Particle[] = [];
 
   for (let index = 0; index < count; index += 1) {
@@ -43,9 +50,11 @@ function createParticles(width: number, height: number) {
     const hue =
       variant === 0 || variant === 5
         ? "gold"
-        : variant === 3
+      : variant === 3
           ? "ivory"
-          : "blue";
+          : variant === 7
+            ? "copper"
+            : "midnight";
 
     particles.push({
       x: Math.random() * width,
@@ -61,14 +70,15 @@ function createParticles(width: number, height: number) {
   return particles;
 }
 
-function getNoteCount(width: number) {
-  if (width < 640) return 3;
-  if (width < 1024) return 5;
-  return 7;
+function getNoteCount(width: number, quality: "full" | "lite") {
+  if (quality === "lite") return 0;
+  if (width < 640) return 2;
+  if (width < 1024) return 3;
+  return 4;
 }
 
-function createNotes(width: number, height: number) {
-  const count = getNoteCount(width);
+function createNotes(width: number, height: number, quality: "full" | "lite") {
+  const count = getNoteCount(width, quality);
   const notes: Note[] = [];
 
   for (let index = 0; index < count; index += 1) {
@@ -92,10 +102,11 @@ function createNotes(width: number, height: number) {
 function particleColor(hue: Particle["hue"], alpha: number) {
   if (hue === "gold") return `rgba(${GOLD}, ${alpha})`;
   if (hue === "ivory") return `rgba(${IVORY}, ${alpha})`;
-  return `rgba(${BLUE}, ${alpha})`;
+  if (hue === "copper") return `rgba(${COPPER_SOFT}, ${alpha})`;
+  return `rgba(${MIDNIGHT}, ${alpha})`;
 }
 
-export function SignalField() {
+export function SignalField({ quality = "full" }: { quality?: "full" | "lite" }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   useEffect(() => {
@@ -107,11 +118,13 @@ export function SignalField() {
 
     const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
     const pointer = { x: window.innerWidth * 0.5, y: window.innerHeight * 0.35 };
-    let particles = createParticles(window.innerWidth, window.innerHeight);
-    let notes = createNotes(window.innerWidth, window.innerHeight);
+    let particles = createParticles(window.innerWidth, window.innerHeight, quality);
+    let notes = createNotes(window.innerWidth, window.innerHeight, quality);
     let animationFrame = 0;
     let width = 0;
     let height = 0;
+    let lastPaint = 0;
+    const minFrameMs = quality === "lite" ? 48 : 33;
 
     const resize = () => {
       width = window.innerWidth;
@@ -123,8 +136,8 @@ export function SignalField() {
       canvas.style.width = `${width}px`;
       canvas.style.height = `${height}px`;
       context.setTransform(dpr, 0, 0, dpr, 0, 0);
-      particles = createParticles(width, height);
-      notes = createNotes(width, height);
+      particles = createParticles(width, height, quality);
+      notes = createNotes(width, height, quality);
     };
 
     const handlePointerMove = (event: PointerEvent) => {
@@ -132,7 +145,12 @@ export function SignalField() {
       pointer.y = event.clientY;
     };
 
-    const draw = () => {
+    const draw = (now: number) => {
+      if (now - lastPaint < minFrameMs) {
+        animationFrame = window.requestAnimationFrame(draw);
+        return;
+      }
+      lastPaint = now;
       context.clearRect(0, 0, width, height);
 
       const cursorGlow = context.createRadialGradient(
@@ -144,15 +162,15 @@ export function SignalField() {
         Math.min(width, height) * 0.22
       );
       cursorGlow.addColorStop(0, "rgba(245, 177, 45, 0.12)");
-      cursorGlow.addColorStop(0.38, "rgba(92, 158, 173, 0.08)");
+      cursorGlow.addColorStop(0.38, "rgba(112, 80, 64, 0.09)");
       cursorGlow.addColorStop(1, "rgba(0, 0, 0, 0)");
       context.fillStyle = cursorGlow;
       context.fillRect(0, 0, width, height);
 
       const waveConfigs = [
-        { y: height * 0.22, amp: 18, color: `rgba(${BLUE}, 0.16)`, width: 1.2, speed: 0.0009 },
+        { y: height * 0.22, amp: 18, color: `rgba(${MIDNIGHT}, 0.2)`, width: 1.2, speed: 0.0009 },
         { y: height * 0.36, amp: 24, color: `rgba(${GOLD}, 0.12)`, width: 1.4, speed: 0.0011 },
-        { y: height * 0.54, amp: 16, color: `rgba(${IVORY}, 0.08)`, width: 1, speed: 0.0007 },
+        { y: height * 0.54, amp: 16, color: `rgba(${COPPER_SOFT}, 0.09)`, width: 1, speed: 0.0007 },
       ];
 
       waveConfigs.forEach((wave, waveIndex) => {
@@ -163,7 +181,7 @@ export function SignalField() {
         for (let x = 0; x <= width; x += 8) {
           const y =
             wave.y +
-            Math.sin(x * 0.012 + performance.now() * wave.speed + waveIndex) * wave.amp +
+            Math.sin(x * 0.012 + now * wave.speed + waveIndex) * wave.amp +
             (pointer.x / width - 0.5) * 14;
 
           if (x === 0) {
@@ -202,7 +220,7 @@ export function SignalField() {
 
         context.beginPath();
         context.fillStyle = particleColor(particle.hue, alpha);
-        context.shadowBlur = particle.hue === "gold" ? 24 : 16;
+        context.shadowBlur = particle.hue === "gold" && quality === "full" ? 16 : 0;
         context.shadowColor = particleColor(particle.hue, alpha * 0.6);
         context.arc(
           particle.x,
@@ -246,9 +264,9 @@ export function SignalField() {
 
         context.save();
         context.translate(note.x, note.y);
-        context.rotate(note.rotation + Math.sin(performance.now() * 0.0004 + noteIndex) * 0.08);
+        context.rotate(note.rotation + Math.sin(now * 0.0004 + noteIndex) * 0.08);
         context.fillStyle = note.hue === "gold" ? `rgba(${GOLD}, ${alpha})` : `rgba(${IVORY}, ${alpha})`;
-        context.shadowBlur = note.hue === "gold" ? 18 : 12;
+        context.shadowBlur = quality === "full" ? (note.hue === "gold" ? 14 : 8) : 0;
         context.shadowColor =
           note.hue === "gold" ? `rgba(${GOLD}, ${alpha * 0.7})` : `rgba(${IVORY}, ${alpha * 0.6})`;
         context.font = `${note.size + pointerBoost * 4}px "Times New Roman", serif`;
@@ -264,9 +282,15 @@ export function SignalField() {
 
         if (distanceToPointer < 220) {
           context.beginPath();
-          context.strokeStyle = `rgba(${particle.hue === "gold" ? GOLD : BLUE}, ${
-            0.04 + (1 - distanceToPointer / 220) * 0.12
-          })`;
+          const connectionColor =
+            particle.hue === "gold"
+              ? GOLD
+              : particle.hue === "ivory"
+                ? IVORY
+                : particle.hue === "copper"
+                  ? COPPER
+                  : MIDNIGHT;
+          context.strokeStyle = `rgba(${connectionColor}, ${0.04 + (1 - distanceToPointer / 220) * 0.12})`;
           context.lineWidth = 1;
           context.moveTo(particle.x, particle.y);
           context.lineTo(
@@ -281,7 +305,7 @@ export function SignalField() {
     };
 
     resize();
-    draw();
+    animationFrame = window.requestAnimationFrame(draw);
 
     window.addEventListener("resize", resize);
     window.addEventListener("pointermove", handlePointerMove, { passive: true });
@@ -291,7 +315,7 @@ export function SignalField() {
       window.removeEventListener("resize", resize);
       window.removeEventListener("pointermove", handlePointerMove);
     };
-  }, []);
+  }, [quality]);
 
   return (
     <div
@@ -300,7 +324,7 @@ export function SignalField() {
     >
       <canvas
         ref={canvasRef}
-        className="h-full w-full opacity-95 [mix-blend-mode:screen]"
+        className="h-full w-full opacity-70"
       />
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_30%,rgba(255,255,255,0.04),transparent_26%),radial-gradient(circle_at_center,transparent_0%,rgba(2,12,25,0.18)_68%,rgba(2,12,25,0.34)_100%)]" />
     </div>

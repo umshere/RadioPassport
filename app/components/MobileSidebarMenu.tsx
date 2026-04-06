@@ -28,7 +28,8 @@ const MENU_ITEMS: MenuItem[] = [
 export default function MobileSidebarMenu() {
     const [isOpen, setIsOpen] = useState(false);
     const location = useLocation();
-    const { nowPlaying, queue } = usePlayerStore();
+    const nowPlaying = usePlayerStore((state) => state.nowPlaying);
+    const queue = usePlayerStore((state) => state.queue);
 
     return (
         <>

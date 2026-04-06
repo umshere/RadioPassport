@@ -225,18 +225,16 @@ function GlobalAudioBridge() {
     lastSkipAt: 0,
     recentFailures: [],
   });
-  const {
-    setAudioElement,
-    setIsPlaying,
-    setAudioLevel,
-    isPlaying,
-    nowPlaying,
-    queue,
-    currentStationIndex,
-    startStation,
-    playPause,
-    stop,
-  } = usePlayerStore();
+  const setAudioElement = usePlayerStore((state) => state.setAudioElement);
+  const setIsPlaying = usePlayerStore((state) => state.setIsPlaying);
+  const setAudioLevel = usePlayerStore((state) => state.setAudioLevel);
+  const isPlaying = usePlayerStore((state) => state.isPlaying);
+  const nowPlaying = usePlayerStore((state) => state.nowPlaying);
+  const queue = usePlayerStore((state) => state.queue);
+  const currentStationIndex = usePlayerStore((state) => state.currentStationIndex);
+  const startStation = usePlayerStore((state) => state.startStation);
+  const playPause = usePlayerStore((state) => state.playPause);
+  const stop = usePlayerStore((state) => state.stop);
   const markFailed = useStationAvailabilityStore((state) => state.markFailed);
   const clearFailure = useStationAvailabilityStore((state) => state.clearFailure);
   const setNotice = usePlayerNoticeStore((state) => state.setNotice);
@@ -597,17 +595,12 @@ function GlobalAudioBridge() {
       return;
     }
 
-    let frame = 0;
-
-    const animate = () => {
+    const interval = window.setInterval(() => {
       setAudioLevel(Math.random() * 0.6 + 0.2);
-      frame = requestAnimationFrame(animate);
-    };
-
-    frame = requestAnimationFrame(animate);
+    }, 120);
 
     return () => {
-      cancelAnimationFrame(frame);
+      window.clearInterval(interval);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isPlaying]);

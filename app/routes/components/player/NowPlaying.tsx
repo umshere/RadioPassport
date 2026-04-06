@@ -37,13 +37,11 @@ function getFallbackInitials(name: string | null | undefined): string {
 }
 
 export function NowPlaying({ station, onNext, onPrevious }: NowPlayingProps) {
-  const {
-    isPlaying,
-    volume,
-    togglePlay,
-    setVolume,
-    stop,
-  } = usePlayerStore();
+  const isPlaying = usePlayerStore((state) => state.isPlaying);
+  const volume = usePlayerStore((state) => state.volume);
+  const togglePlay = usePlayerStore((state) => state.togglePlay);
+  const setVolume = usePlayerStore((state) => state.setVolume);
+  const stop = usePlayerStore((state) => state.stop);
 
   if (!station) return null;
 

@@ -1,4 +1,4 @@
-import { type RefObject, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   AnimatePresence,
   type MotionValue,
@@ -24,12 +24,18 @@ import {
   IconX,
 } from "@tabler/icons-react";
 import { useElementSize, useMediaQuery } from "@mantine/hooks";
+import type { TriviaFact, TriviaLink } from "~/types/trivia";
 import { CountryFlag } from "~/components/CountryFlag";
 import { PretextMeasuredText } from "~/components/PretextMeasuredText";
 import { useNowPlayingMetadata } from "~/hooks/useNowPlayingMetadata";
 import { useTrackTrivia } from "~/hooks/useTrackTrivia";
 import { useUIStore } from "~/state/uiStore";
-import { fitsPretextWidth, getPretextLineCount, getPretextTightWidth } from "~/utils/pretextLayout";
+import {
+  fitsPretextWidth,
+  getPretextLineCount,
+  getPretextLines,
+  getPretextTightWidth,
+} from "~/utils/pretextLayout";
 import type { Country, Station } from "~/types/radio";
 
 const PRETEXT_HERO_FONT =
@@ -42,6 +48,12 @@ const HERO_NOTE_STATUS_FONT =
   '600 9px "General Sans", "SF Pro Text", "Segoe UI", "Helvetica Neue", Arial, sans-serif';
 const HERO_SIGNAL_FONT =
   '600 13px "General Sans", "SF Pro Text", "Segoe UI", "Helvetica Neue", Arial, sans-serif';
+const HERO_PROOF_FONT =
+  '600 11px "General Sans", "SF Pro Text", "Segoe UI", "Helvetica Neue", Arial, sans-serif';
+const HERO_CLOUD_TEXT_FONT =
+  '600 12px "General Sans", "SF Pro Text", "Segoe UI", "Helvetica Neue", Arial, sans-serif';
+const HERO_INSIGHT_TITLE_FONT =
+  '600 30px "General Sans", "SF Pro Display", "Segoe UI", "Helvetica Neue", Arial, sans-serif';
 
 type FallingHeroNote = {
   id: number;
@@ -73,10 +85,264 @@ type ElasticParticleSpring = {
   mass: number;
 };
 
+type HeroInsightCloudItem = {
+  id: string;
+  eyebrow: string;
+  text: string;
+  kind: "relation" | "mood" | "signal" | "source";
+  href?: string;
+  iconKind?: string;
+  width: number;
+};
+
+type HeroDisplayFact = TriviaFact & {
+  concept: string;
+  shortLabel: string;
+};
+
+const HERO_INSIGHT_CLOUD_SLOTS = [
+  { x: 0.1, y: 0.2 },
+  { x: 0.34, y: 0.28 },
+  { x: 0.58, y: 0.36 },
+  { x: 0.8, y: 0.5 },
+  { x: 0.2, y: 0.62 },
+  { x: 0.5, y: 0.72 },
+  { x: 0.78, y: 0.8 },
+  { x: 0.4, y: 0.88 },
+];
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value));
+}
+
+function normalizeInsightText(value: string) {
+  return value
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+function isInsightDuplicate(value: string, references: string[]) {
+  const normalizedValue = normalizeInsightText(value);
+  if (!normalizedValue) return true;
+
+  return references.some((reference) => {
+    const normalizedReference = normalizeInsightText(reference);
+    if (!normalizedReference) return false;
+    return (
+      normalizedReference === normalizedValue ||
+      normalizedReference.includes(normalizedValue) ||
+      normalizedValue.includes(normalizedReference)
+    );
+  });
+}
+
+function getInsightConcept(label: string, value: string) {
+  const normalizedLabel = normalizeInsightText(label);
+  const normalizedValue = normalizeInsightText(value);
+
+  if (/^\d{4}$/.test(value.trim())) return "year";
+  if (normalizedLabel.includes("release year") || normalizedLabel === "year") return "year";
+  if (normalizedLabel.includes("song title") || normalizedLabel === "title" || normalizedLabel === "track") return "title";
+  if (normalizedLabel === "artist" || normalizedLabel.includes("artist name")) return "artist";
+  if (normalizedLabel.includes("artist origin")) return "artist_origin";
+  if (normalizedLabel === "album") return "album";
+  if (normalizedLabel === "genre") return "genre";
+  if (normalizedLabel === "style") return "style";
+  if (normalizedLabel === "mood") return /^\d{4}$/.test(value.trim()) ? "year" : "mood";
+  if (normalizedLabel === "country") return "country";
+  if (normalizedLabel === "region" || normalizedLabel === "state") return "region";
+  if (normalizedLabel === "language") return "language";
+  if (normalizedLabel === "codec") return "codec";
+  if (normalizedLabel === "signal" || normalizedValue.includes("kbps")) return "signal";
+  if (normalizedLabel === "type") return "type";
+  if (normalizedLabel === "release") return "release";
+  if (normalizedLabel === "podcast") return "podcast";
+  if (normalizedLabel === "episode number") return "episode";
+  if (normalizedLabel === "host") return "host";
+  if (normalizedLabel === "station") return "station";
+  if (normalizedLabel === "origin") return "origin";
+  return normalizedLabel || "misc";
+}
+
+function getInsightShortLabel(label: string, concept: string) {
+  switch (concept) {
+    case "artist_origin":
+      return "Origin";
+    case "release":
+      return "Release";
+    case "episode":
+      return "Episode";
+    case "signal":
+      return "Signal";
+    default:
+      return label;
+  }
+}
+
+const HERO_CARD_CONCEPT_ORDER = [
+  "album",
+  "genre",
+  "style",
+  "mood",
+  "type",
+  "release",
+  "artist",
+  "artist_origin",
+  "origin",
+  "podcast",
+  "episode",
+  "host",
+  "misc",
+];
+
+function getHeroCardConceptRank(concept: string) {
+  const index = HERO_CARD_CONCEPT_ORDER.indexOf(concept);
+  return index === -1 ? HERO_CARD_CONCEPT_ORDER.length : index;
+}
+
+function renderHeroFactIcon(concept: string) {
+  switch (concept) {
+    case "album":
+    case "release":
+    case "year":
+      return IconDisc;
+    case "genre":
+    case "style":
+    case "mood":
+    case "type":
+    case "title":
+      return IconMusic;
+    case "artist":
+    case "artist_origin":
+    case "host":
+      return IconUser;
+    case "origin":
+    case "country":
+    case "region":
+      return IconCompass;
+    case "podcast":
+    case "episode":
+    case "signal":
+    case "language":
+    case "codec":
+      return IconHeadphones;
+    default:
+      return IconSparkles;
+  }
+}
+
+function normalizeHeroDisplayText(value: string) {
+  if (!value) return value;
+
+  let normalized = value.trim();
+
+  if (/%[0-9A-Fa-f]{2}/.test(normalized)) {
+    try {
+      normalized = decodeURIComponent(normalized);
+    } catch {}
+  }
+
+  if (normalized.includes("+")) {
+    normalized = normalized.replace(/\+/g, " ");
+  }
+
+  normalized = normalized.replace(/[_|]+/g, " ").replace(/\s+/g, " ").trim();
+
+  return normalized;
+}
+
+function toSoftTitleCase(value: string) {
+  const stopWords = new Set(["a", "an", "and", "at", "by", "de", "for", "feat", "from", "in", "of", "on", "or", "the", "to", "vs"]);
+  return value
+    .split(/\s+/)
+    .map((word, index) => {
+      if (!word) return word;
+      if (/^[A-Z0-9()&./-]+$/.test(word) && word.length <= 5) return word;
+      const lower = word.toLowerCase();
+      if (index > 0 && stopWords.has(lower)) return lower;
+      return lower.charAt(0).toUpperCase() + lower.slice(1);
+    })
+    .join(" ");
+}
+
+function formatHeroDisplayTitle(value: string) {
+  const normalized = normalizeHeroDisplayText(value);
+  if (!normalized) return normalized;
+
+  const letters = normalized.replace(/[^A-Za-z]/g, "");
+  const lowercaseRatio = letters ? normalized.replace(/[^a-z]/g, "").length / letters.length : 0;
+
+  if (lowercaseRatio < 0.08 || (!/[A-Z]/.test(normalized) && /\s/.test(normalized))) {
+    return toSoftTitleCase(normalized);
+  }
+
+  return normalized;
+}
+
+function truncateHeroDisplayText(
+  text: string,
+  font: string,
+  maxWidth: number,
+  maxLines: number,
+  lineHeight: number,
+  fallbackCharLimit = 96
+) {
+  const normalized = text.trim();
+  if (!normalized) return normalized;
+
+  let candidate = normalized;
+
+  if (typeof window === "undefined" && candidate.length > fallbackCharLimit) {
+    candidate = `${candidate.slice(0, fallbackCharLimit - 1).trimEnd()}…`;
+  }
+
+  while (safePretextLineCount(candidate, font, maxWidth, lineHeight, 14.5) > maxLines && candidate.length > 24) {
+    const next = candidate.slice(0, -8).trimEnd();
+    const breakpoint = Math.max(next.lastIndexOf(" "), next.lastIndexOf("—"), next.lastIndexOf("-"), next.lastIndexOf(","));
+    candidate = `${(breakpoint > 16 ? next.slice(0, breakpoint) : next).trimEnd()}…`;
+  }
+
+  return candidate;
+}
+
+function estimateTextWidth(text: string, perChar = 7.2) {
+  return text.trim().length * perChar;
+}
+
+function safePretextTightWidth(text: string, font: string, perChar = 7.2) {
+  if (typeof window === "undefined") return estimateTextWidth(text, perChar);
+  return getPretextTightWidth(text, font);
+}
+
+function safePretextLineCount(text: string, font: string, width: number, lineHeight: number, perChar = 7.6) {
+  if (!text.trim() || width <= 0) return 0;
+  if (typeof window === "undefined") {
+    const charsPerLine = Math.max(10, Math.floor(width / perChar));
+    return Math.ceil(text.length / charsPerLine);
+  }
+  return getPretextLineCount(text, font, width, lineHeight);
+}
+
+const graphemeSegmenter =
+  typeof Intl !== "undefined" && "Segmenter" in Intl
+    ? new Intl.Segmenter(undefined, { granularity: "grapheme" })
+    : null;
+
+function splitGraphemes(text: string) {
+  if (!text) return [];
+  if (!graphemeSegmenter) return Array.from(text);
+  return Array.from(graphemeSegmenter.segment(text), (segment) => segment.segment);
+}
+
 function ElasticHeroParticle({
   token,
-  anchorRef,
-  measureKey,
+  homeX,
+  homeY,
+  renderX = homeX,
+  renderY = homeY,
   pointerX,
   pointerY,
   pointerVelocity,
@@ -89,10 +355,13 @@ function ElasticHeroParticle({
   rotateFactor = 2.4,
   scaleBoost = 0.035,
   velocityBoost = 0,
+  lineHeight,
 }: {
   token: string;
-  anchorRef: RefObject<HTMLElement | null>;
-  measureKey?: number;
+  homeX: number;
+  homeY: number;
+  renderX?: number;
+  renderY?: number;
   pointerX: MotionValue<number>;
   pointerY: MotionValue<number>;
   pointerVelocity: MotionValue<number>;
@@ -105,32 +374,12 @@ function ElasticHeroParticle({
   rotateFactor?: number;
   scaleBoost?: number;
   velocityBoost?: number;
+  lineHeight?: number;
 }) {
-  const particleRef = useRef<HTMLSpanElement | null>(null);
-  const [home, setHome] = useState<{ x: number; y: number } | null>(null);
-
-  useLayoutEffect(() => {
-    const measure = () => {
-      const anchor = anchorRef.current;
-      const node = particleRef.current;
-      if (!anchor || !node) return;
-      const anchorRect = anchor.getBoundingClientRect();
-      const rect = node.getBoundingClientRect();
-      setHome({
-        x: rect.left - anchorRect.left + rect.width / 2,
-        y: rect.top - anchorRect.top + rect.height / 2,
-      });
-    };
-
-    measure();
-    window.addEventListener("resize", measure);
-    return () => window.removeEventListener("resize", measure);
-  }, [anchorRef, token, measureKey]);
-
   const offsetX = useTransform(() => {
-    if (!enabled || !home) return 0;
-    const dx = home.x - pointerX.get();
-    const dy = home.y - pointerY.get();
+    if (!enabled) return 0;
+    const dx = homeX - pointerX.get();
+    const dy = homeY - pointerY.get();
     const distance = Math.hypot(dx, dy);
     if (!distance || distance > radius) return 0;
     const velocityMultiplier = 1 + Math.min(1.2, pointerVelocity.get() / 1600) * velocityBoost;
@@ -138,9 +387,9 @@ function ElasticHeroParticle({
     return (dx / distance) * force;
   });
   const offsetY = useTransform(() => {
-    if (!enabled || !home) return 0;
-    const dx = home.x - pointerX.get();
-    const dy = home.y - pointerY.get();
+    if (!enabled) return 0;
+    const dx = homeX - pointerX.get();
+    const dy = homeY - pointerY.get();
     const distance = Math.hypot(dx, dy);
     if (!distance || distance > radius) return 0;
     const velocityMultiplier = 1 + Math.min(1.2, pointerVelocity.get() / 1600) * velocityBoost;
@@ -148,9 +397,9 @@ function ElasticHeroParticle({
     return (dy / distance) * force;
   });
   const rotate = useTransform(() => {
-    if (!enabled || !home) return 0;
-    const dx = home.x - pointerX.get();
-    const dy = home.y - pointerY.get();
+    if (!enabled) return 0;
+    const dx = homeX - pointerX.get();
+    const dy = homeY - pointerY.get();
     const distance = Math.hypot(dx, dy);
     if (!distance || distance > radius) return 0;
     return ((dx + dy) / distance) * rotateFactor;
@@ -160,9 +409,9 @@ function ElasticHeroParticle({
   const particleRotate = useSpring(rotate, rotateSpring);
   const particleScale = useSpring(
     useTransform(() => {
-      if (!enabled || !home) return 1;
-      const dx = home.x - pointerX.get();
-      const dy = home.y - pointerY.get();
+      if (!enabled) return 1;
+      const dx = homeX - pointerX.get();
+      const dy = homeY - pointerY.get();
       const distance = Math.hypot(dx, dy);
       if (!distance || distance > radius) return 1;
       return 1 + (1 - distance / radius) * scaleBoost;
@@ -172,9 +421,17 @@ function ElasticHeroParticle({
 
   return (
     <motion.span
-      ref={particleRef}
       className={className}
-      style={{ x: particleX, y: particleY, rotate: particleRotate, scale: particleScale }}
+      style={{
+        position: "absolute",
+        left: `${renderX}px`,
+        top: `${renderY}px`,
+        x: particleX,
+        y: particleY,
+        rotate: particleRotate,
+        scale: particleScale,
+        lineHeight: lineHeight ? `${lineHeight}px` : undefined,
+      }}
     >
       {token}
     </motion.span>
@@ -184,36 +441,32 @@ function ElasticHeroParticle({
 function ElasticHeroText({
   as = "div",
   text,
-  anchorRef,
-  measureKey,
-  pointerX,
-  pointerY,
-  pointerVelocity,
+  font,
+  lineHeight,
   enabled,
   radius,
   strength,
   className,
   tokenClassName,
   mode = "words",
+  letterSpacing = 0,
   spring,
   rotateSpring,
   rotateFactor,
   scaleBoost,
   velocityBoost,
 }: {
-  as?: "h1" | "p" | "div";
+  as?: "h1" | "p" | "div" | "span";
   text: string;
-  anchorRef: RefObject<HTMLElement | null>;
-  measureKey?: number;
-  pointerX: MotionValue<number>;
-  pointerY: MotionValue<number>;
-  pointerVelocity: MotionValue<number>;
+  font: string;
+  lineHeight: number;
   enabled: boolean;
   radius: number;
   strength: number;
   className?: string;
   tokenClassName?: string;
   mode?: "words" | "letters";
+  letterSpacing?: number;
   spring?: ElasticParticleSpring;
   rotateSpring?: ElasticParticleSpring;
   rotateFactor?: number;
@@ -221,68 +474,159 @@ function ElasticHeroText({
   velocityBoost?: number;
 }) {
   const Tag = as;
-  const tokens = useMemo(
-    () =>
-      text
-        .trim()
-        .split(/\s+/)
-        .map((word, index) => ({
-          id: `${word}-${index}`,
-          value: word,
-        })),
-    [text]
-  );
+  const { ref, width } = useElementSize();
+  const [isReady, setIsReady] = useState(false);
+  const pointerX = useMotionValue(-10_000);
+  const pointerY = useMotionValue(-10_000);
+  const pointerVelocity = useMotionValue(0);
+  const lastPointerRef = useRef<{ x: number; y: number; time: number } | null>(null);
+
+  useEffect(() => {
+    setIsReady(true);
+  }, []);
+
+  const lines = useMemo(() => {
+    if (!isReady || width <= 0 || !text.trim()) return null;
+    return getPretextLines(text, font, width, lineHeight);
+  }, [font, isReady, lineHeight, text, width]);
+  const canRenderInteractive = Boolean(enabled && isReady && width > 0 && lines?.length);
+
+  const particles = useMemo(() => {
+    if (!lines) return [];
+
+    if (mode === "letters") {
+      return lines.flatMap((line, lineIndex) => {
+        let cursorX = 0;
+        const lineY = lineIndex * lineHeight;
+        const graphemes = splitGraphemes(line.text);
+
+        return graphemes.flatMap((grapheme, graphemeIndex) => {
+          const graphemeWidth = getPretextTightWidth(grapheme, font);
+          const advance = graphemeWidth + (graphemeIndex < graphemes.length - 1 ? letterSpacing : 0);
+
+          if (!grapheme.trim()) {
+            cursorX += advance;
+            return [];
+          }
+
+          const particle = {
+            kind: "token" as const,
+            id: `${lineIndex}-${graphemeIndex}-${grapheme}`,
+            token: grapheme,
+            x: cursorX,
+            y: lineY,
+          };
+          cursorX += advance;
+          return [particle];
+        });
+      });
+    }
+
+    return lines.flatMap((line, lineIndex) => {
+      const pieces = line.text.match(/\S+|\s+/g) ?? [line.text];
+      let cursorX = 0;
+      const lineY = lineIndex * lineHeight;
+      const lineParticles: Array<{ kind: "token"; id: string; token: string; x: number; y: number }> = [];
+
+      pieces.forEach((piece, pieceIndex) => {
+        const pieceWidth = getPretextTightWidth(piece, font);
+        if (/^\s+$/.test(piece)) {
+          cursorX += pieceWidth;
+          return;
+        }
+
+        lineParticles.push({
+          kind: "token",
+          id: `${lineIndex}-${pieceIndex}-${piece}`,
+          token: piece,
+          x: cursorX,
+          y: lineY,
+        });
+
+        cursorX += pieceWidth;
+      });
+
+      return lineParticles;
+    });
+  }, [font, letterSpacing, lineHeight, lines, mode]);
+
+  const handlePointerMove = (event: React.PointerEvent<HTMLElement>) => {
+    if (!enabled || event.pointerType !== "mouse") return;
+    const nativeEvent = event.nativeEvent as PointerEvent & { offsetX?: number; offsetY?: number };
+    const x = nativeEvent.offsetX ?? 0;
+    const y = nativeEvent.offsetY ?? 0;
+    const now = performance.now();
+    const lastPointer = lastPointerRef.current;
+    if (lastPointer) {
+      const dt = Math.max(16, now - lastPointer.time);
+      const velocity = Math.hypot(x - lastPointer.x, y - lastPointer.y) / (dt / 1000);
+      pointerVelocity.set(velocity);
+    }
+    lastPointerRef.current = { x, y, time: now };
+    pointerX.set(x);
+    pointerY.set(y);
+  };
+
+  const handlePointerLeave = () => {
+    pointerX.set(-10_000);
+    pointerY.set(-10_000);
+    pointerVelocity.set(0);
+    lastPointerRef.current = null;
+  };
 
   return (
-    <Tag className={className}>
-      {mode === "letters"
-        ? tokens.map((token, tokenIndex) => (
-          <span
-            key={token.id}
-            className="mr-[0.18em] inline-block whitespace-nowrap last:mr-0"
-          >
-            {Array.from(token.value).map((character, characterIndex) => (
-              <ElasticHeroParticle
-                key={`${token.id}-${character}-${characterIndex}`}
-                token={character}
-                anchorRef={anchorRef}
-                measureKey={measureKey}
-                pointerX={pointerX}
-                pointerY={pointerY}
-                pointerVelocity={pointerVelocity}
-                enabled={enabled}
-                radius={radius}
-                strength={strength}
-                className={tokenClassName ?? "inline-block will-change-transform"}
-                spring={spring}
-                rotateSpring={rotateSpring}
-                rotateFactor={rotateFactor}
-                scaleBoost={scaleBoost}
-                velocityBoost={velocityBoost}
-              />
-            ))}
-          </span>
-        ))
-        : tokens.map((token) => (
-          <ElasticHeroParticle
-            key={token.id}
-            token={token.value}
-            anchorRef={anchorRef}
-            measureKey={measureKey}
-            pointerX={pointerX}
-            pointerY={pointerY}
-            pointerVelocity={pointerVelocity}
-            enabled={enabled}
-            radius={radius}
-            strength={strength}
-            className={tokenClassName ?? "mr-[0.18em] inline-block last:mr-0"}
-            spring={spring}
-            rotateSpring={rotateSpring}
-            rotateFactor={rotateFactor}
-            scaleBoost={scaleBoost}
-            velocityBoost={velocityBoost}
-          />
-        ))}
+    <Tag
+      ref={ref}
+      className={className}
+      style={
+        canRenderInteractive
+          ? {
+              letterSpacing: letterSpacing ? `${letterSpacing}px` : undefined,
+              position: "relative",
+              display: as === "span" ? "inline-block" : "block",
+              height: `${lines!.length * lineHeight}px`,
+            }
+          : undefined
+      }
+      onPointerMove={canRenderInteractive ? handlePointerMove : undefined}
+      onPointerLeave={canRenderInteractive ? handlePointerLeave : undefined}
+    >
+      <span
+        style={{
+          display: as === "span" ? "inline-block" : "block",
+          letterSpacing: letterSpacing ? `${letterSpacing}px` : undefined,
+          visibility: canRenderInteractive ? "hidden" : "visible",
+          lineHeight: `${lineHeight}px`,
+          whiteSpace: "pre-wrap",
+        }}
+      >
+        {text}
+      </span>
+      {canRenderInteractive ? (
+        <span aria-hidden="true">
+          {particles.map((particle) => (
+            <ElasticHeroParticle
+              key={particle.id}
+              token={particle.token}
+              homeX={particle.x}
+              homeY={particle.y}
+              pointerX={pointerX}
+              pointerY={pointerY}
+              pointerVelocity={pointerVelocity}
+              enabled={enabled}
+              radius={radius}
+              strength={strength}
+              className={tokenClassName ?? "pointer-events-none inline-block will-change-transform"}
+              spring={spring}
+              rotateSpring={rotateSpring}
+              rotateFactor={rotateFactor}
+              scaleBoost={scaleBoost}
+              velocityBoost={velocityBoost}
+              lineHeight={lineHeight}
+            />
+          ))}
+        </span>
+      ) : null}
     </Tag>
   );
 }
@@ -306,10 +650,18 @@ function HeroSignalSnippet({
 }) {
   const isActive = activeZone === snippet.zone;
   const displayText = isActive ? snippet.text : snippet.compactText ?? snippet.text;
+  const snippetSafeTop = 116;
+  const snippetSafeBottom = 108;
+  const getHomeY = () =>
+    clamp(
+      (fieldHeight * snippet.yPercent) / 100,
+      snippetSafeTop,
+      Math.max(snippetSafeTop, fieldHeight - snippetSafeBottom)
+    );
   const offsetX = useTransform(() => {
     if (!enabled || fieldWidth <= 0 || fieldHeight <= 0) return 0;
     const homeX = (fieldWidth * snippet.xPercent) / 100;
-    const homeY = (fieldHeight * snippet.yPercent) / 100;
+    const homeY = getHomeY();
     const dx = homeX - pointerX.get();
     const dy = homeY - pointerY.get();
     const distance = Math.hypot(dx, dy);
@@ -321,7 +673,7 @@ function HeroSignalSnippet({
   const offsetY = useTransform(() => {
     if (!enabled || fieldWidth <= 0 || fieldHeight <= 0) return 0;
     const homeX = (fieldWidth * snippet.xPercent) / 100;
-    const homeY = (fieldHeight * snippet.yPercent) / 100;
+    const homeY = getHomeY();
     const dx = homeX - pointerX.get();
     const dy = homeY - pointerY.get();
     const distance = Math.hypot(dx, dy);
@@ -365,7 +717,7 @@ function HeroSignalSnippet({
     useTransform(() => {
       if (!enabled || fieldWidth <= 0 || fieldHeight <= 0) return 0;
       const homeX = (fieldWidth * snippet.xPercent) / 100;
-      const homeY = (fieldHeight * snippet.yPercent) / 100;
+      const homeY = getHomeY();
       const dx = homeX - pointerX.get();
       const dy = homeY - pointerY.get();
       const distance = Math.hypot(dx, dy);
@@ -381,7 +733,7 @@ function HeroSignalSnippet({
       className="pointer-events-none absolute"
       style={{
         left: `${snippet.xPercent}%`,
-        top: `${snippet.yPercent}%`,
+        top: fieldHeight > 0 ? `${getHomeY()}px` : `${snippet.yPercent}%`,
         width: `${snippet.width}px`,
         x: snippetX,
         y: snippetY,
@@ -498,19 +850,22 @@ export function HeroSection({
   onHoverSound,
   onSearch,
 }: HeroSectionProps) {
-  const [heroTickerIndex, setHeroTickerIndex] = useState(0);
   const [useFallback, setUseFallback] = useState(false);
   const [isHydrated, setIsHydrated] = useState(false);
-  const [measureVersion, setMeasureVersion] = useState(0);
   const [heroSignalText, setHeroSignalText] = useState<string | null>(null);
   const [hoverNotes, setHoverNotes] = useState<FallingHeroNote[]>([]);
   const [activeSignalZone, setActiveSignalZone] = useState<"left" | "center" | "right" | null>(null);
-  const heroSectionRef = useRef<HTMLElement | null>(null);
+  const [heroInsightExpanded, setHeroInsightExpanded] = useState(false);
+  const [heroArtworkFailed, setHeroArtworkFailed] = useState(false);
+  const { ref: heroInsightCloudRef, width: heroInsightCloudWidth, height: heroInsightCloudHeight } = useElementSize();
   const { ref: heroFieldRef, width: heroFieldWidth, height: heroFieldHeight } = useElementSize();
   const { ref: ctaRowRef, width: ctaRowWidth } = useElementSize();
   const { ref: heroNoteRef, width: heroNoteWidth } = useElementSize();
   const insightsOpen = useUIStore((state) => state.insightsOpen);
   const aiTriviaExpanded = useUIStore((state) => state.aiTriviaExpanded);
+  const setInsightsOpen = useUIStore((state) => state.setInsightsOpen);
+  const setAiTriviaExpanded = useUIStore((state) => state.setAiTriviaExpanded);
+  const isSm = useMediaQuery("(min-width: 640px)", false, { getInitialValueInEffect: true });
   const isLg = useMediaQuery("(min-width: 1024px)", false, { getInitialValueInEffect: true });
   const shouldReduceMotion = useReducedMotion();
   const noteIdRef = useRef(0);
@@ -533,10 +888,41 @@ export function HeroSection({
   const heroBottomRange = isLg ? [64, 52] : [40, 32];
   const heroPaddingTop = useTransform(scrollY, [0, 280], heroTopRange);
   const heroPaddingBottom = useTransform(scrollY, [0, 280], heroBottomRange);
+  const heroHeadlineFont = isLg
+    ? '600 55px "General Sans", "SF Pro Display", "Segoe UI", "Helvetica Neue", Arial, sans-serif'
+    : isSm
+      ? '600 49px "General Sans", "SF Pro Display", "Segoe UI", "Helvetica Neue", Arial, sans-serif'
+      : '600 38px "General Sans", "SF Pro Display", "Segoe UI", "Helvetica Neue", Arial, sans-serif';
+  const heroBodyFont = isLg
+    ? '500 17px "General Sans", "SF Pro Text", "Segoe UI", "Helvetica Neue", Arial, sans-serif'
+    : '500 15px "General Sans", "SF Pro Text", "Segoe UI", "Helvetica Neue", Arial, sans-serif';
   const hydratedNowPlaying = isHydrated ? nowPlaying : null;
   const hydratedIsPlaying = isHydrated ? isPlaying : false;
   const hydratedInsightsOpen = isHydrated ? insightsOpen : false;
   const hydratedAiTriviaExpanded = isHydrated ? aiTriviaExpanded : false;
+  const heroStationKey = useMemo(
+    () =>
+      hydratedNowPlaying
+        ? [
+            hydratedNowPlaying.stationuuid,
+            hydratedNowPlaying.changeuuid,
+            hydratedNowPlaying.urlResolved,
+            hydratedNowPlaying.url,
+            hydratedNowPlaying.name,
+            hydratedNowPlaying.country,
+          ]
+            .filter(Boolean)
+            .join("|")
+        : "",
+    [
+      hydratedNowPlaying?.changeuuid,
+      hydratedNowPlaying?.country,
+      hydratedNowPlaying?.name,
+      hydratedNowPlaying?.stationuuid,
+      hydratedNowPlaying?.url,
+      hydratedNowPlaying?.urlResolved,
+    ]
+  );
 
   const heroTickerItems = useMemo(() => {
     const headlineCountry = topCountries[0]?.name ?? "Global";
@@ -551,9 +937,7 @@ export function HeroSection({
     return base;
   }, [continents, topCountries, totalStations]);
 
-  const currentHeroTicker = heroTickerItems.length
-    ? heroTickerItems[heroTickerIndex % heroTickerItems.length]
-    : "Global radio passport updates";
+  const currentHeroTicker = heroTickerItems[0] ?? "Global radio passport updates";
   const nowPlayingMeta = useNowPlayingMetadata(hydratedNowPlaying, hydratedIsPlaying);
   const freeTrivia = useTrackTrivia({
     track: nowPlayingMeta.track,
@@ -572,15 +956,20 @@ export function HeroSection({
   const featureCountry = topCountries[0] ?? null;
   const featureCountryLabel = hydratedNowPlaying?.country ?? featureCountry?.name ?? "Japan";
   const featureCountryCode = hydratedNowPlaying?.countryCode ?? featureCountry?.iso_3166_1;
-  const displayTrivia = aiTrivia.status === "ready" && aiTrivia.trivia ? aiTrivia.trivia : freeTrivia.trivia;
-  const heroInsightLinks = useMemo(() => (displayTrivia?.links ?? []).slice(0, 4), [displayTrivia?.links]);
-  const heroInsightImage = displayTrivia?.imageUrl ?? null;
+  const heroTrackArtist = useMemo(
+    () => normalizeHeroDisplayText(nowPlayingMeta.track?.artist ?? ""),
+    [nowPlayingMeta.track?.artist]
+  );
+  const heroTrackTitle = useMemo(
+    () => formatHeroDisplayTitle(nowPlayingMeta.track?.title ?? ""),
+    [nowPlayingMeta.track?.title]
+  );
   const heroTrackLine = useMemo(
     () =>
       nowPlayingMeta.status === "ready" && nowPlayingMeta.track
-        ? [nowPlayingMeta.track.artist, nowPlayingMeta.track.title].filter(Boolean).join(" — ")
+        ? [heroTrackArtist, heroTrackTitle].filter(Boolean).join(" — ")
         : null,
-    [nowPlayingMeta.status, nowPlayingMeta.track]
+    [heroTrackArtist, heroTrackTitle, nowPlayingMeta.status, nowPlayingMeta.track]
   );
   const heroSignalFacts = useMemo(() => {
     const pieces = [
@@ -605,59 +994,387 @@ export function HeroSection({
           .filter(Boolean);
     return tags.slice(0, 3).join(" • ");
   }, [hydratedNowPlaying?.tagList, hydratedNowPlaying?.tags]);
-  const signalNote = displayTrivia?.summary
-    ?? (heroTrackLine
-      ? `${heroTrackLine} is on air from ${featureCountryLabel}. ${heroSignalFacts ? `${heroSignalFacts}.` : ""} This note field is driven by live station and track metadata.`
-      : hydratedNowPlaying
-        ? `${hydratedNowPlaying.name} is live from ${featureCountryLabel}. ${heroTagLine ? `${heroTagLine}.` : ""} The hero can adapt to live metadata without losing its composition.`
-        : `${featureCountryLabel} is a strong first stop. Pick a station, then move through the atlas with route cards, country notes, and live context that adapt to the signal.`);
+  const heroStationFacts = useMemo(
+    () =>
+      [
+        featureCountryLabel ? { label: "Country", value: featureCountryLabel } : null,
+        hydratedNowPlaying?.state ? { label: "Region", value: hydratedNowPlaying.state } : null,
+        hydratedNowPlaying?.language ? { label: "Language", value: hydratedNowPlaying.language } : null,
+        hydratedNowPlaying?.bitrate ? { label: "Signal", value: `${hydratedNowPlaying.bitrate} kbps` } : null,
+        hydratedNowPlaying?.codec ? { label: "Codec", value: hydratedNowPlaying.codec.toUpperCase() } : null,
+      ].filter(Boolean) as Array<{ label: string; value: string }>,
+    [
+      featureCountryLabel,
+      hydratedNowPlaying?.bitrate,
+      hydratedNowPlaying?.codec,
+      hydratedNowPlaying?.language,
+      hydratedNowPlaying?.state,
+    ]
+  );
+  const heroMetadataSummary = useMemo(() => {
+    if (heroTrackLine) {
+      return `${heroTrackLine} is on air from ${featureCountryLabel}.${heroTagLine ? ` ${heroTagLine}.` : ""}`;
+    }
+    if (hydratedNowPlaying) {
+      return `${hydratedNowPlaying.name} is live from ${featureCountryLabel}.${heroTagLine ? ` ${heroTagLine}.` : ""} The hero adapts to metadata as the signal settles.`;
+    }
+    return `${featureCountryLabel} is a strong first stop. Pick a station, then move through the atlas with route cards, country notes, and live context that adapt to the signal.`;
+  }, [featureCountryLabel, heroTagLine, heroTrackLine, hydratedNowPlaying]);
+  const heroMergedFacts = useMemo<TriviaFact[]>(() => {
+    const facts = [...(aiTrivia.trivia?.facts ?? []), ...(freeTrivia.trivia?.facts ?? []), ...heroStationFacts];
+    return facts.filter((fact, index, collection) => {
+      return (
+        collection.findIndex(
+          (candidate) =>
+            candidate.label.toLowerCase() === fact.label.toLowerCase() &&
+            candidate.value.toLowerCase() === fact.value.toLowerCase()
+        ) === index
+      );
+    });
+  }, [aiTrivia.trivia?.facts, freeTrivia.trivia?.facts, heroStationFacts]);
+  const heroMergedLinks = useMemo<TriviaLink[]>(() => {
+    const links = [
+      ...(aiTrivia.trivia?.links ?? []),
+      ...(freeTrivia.trivia?.links ?? []),
+      ...(hydratedNowPlaying?.homepage
+        ? ([{ label: "Station", url: hydratedNowPlaying.homepage, kind: "info" }] satisfies TriviaLink[])
+        : []),
+    ];
+    return links.filter(
+      (link, index, collection) => collection.findIndex((candidate) => candidate.url === link.url) === index
+    );
+  }, [aiTrivia.trivia?.links, freeTrivia.trivia?.links, hydratedNowPlaying?.homepage]);
+  const heroInsightSummary =
+    aiTrivia.trivia?.summary ?? freeTrivia.trivia?.summary ?? heroMetadataSummary;
+  const heroInsightImage = aiTrivia.trivia?.imageUrl ?? freeTrivia.trivia?.imageUrl ?? null;
+  const heroArtworkSrc = heroInsightImage ?? hydratedNowPlaying?.favicon ?? null;
+  const heroInsightFacts = heroMergedFacts;
+  const heroInsightLinks = heroMergedLinks;
+  const heroInsightMoodTokens = useMemo(() => {
+    const tokens = [
+      ...heroInsightFacts
+        .filter((fact) => ["genre", "style", "origin", "mood", "release year", "album"].includes(fact.label.toLowerCase()))
+        .map((fact) => fact.value),
+      ...(heroTagLine ? heroTagLine.split(" • ") : []),
+    ]
+      .map((value) => value.trim())
+      .filter(Boolean);
+
+    return tokens.filter((value, index, collection) => collection.indexOf(value) === index).slice(0, 4);
+  }, [heroInsightFacts, heroTagLine]);
+  const heroInsightHeadingFull = heroTrackLine ?? formatHeroDisplayTitle(hydratedNowPlaying?.name ?? "Current signal");
+  const heroInsightSubline = [
+    featureCountryLabel,
+    hydratedNowPlaying?.state,
+  ]
+    .filter(Boolean)
+    .join(" • ");
+  const heroInsightSourceLabel =
+    aiTrivia.trivia
+      ? "AI + metadata"
+      : freeTrivia.trivia
+        ? "Metadata + enrichment"
+        : "Live station metadata";
+  const heroInsightYear = heroInsightFacts.find((fact) => fact.label.toLowerCase() === "release year")?.value ?? null;
+  const heroInsightTopBadges = useMemo(
+    () =>
+      [heroInsightYear, hydratedNowPlaying?.bitrate ? `${hydratedNowPlaying.bitrate} kbps` : null]
+        .filter(Boolean)
+        .slice(0, 2) as string[],
+    [heroInsightYear, hydratedNowPlaying?.bitrate]
+  );
+  const heroSignalChainItems = useMemo(() => {
+    const pieces = heroSignalFacts ? heroSignalFacts.split(" • ") : [];
+    if (!pieces.length) {
+      return ["language adapts", "signal settles", "notes reform"];
+    }
+    return pieces.slice(0, 3);
+  }, [heroSignalFacts]);
+  const heroInsightHeaderLinks = useMemo(() => heroInsightLinks.slice(0, 3), [heroInsightLinks]);
+  const hasMeasuredHeroField = heroFieldWidth > 0 && heroFieldHeight > 0;
+  const hasMeasuredInsightCloud = heroInsightCloudWidth > 0 && heroInsightCloudHeight > 0;
+  const showHeroInsightCloud =
+    hydratedInsightsOpen &&
+    Boolean(heroArtworkSrc || hydratedNowPlaying || heroTrackLine || aiTrivia.trivia || freeTrivia.trivia || heroInsightLinks.length);
+  const canRenderHeroInsightCloudItems = showHeroInsightCloud && hasMeasuredInsightCloud;
+  const hasHeroCardArtwork = Boolean(heroArtworkSrc && !heroArtworkFailed);
+  const insightCloudWidth = heroInsightCloudWidth || 640;
+  const insightCloudHeight = heroInsightCloudHeight || 620;
+  const heroInsightHeading = useMemo(
+    () =>
+      truncateHeroDisplayText(
+        heroInsightHeadingFull,
+        HERO_INSIGHT_TITLE_FONT,
+        Math.min(520, insightCloudWidth * 0.72),
+        4,
+        46,
+        92
+      ),
+    [heroInsightHeadingFull, insightCloudWidth]
+  );
+  const heroDedupedFacts = useMemo<HeroDisplayFact[]>(() => {
+    const conceptPriority = [
+      "album",
+      "genre",
+      "style",
+      "mood",
+      "type",
+      "artist_origin",
+      "origin",
+      "release",
+      "podcast",
+      "episode",
+      "host",
+      "artist",
+      "country",
+      "region",
+      "language",
+      "signal",
+      "codec",
+      "year",
+      "title",
+      "station",
+      "misc",
+    ];
+
+    const seenValues = new Set<string>();
+    const chosenConcepts = new Set<string>();
+
+    return heroInsightFacts
+      .map((fact) => {
+        const concept = getInsightConcept(fact.label, fact.value);
+        return {
+          ...fact,
+          concept,
+          shortLabel: getInsightShortLabel(fact.label, concept),
+        };
+      })
+      .sort((a, b) => {
+        const aIndex = conceptPriority.indexOf(a.concept);
+        const bIndex = conceptPriority.indexOf(b.concept);
+        return (aIndex === -1 ? 999 : aIndex) - (bIndex === -1 ? 999 : bIndex);
+      })
+      .filter((fact) => {
+        const normalizedValue = normalizeInsightText(fact.value);
+        if (!normalizedValue) return false;
+        if (fact.concept === "genre" && /^\d{4}$/.test(fact.value.trim())) return false;
+        if (fact.concept === "mood" && /^\d{4}$/.test(fact.value.trim())) return false;
+        if (seenValues.has(normalizedValue)) return false;
+        if (chosenConcepts.has(fact.concept) && fact.concept !== "misc") return false;
+        seenValues.add(normalizedValue);
+        chosenConcepts.add(fact.concept);
+        return true;
+      });
+  }, [heroInsightFacts]);
+  const heroInsightCoreReferences = useMemo(() => {
+    const headingParts = heroInsightHeading
+      .split(/[—-]/)
+      .map((part) => part.trim())
+      .filter(Boolean);
+
+    return [
+      heroInsightHeading,
+      heroInsightSubline,
+      ...headingParts,
+      ...heroInsightTopBadges,
+      featureCountryLabel,
+      hydratedNowPlaying?.state ?? "",
+      hydratedNowPlaying?.name ?? "",
+      nowPlayingMeta.track?.artist ?? "",
+      nowPlayingMeta.track?.title ?? "",
+      ...(hydratedNowPlaying?.language ? [hydratedNowPlaying.language] : []),
+      ...(hydratedNowPlaying?.codec ? [hydratedNowPlaying.codec.toUpperCase()] : []),
+      ...(hydratedNowPlaying?.bitrate ? [`${hydratedNowPlaying.bitrate} kbps`] : []),
+      ...(heroTagLine ? heroTagLine.split(" • ") : []),
+    ].filter(Boolean);
+  }, [
+    featureCountryLabel,
+    heroInsightHeading,
+    heroInsightSubline,
+    heroInsightTopBadges,
+    heroTagLine,
+    hydratedNowPlaying?.bitrate,
+    hydratedNowPlaying?.codec,
+    hydratedNowPlaying?.language,
+    hydratedNowPlaying?.name,
+    hydratedNowPlaying?.state,
+    nowPlayingMeta.track?.artist,
+    nowPlayingMeta.track?.title,
+  ]);
+  const heroInsightContextReferences = useMemo(
+    () => [...heroInsightCoreReferences, heroInsightSummary],
+    [heroInsightCoreReferences, heroInsightSummary]
+  );
+  const heroCardMetadataItems = useMemo(() => {
+    const hiddenConcepts = new Set([
+      "country",
+      "region",
+      "year",
+      "signal",
+      "language",
+      "codec",
+      "title",
+      "station",
+    ]);
+    const selected = new Map<string, HeroDisplayFact>();
+    const sortFacts = (a: HeroDisplayFact, b: HeroDisplayFact) =>
+      getHeroCardConceptRank(a.concept) - getHeroCardConceptRank(b.concept);
+    const canSurfaceFact = (fact: HeroDisplayFact, references: string[]) => {
+      if (hiddenConcepts.has(fact.concept)) return false;
+      if (isInsightDuplicate(fact.value, references)) return false;
+      if (selected.has(`${fact.concept}:${normalizeInsightText(fact.value)}`)) return false;
+      return true;
+    };
+
+    const strictItems = heroDedupedFacts.filter((fact) => canSurfaceFact(fact, heroInsightContextReferences)).sort(sortFacts);
+    strictItems.forEach((fact) => {
+      if (selected.size >= 6) return;
+      selected.set(`${fact.concept}:${normalizeInsightText(fact.value)}`, fact);
+    });
+
+    if (selected.size < 4) {
+      const relaxedItems = heroDedupedFacts
+        .filter((fact) => canSurfaceFact(fact, heroInsightCoreReferences))
+        .sort(sortFacts);
+
+      relaxedItems.forEach((fact) => {
+        if (selected.size >= 6) return;
+        selected.set(`${fact.concept}:${normalizeInsightText(fact.value)}`, fact);
+      });
+    }
+
+    const items = Array.from(selected.values());
+    if (items.length) return items.slice(0, 6);
+
+    const fallback: HeroDisplayFact[] = [];
+    if (heroInsightMoodTokens[0]) {
+      fallback.push({ label: "Mood", value: heroInsightMoodTokens[0], concept: "mood", shortLabel: "Mood" });
+    }
+    if (heroSignalChainItems[0]) {
+      fallback.push({ label: "Signal", value: heroSignalChainItems[0], concept: "signal", shortLabel: "Signal" });
+    }
+    return fallback.slice(0, 4);
+  }, [heroDedupedFacts, heroInsightContextReferences, heroInsightCoreReferences, heroInsightMoodTokens, heroSignalChainItems]);
+  const heroInsightCloudItems = useMemo<HeroInsightCloudItem[]>(() => {
+    const seen = new Set<string>();
+    const items: HeroInsightCloudItem[] = [];
+
+    const pushItem = (
+      kind: HeroInsightCloudItem["kind"],
+      eyebrow: string,
+      text: string | null | undefined,
+      extras?: Pick<HeroInsightCloudItem, "href" | "iconKind">
+    ) => {
+      const normalized = text?.trim();
+      if (!normalized) return;
+      const dedupeKey = `${kind}:${normalized.toLowerCase()}`;
+      if (seen.has(dedupeKey)) return;
+      seen.add(dedupeKey);
+      const measuredWidth = safePretextTightWidth(normalized, HERO_CLOUD_TEXT_FONT);
+      items.push({
+        id: `${kind}-${items.length}-${normalized.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`,
+        eyebrow,
+        text: normalized,
+        kind,
+        href: extras?.href,
+        iconKind: extras?.iconKind,
+        width: clamp(measuredWidth + 44, 120, 212),
+      });
+    };
+
+    heroDedupedFacts
+      .filter((fact) => ["album", "genre", "style", "mood", "type", "artist_origin", "release", "podcast", "host", "episode"].includes(fact.concept))
+      .slice(0, 4)
+      .forEach((fact) => pushItem("relation", fact.shortLabel, fact.value));
+    heroInsightMoodTokens
+      .filter((token) => !isInsightDuplicate(token, heroInsightContextReferences))
+      .slice(0, 2)
+      .forEach((token) => pushItem("mood", "Mood", token));
+    heroSignalChainItems.slice(0, 2).forEach((item) => pushItem("signal", "Signal", item));
+    heroInsightLinks.slice(0, 3).forEach((link) =>
+      pushItem("source", "Source", link.label, { href: link.url, iconKind: link.kind })
+    );
+
+    return items.slice(0, HERO_INSIGHT_CLOUD_SLOTS.length);
+  }, [heroDedupedFacts, heroInsightContextReferences, heroInsightLinks, heroInsightMoodTokens, heroSignalChainItems]);
+  const heroInsightFocus = heroInsightExpanded || activeSignalZone === "right";
+  const heroInsightCardLayout = useMemo(() => {
+    const artworkColumnWidth = hasHeroCardArtwork ? 92 : 0;
+    const maxCardWidth = Math.min(hasHeroCardArtwork ? 612 : 560, insightCloudWidth * 0.84);
+    const headingWidth = safePretextTightWidth(heroInsightHeading, HERO_INSIGHT_TITLE_FONT, 15);
+    const cardWidth = clamp(
+      Math.max(428, headingWidth + 84 + artworkColumnWidth * 0.72, heroCardMetadataItems.length > 4 ? 492 : 448),
+      416,
+      maxCardWidth
+    );
+    const summaryWidth = Math.max(280, cardWidth - 48);
+    const summaryLines = Math.max(
+      3,
+      safePretextLineCount(heroInsightSummary, PRETEXT_HERO_FONT, summaryWidth, 23, 8.2)
+    );
+    const metadataRows = Math.max(1, Math.ceil(heroCardMetadataItems.length / 2));
+    const metadataTop = clamp(184 + summaryLines * 22 + (hasHeroCardArtwork ? 8 : 0), 250, 372);
+    const metadataHeight = metadataRows * 58 + 34;
+    const cardHeight = clamp(metadataTop + metadataHeight + 28, 360, Math.min(580, insightCloudHeight * 0.88));
+    const cardLeft = clamp(insightCloudWidth * 0.02, 0, insightCloudWidth - cardWidth);
+    const cardTop = clamp(insightCloudHeight * 0.1, 0, insightCloudHeight - cardHeight);
+    return {
+      cardLeft,
+      cardTop,
+      cardWidth,
+      cardHeight,
+      metadataTop,
+      metadataHeight,
+      metadataRows,
+    };
+  }, [hasHeroCardArtwork, heroCardMetadataItems.length, heroInsightHeading, heroInsightSummary, insightCloudHeight, insightCloudWidth]);
+  const heroInsightCloudLayouts = useMemo(
+    () =>
+      heroInsightCloudItems.map((item, index) => {
+        const cloudSlot = HERO_INSIGHT_CLOUD_SLOTS[index % HERO_INSIGHT_CLOUD_SLOTS.length];
+        const { cardLeft, cardTop, cardWidth, cardHeight, metadataTop } = heroInsightCardLayout;
+        const gridGap = 12;
+        const focusWidth = clamp((cardWidth - 48 - gridGap) / 2, 152, 224);
+        const column = index % 2;
+        const row = Math.floor(index / 2);
+        const cloudTopSafe = heroInsightExpanded ? 116 : 212;
+        const cloudBottomSafe = heroInsightExpanded ? 118 : 144;
+        const cloudLeft = clamp(cloudSlot.x * insightCloudWidth - item.width * 0.5, 0, insightCloudWidth - item.width);
+        const focusLeft = clamp(cardLeft + 24 + column * (focusWidth + gridGap), 0, insightCloudWidth - focusWidth);
+        return {
+          ...item,
+          cardLeft,
+          cardTop,
+          cardWidth,
+          cardHeight,
+          cloudWidth: item.width,
+          focusWidth,
+          cloudLeft,
+          cloudTop: clamp(cloudSlot.y * insightCloudHeight, cloudTopSafe, insightCloudHeight - cloudBottomSafe),
+          focusLeft,
+          focusTop: clamp(cardTop + metadataTop + row * 58, 0, insightCloudHeight - 96),
+        };
+      }),
+    [heroInsightCardLayout, heroInsightCloudItems, heroInsightExpanded, insightCloudHeight, insightCloudWidth]
+  );
+  const canUseInteractiveNotes = isHydrated && !shouldReduceMotion;
+  const signalNote =
+    heroInsightSummary ||
+    `${featureCountryLabel} is a strong first stop. Pick a station, then move through the atlas with route cards, country notes, and live context that adapt to the signal.`;
 
   useEffect(() => {
     setIsHydrated(true);
   }, []);
 
   useEffect(() => {
-    if (heroTickerItems.length === 0) return;
-
-    const interval = window.setInterval(() => {
-      setHeroTickerIndex((prev) => (prev + 1) % heroTickerItems.length);
-    }, 4200);
-
-    return () => window.clearInterval(interval);
-  }, [heroTickerItems.length]);
-
+    setHeroArtworkFailed(false);
+  }, [heroArtworkSrc]);
   useEffect(() => {
-    setHeroTickerIndex(0);
-  }, [heroTickerItems.length]);
-  useEffect(() => {
-    if (typeof window === "undefined" || !isHydrated) return;
-    const bump = () => {
-      window.requestAnimationFrame(() => {
-        window.requestAnimationFrame(() => {
-          setMeasureVersion((value) => value + 1);
-        });
-      });
-    };
-
-    bump();
-    window.addEventListener("load", bump);
-
-    let resizeObserver: ResizeObserver | null = null;
-    if (typeof ResizeObserver !== "undefined" && heroSectionRef.current) {
-      resizeObserver = new ResizeObserver(() => bump());
-      resizeObserver.observe(heroSectionRef.current);
+    if (!hydratedInsightsOpen) {
+      setHeroInsightExpanded(false);
+      return;
     }
-
-    const fonts = (document as Document & { fonts?: FontFaceSet }).fonts;
-    if (fonts?.ready) {
-      void fonts.ready.then(() => bump()).catch(() => {});
-    }
-
-    return () => {
-      window.removeEventListener("load", bump);
-      resizeObserver?.disconnect();
-    };
-  }, [isHydrated]);
+  }, [hydratedInsightsOpen]);
   useEffect(() => {
     if (typeof window === "undefined" || typeof CSS === "undefined") return;
     setUseFallback(!CSS.supports("animation-timeline: scroll()"));
@@ -673,6 +1390,36 @@ export function HeroSection({
       }
     }
   }, []);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const focusHeroSearch = () => {
+      const searchInput = document.getElementById("hero-search-input") as HTMLInputElement | null;
+      if (!searchInput) return false;
+      searchInput.focus();
+      searchInput.select();
+      searchInput.scrollIntoView({ behavior: "smooth", block: "center" });
+      return true;
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      const isShortcut = (event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k";
+      if (!isShortcut) return;
+
+      event.preventDefault();
+      focusHeroSearch();
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+  useEffect(() => {
+    if (!isHydrated || !heroStationKey) return;
+    setHeroInsightExpanded(false);
+    setAiTriviaExpanded(false);
+    setHeroSignalText(null);
+    setActiveSignalZone(null);
+  }, [heroStationKey, isHydrated, setAiTriviaExpanded]);
   const quickRetuneLabel = useMemo(() => {
     if (ctaRowWidth <= 0) return "Quick Retune";
     const fullWidthBudget = Math.floor(ctaRowWidth - 32);
@@ -697,7 +1444,6 @@ export function HeroSection({
     const availableWidth = Math.max(96, Math.floor(heroNoteWidth - chromeAllowance - statusWidth));
     return compactCountryLabel(featureCountryLabel, availableWidth);
   }, [featureCountryLabel, heroNoteStatus, heroNoteWidth]);
-  const canUseInteractiveNotes = !shouldReduceMotion;
   const heroSignalOptions = useMemo(() => {
     const country = featureCountryLabel;
     const leftPhrases = [
@@ -707,15 +1453,15 @@ export function HeroSection({
     ].filter(Boolean) as string[];
     const centerPhrases = [
       heroTrackLine ? `Live track: ${heroTrackLine}.` : null,
-      displayTrivia?.summary ?? null,
+      heroInsightSummary,
       nowPlayingMeta.status === "loading" ? "Reading ICY metadata from the active stream…" : null,
     ].filter(Boolean) as string[];
     const rightPhrases = [
-      displayTrivia?.facts?.[0]
-        ? `${displayTrivia.facts[0].label}: ${displayTrivia.facts[0].value}.`
+      heroInsightFacts[0]
+        ? `${heroInsightFacts[0].label}: ${heroInsightFacts[0].value}.`
         : null,
-      displayTrivia?.facts?.[1]
-        ? `${displayTrivia.facts[1].label}: ${displayTrivia.facts[1].value}.`
+      heroInsightFacts[1]
+        ? `${heroInsightFacts[1].label}: ${heroInsightFacts[1].value}.`
         : null,
       `${country} is glowing on the dial right now.`,
     ].filter(Boolean) as string[];
@@ -741,8 +1487,8 @@ export function HeroSection({
     };
   }, [
     featureCountryLabel,
-    displayTrivia?.facts,
-    displayTrivia?.summary,
+    heroInsightFacts,
+    heroInsightSummary,
     heroSignalFacts,
     heroTagLine,
     heroTrackLine,
@@ -752,19 +1498,18 @@ export function HeroSection({
   ]);
   const manuscriptSnippets = useMemo<HeroManuscriptSnippet[]>(() => {
     const trackText = heroTrackLine ?? "Waiting for a clean ICY title from the active stream.";
-    const summaryText = displayTrivia?.summary ?? signalNote;
+    const summaryText = heroInsightSummary ?? signalNote;
     const factText =
-      displayTrivia?.facts?.slice(0, 2).map((fact) => `${fact.label}: ${fact.value}`).join(" • ")
+      heroInsightFacts.slice(0, 2).map((fact) => `${fact.label}: ${fact.value}`).join(" • ")
       || heroSignalFacts
       || "Metadata, tags, and country context will settle into this field.";
-    const tagOrLinkText = heroInsightLinks.length
-      ? heroInsightLinks.map((link) => link.label).join(" • ")
-      : heroTagLine || "country notes • live station tags • route context";
+    const moodText =
+      heroInsightMoodTokens.join(" • ") || heroTagLine || "country notes • live station tags • route context";
     const compactTrackText = nowPlayingMeta.track?.title
       ?? hydratedNowPlaying?.name
       ?? "live track";
-    const compactSummaryText = displayTrivia?.facts?.[0]
-      ? `${displayTrivia.facts[0].label}: ${displayTrivia.facts[0].value}`
+    const compactSummaryText = heroInsightFacts[0]
+      ? `${heroInsightFacts[0].label}: ${heroInsightFacts[0].value}`
       : "hover for richer note";
     const compactFactText = heroSignalFacts
       ? heroSignalFacts.split(" • ").slice(0, 2).join(" • ")
@@ -809,17 +1554,17 @@ export function HeroSection({
         label: aiTrivia.status === "ready" ? "insights" : "notes",
         text: summaryText,
         compactText: compactSummaryText,
-        width: 320,
-        xPercent: 73,
-        yPercent: 20,
+        width: 300,
+        xPercent: 61,
+        yPercent: 22,
         repulsion: 66,
       },
       {
         id: "dial",
         zone: "right",
-        label: heroInsightLinks.length ? "sources" : "dial",
-        text: tagOrLinkText,
-        compactText: heroInsightLinks[0]?.label ?? "dial cues",
+        label: heroInsightMoodTokens.length ? "mood" : "dial",
+        text: moodText,
+        compactText: heroInsightMoodTokens[0] ?? "dial cues",
         width: 220,
         xPercent: 74,
         yPercent: 63,
@@ -828,11 +1573,11 @@ export function HeroSection({
     ];
   }, [
     aiTrivia.status,
-    displayTrivia?.facts,
-    displayTrivia?.summary,
     featureCountryLabel,
+    heroInsightFacts,
+    heroInsightSummary,
     heroSignalFacts,
-    heroInsightLinks,
+    heroInsightMoodTokens,
     heroTagLine,
     heroTrackLine,
     hydratedNowPlaying?.name,
@@ -907,11 +1652,10 @@ export function HeroSection({
   function handleHeroPointerMove(event: React.PointerEvent<HTMLElement>) {
     if (!canUseInteractiveNotes || event.pointerType !== "mouse") return;
     const now = performance.now();
-
-    const bounds = event.currentTarget.getBoundingClientRect();
-    const x = event.clientX - bounds.left;
-    const y = event.clientY - bounds.top;
-    const ratio = bounds.width > 0 ? x / bounds.width : 0;
+    const nativeEvent = event.nativeEvent as PointerEvent & { offsetX?: number; offsetY?: number };
+    const x = nativeEvent.offsetX ?? 0;
+    const y = nativeEvent.offsetY ?? 0;
+    const ratio = event.currentTarget.clientWidth > 0 ? x / event.currentTarget.clientWidth : 0;
     const lastPointer = lastPointerPositionRef.current;
     if (lastPointer) {
       const dt = Math.max(16, now - lastPointer.time);
@@ -950,9 +1694,19 @@ export function HeroSection({
     setActiveSignalZone(null);
   }
 
+  function openHeroInsightCard() {
+    setHeroInsightExpanded(true);
+    setAiTriviaExpanded(true);
+    setInsightsOpen(true);
+  }
+
+  function closeHeroInsightCard() {
+    setHeroInsightExpanded(false);
+  }
+
   return (
     <motion.section
-      ref={heroSectionRef}
+      id="home-hero"
       className="hero-morph relative -mt-4 w-full overflow-hidden"
       onPointerMove={handleHeroPointerMove}
       onPointerLeave={handleHeroPointerLeave}
@@ -962,7 +1716,6 @@ export function HeroSection({
         src="/pretext-atlas-hero.png"
         alt=""
         aria-hidden="true"
-        onLoad={() => setMeasureVersion((value) => value + 1)}
         className="absolute inset-0 h-full w-full object-cover object-[68%_center]"
       />
       <div
@@ -1002,56 +1755,382 @@ export function HeroSection({
         </AnimatePresence>
       </div>
       <div className="absolute inset-0 hidden lg:block">
-        {manuscriptSnippets.map((snippet) => (
-          <HeroSignalSnippet
-            key={snippet.id}
-            snippet={snippet}
-            pointerX={pointerX}
-            pointerY={pointerY}
-            fieldWidth={heroFieldWidth}
-            fieldHeight={heroFieldHeight}
-            activeZone={activeSignalZone}
-            enabled={canUseInteractiveNotes}
-          />
-        ))}
-        <AnimatePresence>
-          {displayTrivia && heroInsightImage ? (
-            <motion.img
-              key={heroInsightImage}
-              initial={{ opacity: 0, scale: 0.9, x: 16, y: 8 }}
-              animate={{ opacity: activeSignalZone === "right" ? 0.95 : 0.72, scale: activeSignalZone === "right" ? 1.02 : 1, x: 0, y: 0 }}
-              exit={{ opacity: 0, scale: 0.94, x: 12, y: 6 }}
-              transition={{ duration: 0.3, ease: "easeOut" }}
-              src={heroInsightImage}
-              alt="Track or artist artwork"
-              className="pointer-events-none absolute left-[69%] top-[44%] h-16 w-16 rounded-2xl border border-white/12 object-cover shadow-[0_14px_32px_rgba(0,0,0,0.34)]"
+        <motion.div
+          initial={false}
+          animate={{
+            opacity: !hasMeasuredHeroField ? 0 : heroInsightExpanded ? 0.22 : 1,
+            scale: heroInsightExpanded ? 0.985 : 1,
+            filter: heroInsightExpanded ? "blur(1.5px)" : "blur(0px)",
+          }}
+          transition={{ duration: 0.34, ease: [0.22, 1, 0.36, 1] }}
+        >
+          {hasMeasuredHeroField ? manuscriptSnippets.map((snippet) => (
+            <HeroSignalSnippet
+              key={snippet.id}
+              snippet={snippet}
+              pointerX={pointerX}
+              pointerY={pointerY}
+              fieldWidth={heroFieldWidth}
+              fieldHeight={heroFieldHeight}
+              activeZone={activeSignalZone}
+              enabled={canUseInteractiveNotes}
             />
-          ) : null}
-        </AnimatePresence>
-        {heroInsightLinks.length > 0 ? (
+          )) : null}
+        </motion.div>
+        {showHeroInsightCloud ? (
           <motion.div
-            animate={{ opacity: activeSignalZone === "right" ? 0.95 : 0.62, y: activeSignalZone === "right" ? -2 : 0 }}
-            transition={{ duration: 0.22, ease: "easeOut" }}
-            className="pointer-events-auto absolute left-[72%] top-[58%] z-20 flex items-center gap-2"
+            ref={heroInsightCloudRef}
+            initial={{ opacity: 0, x: 24 }}
+            animate={{ opacity: heroInsightFocus ? 1 : 0.9, x: 0 }}
+            transition={{ duration: 0.35, ease: "easeOut" }}
+            className="pointer-events-none absolute bottom-[8%] right-[2%] top-[16%] z-20 w-[43%] min-w-[30rem]"
           >
-            {heroInsightLinks.map((link) => {
-              const Icon = renderHeroLinkIcon(link.kind);
-              return (
-                <a
-                  key={link.url}
-                  href={link.url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="pointer-events-auto flex h-9 w-9 items-center justify-center rounded-full border border-[rgba(245,177,45,0.18)] bg-[rgba(8,10,16,0.42)] text-[var(--rp-gold)] shadow-[0_10px_22px_rgba(0,0,0,0.24)] backdrop-blur-sm"
-                  aria-label={link.label}
-                  title={link.label}
-                  onPointerDown={(event) => event.stopPropagation()}
-                  onClick={(event) => event.stopPropagation()}
+            {!heroArtworkFailed && heroArtworkSrc ? (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.92, x: 18, y: 8 }}
+                animate={{
+                  opacity: heroInsightExpanded ? 0 : 0.88,
+                  scale: heroInsightExpanded ? 0.42 : 1,
+                  x: heroInsightExpanded ? -108 : 0,
+                  y: heroInsightExpanded ? 124 : 0,
+                  rotate: heroInsightExpanded ? -8 : 0,
+                  filter: heroInsightExpanded ? "blur(3px)" : "blur(0px)",
+                }}
+                transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
+                className="pointer-events-auto absolute right-[10%] top-[12%] cursor-pointer"
+                style={{ pointerEvents: heroInsightExpanded ? "none" : "auto" }}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  openHeroInsightCard();
+                }}
+              >
+                <img
+                  src={heroArtworkSrc}
+                  alt="Track or artist artwork"
+                  className="h-40 w-40 rounded-[2.2rem] border border-white/14 object-cover shadow-[0_30px_70px_rgba(0,0,0,0.5)]"
+                  onError={() => setHeroArtworkFailed(true)}
+                />
+                <div className="pointer-events-none absolute -bottom-10 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full border border-[rgba(245,177,45,0.18)] bg-[rgba(8,10,16,0.36)] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-[rgba(247,240,224,0.72)] backdrop-blur-sm">
+                  Open listening story
+                </div>
+              </motion.div>
+            ) : (
+              <motion.button
+                type="button"
+                initial={{ opacity: 0, scale: 0.92, x: 18, y: 8 }}
+                animate={{
+                  opacity: heroInsightExpanded ? 0 : 0.78,
+                  scale: heroInsightExpanded ? 0.42 : 1,
+                  x: heroInsightExpanded ? -108 : 0,
+                  y: heroInsightExpanded ? 124 : 0,
+                  rotate: heroInsightExpanded ? -8 : 0,
+                  filter: heroInsightExpanded ? "blur(3px)" : "blur(0px)",
+                }}
+                transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
+                className="pointer-events-auto absolute right-[10%] top-[12%] flex h-40 w-40 cursor-pointer flex-col items-center justify-center rounded-[2.2rem] border border-white/14 bg-[linear-gradient(180deg,rgba(12,14,18,0.72)_0%,rgba(16,19,26,0.58)_100%)] text-center shadow-[0_30px_70px_rgba(0,0,0,0.46)]"
+                style={{ pointerEvents: heroInsightExpanded ? "none" : "auto" }}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  openHeroInsightCard();
+                }}
+              >
+                <IconMusic size={30} className="text-[var(--rp-gold)]" />
+                <div className="mt-4 max-w-[8rem] text-[14px] font-medium leading-5 text-[rgba(247,240,224,0.74)]">
+                  Open listening story
+                </div>
+              </motion.button>
+            )}
+
+            <motion.div
+              className="absolute inset-0 z-30"
+              initial={false}
+              animate={{
+                clipPath: heroInsightExpanded
+                  ? `inset(${Math.max(0, heroInsightCardLayout.cardTop + 2)}px ${
+                      Math.max(
+                        0,
+                        insightCloudWidth - (heroInsightCardLayout.cardLeft + heroInsightCardLayout.cardWidth) + 2
+                      )
+                    }px ${
+                      Math.max(
+                        0,
+                        insightCloudHeight -
+                          (heroInsightCardLayout.cardTop + heroInsightCardLayout.cardHeight) +
+                          2
+                      )
+                    }px ${Math.max(0, heroInsightCardLayout.cardLeft + 2)}px round 2rem)`
+                  : "inset(0px 0px 0px 0px round 0rem)",
+              }}
+              transition={{ duration: 0.34, ease: [0.22, 1, 0.36, 1] }}
+            >
+              {canRenderHeroInsightCloudItems ? heroInsightCloudLayouts.map((item, index) => {
+                const Icon = item.iconKind ? renderHeroLinkIcon(item.iconKind) : null;
+                const Component = item.href ? motion.a : motion.div;
+                const targetLeft = heroInsightExpanded ? item.focusLeft : item.cloudLeft;
+                const targetTop = heroInsightExpanded ? item.focusTop : item.cloudTop;
+                const targetWidth = heroInsightExpanded ? item.focusWidth : item.cloudWidth;
+                const verticalDrift = heroInsightExpanded ? 0 : (index % 2 === 0 ? -8 : 8);
+                const rotation = heroInsightExpanded ? 0 : (index % 2 === 0 ? -4 : 5);
+
+                return (
+                  <Component
+                    key={item.id}
+                    {...(item.href
+                      ? {
+                          href: item.href,
+                          target: "_blank",
+                          rel: "noreferrer",
+                        }
+                      : {})}
+                    initial={false}
+                    animate={{
+                      left: targetLeft,
+                      top: targetTop,
+                      width: targetWidth,
+                      y: verticalDrift,
+                      rotate: rotation,
+                      scale: heroInsightExpanded ? 0.94 : 1,
+                      opacity: heroInsightExpanded ? 0 : 0.8,
+                    }}
+                    transition={{
+                      left: { type: "spring", stiffness: 130, damping: 20, mass: 0.9, delay: index * 0.02 },
+                      top: { type: "spring", stiffness: 130, damping: 20, mass: 0.9, delay: index * 0.02 },
+                      width: { type: "spring", stiffness: 130, damping: 24, mass: 1, delay: index * 0.02 },
+                      y: { type: "spring", stiffness: 90, damping: 18, mass: 0.8, delay: index * 0.02 },
+                      rotate: { type: "spring", stiffness: 80, damping: 18, mass: 0.8, delay: index * 0.02 },
+                      scale: { duration: 0.28, ease: "easeOut" },
+                      opacity: {
+                        duration: heroInsightExpanded ? 0.14 : 0.28,
+                        delay: heroInsightExpanded ? 0.22 + index * 0.01 : 0,
+                        ease: "easeOut",
+                      },
+                    }}
+                    className="pointer-events-auto absolute z-30"
+                    onPointerDown={(event: React.PointerEvent<HTMLElement>) => event.stopPropagation()}
+                    onClick={(event: React.MouseEvent<HTMLElement>) => event.stopPropagation()}
+                  >
+                    <div
+                      className={`rounded-[1.45rem] border px-3 py-2 shadow-[0_16px_30px_rgba(0,0,0,0.18)] ${
+                        heroInsightExpanded
+                          ? "border-[rgba(245,177,45,0.1)] bg-[linear-gradient(180deg,rgba(20,22,30,0.74)_0%,rgba(14,16,22,0.6)_100%)] backdrop-blur-[6px]"
+                          : "border-[rgba(245,177,45,0.12)] bg-[linear-gradient(180deg,rgba(8,10,16,0.2)_0%,rgba(8,10,16,0.28)_100%)] backdrop-blur-[10px]"
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        {Icon ? <Icon size={12} className="text-[var(--rp-gold)]" /> : null}
+                        <div
+                          className="text-[9px] font-semibold uppercase tracking-[0.22em] text-[var(--rp-gold)]"
+                          style={{ letterSpacing: "0.18em" }}
+                        >
+                          {item.eyebrow}
+                        </div>
+                      </div>
+                      <PretextMeasuredText
+                        text={item.text}
+                        font={HERO_CLOUD_TEXT_FONT}
+                        lineHeight={17}
+                        collapsedLines={2}
+                        className="mt-1"
+                        lineClassName="text-[12px] font-medium leading-[1.35] text-[rgba(247,240,224,0.84)]"
+                        fallbackClassName="text-[12px] font-medium leading-[1.35] text-[rgba(247,240,224,0.84)]"
+                      />
+                    </div>
+                  </Component>
+                );
+              }) : null}
+            </motion.div>
+
+            <AnimatePresence>
+              {heroInsightExpanded ? (
+                <motion.div
+                  initial={{
+                    opacity: 0,
+                    scale: 0.78,
+                    rotateY: 14,
+                    x: 42,
+                    y: 26,
+                    filter: "blur(8px)",
+                    clipPath: "inset(34% 10% 16% 56% round 2.8rem)",
+                  }}
+                  animate={{
+                    opacity: 1,
+                    scale: 1,
+                    rotateY: 0,
+                    x: 0,
+                    y: 0,
+                    filter: "blur(0px)",
+                    clipPath: "inset(0% 0% 0% 0% round 2.1rem)",
+                  }}
+                  exit={{
+                    opacity: 0,
+                    scale: 0.82,
+                    rotateY: -10,
+                    x: 46,
+                    y: 26,
+                    filter: "blur(8px)",
+                    clipPath: "inset(34% 10% 16% 56% round 2.8rem)",
+                  }}
+                  transition={{
+                    duration: 0.48,
+                    delay: 0.08,
+                    ease: [0.22, 1, 0.36, 1],
+                  }}
+                  className="pointer-events-auto absolute z-20 rounded-[2.1rem] border border-[rgba(245,177,45,0.24)] bg-[linear-gradient(180deg,rgba(12,14,18,0.94)_0%,rgba(14,17,24,0.86)_100%)] px-6 py-6 shadow-[0_32px_82px_rgba(0,0,0,0.46)] backdrop-blur-xl"
+                  style={{
+                    left: `${heroInsightCardLayout.cardLeft}px`,
+                    top: `${heroInsightCardLayout.cardTop}px`,
+                    width: `${heroInsightCardLayout.cardWidth}px`,
+                    minHeight: `${heroInsightCardLayout.cardHeight}px`,
+                    transformPerspective: 1400,
+                  }}
                 >
-                  <Icon size={16} />
-                </a>
-              );
-            })}
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 8 }}
+                    transition={{ duration: 0.28, delay: 0.22, ease: "easeOut" }}
+                  >
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="min-w-0 flex-1">
+                      <div className="text-[10px] font-semibold uppercase tracking-[0.24em] text-[var(--rp-gold)]">
+                        Listening story
+                      </div>
+                      <div className="mt-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-[rgba(247,240,224,0.58)]">
+                        {heroInsightSourceLabel}
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      {hasHeroCardArtwork ? (
+                        <div className="mr-1 overflow-hidden rounded-[1.15rem] border border-white/12 shadow-[0_16px_30px_rgba(0,0,0,0.32)]">
+                          <img
+                            src={heroArtworkSrc ?? ""}
+                            alt=""
+                            aria-hidden="true"
+                            className="h-[4.65rem] w-[4.65rem] object-cover"
+                          />
+                        </div>
+                      ) : null}
+                      {heroInsightHeaderLinks.map((link) => {
+                        const Icon = renderHeroLinkIcon(link.kind);
+                        return (
+                          <a
+                            key={`header-${link.url}`}
+                            href={link.url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-[rgba(245,177,45,0.14)] bg-[rgba(255,255,255,0.04)] text-[var(--rp-gold)]"
+                            aria-label={link.label}
+                            title={link.label}
+                            onClick={(event) => event.stopPropagation()}
+                          >
+                            <Icon size={13} />
+                          </a>
+                        );
+                      })}
+                      {featureCountryCode ? (
+                        <div className="rounded-[1rem] border border-white/10 bg-[rgba(255,255,255,0.04)] px-2 py-1.5">
+                          <div className="flex items-center gap-2">
+                            <CountryFlag iso={featureCountryCode} size={16} rounded />
+                            {heroInsightTopBadges.length > 0 ? (
+                              <div className="flex flex-wrap gap-1.5">
+                                {heroInsightTopBadges.map((badge) => (
+                                  <span
+                                    key={badge}
+                                    className="rounded-full border border-[rgba(245,177,45,0.14)] bg-[rgba(255,255,255,0.03)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-[rgba(247,240,224,0.72)]"
+                                  >
+                                    {badge}
+                                  </span>
+                                ))}
+                              </div>
+                            ) : null}
+                          </div>
+                        </div>
+                      ) : null}
+                      <button
+                        type="button"
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-[rgba(255,255,255,0.04)] text-[rgba(247,240,224,0.68)] hover:text-[var(--rp-text)]"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          closeHeroInsightCard();
+                        }}
+                        aria-label="Close listening story"
+                      >
+                        <IconX size={14} />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 max-w-[36rem] space-y-2">
+                    <div
+                      className="max-w-[34rem] text-[1.72rem] font-semibold leading-tight text-[var(--rp-text)]"
+                      title={heroInsightHeadingFull !== heroInsightHeading ? heroInsightHeadingFull : undefined}
+                    >
+                      {heroInsightHeading}
+                    </div>
+                    {heroInsightSubline ? (
+                      <div className="text-[12px] font-medium uppercase tracking-[0.16em] text-[rgba(247,240,224,0.48)]">
+                        {heroInsightSubline}
+                      </div>
+                    ) : null}
+                  </div>
+
+                  <div className="mt-4 max-w-[36rem]">
+                    <PretextMeasuredText
+                      text={heroInsightSummary}
+                      font={PRETEXT_HERO_FONT}
+                      lineHeight={23}
+                      collapsedLines={6}
+                      lineClassName="text-[15px] font-medium leading-[1.48] text-[rgba(247,240,224,0.9)]"
+                      fallbackClassName="text-[15px] font-medium leading-[1.48] text-[rgba(247,240,224,0.9)]"
+                      />
+                    </div>
+                  <div
+                    className="mt-5 rounded-[1.6rem] border border-[rgba(245,177,45,0.08)] bg-[rgba(255,255,255,0.02)] px-4 py-4"
+                    style={{ minHeight: `${heroInsightCardLayout.metadataHeight}px` }}
+                  >
+                    <motion.div
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 4 }}
+                      transition={{ duration: 0.24, delay: 0.26, ease: "easeOut" }}
+                      className="grid grid-cols-2 gap-3"
+                    >
+                      {heroCardMetadataItems.map((item) => {
+                        const FactIcon = renderHeroFactIcon(item.concept);
+                        return (
+                          <div
+                            key={`card-${item.label}-${item.value}`}
+                            className="rounded-[1.2rem] border border-[rgba(245,177,45,0.1)] bg-[linear-gradient(180deg,rgba(20,22,30,0.6)_0%,rgba(14,16,22,0.48)_100%)] px-3 py-2"
+                          >
+                            <div className="flex items-center gap-2">
+                              <span className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-[rgba(245,177,45,0.12)] bg-[rgba(255,255,255,0.03)] text-[var(--rp-gold)]">
+                                <FactIcon size={12} />
+                              </span>
+                              <div
+                                className="text-[9px] font-semibold uppercase tracking-[0.2em] text-[var(--rp-gold)]"
+                                style={{ letterSpacing: "0.16em" }}
+                              >
+                                {item.shortLabel}
+                              </div>
+                            </div>
+                            <PretextMeasuredText
+                              text={item.value}
+                              font={HERO_CLOUD_TEXT_FONT}
+                              lineHeight={17}
+                              collapsedLines={2}
+                              className="mt-1"
+                              lineClassName="text-[12px] font-medium leading-[1.35] text-[rgba(247,240,224,0.84)]"
+                              fallbackClassName="text-[12px] font-medium leading-[1.35] text-[rgba(247,240,224,0.84)]"
+                            />
+                          </div>
+                        );
+                      })}
+                    </motion.div>
+                  </div>
+                  </motion.div>
+                </motion.div>
+              ) : null}
+            </AnimatePresence>
           </motion.div>
         ) : null}
       </div>
@@ -1116,11 +2195,8 @@ export function HeroSection({
               <ElasticHeroText
                 as="h1"
                 text="A listening atlas for people who travel by sound."
-                anchorRef={heroSectionRef}
-                measureKey={measureVersion}
-                pointerX={pointerX}
-                pointerY={pointerY}
-                pointerVelocity={pointerVelocity}
+                font={heroHeadlineFont}
+                lineHeight={isLg ? 52 : isSm ? 46 : 36}
                 enabled={canUseInteractiveNotes}
                 radius={190}
                 strength={24}
@@ -1138,11 +2214,8 @@ export function HeroSection({
             <ElasticHeroText
               as="p"
               text="Tune into live radio from every country, then follow a clear route into local stations, listening notes, and country-level discovery."
-              anchorRef={heroSectionRef}
-              measureKey={measureVersion}
-              pointerX={pointerX}
-              pointerY={pointerY}
-              pointerVelocity={pointerVelocity}
+              font={heroBodyFont}
+              lineHeight={isLg ? 28 : 24}
               enabled={canUseInteractiveNotes}
               radius={176}
               strength={20}
@@ -1156,18 +2229,17 @@ export function HeroSection({
 
             <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-2 text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--rp-muted-2)]">
               <ElasticHeroText
-                as="div"
+                as="span"
                 text={`${topCountries.length.toLocaleString()} countries`}
-                anchorRef={heroSectionRef}
-                measureKey={measureVersion}
-                pointerX={pointerX}
-                pointerY={pointerY}
-                pointerVelocity={pointerVelocity}
+                font={HERO_PROOF_FONT}
+                lineHeight={16}
+                mode="letters"
+                letterSpacing={2.64}
                 enabled={canUseInteractiveNotes}
                 radius={120}
                 strength={12}
-                className="contents"
-                tokenClassName="mr-[0.14em] inline-block last:mr-0"
+                className="inline-block"
+                tokenClassName="pointer-events-none inline-block will-change-transform"
                 spring={{ stiffness: 148, damping: 22, mass: 0.44 }}
                 rotateSpring={{ stiffness: 132, damping: 22, mass: 0.44 }}
                 rotateFactor={1.35}
@@ -1175,20 +2247,19 @@ export function HeroSection({
               />
               <span className="h-1 w-1 rounded-full bg-[var(--rp-gold)]" />
               <ElasticHeroText
-                as="div"
+                as="span"
                 text={totalStations > 1000
                   ? `${(totalStations / 1000).toFixed(0)}k+ live stations`
                   : `${totalStations.toLocaleString()} live stations`}
-                anchorRef={heroSectionRef}
-                measureKey={measureVersion}
-                pointerX={pointerX}
-                pointerY={pointerY}
-                pointerVelocity={pointerVelocity}
+                font={HERO_PROOF_FONT}
+                lineHeight={16}
+                mode="letters"
+                letterSpacing={2.64}
                 enabled={canUseInteractiveNotes}
                 radius={120}
                 strength={12}
-                className="contents"
-                tokenClassName="mr-[0.14em] inline-block last:mr-0"
+                className="inline-block"
+                tokenClassName="pointer-events-none inline-block will-change-transform"
                 spring={{ stiffness: 148, damping: 22, mass: 0.44 }}
                 rotateSpring={{ stiffness: 132, damping: 22, mass: 0.44 }}
                 rotateFactor={1.35}
@@ -1196,18 +2267,17 @@ export function HeroSection({
               />
               <span className="h-1 w-1 rounded-full bg-[var(--rp-gold)]" />
               <ElasticHeroText
-                as="div"
+                as="span"
                 text={`${continents} continents on the dial`}
-                anchorRef={heroSectionRef}
-                measureKey={measureVersion}
-                pointerX={pointerX}
-                pointerY={pointerY}
-                pointerVelocity={pointerVelocity}
+                font={HERO_PROOF_FONT}
+                lineHeight={16}
+                mode="letters"
+                letterSpacing={2.64}
                 enabled={canUseInteractiveNotes}
                 radius={120}
                 strength={12}
-                className="contents"
-                tokenClassName="mr-[0.14em] inline-block last:mr-0"
+                className="inline-block"
+                tokenClassName="pointer-events-none inline-block will-change-transform"
                 spring={{ stiffness: 148, damping: 22, mass: 0.44 }}
                 rotateSpring={{ stiffness: 132, damping: 22, mass: 0.44 }}
                 rotateFactor={1.35}
@@ -1254,7 +2324,7 @@ export function HeroSection({
                     type="text"
                     value={searchQueryRaw}
                     onChange={(e) => onSearch?.(e.target.value)}
-                    placeholder="Search countries, cities, or stations..."
+                    placeholder="Search countries, stations, genres, or moods..."
                     className="w-full bg-transparent px-5 py-4 text-base font-medium text-[var(--rp-text)] focus:outline-none placeholder:text-[var(--rp-muted-2)]"
                   />
                   {searchQueryRaw && (
@@ -1267,9 +2337,19 @@ export function HeroSection({
                     </button>
                   )}
                   <div className="pr-4 hidden sm:block">
-                    <span className="text-[10px] font-semibold text-[var(--rp-muted-2)] bg-black/40 px-2 py-1 rounded border border-white/10">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const searchInput = document.getElementById("hero-search-input") as HTMLInputElement | null;
+                        if (!searchInput) return;
+                        searchInput.focus();
+                        searchInput.select();
+                      }}
+                      className="text-[10px] font-semibold text-[var(--rp-muted-2)] bg-black/40 px-2 py-1 rounded border border-white/10 transition-colors hover:text-[var(--rp-text)]"
+                      aria-label="Focus search with Command K"
+                    >
                       ⌘K
-                    </span>
+                    </button>
                   </div>
                 </div>
               </div>

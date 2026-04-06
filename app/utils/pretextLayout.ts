@@ -1,22 +1,27 @@
 import { layoutWithLines, prepareWithSegments, walkLineRanges } from "@chenglou/pretext";
 
 type PreparedSegments = ReturnType<typeof prepareWithSegments>;
+type WhiteSpaceMode = "normal" | "pre-wrap";
 
 const preparedCache = new Map<string, PreparedSegments>();
 
-function preparedKey(text: string, font: string) {
-  return `${font}\u0000${text}`;
+function preparedKey(text: string, font: string, whiteSpace: WhiteSpaceMode) {
+  return `${font}\u0000${whiteSpace}\u0000${text}`;
 }
 
-export function preparePretext(text: string, font: string): PreparedSegments | null {
-  const trimmed = text.trim();
-  if (!trimmed) return null;
+export function preparePretext(
+  text: string,
+  font: string,
+  whiteSpace: WhiteSpaceMode = "normal"
+): PreparedSegments | null {
+  const normalized = whiteSpace === "pre-wrap" ? text : text.trim();
+  if (!normalized) return null;
 
-  const key = preparedKey(trimmed, font);
+  const key = preparedKey(normalized, font, whiteSpace);
   const cached = preparedCache.get(key);
   if (cached) return cached;
 
-  const prepared = prepareWithSegments(trimmed, font);
+  const prepared = prepareWithSegments(normalized, font, { whiteSpace });
   preparedCache.set(key, prepared);
   return prepared;
 }
@@ -42,7 +47,8 @@ export function getPretextLineCount(
 }
 
 export function getPretextTightWidth(text: string, font: string) {
-  const prepared = preparePretext(text, font);
+  const whiteSpace = /\s/.test(text) ? "pre-wrap" : "normal";
+  const prepared = preparePretext(text, font, whiteSpace);
   if (!prepared) return 0;
 
   let measured = 0;
