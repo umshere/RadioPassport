@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import type { Station } from '~/types/radio';
+import { sanitizeArtworkUrl } from '~/utils/stations';
 
 interface StationArtworkProps {
     station: Partial<Station>;
@@ -45,10 +46,12 @@ export function StationArtwork({
         return `linear-gradient(135deg, hsl(${h1}, 85%, 60%) 0%, hsl(${h2}, 75%, 50%) 100%)`;
     }, [station.name, fallbackStyle]);
 
-    if (station.favicon && !imgFailed) {
+    const artworkUrl = sanitizeArtworkUrl(station.favicon);
+
+    if (artworkUrl && !imgFailed) {
         return (
             <img
-                src={station.favicon}
+                src={artworkUrl}
                 alt={alt}
                 className={className}
                 onError={() => setImgFailed(true)}

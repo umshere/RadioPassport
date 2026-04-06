@@ -38,6 +38,29 @@ export type Station = {
 
 export type ListeningMode = "world" | "local";
 
+export type QueueSourceType =
+  | "country"
+  | "search"
+  | "world"
+  | "atlas"
+  | "ai_mix"
+  | "direct";
+
+export type QueueSourceContext = {
+  country?: string | null;
+  query?: string | null;
+  view?: string | null;
+  description?: string | null;
+};
+
+export type QueueSession = {
+  queueId: string;
+  queueSourceType: QueueSourceType;
+  queueSourceLabel: string;
+  queueSourceContext?: QueueSourceContext | null;
+  stations: Station[];
+};
+
 export type PlayerCard =
   | { type: "mission" }
   | { type: "station"; station: Station };

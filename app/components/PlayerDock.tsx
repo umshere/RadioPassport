@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useCallback, useState, useRef, type MouseEvent } from "react";
-import { useLocation } from "@remix-run/react";
+import { useLocation, useNavigate } from "@remix-run/react";
 import { Drawer, Text, Tooltip } from "@mantine/core";
 import { motion, AnimatePresence } from "framer-motion";
-import RetroTuner from "./RetroTuner";
 import { StationArtwork } from "./StationArtwork";
 import {
   IconPlayerPauseFilled,
@@ -11,12 +10,13 @@ import {
   IconPlayerSkipForwardFilled,
   IconMapPin,
   IconSparkles,
+  IconMoonStars,
   IconBrandYoutube,
   IconBrandWikipedia,
-  IconUser,
+  IconLink,
   IconDisc,
+  IconUser,
   IconMusic,
-  IconExternalLink,
 } from "@tabler/icons-react";
 import { usePlayerStore } from "~/state/playerStore";
 import { useUIStore } from "~/state/uiStore";
@@ -41,7 +41,10 @@ const DESKTOP_META_STACK_EXIT_WIDTH = 460;
 
 export default function PlayerDock() {
   const location = useLocation();
+  const navigate = useNavigate();
   const isAiRoute = location.pathname.startsWith("/ai");
+  const isListeningRoute = location.pathname === "/listen";
+  const isCountryView = location.pathname === "/" && new URLSearchParams(location.search).has("country");
   const notice = usePlayerNoticeStore((state) => state.notice);
   const clearNotice = usePlayerNoticeStore((state) => state.clearNotice);
   const nowPlaying = usePlayerStore((state) => state.nowPlaying);
@@ -49,6 +52,7 @@ export default function PlayerDock() {
   const togglePlay = usePlayerStore((state) => state.togglePlay);
   const queue = usePlayerStore((state) => state.queue);
   const currentStationIndex = usePlayerStore((state) => state.currentStationIndex);
+  const queueSourceLabel = usePlayerStore((state) => state.queueSourceLabel);
   const startStation = usePlayerStore((state) => state.startStation);
 
   const toggleQuickRetune = useUIStore((state) => state.toggleQuickRetune);
@@ -130,43 +134,24 @@ export default function PlayerDock() {
     }
   }, [queue, currentStationIndex, startStation]);
 
-  const [isExpanded, setIsExpanded] = useState(false);
   const isMobile = useMediaQuery("(max-width: 1024px)");
   const { ref: desktopMetaRef, width: desktopMetaWidth } = useElementSize();
   const [desktopMetaMode, setDesktopMetaMode] = useState<"stacked" | "inline">("stacked");
-  const miniSwipeStartRef = useRef<{ x: number; y: number } | null>(null);
-  const miniSwipeDeltaRef = useRef(0);
-
-  const handleMiniSwipeStart = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
-    if (event.pointerType === "mouse") return;
-    miniSwipeStartRef.current = { x: event.clientX, y: event.clientY };
-    miniSwipeDeltaRef.current = 0;
-  }, []);
-
-  const handleMiniSwipeMove = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
-    if (!miniSwipeStartRef.current) return;
-    const dx = event.clientX - miniSwipeStartRef.current.x;
-    const dy = event.clientY - miniSwipeStartRef.current.y;
-    if (Math.abs(dy) < 10 || Math.abs(dy) < Math.abs(dx) * 1.2) return;
-    miniSwipeDeltaRef.current = dy;
-  }, []);
-
-  const handleMiniSwipeEnd = useCallback(() => {
-    if (!miniSwipeStartRef.current) return;
-    const dy = miniSwipeDeltaRef.current;
-    miniSwipeStartRef.current = null;
-    miniSwipeDeltaRef.current = 0;
-    if (dy < -70) {
-      setIsExpanded(true);
-    }
-  }, []);
+  const handleOpenListeningPage = useCallback(
+    (event?: { stopPropagation?: () => void }) => {
+      event?.stopPropagation?.();
+      navigate("/listen");
+    },
+    [navigate]
+  );
   const nowPlayingMeta = useNowPlayingMetadata(nowPlaying, isPlaying);
   const scrollHeroIntoView = useCallback(() => {
     if (location.pathname !== "/") return;
+    const params = new URLSearchParams(location.search);
     window.requestAnimationFrame(() => {
-      scrollToId("home-hero", "start");
+      scrollToId(params.has("country") ? "country-hero" : "home-hero", "start");
     });
-  }, [location.pathname]);
+  }, [location.pathname, location.search]);
   const handleOpenInsights = useCallback(
     (event?: MouseEvent) => {
       event?.stopPropagation();
@@ -339,7 +324,7 @@ export default function PlayerDock() {
       case "info":
         return IconBrandWikipedia;
       default:
-        return IconExternalLink;
+        return IconLink;
     }
   };
 
@@ -526,28 +511,11 @@ export default function PlayerDock() {
     setIsMounted(true);
   }, []);
 
-  if (!isMounted || !nowPlaying) return null;
+  if (!isMounted || !nowPlaying || isListeningRoute) return null;
 
-  // Desktop dock (float bottom-right to avoid covering hero CTAs)
+  // Desktop dock
   return (
     <>
-      <AnimatePresence>
-        {isExpanded && (
-          <RetroTuner
-            station={nowPlaying}
-            isPlaying={isPlaying}
-            onPlayPause={togglePlay}
-            onNext={handleNext}
-            onPrev={handlePrev}
-            onClose={() => setIsExpanded(false)}
-            queue={queue}
-            currentIndex={currentStationIndex}
-            onSelectStation={(nextStation) => {
-              startStation(nextStation, { preserveQueue: true });
-            }}
-          />
-        )}
-      </AnimatePresence>
       <Drawer
         opened={Boolean(isMobile) && insightsOpen}
         onClose={() => setInsightsOpen(false)}
@@ -588,10 +556,9 @@ export default function PlayerDock() {
         {triviaContent}
       </Drawer>
 
-      <aside className="pointer-events-none fixed bottom-6 left-1/2 -translate-x-1/2 z-30 hidden w-full max-w-3xl px-4 lg:block">
+      <aside className="pointer-events-none fixed bottom-6 left-1/2 z-30 hidden w-full max-w-3xl -translate-x-1/2 px-4 lg:block">
         <motion.div
           className="pointer-events-auto rounded-3xl overflow-hidden transition-transform hover:-translate-y-1 relative"
-          onClick={() => setIsExpanded(true)}
           style={{
             background: 'linear-gradient(135deg, rgba(12,14,18,0.98) 0%, rgba(18,22,30,0.95) 100%)',
             backdropFilter: 'blur(18px) saturate(140%)',
@@ -644,19 +611,7 @@ export default function PlayerDock() {
             </div>
           )}
 
-          {/* Progress Bar - Vibrant gradient */}
-          <div className="relative h-1.5 w-full bg-gradient-to-r from-[#1b1f28] via-[#222833] to-[#1b1f28]">
-            {isPlaying && (
-              <div
-                className="absolute inset-y-0 left-0 w-16 bg-gradient-to-r from-[#f6c86f] via-[#f1aa45] to-[#f7d18b]"
-                style={{
-                  boxShadow: '0 0 16px rgba(246,200,111,0.45)',
-                }}
-              />
-            )}
-          </div>
-
-          <div className="flex items-center gap-5 p-4 pr-6 relative z-10">
+          <div className="relative z-10 flex items-center gap-5 p-4 pr-6">
             {/* Artwork with glow effect */}
             <div className="h-14 w-14 rounded-xl overflow-hidden flex-shrink-0 relative group"
               style={{
@@ -684,6 +639,10 @@ export default function PlayerDock() {
                 </Text>
               </div>
               <div className="min-h-[18px] flex items-center gap-2">
+                <Text size="xs" className="truncate text-amber-50/80 font-semibold uppercase tracking-[0.2em]">
+                  {queueSourceLabel}
+                </Text>
+                <span className="text-amber-100/30">•</span>
                 <Text size="xs" className="truncate text-amber-100/70">
                   {triviaTitle}
                 </Text>
@@ -793,6 +752,19 @@ export default function PlayerDock() {
                     <IconMapPin size={17} />
                   </button>
                 </Tooltip>
+
+                {!isCountryView ? (
+                  <Tooltip label="Open Listening Page" position="top" withArrow>
+                    <button
+                      className="flex h-9 items-center justify-center gap-2 rounded-full border border-amber-400/22 bg-[#161a22] px-3 text-amber-100 hover:border-amber-400/60 transition-all active:scale-95 shadow-md"
+                      onClick={handleOpenListeningPage}
+                      aria-label="Open listening page"
+                    >
+                      <IconMoonStars size={15} />
+                      Zen
+                    </button>
+                  </Tooltip>
+                ) : null}
               </div>
 
               <div className="flex items-center gap-2 rounded-full border border-white/10 bg-[#141822] px-2 py-2 shadow-[0_8px_20px_rgba(0,0,0,0.28)]">
@@ -861,12 +833,7 @@ export default function PlayerDock() {
         >
           <motion.div
             data-raptor={raptorMiniEnabled ? "true" : "false"}
-            onClick={() => setIsExpanded(true)}
-            onPointerDown={handleMiniSwipeStart}
-            onPointerMove={handleMiniSwipeMove}
-            onPointerUp={handleMiniSwipeEnd}
-            onPointerCancel={handleMiniSwipeEnd}
-            className={`rounded-[2rem] overflow-hidden active:scale-[0.98] transition-transform cursor-pointer relative ${raptorMiniEnabled ? 'py-2 px-3' : 'py-3 px-4'}`}
+            className={`rounded-[2rem] overflow-hidden active:scale-[0.98] transition-transform relative ${raptorMiniEnabled ? 'py-2 px-3' : 'py-3 px-4'}`}
             style={{
               background: 'linear-gradient(135deg, rgba(12,14,18,0.96) 0%, rgba(18,22,30,0.94) 100%)',
               backdropFilter: 'blur(18px)',
@@ -877,9 +844,6 @@ export default function PlayerDock() {
           >
             {/* Glass Shine Overlay */}
             <div className="absolute inset-0 bg-gradient-to-b from-white/5 to-transparent opacity-40 pointer-events-none" />
-
-            {/* Static status bar */}
-            <div className="absolute top-0 left-0 right-0 h-[3px] bg-white/10" />
 
             <div className="flex items-center gap-3.5 relative z-10 pt-1 px-1">
               <div
@@ -913,6 +877,9 @@ export default function PlayerDock() {
                 <div className="flex items-center gap-2">
                   <div className="text-[13px] font-bold text-amber-50 truncate leading-tight shadow-sm">{title}</div>
                 </div>
+                <div className="text-[9px] text-amber-50/70 truncate uppercase tracking-[0.2em] mt-0.5">
+                  {queueSourceLabel}
+                </div>
                 <div className="text-[11px] text-amber-200/80 truncate leading-tight mt-0.5 font-bold tracking-wide">
                   {subtitle}
                 </div>
@@ -936,6 +903,21 @@ export default function PlayerDock() {
                 >
                   <IconMapPin size={15} />
                 </button>
+
+                {!isCountryView ? (
+                  <button
+                    className="flex h-9 w-9 items-center justify-center rounded-full text-amber-100/80 active:scale-95 transition-all"
+                    style={{
+                      background: 'rgba(20,24,32,0.85)',
+                      border: '1px solid rgba(255,204,122,0.18)',
+                      boxShadow: '0 6px 16px rgba(0,0,0,0.35)',
+                    }}
+                    onClick={handleOpenListeningPage}
+                    aria-label="Open listening page"
+                  >
+                    <IconMoonStars size={15} />
+                  </button>
+                ) : null}
 
                 {/* Prev */}
                 <button

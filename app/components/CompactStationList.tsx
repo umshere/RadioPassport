@@ -192,18 +192,11 @@ export function CompactStationList({
 
     return (
         <div
-            className="p-5 rounded-[2.5rem] relative overflow-hidden"
+            className="relative overflow-hidden"
             style={{
-                background: 'rgba(12, 14, 20, 0.7)',
-                backdropFilter: 'blur(22px)',
-                WebkitBackdropFilter: 'blur(22px)',
-                boxShadow: '0 18px 40px rgba(0, 0, 0, 0.5)',
-                border: '1px solid rgba(255, 255, 255, 0.08)',
+                background: 'transparent',
             }}
         >
-            {/* Subtle noise texture or gradient highlight could go here for extra "scrubbed" feel */}
-            <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-70" />
-
             <div className="flex flex-col relative z-10 gap-2">
                 {visibleStations.map((station, index) => (
                     <CompactStationCard

@@ -2,11 +2,12 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useSearchParams } from "@remix-run/react";
 import ReactCountryFlag from 'react-country-flag';
-import { Station } from '~/types/radio';
+import type { QueueSession, Station } from '~/types/radio';
 import { CuratedRow, StationContext, PassportEntry, CurationSegment } from '~/types/world';
 import { geminiService } from '~/services/geminiService';
 import { rbFetchJson } from '~/utils/radioBrowser';
 import { normalizeStations } from '~/utils/stations';
+import { createQueueSession } from '~/utils/playerQueue';
 
 import { StationDossier } from './StationDossier';
 import { PassportView } from './PassportView';
@@ -20,7 +21,7 @@ import { Loader, TextInput, Drawer, ActionIcon, Tooltip, Group, Text } from '@ma
 
 interface WorldHomeProps {
     nowPlaying: Station | null;
-    onPlayStation: (station: Station) => void;
+    onPlayStation: (station: Station, queueSession?: QueueSession | null) => void;
     initialStations: Station[];
 }
 
@@ -147,11 +148,11 @@ export function WorldHome({ nowPlaying, onPlayStation, initialStations }: WorldH
         }
     }, [nowPlaying, trackedStationUuid, lastStation]);
 
-    const handlePlay = (station: Station) => {
+    const handlePlay = (station: Station, queueSession?: QueueSession | null) => {
         if (nowPlaying && nowPlaying.uuid !== station.uuid) {
             setLastStation(nowPlaying);
         }
-        onPlayStation(station);
+        onPlayStation(station, queueSession);
     };
 
     const performAiSearch = async (e?: React.FormEvent) => {
@@ -339,7 +340,22 @@ export function WorldHome({ nowPlaying, onPlayStation, initialStations }: WorldH
                                         {searchResultStations.length > 0 ? (
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                 {searchResultStations.map(station => (
-                                                    <div key={station.uuid} onClick={() => handlePlay(station)}
+                                                    <div
+                                                        key={station.uuid}
+                                                        onClick={() =>
+                                                            handlePlay(
+                                                                station,
+                                                                createQueueSession({
+                                                                    sourceType: 'world',
+                                                                    sourceLabel: `World Search: ${agentMessage ?? 'Results'}`,
+                                                                    stations: searchResultStations,
+                                                                    context: {
+                                                                        view: 'world',
+                                                                        query: agentMessage ?? aiPrompt,
+                                                                    },
+                                                                    seed: agentMessage ?? aiPrompt,
+                                                                })
+                                                            )}
                                                         className={`p-4 rounded-xl border transition-all cursor-pointer group relative overflow-hidden ${nowPlaying?.uuid === station.uuid ? 'bg-[rgba(245,177,45,0.12)] border-[rgba(245,177,45,0.4)]' : 'bg-black/40 border-white/10 hover:border-white/20'}`}
                                                     >
                                                         <div className="flex items-start gap-4 relative z-10">
@@ -374,7 +390,22 @@ export function WorldHome({ nowPlaying, onPlayStation, initialStations }: WorldH
                                                 </div>
                                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                     {row.stations.map(station => (
-                                                        <div key={station.uuid} onClick={() => handlePlay(station)}
+                                                        <div
+                                                            key={station.uuid}
+                                                            onClick={() =>
+                                                                handlePlay(
+                                                                    station,
+                                                                    createQueueSession({
+                                                                        sourceType: 'world',
+                                                                        sourceLabel: row.title,
+                                                                        stations: row.stations,
+                                                                        context: {
+                                                                            view: 'world',
+                                                                            description: row.description,
+                                                                        },
+                                                                        seed: row.title,
+                                                                    })
+                                                                )}
                                                             className={`p-3 rounded-lg border transition-all cursor-pointer group flex items-center gap-3 ${nowPlaying?.uuid === station.uuid ? 'bg-[rgba(245,177,45,0.12)] border-[rgba(245,177,45,0.4)]' : 'bg-black/40 border-white/10 hover:border-white/20 hover:bg-black/60'}`}
                                                         >
                                                             <div className="w-10 h-10 rounded bg-black/60 overflow-hidden shrink-0">

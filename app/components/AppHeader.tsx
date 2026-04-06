@@ -11,8 +11,6 @@ export default function AppHeader() {
   const navigate = useNavigate();
   const location = useLocation();
   const nowPlaying = usePlayerStore((state) => state.nowPlaying);
-  const isPlaying = usePlayerStore((state) => state.isPlaying);
-  const audioLevel = usePlayerStore((state) => state.audioLevel);
   const [isMounted, setIsMounted] = useState(false);
   const [useFallback, setUseFallback] = useState(false);
   const shouldReduceMotion = useReducedMotion();
@@ -95,7 +93,6 @@ export default function AppHeader() {
         <div className="flex-1 flex items-center justify-center overflow-hidden px-2">
           {isMounted && nowPlaying ? (
             <div className="flex items-center gap-2 text-[11px] text-[var(--rp-muted)] max-w-full">
-              <HeaderAudioMeter level={audioLevel} active={isPlaying} />
               <CountryFlag
                 iso={nowPlaying.countryCode ?? undefined}
                 title={nowPlaying.country}
@@ -163,41 +160,5 @@ export default function AppHeader() {
         </div>
       </motion.div>
     </motion.header>
-  );
-}
-
-function HeaderAudioMeter({ level, active }: { level: number; active: boolean }) {
-  const [isMounted, setIsMounted] = useState(false);
-
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
-
-  const meterLevel = (isMounted && active) ? Math.min(1, Math.max(0, level)) : 0;
-  const heights = useMemo(() => {
-    // Standard baseline seeds
-    const seeds = [0.35, 0.85, 0.55];
-    return seeds.map((base, index) => {
-      const variance = (index + 1) * 0.08;
-      const calculated = 8 + (base + meterLevel * (0.8 - variance)) * 18;
-      return `${calculated}px`;
-    });
-  }, [meterLevel, isMounted]);
-
-  // Always render the container to preserve structure, but bars are static on server
-  return (
-    <div className="header-meter" aria-hidden="true">
-      {(isMounted ? heights : ["8px", "8px", "8px"]).map((height: string, index: number) => (
-        <span
-          key={index}
-          className="header-meter__bar"
-          style={{
-            height,
-            opacity: (isMounted && active) ? 1 : 0.35,
-            transition: 'height 0.2s ease, opacity 0.2s ease'
-          }}
-        />
-      ))}
-    </div>
   );
 }

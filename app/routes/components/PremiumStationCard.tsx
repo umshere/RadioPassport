@@ -64,31 +64,43 @@ export function PremiumStationCard({
             transition={{ delay: index * 0.03 }}
             onHoverStart={() => setIsHovered(true)}
             onHoverEnd={() => setIsHovered(false)}
-            whileHover={{ y: -8 }}
+            whileHover={{ y: -5 }}
             whileTap={{ scale: 0.98 }}
             onClick={() => onPlay(station)}
         >
             {/* Card Container */}
             <div
-                className={`${sizeClasses[size]} relative rounded-2xl overflow-hidden`}
+                className={`${sizeClasses[size]} relative rounded-2xl overflow-hidden border`}
                 style={{
+                    borderColor: isCurrent ? 'rgba(245, 177, 45, 0.52)' : isHovered ? 'rgba(245, 177, 45, 0.24)' : 'rgba(255,255,255,0.1)',
                     boxShadow: isCurrent
-                        ? `0 20px 40px -10px ${colors.accent}60, 0 0 0 2px ${colors.accent}`
-                        : '0 15px 35px -10px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.1)',
+                        ? `0 18px 38px -16px rgba(245,177,45,0.34), 0 10px 24px -12px rgba(0,0,0,0.56), inset 0 1px 0 rgba(255,214,127,0.08)`
+                        : isHovered
+                            ? '0 16px 30px -16px rgba(0,0,0,0.48), inset 0 1px 0 rgba(255,255,255,0.04)'
+                            : '0 12px 24px -16px rgba(0,0,0,0.42), inset 0 1px 0 rgba(255,255,255,0.03)',
                 }}
             >
+                <div
+                    className="absolute inset-0"
+                    style={{
+                        background: isCurrent
+                            ? 'linear-gradient(180deg, rgba(42,33,20,0.92) 0%, rgba(18,15,12,0.84) 100%)'
+                            : 'linear-gradient(180deg, rgba(16,19,26,0.9) 0%, rgba(11,13,18,0.86) 100%)',
+                    }}
+                />
+
                 {/* Artwork Image */}
                 {station.favicon && !imageError ? (
                     <img
                         src={station.favicon}
                         alt={station.name}
-                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                        className="relative z-[1] w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                         onError={() => setImageError(true)}
                         loading="lazy"
                     />
                 ) : (
                     <div
-                        className="w-full h-full flex items-center justify-center"
+                        className="relative z-[1] w-full h-full flex items-center justify-center"
                         style={{ background: fallbackGradient }}
                     >
                         <span className="text-white/90 text-3xl font-bold">{initials}</span>
@@ -97,25 +109,36 @@ export function PremiumStationCard({
 
                 {/* Gradient Overlay */}
                 <div
-                    className="absolute inset-0 pointer-events-none transition-opacity duration-300"
+                    className="absolute inset-0 pointer-events-none transition-opacity duration-300 z-[2]"
                     style={{
-                        background: 'linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.3) 40%, transparent 70%)',
-                        opacity: isHovered ? 1 : 0.7,
+                        background: isCurrent
+                            ? 'linear-gradient(to top, rgba(0,0,0,0.74) 0%, rgba(0,0,0,0.22) 44%, transparent 76%)'
+                            : 'linear-gradient(to top, rgba(0,0,0,0.76) 0%, rgba(0,0,0,0.26) 40%, transparent 74%)',
+                        opacity: isHovered ? 1 : 0.82,
                     }}
                 />
 
-                {/* Glass Reflection Effect */}
                 <motion.div
-                    className="absolute inset-0 pointer-events-none"
+                    className="absolute inset-0 pointer-events-none z-[3]"
                     style={{
-                        background: 'linear-gradient(135deg, rgba(255,255,255,0.2) 0%, transparent 50%)',
+                        background: 'linear-gradient(180deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.01) 26%, transparent 58%, rgba(245,177,45,0.05) 100%)',
                     }}
-                    animate={{ opacity: isHovered ? 0.6 : 0.3 }}
+                    animate={{ opacity: isCurrent ? 0.9 : isHovered ? 0.72 : 0.46 }}
                 />
+
+                {isCurrent && (
+                    <div
+                        className="absolute inset-x-4 bottom-0 h-px pointer-events-none z-[4]"
+                        style={{
+                            background: 'linear-gradient(90deg, transparent 0%, rgba(245,177,45,0.76) 18%, rgba(255,213,129,0.9) 50%, rgba(245,177,45,0.76) 82%, transparent 100%)',
+                            boxShadow: '0 0 12px rgba(245,177,45,0.36)',
+                        }}
+                    />
+                )}
 
                 {/* Play Button Overlay */}
                 <motion.div
-                    className="absolute inset-0 flex items-center justify-center"
+                    className="absolute inset-0 z-[5] flex items-center justify-center"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: isHovered || isCurrent ? 1 : 0 }}
                 >
@@ -123,7 +146,9 @@ export function PremiumStationCard({
                         className="flex items-center justify-center w-14 h-14 rounded-full text-white"
                         style={{
                             background: `linear-gradient(135deg, ${colors.accent} 0%, ${colors.primary} 100%)`,
-                            boxShadow: `0 8px 25px -5px ${colors.accent}80`,
+                            boxShadow: isCurrent
+                                ? `0 10px 26px -8px ${colors.accent}80`
+                                : `0 8px 20px -8px ${colors.accent}55`,
                         }}
                         animate={isCurrent && isPlaying ? { scale: [1, 1.1, 1] } : {}}
                         transition={{ duration: 1, repeat: Infinity }}
@@ -177,17 +202,17 @@ export function PremiumStationCard({
 
             {/* Station Info */}
             <div className="mt-3 px-1">
-                <h3 className="text-white font-semibold text-sm truncate group-hover:text-white/90 transition-colors">
+                <h3 className={`font-semibold text-sm truncate transition-colors ${isCurrent ? 'text-[var(--rp-gold)]' : 'text-white group-hover:text-white/92'}`}>
                     {station.name}
                 </h3>
                 <div className="flex items-center gap-1.5 mt-0.5">
                     {station.country && (
-                        <span className="text-white/50 text-xs truncate">{station.country}</span>
+                        <span className={`text-xs truncate ${isCurrent ? 'text-white/72' : 'text-white/50'}`}>{station.country}</span>
                     )}
                     {showGenre && station.tagList?.[0] && (
                         <>
                             <span className="text-white/30 text-xs">•</span>
-                            <span className="text-white/40 text-xs truncate capitalize">{station.tagList[0]}</span>
+                            <span className={`text-xs truncate capitalize ${isCurrent ? 'text-white/62' : 'text-white/40'}`}>{station.tagList[0]}</span>
                         </>
                     )}
                 </div>

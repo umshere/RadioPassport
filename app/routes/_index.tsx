@@ -10,7 +10,7 @@ import { WorldHome } from "~/components/WorldMode/WorldHome";
 import { BRAND } from "~/constants/brand";
 import { getContinent } from "~/utils/geography";
 import { rbFetchJson } from "~/utils/radioBrowser";
-import { normalizeStations } from "~/utils/stations";
+import { normalizeStations, sanitizeArtworkUrl } from "~/utils/stations";
 import { rankStations, pickTopStation } from "~/utils/stationMeta";
 import {
   applyStationFilters,
@@ -25,8 +25,9 @@ import {
 } from "~/state/stationAvailabilityStore";
 import { isSafariBrowser } from "~/utils/streamHeuristics";
 import { vibrate } from "~/utils/haptics";
-import type { Country, Station } from "~/types/radio";
+import type { Country, QueueSession, Station } from "~/types/radio";
 import type { PassportEntry } from "~/types/world";
+import { createQueueSession } from "~/utils/playerQueue";
 
 // Components
 import { HeroSection } from "./components/HeroSection";
@@ -424,46 +425,96 @@ export default function Index() {
     [stations, stationFilters, unavailableIds, player.nowPlaying?.uuid, pageProtocol, isSafari]
   );
 
-  const areSameStationList = useCallback((a: Station[], b: Station[]) => {
-    if (a === b) return true;
-    if (a.length !== b.length) return false;
-    for (let i = 0; i < a.length; i++) {
-      if (a[i]?.uuid !== b[i]?.uuid) return false;
-    }
-    return true;
-  }, []);
-
-  // Keep the playback queue aligned with the *visible* (filtered) country list so Next/Prev behave as users expect.
-  useEffect(() => {
-    if (!selectedCountry) return;
-    if (!loaderMatchesSearch) return;
-
-    const nextQueue = filteredStations;
-    if (!areSameStationList(player.queue, nextQueue)) {
-      player.setQueue(nextQueue);
-    }
-
-    if (player.nowPlaying) {
-      const idx = nextQueue.findIndex((station) => station.uuid === player.nowPlaying!.uuid);
-      if (idx >= 0 && idx !== player.currentStationIndex) {
-        player.setCurrentStationIndex(idx);
-      }
-    }
-  }, [
-    selectedCountry,
-    loaderMatchesSearch,
-    filteredStations,
-    player.queue,
-    player.nowPlaying,
-    player.currentStationIndex,
-    player.setQueue,
-    player.setCurrentStationIndex,
-    areSameStationList,
-  ]);
   const isStationFilterActive = isStationFilterDirty(stationFilters);
   const filteredEmptyMessage = isStationFilterActive
     ? "No stations match the current filters. Try resetting them or broadening the language, region, mood, or quality filters."
     : undefined;
+
+  const countryQueueSession = useMemo<QueueSession | null>(() => {
+    if (!selectedCountry || filteredStations.length === 0) return null;
+    return createQueueSession({
+      sourceType: "country",
+      sourceLabel: `Country: ${selectedCountry}`,
+      stations: filteredStations,
+      context: {
+        country: selectedCountry,
+        view: "classical",
+        description: `${filteredStations.length.toLocaleString()} stations`,
+      },
+      seed: selectedCountry,
+    });
+  }, [filteredStations, selectedCountry]);
+
+  const searchQueueSession = useMemo<QueueSession | null>(() => {
+    const trimmedQuery = catalogQuery.trim();
+    if (trimmedQuery.length < 2 || !catalogStations?.length) return null;
+    return createQueueSession({
+      sourceType: "search",
+      sourceLabel: `Search: ${trimmedQuery}`,
+      stations: catalogStations,
+      context: {
+        query: trimmedQuery,
+        view: "classical",
+      },
+      seed: trimmedQuery,
+    });
+  }, [catalogQuery, catalogStations]);
+
+  const worldQueueSession = useMemo<QueueSession | null>(() => {
+    const worldStations = mode.exploreStations.length > 0 ? mode.exploreStations : stations;
+    if (worldStations.length === 0) return null;
+    return createQueueSession({
+      sourceType: "world",
+      sourceLabel: "World Mix",
+      stations: worldStations,
+      context: {
+        view: "world",
+      },
+      seed: viewMode,
+    });
+  }, [mode.exploreStations, stations, viewMode]);
+
+  const aiMixQueueSession = useMemo<QueueSession | null>(() => {
+    if (cards.activeStationsSnapshot.length === 0) return null;
+    return createQueueSession({
+      sourceType: mode.listeningMode === "world" ? "ai_mix" : "atlas",
+      sourceLabel: mode.listeningMode === "world" ? "AI Mix" : "Atlas Picks",
+      stations: cards.activeStationsSnapshot,
+      context: {
+        view: "classical",
+        country: selectedCountry,
+      },
+      seed: `${mode.listeningMode}:${selectedCountry ?? "global"}`,
+    });
+  }, [cards.activeStationsSnapshot, mode.listeningMode, selectedCountry]);
+
+  useEffect(() => {
+    if (!selectedCountry || !countryQueueSession || !player.nowPlaying) return;
+    if (player.queueSourceType === "country" && player.queueSourceLabel === countryQueueSession.queueSourceLabel) {
+      return;
+    }
+    const belongsToCountryQueue = countryQueueSession.stations.some(
+      (station) => station.uuid === player.nowPlaying?.uuid
+    );
+    if (!belongsToCountryQueue) return;
+
+    player.setQueueSession(
+      countryQueueSession,
+      Math.max(
+        0,
+        countryQueueSession.stations.findIndex(
+          (station) => station.uuid === player.nowPlaying?.uuid
+        )
+      )
+    );
+  }, [
+    countryQueueSession,
+    player,
+    player.nowPlaying,
+    player.queueSourceLabel,
+    player.queueSourceType,
+    selectedCountry,
+  ]);
 
   // Navigation helpers
   const atlasNavigation = useAtlasNavigation(
@@ -472,7 +523,7 @@ export default function Index() {
     atlas.setActiveContinent
   );
 
-  const navigationStations = selectedCountry ? filteredStations : cards.activeStationsSnapshot;
+  const navigationStations = player.queue;
   const { playNext, playPrevious } = useStationNavigation(
     player.currentStationIndex,
     player.setCurrentStationIndex,
@@ -486,11 +537,30 @@ export default function Index() {
   );
 
   // Core event handler
-  const handleStartStation = useCallback((station: Station, options?: { autoPlay?: boolean; preserveQueue?: boolean }) => {
+  const handleStartStation = useCallback((station: Station, options?: { autoPlay?: boolean; preserveQueue?: boolean; queueSession?: QueueSession | null }) => {
     atlasNavigation.selectContinentForCountry(station.country);
     setHasDismissedPlayer(false);
-    player.startStation(station, { autoPlay: options?.autoPlay ?? true, preserveQueue: selectedCountry ? true : options?.preserveQueue });
-  }, [atlasNavigation, player, setHasDismissedPlayer, selectedCountry]);
+    player.startStation(station, {
+      autoPlay: options?.autoPlay ?? true,
+      preserveQueue: options?.preserveQueue,
+      queueSession: options?.queueSession
+        ?? (selectedCountry ? countryQueueSession : null)
+        ?? (isCatalogSearchActive && searchQueueSession?.stations.some((entry) => entry.uuid === station.uuid)
+          ? searchQueueSession
+          : null)
+        ?? (mode.listeningMode === "world" ? aiMixQueueSession : null),
+    });
+  }, [
+    aiMixQueueSession,
+    atlasNavigation,
+    countryQueueSession,
+    isCatalogSearchActive,
+    mode.listeningMode,
+    player,
+    searchQueueSession,
+    selectedCountry,
+    setHasDismissedPlayer,
+  ]);
 
   // All other event handlers
   const handlers = useEventHandlers({
@@ -661,7 +731,7 @@ export default function Index() {
         const continent = atlasNavigation.selectContinentForCountry(station.country) ?? "Asia";
         atlas.setSelectedContinent((prev) => prev ?? continent);
         setHasDismissedPlayer(false);
-        player.startStation(station, { autoPlay: false, preserveQueue: true });
+        player.startStation(station, { autoPlay: false });
       } catch (error) {
         console.error("Failed to seed station", error);
       }
@@ -696,7 +766,11 @@ export default function Index() {
       <div className="bg-[#0a0a0c] min-h-screen">
         <WorldHome
           nowPlaying={player.nowPlaying}
-          onPlayStation={(s) => handlers.handleStartStation(s, { autoPlay: true })}
+          onPlayStation={(station, queueSession) =>
+            handlers.handleStartStation(station, {
+              autoPlay: true,
+              queueSession: queueSession ?? worldQueueSession,
+            })}
           initialStations={stations}
         />
         <QuickRetuneWidget
@@ -773,7 +847,8 @@ export default function Index() {
                     stations={catalogStations ?? []}
                     nowPlaying={player.nowPlaying}
                     stationRefs={stationRefs}
-                    onPlayStation={handleStartStation}
+                    onPlayStation={(station) =>
+                      handleStartStation(station, { queueSession: searchQueueSession })}
                     isFetchingExplore={isCatalogLoading}
                     favoriteStationIds={favoriteStationIds}
                     onToggleFavorite={handleToggleFavorite}
@@ -876,9 +951,9 @@ export default function Index() {
               onPrev={playPrevious}
               queue={player.queue}
               currentIndex={player.currentStationIndex}
-              onSelectStation={(station) => {
-                player.startStation(station, { preserveQueue: true });
-              }}
+              queueSourceLabel={player.queueSourceLabel}
+              onSelectStation={(station) =>
+                handleStartStation(station, { queueSession: countryQueueSession })}
               transparent={false}
             />
 
@@ -895,13 +970,13 @@ export default function Index() {
               </section>
             )}
 
-            <section className="rounded-3xl border border-white/10 bg-[var(--rp-surface)] px-6 py-6 md:px-10 md:py-8 shadow-[0_18px_40px_rgba(0,0,0,0.5)] backdrop-blur-xl">
+            <section className="rounded-3xl border border-white/10 bg-[var(--rp-surface)] px-4 py-5 md:px-6 md:py-6 shadow-[0_18px_40px_rgba(0,0,0,0.5)] backdrop-blur-xl">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <Text fw={700} size="sm" c="slate.9">
+                  <Text fw={700} size="sm" c="var(--rp-text)">
                     Stations in {selectedCountry}
                   </Text>
-                  <Text size="xs" c="dimmed" className="font-mono uppercase tracking-[0.32em]">
+                  <Text size="xs" c="var(--rp-muted-2)" className="font-mono uppercase tracking-[0.32em]">
                     {filteredStations.length.toLocaleString()} / {stations.length.toLocaleString()} tuned
                   </Text>
                 </div>
@@ -909,7 +984,7 @@ export default function Index() {
                   <button
                     type="button"
                     onClick={() => setIsFilterDrawerOpen(true)}
-                    className="md:hidden inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-600 shadow-sm"
+                    className="md:hidden inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/35 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--rp-text)] shadow-[0_12px_24px_rgba(0,0,0,0.35)]"
                     aria-label="Open filters"
                   >
                     <IconAdjustmentsHorizontal size={16} />
@@ -921,21 +996,21 @@ export default function Index() {
                   <button
                     type="button"
                     onClick={() => setStationFilters(createDefaultStationFilters())}
-                    className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500 hover:text-slate-900"
+                    className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--rp-muted-2)] hover:text-[var(--rp-text)]"
                   >
                     Reset
                   </button>
                   <button
                     type="button"
                     onClick={() => setAdvancedFiltersOpen((prev) => !prev)}
-                    className="rounded-full border border-slate-300 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.25em] text-slate-600 transition hover:bg-slate-50"
+                    className="rounded-full border border-white/10 bg-black/35 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.25em] text-[var(--rp-text)] transition hover:border-white/20 hover:bg-black/45"
                   >
                     {isAdvancedFiltersOpen ? "Hide advanced" : "Advanced"}
                   </button>
                 </div>
               </div>
 
-              <div className="mt-4">
+              <div className="relative z-20 mt-4">
                 <div className="hidden md:block">
                   <StationFilterQuickBar
                     filters={stationFilters}
@@ -970,12 +1045,13 @@ export default function Index() {
                 />
               </div>
 
-              <div className="mt-6">
+              <div className="relative z-0 mt-6">
                 <StationGrid
                   stations={filteredStations}
                   nowPlaying={player.nowPlaying}
                   stationRefs={stationRefs}
-                  onPlayStation={handleStartStation}
+                  onPlayStation={(station) =>
+                    handleStartStation(station, { queueSession: countryQueueSession })}
                   isFetchingExplore={mode.isFetchingExplore}
                   favoriteStationIds={favoriteStationIds}
                   onToggleFavorite={handleToggleFavorite}
@@ -1046,32 +1122,37 @@ export default function Index() {
               {passportEntries.length > 0 ? (
                 <div className="space-y-3">
                   {passportEntries.slice(0, 20).map((entry) => (
-                    <div
-                      key={`${entry.id}-${entry.timestamp}`}
-                      className="flex items-center gap-3 rounded-2xl border border-white/10 bg-black/40 px-4 py-3 shadow-[0_10px_22px_rgba(0,0,0,0.45)]"
-                    >
-                      <div className="h-10 w-10 overflow-hidden rounded-xl border border-white/10 bg-black/60">
-                        {entry.favicon ? (
-                          <img src={entry.favicon} alt="" className="h-full w-full object-cover" />
-                        ) : null}
-                      </div>
-                      <div className="min-w-0">
-                        <Text size="sm" fw={700} c="var(--rp-text)" className="truncate">
-                          {entry.stationName}
-                        </Text>
-                        <Text size="xs" c="var(--rp-muted)" className="truncate">
-                          {entry.country}
-                        </Text>
-                      </div>
-                      <div className="ml-auto text-right">
-                        <Text size="xs" c="var(--rp-muted-2)" className="font-mono">
-                          {new Date(entry.timestamp).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
-                        </Text>
-                        <Text size="xs" c="var(--rp-muted-2)" className="font-mono opacity-70">
-                          {new Date(entry.timestamp).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })}
-                        </Text>
-                      </div>
-                    </div>
+                    (() => {
+                      const artworkUrl = sanitizeArtworkUrl(entry.favicon);
+                      return (
+                        <div
+                          key={`${entry.id}-${entry.timestamp}`}
+                          className="flex items-center gap-3 rounded-2xl border border-white/10 bg-black/40 px-4 py-3 shadow-[0_10px_22px_rgba(0,0,0,0.45)]"
+                        >
+                          <div className="h-10 w-10 overflow-hidden rounded-xl border border-white/10 bg-black/60">
+                            {artworkUrl ? (
+                              <img src={artworkUrl} alt="" className="h-full w-full object-cover" />
+                            ) : null}
+                          </div>
+                          <div className="min-w-0">
+                            <Text size="sm" fw={700} c="var(--rp-text)" className="truncate">
+                              {entry.stationName}
+                            </Text>
+                            <Text size="xs" c="var(--rp-muted)" className="truncate">
+                              {entry.country}
+                            </Text>
+                          </div>
+                          <div className="ml-auto text-right">
+                            <Text size="xs" c="var(--rp-muted-2)" className="font-mono">
+                              {new Date(entry.timestamp).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+                            </Text>
+                            <Text size="xs" c="var(--rp-muted-2)" className="font-mono opacity-70">
+                              {new Date(entry.timestamp).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })}
+                            </Text>
+                          </div>
+                        </div>
+                      );
+                    })()
                   ))}
                 </div>
               ) : (
@@ -1124,24 +1205,29 @@ export default function Index() {
               {passportEntries.length > 0 ? (
                 <div className="space-y-3">
                   {passportEntries.slice(0, 12).map((entry) => (
-                    <div
-                      key={`${entry.id}-${entry.timestamp}`}
-                      className="flex items-center gap-3 rounded-2xl border border-white/10 bg-black/40 px-4 py-3"
-                    >
-                      <div className="h-10 w-10 overflow-hidden rounded-xl border border-white/10 bg-black/60">
-                        {entry.favicon ? (
-                          <img src={entry.favicon} alt="" className="h-full w-full object-cover" />
-                        ) : null}
-                      </div>
-                      <div className="min-w-0">
-                        <Text size="sm" fw={700} c="var(--rp-text)" className="truncate">
-                          {entry.stationName}
-                        </Text>
-                        <Text size="xs" c="var(--rp-muted)" className="truncate">
-                          {entry.country}
-                        </Text>
-                      </div>
-                    </div>
+                    (() => {
+                      const artworkUrl = sanitizeArtworkUrl(entry.favicon);
+                      return (
+                        <div
+                          key={`${entry.id}-${entry.timestamp}`}
+                          className="flex items-center gap-3 rounded-2xl border border-white/10 bg-black/40 px-4 py-3"
+                        >
+                          <div className="h-10 w-10 overflow-hidden rounded-xl border border-white/10 bg-black/60">
+                            {artworkUrl ? (
+                              <img src={artworkUrl} alt="" className="h-full w-full object-cover" />
+                            ) : null}
+                          </div>
+                          <div className="min-w-0">
+                            <Text size="sm" fw={700} c="var(--rp-text)" className="truncate">
+                              {entry.stationName}
+                            </Text>
+                            <Text size="xs" c="var(--rp-muted)" className="truncate">
+                              {entry.country}
+                            </Text>
+                          </div>
+                        </div>
+                      );
+                    })()
                   ))}
                 </div>
               ) : (

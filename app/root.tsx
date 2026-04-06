@@ -18,6 +18,7 @@ import MobileSidebarMenu from "~/components/MobileSidebarMenu";
 import { TuningOverlay } from "~/components/TuningOverlay";
 import { usePlayerNoticeStore } from "~/state/playerNoticeStore";
 import type { Station } from "~/types/radio";
+import { sanitizeArtworkUrl } from "~/utils/stations";
 
 export const links: LinksFunction = () => [
   { rel: "stylesheet", href: stylesheet },
@@ -509,8 +510,9 @@ function GlobalAudioBridge() {
       return;
     }
 
-    const artwork = nowPlaying.favicon
-      ? [{ src: nowPlaying.favicon, sizes: "512x512", type: "image/png" }]
+    const artworkUrl = sanitizeArtworkUrl(nowPlaying.favicon);
+    const artwork = artworkUrl
+      ? [{ src: artworkUrl, sizes: "512x512", type: "image/png" }]
       : [];
 
     mediaSession.metadata = new MediaMetadata({
@@ -594,16 +596,8 @@ function GlobalAudioBridge() {
       setAudioLevel(0);
       return;
     }
-
-    const interval = window.setInterval(() => {
-      setAudioLevel(Math.random() * 0.6 + 0.2);
-    }, 120);
-
-    return () => {
-      window.clearInterval(interval);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isPlaying]);
+    setAudioLevel(0.62);
+  }, [isPlaying, nowPlaying?.uuid, setAudioLevel]);
 
   return <audio ref={audioRef} className="hidden" />;
 }

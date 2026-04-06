@@ -9,11 +9,16 @@ export function useRadioPlayer() {
   const shuffleMode = usePlayerStore((state) => state.shuffleMode);
   const currentStationIndex = usePlayerStore((state) => state.currentStationIndex);
   const queue = usePlayerStore((state) => state.queue);
+  const queueId = usePlayerStore((state) => state.queueId);
+  const queueSourceType = usePlayerStore((state) => state.queueSourceType);
+  const queueSourceLabel = usePlayerStore((state) => state.queueSourceLabel);
+  const queueSourceContext = usePlayerStore((state) => state.queueSourceContext);
   const crossfadeMs = usePlayerStore((state) => state.crossfadeMs);
   const setShuffleMode = usePlayerStore((state) => state.setShuffleMode);
   const setCurrentStationIndex = usePlayerStore((state) => state.setCurrentStationIndex);
   const setNowPlaying = usePlayerStore((state) => state.setNowPlaying);
   const setQueue = usePlayerStore((state) => state.setQueue);
+  const setQueueSession = usePlayerStore((state) => state.setQueueSession);
   const enqueueStations = usePlayerStore((state) => state.enqueueStations);
   const clearQueue = usePlayerStore((state) => state.clearQueue);
   const setCrossfadeMs = usePlayerStore((state) => state.setCrossfadeMs);
@@ -31,11 +36,16 @@ export function useRadioPlayer() {
       shuffleMode,
       currentStationIndex,
       queue,
+      queueId,
+      queueSourceType,
+      queueSourceLabel,
+      queueSourceContext,
       crossfadeMs,
       setShuffleMode,
       setCurrentStationIndex,
       setNowPlaying,
       setQueue,
+      setQueueSession,
       enqueueStations,
       clearQueue,
       setCrossfadeMs,
@@ -51,11 +61,16 @@ export function useRadioPlayer() {
       shuffleMode,
       currentStationIndex,
       queue,
+      queueId,
+      queueSourceType,
+      queueSourceLabel,
+      queueSourceContext,
       crossfadeMs,
       setShuffleMode,
       setCurrentStationIndex,
       setNowPlaying,
       setQueue,
+      setQueueSession,
       enqueueStations,
       clearQueue,
       setCrossfadeMs,

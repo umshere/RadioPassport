@@ -21,9 +21,15 @@ export function preparePretext(
   const cached = preparedCache.get(key);
   if (cached) return cached;
 
-  const prepared = prepareWithSegments(normalized, font, { whiteSpace });
-  preparedCache.set(key, prepared);
-  return prepared;
+  try {
+    const prepared = prepareWithSegments(normalized, font, { whiteSpace });
+    preparedCache.set(key, prepared);
+    return prepared;
+  } catch {
+    // SSR and some browser states may not expose a canvas measurement context.
+    // Callers must fall back to CSS clamping/heuristics when this happens.
+    return null;
+  }
 }
 
 export function getPretextLines(

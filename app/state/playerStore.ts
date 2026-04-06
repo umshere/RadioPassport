@@ -1,6 +1,11 @@
 import { create, persist } from "~/utils/zustand-lite";
 import type { SceneDescriptor } from "~/scenes/types";
-import type { Station } from "~/types/radio";
+import type {
+  QueueSession,
+  QueueSourceContext,
+  QueueSourceType,
+  Station,
+} from "~/types/radio";
 
 const INVALID_STREAM_TOKENS = new Set([
   "",
@@ -19,15 +24,38 @@ function hasValidStreamUrl(url?: string | null): boolean {
   return /^https?:\/\//i.test(trimmed) || /^\/\//.test(trimmed);
 }
 
+function resolveQueueIndex(
+  stations: Station[],
+  station: Station,
+  queueIndex?: number
+) {
+  if (
+    typeof queueIndex === "number" &&
+    queueIndex >= 0 &&
+    queueIndex < stations.length
+  ) {
+    return queueIndex;
+  }
+
+  const existingIndex = stations.findIndex((entry) => entry.uuid === station.uuid);
+  return existingIndex >= 0 ? existingIndex : 0;
+}
+
 type StartStationOptions = {
   autoPlay?: boolean;
   preserveQueue?: boolean;
+  queueSession?: QueueSession | null;
+  queueIndex?: number;
 };
 
 type PlayerState = {
   audioElement: HTMLAudioElement | null;
   nowPlaying: Station | null;
   queue: Station[];
+  queueId: string | null;
+  queueSourceType: QueueSourceType;
+  queueSourceLabel: string;
+  queueSourceContext: QueueSourceContext | null;
   crossfadeMs: number;
   isPlaying: boolean;
   audioLevel: number;
@@ -40,7 +68,16 @@ type PlayerState = {
   setCurrentStationIndex: (index: number) => void;
   setIsPlaying: (value: boolean) => void;
   setNowPlaying: (station: Station | null) => void;
-  setQueue: (stations: Station[]) => void;
+  setQueue: (
+    stations: Station[],
+    metadata?: {
+      queueId?: string | null;
+      queueSourceType?: QueueSourceType;
+      queueSourceLabel?: string;
+      queueSourceContext?: QueueSourceContext | null;
+    }
+  ) => void;
+  setQueueSession: (session: QueueSession, currentIndex?: number) => void;
   enqueueStations: (stations: Station[]) => void;
   clearQueue: () => void;
   setCrossfadeMs: (value: number) => void;
@@ -122,6 +159,10 @@ export const usePlayerStore = create<PlayerState>(
       audioElement: null,
       nowPlaying: null,
       queue: [],
+      queueId: null,
+      queueSourceType: "direct",
+      queueSourceLabel: "Direct Tune",
+      queueSourceContext: null,
       crossfadeMs: 0,
       isPlaying: false,
       audioLevel: 0,
@@ -154,14 +195,39 @@ export const usePlayerStore = create<PlayerState>(
           set({ isPlaying: false });
         }
       },
-      setQueue: (stations: Station[]) => {
-        set({ queue: [...stations], currentStationIndex: 0 });
+      setQueue: (stations: Station[], metadata) => {
+        set({
+          queue: [...stations],
+          currentStationIndex: 0,
+          queueId: metadata?.queueId ?? get().queueId,
+          queueSourceType: metadata?.queueSourceType ?? get().queueSourceType,
+          queueSourceLabel: metadata?.queueSourceLabel ?? get().queueSourceLabel,
+          queueSourceContext: metadata?.queueSourceContext ?? get().queueSourceContext,
+        });
+      },
+      setQueueSession: (session: QueueSession, currentIndex = 0) => {
+        const nextIndex = Math.max(0, Math.min(currentIndex, session.stations.length - 1));
+        set({
+          queue: [...session.stations],
+          currentStationIndex: nextIndex,
+          queueId: session.queueId,
+          queueSourceType: session.queueSourceType,
+          queueSourceLabel: session.queueSourceLabel,
+          queueSourceContext: session.queueSourceContext ?? null,
+        });
       },
       enqueueStations: (stations: Station[]) => {
         set((state) => ({ queue: [...state.queue, ...stations] }));
       },
       clearQueue: () => {
-        set({ queue: [], currentStationIndex: 0 });
+        set({
+          queue: [],
+          currentStationIndex: 0,
+          queueId: null,
+          queueSourceType: "direct",
+          queueSourceLabel: "Direct Tune",
+          queueSourceContext: null,
+        });
       },
       setCrossfadeMs: (value: number) => {
         const normalized = Math.max(0, Math.round(value));
@@ -185,6 +251,13 @@ export const usePlayerStore = create<PlayerState>(
         set({
           queue: stations,
           currentStationIndex: 0,
+          queueId: `ai-mix:${descriptor.visual ?? "scene"}`,
+          queueSourceType: "ai_mix",
+          queueSourceLabel: "AI Mix",
+          queueSourceContext: {
+            description: descriptor.mood ?? null,
+            view: descriptor.visual,
+          },
           crossfadeMs: Math.max(0, Math.round(crossfade)),
         });
 
@@ -200,12 +273,24 @@ export const usePlayerStore = create<PlayerState>(
         const preserveQueue = options?.preserveQueue ?? false;
         const shouldAutoplay = options?.autoPlay ?? true;
         const currentQueue = get().queue;
+        const nextSession = options?.queueSession ?? null;
 
         // Determine the new queue and index
         let nextQueue: Station[];
         let nextIndex: number;
+        let queueId = get().queueId;
+        let queueSourceType = get().queueSourceType;
+        let queueSourceLabel = get().queueSourceLabel;
+        let queueSourceContext = get().queueSourceContext;
 
-        if (preserveQueue) {
+        if (nextSession && nextSession.stations.length > 0) {
+          nextQueue = [...nextSession.stations];
+          nextIndex = resolveQueueIndex(nextQueue, station, options?.queueIndex);
+          queueId = nextSession.queueId;
+          queueSourceType = nextSession.queueSourceType;
+          queueSourceLabel = nextSession.queueSourceLabel;
+          queueSourceContext = nextSession.queueSourceContext ?? null;
+        } else if (preserveQueue) {
           // Keep the existing queue and find the station's index
           nextQueue = currentQueue;
           nextIndex = currentQueue.findIndex((s) => s.uuid === station.uuid);
@@ -216,18 +301,25 @@ export const usePlayerStore = create<PlayerState>(
             nextIndex = nextQueue.length - 1;
           }
         } else {
-          // Replace queue with this station first, then others
-          nextQueue = [
-            station,
-            ...currentQueue.filter((item) => item.uuid !== station.uuid),
-          ];
+          nextQueue = [station];
           nextIndex = 0;
+          queueId = `direct:${station.uuid}`;
+          queueSourceType = "direct";
+          queueSourceLabel = "Direct Tune";
+          queueSourceContext = {
+            country: station.country,
+            description: station.name,
+          };
         }
 
         set({
           nowPlaying: station,
           queue: nextQueue,
           currentStationIndex: nextIndex,
+          queueId,
+          queueSourceType,
+          queueSourceLabel,
+          queueSourceContext,
           isPlaying: shouldAutoplay && hasStream,
         });
 
@@ -283,6 +375,10 @@ export const usePlayerStore = create<PlayerState>(
       partialize: (state) => ({
         nowPlaying: state.nowPlaying,
         queue: state.queue,
+        queueId: state.queueId,
+        queueSourceType: state.queueSourceType,
+        queueSourceLabel: state.queueSourceLabel,
+        queueSourceContext: state.queueSourceContext,
         shuffleMode: state.shuffleMode,
         currentStationIndex: state.currentStationIndex,
         volume: state.volume,

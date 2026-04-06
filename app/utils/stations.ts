@@ -27,6 +27,30 @@ type StationLike = Partial<Station> & {
 };
 
 const FALLBACK_COUNTRY = "Unknown";
+const INVALID_ASSET_TOKENS = new Set([
+  "",
+  "null",
+  "undefined",
+  "n/a",
+  "na",
+  "-",
+  "0",
+]);
+
+export function sanitizeArtworkUrl(url?: string | null): string | null {
+  if (typeof url !== "string") return null;
+  const trimmed = url.trim();
+  if (INVALID_ASSET_TOKENS.has(trimmed.toLowerCase())) return null;
+  if (
+    /^https?:\/\//i.test(trimmed) ||
+    /^\/\//.test(trimmed) ||
+    /^\//.test(trimmed) ||
+    /^data:image\//i.test(trimmed)
+  ) {
+    return trimmed;
+  }
+  return null;
+}
 
 export function normalizeStation(raw: StationLike | null | undefined): Station | null {
   if (!raw) return null;
@@ -100,7 +124,7 @@ export function normalizeStation(raw: StationLike | null | undefined): Station |
     name,
     url: streamUrl ?? "",
     streamUrl,
-    favicon: typeof raw.favicon === "string" ? raw.favicon : "",
+    favicon: sanitizeArtworkUrl(raw.favicon) ?? "",
     country: raw.country ?? raw.countrycode ?? FALLBACK_COUNTRY,
     countryCode:
       typeof raw.countrycode === "string"

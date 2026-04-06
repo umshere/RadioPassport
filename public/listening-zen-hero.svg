@@ -1,0 +1,63 @@
+<svg width="1600" height="1200" viewBox="0 0 1600 1200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1600" height="1200" fill="#090B10"/>
+  <rect width="1600" height="1200" fill="url(#bg)"/>
+  <ellipse cx="1225" cy="230" rx="290" ry="290" fill="url(#goldGlow)" fill-opacity="0.8"/>
+  <ellipse cx="310" cy="910" rx="360" ry="240" fill="url(#deepGlow)" fill-opacity="0.7"/>
+  <ellipse cx="780" cy="560" rx="460" ry="460" fill="url(#softGlow)" fill-opacity="0.28"/>
+  <g opacity="0.58">
+    <path d="M120 714C214 662 302 640 386 648C479 656 542 710 632 716C726 723 792 669 882 659C966 650 1038 681 1122 708C1204 734 1292 753 1382 729C1440 713 1485 685 1528 650" stroke="url(#wave1)" stroke-width="2"/>
+    <path d="M72 782C159 723 272 700 383 713C480 724 543 783 633 792C735 802 816 744 910 732C989 722 1050 747 1130 777C1216 810 1325 836 1441 790C1496 769 1542 735 1570 700" stroke="url(#wave2)" stroke-width="2"/>
+    <path d="M98 852C176 808 286 798 394 818C499 838 577 905 666 909C770 913 837 851 934 831C1025 812 1100 842 1177 877C1261 915 1369 936 1498 889" stroke="url(#wave3)" stroke-width="2"/>
+  </g>
+  <g opacity="0.75">
+    <circle cx="1142" cy="238" r="92" stroke="rgba(255,215,139,0.35)" stroke-width="1.5"/>
+    <circle cx="1142" cy="238" r="132" stroke="rgba(255,215,139,0.2)" stroke-width="1.5"/>
+    <circle cx="1142" cy="238" r="178" stroke="rgba(255,215,139,0.12)" stroke-width="1.5"/>
+  </g>
+  <g opacity="0.22">
+    <rect x="206" y="164" width="1188" height="860" rx="44" stroke="url(#frame)" stroke-width="2"/>
+    <rect x="238" y="196" width="1124" height="796" rx="28" stroke="rgba(255,255,255,0.08)" stroke-width="1.5"/>
+  </g>
+  <defs>
+    <linearGradient id="bg" x1="248" y1="82" x2="1356" y2="1113" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#101621"/>
+      <stop offset="0.42" stop-color="#101015"/>
+      <stop offset="1" stop-color="#16100C"/>
+    </linearGradient>
+    <radialGradient id="goldGlow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(1225 230) rotate(90) scale(290)">
+      <stop stop-color="#F5B12D"/>
+      <stop offset="0.48" stop-color="#E78D2D" stop-opacity="0.38"/>
+      <stop offset="1" stop-color="#E78D2D" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="deepGlow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(310 910) rotate(90) scale(240 360)">
+      <stop stop-color="#224861"/>
+      <stop offset="0.55" stop-color="#163248" stop-opacity="0.42"/>
+      <stop offset="1" stop-color="#163248" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="softGlow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(780 560) rotate(90) scale(460)">
+      <stop stop-color="#F4D7A2"/>
+      <stop offset="0.58" stop-color="#F4D7A2" stop-opacity="0.1"/>
+      <stop offset="1" stop-color="#F4D7A2" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="wave1" x1="120" y1="648" x2="1528" y2="648" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#2E6078"/>
+      <stop offset="0.46" stop-color="#F6C86F"/>
+      <stop offset="1" stop-color="#E99F2B"/>
+    </linearGradient>
+    <linearGradient id="wave2" x1="72" y1="700" x2="1570" y2="700" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#234C61"/>
+      <stop offset="0.5" stop-color="#F1AA45"/>
+      <stop offset="1" stop-color="#8E5124"/>
+    </linearGradient>
+    <linearGradient id="wave3" x1="98" y1="812" x2="1498" y2="812" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#183849"/>
+      <stop offset="0.54" stop-color="#F5B12D"/>
+      <stop offset="1" stop-color="#4A2711"/>
+    </linearGradient>
+    <linearGradient id="frame" x1="206" y1="164" x2="1394" y2="1024" gradientUnits="userSpaceOnUse">
+      <stop stop-color="rgba(255,255,255,0.16)"/>
+      <stop offset="0.6" stop-color="rgba(245,177,45,0.18)"/>
+      <stop offset="1" stop-color="rgba(255,255,255,0.04)"/>
+    </linearGradient>
+  </defs>
+</svg>

@@ -24,10 +24,14 @@ export function StationFilterQuickBar({
         <Select
           placeholder="Language"
           classNames={{
+            wrapper: "relative",
             input:
-              "bg-black/40 border-white/10 text-[var(--rp-text)] placeholder:text-[var(--rp-muted-2)]",
-            dropdown: "bg-[#10131a] border-white/10",
-            option: "text-[var(--rp-text)] data-[selected=true]:bg-[rgba(245,177,45,0.2)] data-[selected=true]:text-[var(--rp-gold)]",
+              "h-12 rounded-2xl border border-[rgba(255,255,255,0.1)] bg-[linear-gradient(180deg,rgba(9,11,16,0.96)_0%,rgba(14,17,24,0.94)_100%)] text-[var(--rp-text)] shadow-[inset_0_1px_0_rgba(255,255,255,0.03),0_10px_22px_rgba(0,0,0,0.28)] placeholder:text-[rgba(224,229,240,0.42)] focus:border-[rgba(245,177,45,0.45)]",
+            section: "text-[var(--rp-muted-2)]",
+            dropdown:
+              "overflow-hidden rounded-2xl border border-[rgba(255,255,255,0.12)] bg-[linear-gradient(180deg,rgba(12,15,21,0.98)_0%,rgba(9,11,16,0.98)_100%)] p-1 shadow-[0_22px_50px_rgba(0,0,0,0.55)] backdrop-blur-xl",
+            option:
+              "rounded-xl text-[var(--rp-text)] transition-colors data-[hovered=true]:bg-[rgba(255,255,255,0.05)] data-[selected=true]:bg-[rgba(245,177,45,0.18)] data-[selected=true]:text-[var(--rp-gold)]",
           }}
           data={options.languages.map((item) => ({
             value: item.value,
@@ -45,10 +49,14 @@ export function StationFilterQuickBar({
         <Select
           placeholder="State / Region"
           classNames={{
+            wrapper: "relative",
             input:
-              "bg-black/40 border-white/10 text-[var(--rp-text)] placeholder:text-[var(--rp-muted-2)]",
-            dropdown: "bg-[#10131a] border-white/10",
-            option: "text-[var(--rp-text)] data-[selected=true]:bg-[rgba(245,177,45,0.2)] data-[selected=true]:text-[var(--rp-gold)]",
+              "h-12 rounded-2xl border border-[rgba(255,255,255,0.1)] bg-[linear-gradient(180deg,rgba(9,11,16,0.96)_0%,rgba(14,17,24,0.94)_100%)] text-[var(--rp-text)] shadow-[inset_0_1px_0_rgba(255,255,255,0.03),0_10px_22px_rgba(0,0,0,0.28)] placeholder:text-[rgba(224,229,240,0.42)] focus:border-[rgba(245,177,45,0.45)]",
+            section: "text-[var(--rp-muted-2)]",
+            dropdown:
+              "overflow-hidden rounded-2xl border border-[rgba(255,255,255,0.12)] bg-[linear-gradient(180deg,rgba(12,15,21,0.98)_0%,rgba(9,11,16,0.98)_100%)] p-1 shadow-[0_22px_50px_rgba(0,0,0,0.55)] backdrop-blur-xl",
+            option:
+              "rounded-xl text-[var(--rp-text)] transition-colors data-[hovered=true]:bg-[rgba(255,255,255,0.05)] data-[selected=true]:bg-[rgba(245,177,45,0.18)] data-[selected=true]:text-[var(--rp-gold)]",
           }}
           data={options.regions.map((item) => ({
             value: item.value,
@@ -61,15 +69,16 @@ export function StationFilterQuickBar({
           disabled={!options.regions.length}
         />
       </div>
-      <div className="flex items-center justify-between rounded-xl border border-white/10 bg-black/40 px-3 py-2 sm:justify-start sm:gap-2">
+      <div className="flex h-12 items-center justify-between rounded-2xl border border-[rgba(255,255,255,0.1)] bg-[linear-gradient(180deg,rgba(9,11,16,0.96)_0%,rgba(14,17,24,0.94)_100%)] px-3 py-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.03),0_10px_22px_rgba(0,0,0,0.28)] sm:justify-start sm:gap-2">
         <Switch
           size="xs"
           checked={filters.hideRecentlyFailed}
           onChange={(event) => onChange({ ...filters, hideRecentlyFailed: event.currentTarget.checked })}
           label="Hide unavailable"
           classNames={{
-            label: "text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--rp-muted-2)]",
-            track: "bg-black/40 border border-white/10",
+            body: "items-center",
+            label: "text-[11px] font-semibold uppercase tracking-[0.2em] text-[rgba(230,234,242,0.72)]",
+            track: "bg-black/50 border border-white/10",
             thumb: "bg-[var(--rp-gold)]",
           }}
         />

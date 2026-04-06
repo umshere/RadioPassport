@@ -65,27 +65,25 @@ export function StationGrid({
 
   // Desktop: Use grid view
   return (
-    <section className="rounded-2xl border border-white/10 bg-[var(--rp-card)] p-6 shadow-[0_18px_40px_rgba(0,0,0,0.5)] md:p-8">
-      <div id="station-grid" className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {stations.map((station, index) => {
-          const isCurrent = nowPlaying?.uuid === station.uuid;
-          const isFavorite = favoriteStationIds?.has(station.uuid) ?? false;
-          return (
-            <StationCard
-              key={`${station.uuid}-${index}`}
-              station={station}
-              isCurrent={isCurrent}
-              onPlay={onPlayStation}
-              isFavorite={isFavorite}
-              onToggleFavorite={onToggleFavorite}
-              isUnavailable={unavailableIds?.has(station.uuid) ?? false}
-              stationRef={(element) => {
-                stationRefs.current[station.uuid] = element;
-              }}
-            />
-          );
-        })}
-      </div>
-    </section>
+    <div id="station-grid" className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+      {stations.map((station, index) => {
+        const isCurrent = nowPlaying?.uuid === station.uuid;
+        const isFavorite = favoriteStationIds?.has(station.uuid) ?? false;
+        return (
+          <StationCard
+            key={`${station.uuid}-${index}`}
+            station={station}
+            isCurrent={isCurrent}
+            onPlay={onPlayStation}
+            isFavorite={isFavorite}
+            onToggleFavorite={onToggleFavorite}
+            isUnavailable={unavailableIds?.has(station.uuid) ?? false}
+            stationRef={(element) => {
+              stationRefs.current[station.uuid] = element;
+            }}
+          />
+        );
+      })}
+    </div>
   );
 }

@@ -13,6 +13,7 @@ import { usePlayerStore } from "~/state/playerStore";
 import {
     generateStationGradient
 } from "~/utils/colorExtraction";
+import { sanitizeArtworkUrl } from "~/utils/stations";
 
 export function PremiumPlayerDock() {
     const nowPlaying = usePlayerStore((state) => state.nowPlaying);
@@ -31,6 +32,7 @@ export function PremiumPlayerDock() {
     const fallbackGradient = useMemo(() => {
         return generateStationGradient(nowPlaying?.name || 'Radio');
     }, [nowPlaying?.name]);
+    const artworkUrl = sanitizeArtworkUrl(nowPlaying?.favicon);
 
     const handleNext = useCallback(() => {
         if (queue.length === 0) return;
@@ -69,37 +71,17 @@ export function PremiumPlayerDock() {
                     }}
                 >
                     {/* Artwork texture background */}
-                    {nowPlaying.favicon && (
+                    {artworkUrl && (
                         <div
                             className="absolute inset-0 opacity-20"
                             style={{
-                                backgroundImage: `url(${nowPlaying.favicon})`,
+                                backgroundImage: `url(${artworkUrl})`,
                                 backgroundSize: 'cover',
                                 backgroundPosition: 'center',
                                 filter: 'blur(30px)',
                             }}
                         />
                     )}
-
-                    {/* Animated progress bar */}
-                    <div className="relative h-1 w-full bg-white/10">
-                        {isPlaying && (
-                            <motion.div
-                                className="absolute inset-y-0 left-0"
-                                style={{
-                                    background: `linear-gradient(90deg, ${colors.accent}, ${colors.primary})`,
-                                    boxShadow: `0 0 18px rgba(246,200,111,0.6)`,
-                                }}
-                                initial={{ width: "0%" }}
-                                animate={{ width: "100%" }}
-                                transition={{
-                                    duration: 60,
-                                    ease: "linear",
-                                    repeat: Infinity
-                                }}
-                            />
-                        )}
-                    </div>
 
                     <div className="flex items-center gap-5 p-4 pr-6 relative z-10">
                         {/* Artwork */}
@@ -177,27 +159,6 @@ export function PremiumPlayerDock() {
                             </button>
                         </div>
                     </div>
-
-                    {/* Sound wave visualization */}
-                    {isPlaying && (
-                        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 flex items-end justify-center gap-0.5 h-4 pb-1 opacity-50">
-                            {[...Array(20)].map((_, i) => (
-                                <motion.div
-                                    key={i}
-                                    className="w-0.5 rounded-full"
-                                    style={{ background: colors.accent }}
-                                    animate={{
-                                        height: [2, 8 + Math.random() * 6, 2],
-                                    }}
-                                    transition={{
-                                        duration: 0.4 + Math.random() * 0.3,
-                                        repeat: Infinity,
-                                        delay: i * 0.03,
-                                    }}
-                                />
-                            ))}
-                        </div>
-                    )}
                 </motion.div>
             </aside>
 
@@ -219,19 +180,6 @@ export function PremiumPlayerDock() {
                         boxShadow: `0 15px 40px -10px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.1), 0 0 50px -15px ${colors.accent}30`,
                     }}
                 >
-                    {/* Progress bar */}
-                    <div className="absolute top-0 left-0 right-0 h-0.5 bg-white/10 rounded-t-2xl overflow-hidden">
-                        {isPlaying && (
-                            <motion.div
-                                className="h-full"
-                                style={{ background: colors.accent }}
-                                initial={{ width: "0%" }}
-                                animate={{ width: "100%" }}
-                                transition={{ duration: 30, ease: "linear", repeat: Infinity }}
-                            />
-                        )}
-                    </div>
-
                     <div className="flex items-center gap-3 relative z-10">
                         {/* Artwork */}
                         <motion.div

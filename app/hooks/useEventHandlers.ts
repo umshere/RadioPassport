@@ -1,6 +1,6 @@
 import { useCallback } from "react";
 import type { NavigateFunction } from "@remix-run/react";
-import type { Country, Station } from "~/types/radio";
+import type { Country, QueueSession, Station } from "~/types/radio";
 import { rbFetchJson } from "~/utils/radioBrowser";
 import { vibrate } from "~/utils/haptics";
 import {
@@ -27,7 +27,7 @@ interface UseEventHandlersProps {
   setActiveCardIndex: (index: number) => void;
   handleStartStation: (
     station: Station,
-    options?: { autoPlay?: boolean; preserveQueue?: boolean }
+    options?: { autoPlay?: boolean; preserveQueue?: boolean; queueSession?: QueueSession | null }
   ) => void;
   topCountries: Country[];
   countries: Country[];
@@ -229,7 +229,7 @@ export function useEventHandlers({
           },
           onStartStation: (station, { autoPlay }) => {
             setActiveCardIndex(1);
-            handleStartStation(station, { autoPlay, preserveQueue: true });
+            handleStartStation(station, { autoPlay });
           },
         });
         return true;

@@ -1,16 +1,13 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { useFloatingMusicNotes } from "~/hooks/useFloatingMusicNotes";
 import { StationInfo } from "./player/StationInfo";
 import { PlaybackControls } from "./player/PlaybackControls";
 import { ModeBar } from "./player/ModeBar";
-import { Equalizer } from "./player/Equalizer";
 import type { AiDescriptorState, VoiceCommandPayload } from "~/types/ai";
 import type { Station, ListeningMode } from "~/types/radio";
 
 type PassportPlayerFooterProps = {
   nowPlaying: Station | null;
   isPlaying: boolean;
-  audioLevel: number;
   shuffleMode: boolean;
   listeningMode: ListeningMode;
   canSeekStations: boolean;
@@ -31,7 +28,6 @@ type PassportPlayerFooterProps = {
 export function PassportPlayerFooter({
   nowPlaying,
   isPlaying,
-  audioLevel,
   shuffleMode,
   listeningMode,
   canSeekStations,
@@ -49,8 +45,6 @@ export function PassportPlayerFooter({
   onVoiceDescriptor,
 }: PassportPlayerFooterProps) {
   if (!nowPlaying) return null;
-
-  const floatingNotes = useFloatingMusicNotes(8);
 
   return (
     <AnimatePresence>
@@ -92,16 +86,6 @@ export function PassportPlayerFooter({
               onBackToWorld={onBackToWorld}
               descriptorState={descriptorState}
               onVoiceDescriptor={onVoiceDescriptor}
-            />
-
-            {/* Compact Equalizer with Music Notes */}
-            <Equalizer 
-              key={nowPlaying.uuid}
-              isPlaying={isPlaying} 
-              audioLevel={audioLevel} 
-              barCount={50}
-              musicNotes={floatingNotes}
-              stationKey={nowPlaying.uuid}
             />
           </div>
         </div>
