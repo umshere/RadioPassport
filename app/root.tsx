@@ -197,7 +197,10 @@ export default function App() {
             <AppHeader />
 
             {/* Main content area */}
-            <div className="w-full pb-6">
+            <div
+              className="w-full"
+              style={{ paddingBottom: "calc(var(--player-dock-clearance, 0px) + 1.5rem)" }}
+            >
               <Outlet />
             </div>
 

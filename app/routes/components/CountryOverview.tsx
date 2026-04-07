@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "@remix-run/react";
 import { motion } from "framer-motion";
-import { Badge, Text, Title } from "@mantine/core";
+import { Badge, Text } from "@mantine/core";
 import {
   IconArrowLeft,
   IconBook2,
@@ -32,6 +32,12 @@ import { StationArtwork } from "~/components/StationArtwork";
 
 const COUNTRY_BODY_FONT =
   '600 14px "General Sans", "SF Pro Text", "Segoe UI", "Helvetica Neue", Arial, sans-serif';
+const COUNTRY_TITLE_FONT =
+  '700 34px "General Sans", "SF Pro Display", "Segoe UI", "Helvetica Neue", Arial, sans-serif';
+const COUNTRY_STATION_FONT =
+  '700 32px "General Sans", "SF Pro Display", "Segoe UI", "Helvetica Neue", Arial, sans-serif';
+const COUNTRY_META_FONT =
+  '600 14px "General Sans", "SF Pro Text", "Segoe UI", "Helvetica Neue", Arial, sans-serif';
 
 type CountryOverviewProps = {
   selectedCountry: string;
@@ -50,17 +56,6 @@ type CountryOverviewProps = {
   transparent?: boolean;
   queueSourceLabel?: string;
 };
-
-function deriveFrequency(station: Station | null) {
-  if (!station) return "0.0";
-  let hash = 0;
-  for (let i = 0; i < station.uuid.length; i++) {
-    hash = station.uuid.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  const range = 108.0 - 88.0;
-  const normalized = Math.abs(hash % 1000) / 1000;
-  return (88.0 + normalized * range).toFixed(1);
-}
 
 function getReferencePresentation(url: string, label?: string, kind?: string) {
   switch (kind) {
@@ -118,9 +113,15 @@ export function CountryOverview({
 }: CountryOverviewProps) {
   const aiTriviaExpanded = useUIStore((state) => state.aiTriviaExpanded);
   const insightsOpen = useUIStore((state) => state.insightsOpen);
+  const setAiTriviaExpanded = useUIStore((state) => state.setAiTriviaExpanded);
+  const setInsightsOpen = useUIStore((state) => state.setInsightsOpen);
   const [selectedStationId, setSelectedStationId] = useState<string | null>(
     nowPlaying?.uuid ?? stations[0]?.uuid ?? null
   );
+  const [localClock, setLocalClock] = useState({
+    localTime: "--:--",
+    timeZoneName: "Local",
+  });
 
   useEffect(() => {
     if (!stations.length) return;
@@ -134,6 +135,19 @@ export function CountryOverview({
         : stations[0]?.uuid ?? null
     );
   }, [nowPlaying, stations]);
+
+  useEffect(() => {
+    const now = new Date();
+    const timeZoneName =
+      new Intl.DateTimeFormat(undefined, { timeZoneName: "short" })
+        .formatToParts(now)
+        .find((part) => part.type === "timeZoneName")?.value ?? "Local";
+
+    setLocalClock({
+      localTime: now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      timeZoneName,
+    });
+  }, []);
 
   const selectedStation = useMemo(
     () =>
@@ -221,25 +235,22 @@ export function CountryOverview({
       }
     }
 
-    const localTime = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-    const timeZoneName =
-      new Intl.DateTimeFormat(undefined, { timeZoneName: "short" })
-        .formatToParts(new Date())
-        .find((part) => part.type === "timeZoneName")?.value ?? "Local";
-
     return {
       topLanguages: [...languageCounts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3).map(([label]) => label),
       topGenres: [...tagCounts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3).map(([label]) => label),
-      localTime,
-      timeZoneName,
+      localTime: localClock.localTime,
+      timeZoneName: localClock.timeZoneName,
     };
-  }, [stations]);
+  }, [localClock.localTime, localClock.timeZoneName, stations]);
 
   const links = insightsOpen
     ? [...(aiTrivia.trivia?.links ?? []), ...(freeTrivia.trivia?.links ?? [])]
-        .filter((link, index, collection) => collection.findIndex((candidate) => candidate.url === link.url) === index)
-        .slice(0, 3)
+      .filter((link, index, collection) => collection.findIndex((candidate) => candidate.url === link.url) === index)
+      .slice(0, 3)
     : [];
+  const selectedInsightImage = !isPreviewing
+    ? aiTrivia.trivia?.imageUrl ?? freeTrivia.trivia?.imageUrl ?? null
+    : null;
 
   const handleDialChange = useCallback((index: number) => {
     const nextStation = stations[index];
@@ -249,6 +260,16 @@ export function CountryOverview({
 
   const canRequestAi = Boolean(nowPlayingMeta.track && !isPreviewing);
   const activeQueueLabel = queueSourceLabel && queueSourceLabel !== `Country: ${selectedCountry}` ? queueSourceLabel : null;
+  const handleToggleInsights = useCallback(() => {
+    if (insightsOpen) {
+      setInsightsOpen(false);
+      return;
+    }
+    if (canRequestAi) {
+      setAiTriviaExpanded(true);
+    }
+    setInsightsOpen(true);
+  }, [canRequestAi, insightsOpen, setAiTriviaExpanded, setInsightsOpen]);
 
   return (
     <motion.section
@@ -256,7 +277,7 @@ export function CountryOverview({
       initial={{ opacity: 0, y: 18 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, ease: "easeOut" }}
-      className="relative overflow-hidden rounded-[2rem] border border-white/10 bg-[var(--rp-surface)] p-5 shadow-[0_24px_60px_rgba(0,0,0,0.45)] backdrop-blur-xl md:p-8"
+      className="relative overflow-hidden rounded-[2rem] border border-white/10 bg-[var(--rp-surface)] p-5 shadow-[0_24px_60px_rgba(0,0,0,0.45)] backdrop-blur-xl max-md:-mx-4 max-md:rounded-none max-md:border-x-0 max-md:bg-transparent max-md:shadow-none max-md:backdrop-blur-0 md:p-8"
     >
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(245,177,45,0.14),transparent_24%),radial-gradient(circle_at_bottom_left,rgba(27,70,98,0.22),transparent_28%)]" />
       <div className="relative z-10 space-y-6">
@@ -298,7 +319,16 @@ export function CountryOverview({
             <div className="pointer-events-none absolute inset-0">
               <div className="absolute inset-y-0 right-0 hidden w-[46%] lg:block">
                 <div className="absolute inset-y-5 left-6 right-5 overflow-hidden rounded-[2rem] border border-[rgba(255,255,255,0.08)] bg-[linear-gradient(180deg,rgba(15,18,25,0.72),rgba(9,11,17,0.62))] shadow-[0_24px_50px_rgba(0,0,0,0.35)]">
-                  {selectedStation ? (
+                  {selectedInsightImage ? (
+                    <img
+                      src={selectedInsightImage}
+                      alt="Track or artist artwork"
+                      className="h-full w-full scale-[1.14] object-cover opacity-60 saturate-[0.96]"
+                      onError={(event) => {
+                        event.currentTarget.style.display = "none";
+                      }}
+                    />
+                  ) : selectedStation ? (
                     <StationArtwork
                       station={selectedStation}
                       className="h-full w-full scale-[1.14] object-cover opacity-60 saturate-[0.96]"
@@ -329,12 +359,26 @@ export function CountryOverview({
                     <Text size="xs" className="font-semibold uppercase tracking-[0.32em] text-[var(--rp-muted-2)]">
                       Country Signal
                     </Text>
-                    <Title order={1} className="truncate text-3xl font-semibold text-[var(--rp-text)] md:text-4xl">
-                      {selectedCountry}
-                    </Title>
-                    <Text size="sm" c="var(--rp-muted)">
-                      {selectedStation ? `Locked on ${selectedStation.name}` : "Choose a local station to open the listening story."}
-                    </Text>
+                    <div className="mt-1 min-w-0 max-w-[24rem] md:max-w-[30rem]">
+                      <PretextMeasuredText
+                        text={selectedCountry}
+                        font={COUNTRY_TITLE_FONT}
+                        lineHeight={40}
+                        collapsedLines={2}
+                        lineClassName="text-3xl font-semibold text-[var(--rp-text)] md:text-4xl"
+                        fallbackClassName="text-3xl font-semibold text-[var(--rp-text)] md:text-4xl"
+                      />
+                    </div>
+                    <div className="mt-1 min-w-0 max-w-[26rem]">
+                      <PretextMeasuredText
+                        text={selectedStation ? `Locked on ${selectedStation.name}` : "Choose a local station to open the listening story."}
+                        font={COUNTRY_META_FONT}
+                        lineHeight={20}
+                        collapsedLines={2}
+                        lineClassName="text-sm font-medium text-[var(--rp-muted)]"
+                        fallbackClassName="text-sm font-medium text-[var(--rp-muted)]"
+                      />
+                    </div>
                   </div>
                 </div>
 
@@ -344,22 +388,57 @@ export function CountryOverview({
                       <Text size="xs" className="font-semibold uppercase tracking-[0.28em] text-[var(--rp-gold)]">
                         {isPreviewing ? "Station Preview" : insightsOpen ? "Insights On" : "Listening Story"}
                       </Text>
+                      {!isPreviewing ? (
+                        <button
+                          type="button"
+                          onClick={handleToggleInsights}
+                          className={`inline-flex h-8 items-center gap-2 rounded-full border px-3 text-[10px] font-semibold uppercase tracking-[0.18em] lg:hidden ${insightsOpen
+                            ? "border-[rgba(245,177,45,0.34)] bg-[rgba(245,177,45,0.12)] text-[var(--rp-gold)]"
+                            : "border-white/10 bg-black/30 text-[var(--rp-text)]"}`}
+                        >
+                          <IconSparkles size={12} />
+                          {insightsOpen ? "Hide Story" : "Open Story"}
+                        </button>
+                      ) : null}
                       {!isPreviewing && insightsOpen ? (
                         <Badge radius="xl" className="border border-[rgba(245,177,45,0.3)] bg-[rgba(245,177,45,0.12)] text-[var(--rp-gold)]">
                           Synced with player
                         </Badge>
                       ) : null}
                     </div>
-                    <Title order={2} className="text-3xl font-semibold leading-tight text-[var(--rp-text)] md:text-[2.4rem]">
-                      {selectedStation?.name ?? "Choose a station"}
-                    </Title>
-                    <Text size="sm" c="var(--rp-muted)">
-                      {[selectedStation?.country, selectedStation?.state, selectedStation?.language].filter(Boolean).join(" • ")}
-                    </Text>
+                    <div className="min-w-0 max-w-[28rem] md:max-w-[34rem]">
+                      <PretextMeasuredText
+                        text={selectedStation?.name ?? "Choose a station"}
+                        font={COUNTRY_STATION_FONT}
+                        lineHeight={38}
+                        collapsedLines={2}
+                        lineClassName="text-3xl font-semibold leading-tight text-[var(--rp-text)] md:text-[2.4rem]"
+                        fallbackClassName="text-3xl font-semibold leading-tight text-[var(--rp-text)] md:text-[2.4rem]"
+                      />
+                    </div>
+                    <div className="min-w-0 max-w-[24rem]">
+                      <PretextMeasuredText
+                        text={[selectedStation?.country, selectedStation?.state, selectedStation?.language].filter(Boolean).join(" • ") || "Regional details loading"}
+                        font={COUNTRY_META_FONT}
+                        lineHeight={20}
+                        collapsedLines={2}
+                        lineClassName="text-sm font-medium text-[var(--rp-muted)]"
+                        fallbackClassName="text-sm font-medium text-[var(--rp-muted)]"
+                      />
+                    </div>
                   </div>
 
                   <div className="hidden h-24 w-24 shrink-0 overflow-hidden rounded-[1.4rem] border border-white/10 bg-black/30 shadow-[0_18px_30px_rgba(0,0,0,0.28)] md:block lg:hidden">
-                    {selectedStation ? (
+                    {selectedInsightImage ? (
+                      <img
+                        src={selectedInsightImage}
+                        alt="Track or artist artwork"
+                        className="h-full w-full object-cover"
+                        onError={(event) => {
+                          event.currentTarget.style.display = "none";
+                        }}
+                      />
+                    ) : selectedStation ? (
                       <StationArtwork
                         station={selectedStation}
                         className="h-full w-full object-cover"
@@ -382,9 +461,6 @@ export function CountryOverview({
                 />
 
                 <div className="flex flex-wrap gap-2">
-                  <Badge radius="xl" className="border border-white/10 bg-black/35 text-[var(--rp-text)]">
-                    {deriveFrequency(selectedStation)} MHz
-                  </Badge>
                   {selectedStation?.bitrate ? (
                     <Badge radius="xl" className="border border-white/10 bg-black/35 text-[var(--rp-text)]">
                       {selectedStation.bitrate} kbps
@@ -407,17 +483,17 @@ export function CountryOverview({
                 </div>
 
                 <div className="flex flex-wrap items-center gap-3">
-                  {isPreviewing && selectedStation ? (
+                  {(isPreviewing || !nowPlaying) && selectedStation ? (
                     <button
                       type="button"
                       onClick={() => onSelectStation(selectedStation)}
                       className="inline-flex items-center gap-2 rounded-full border border-[rgba(245,177,45,0.4)] bg-[rgba(245,177,45,0.12)] px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--rp-gold)]"
                     >
                       <IconBroadcast size={14} />
-                      Tune Now
+                      {nowPlaying ? "Tune Now" : "Play Station"}
                     </button>
                   ) : null}
-                  {!isPreviewing && onPlayPause ? (
+                  {!isPreviewing && nowPlaying && onPlayPause ? (
                     <button
                       type="button"
                       onClick={onPlayPause}
@@ -454,14 +530,14 @@ export function CountryOverview({
                 <div className="flex items-start justify-between gap-4">
                   <div>
                     <Text size="xs" className="font-semibold uppercase tracking-[0.28em] text-[var(--rp-muted-2)]">
-                      Tune + Queue
+                      Preview + Queue
                     </Text>
                     <Text size="sm" c="var(--rp-muted)" className="mt-2">
-                      Preview with the dial, then commit playback only when you want to switch the active station.
+                      Move through the country list, then commit playback when you want to switch the active station.
                     </Text>
                   </div>
-                  <Text className="font-mono text-3xl font-semibold text-[var(--rp-gold)]">
-                    {deriveFrequency(selectedStation)}
+                  <Text className="font-mono text-2xl font-semibold text-[var(--rp-gold)]">
+                    {selectedIndex >= 0 ? selectedIndex + 1 : 0}/{Math.max(stations.length, 1)}
                   </Text>
                 </div>
                 <input
@@ -489,8 +565,18 @@ export function CountryOverview({
                   >
                     <IconPlayerSkipForwardFilled size={18} />
                   </button>
-                  <Text size="xs" c="var(--rp-muted)" className="ml-2 uppercase tracking-[0.2em]">
-                    Queue position {queue.length > 0 ? currentIndex + 1 : 0} / {queue.length}
+                  {selectedStation ? (
+                    <button
+                      type="button"
+                      onClick={() => onSelectStation(selectedStation)}
+                      className="inline-flex h-10 items-center gap-2 rounded-full border border-[rgba(245,177,45,0.4)] bg-[rgba(245,177,45,0.12)] px-4 text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--rp-gold)]"
+                    >
+                      <IconBroadcast size={14} />
+                      Play Selected
+                    </button>
+                  ) : null}
+                  <Text size="xs" c="var(--rp-muted)" className="ml-0 uppercase tracking-[0.2em] sm:ml-2">
+                    Active queue {queue.length > 0 ? `${currentIndex + 1} / ${queue.length}` : "not started"}
                   </Text>
                 </div>
                 <div className="mt-4 grid gap-3 sm:grid-cols-3">

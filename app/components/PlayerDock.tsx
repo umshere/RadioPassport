@@ -24,8 +24,9 @@ import { usePlayerNoticeStore } from "~/state/playerNoticeStore";
 import { useNowPlayingMetadata } from "~/hooks/useNowPlayingMetadata";
 import { useTrackTrivia } from "~/hooks/useTrackTrivia";
 import { useElementSize, useMediaQuery } from "@mantine/hooks";
-import { fitsPretextWidth, getPretextLineCount, getPretextTightWidth } from "~/utils/pretextLayout";
+import { fitsPretextWidth, getPretextLineCount } from "~/utils/pretextLayout";
 import { scrollToId } from "~/utils/scrollHelpers";
+import { PretextMeasuredText } from "~/components/PretextMeasuredText";
 
 const DOCK_TITLE_FONT =
   '700 14px "General Sans", "SF Pro Text", "Segoe UI", "Helvetica Neue", Arial, sans-serif';
@@ -34,6 +35,10 @@ const DOCK_SUBTITLE_FONT =
 const DOCK_TRIVIA_FONT =
   '500 12px "General Sans", "SF Pro Text", "Segoe UI", "Helvetica Neue", Arial, sans-serif';
 const DOCK_BUTTON_FONT =
+  '600 11px "General Sans", "SF Pro Text", "Segoe UI", "Helvetica Neue", Arial, sans-serif';
+const DOCK_MOBILE_TITLE_FONT =
+  '700 13px "General Sans", "SF Pro Text", "Segoe UI", "Helvetica Neue", Arial, sans-serif';
+const DOCK_MOBILE_SUBTITLE_FONT =
   '600 11px "General Sans", "SF Pro Text", "Segoe UI", "Helvetica Neue", Arial, sans-serif';
 const DESKTOP_INSIGHTS_BUTTON_WIDTH = 152;
 const DESKTOP_META_INLINE_ENTER_WIDTH = 520;
@@ -44,6 +49,7 @@ export default function PlayerDock() {
   const navigate = useNavigate();
   const isAiRoute = location.pathname.startsWith("/ai");
   const isListeningRoute = location.pathname === "/listen";
+  const hasInlineHeroInsights = location.pathname === "/";
   const isCountryView = location.pathname === "/" && new URLSearchParams(location.search).has("country");
   const notice = usePlayerNoticeStore((state) => state.notice);
   const clearNotice = usePlayerNoticeStore((state) => state.clearNotice);
@@ -67,33 +73,6 @@ export default function PlayerDock() {
     () => [nowPlaying?.country, nowPlaying?.state].filter(Boolean).join(" • "),
     [nowPlaying?.country, nowPlaying?.state]
   );
-
-  const frequency = useMemo(() => {
-    if (!nowPlaying) return "0.0";
-    let hash = 0;
-    for (let i = 0; i < nowPlaying.uuid.length; i++) {
-      hash = nowPlaying.uuid.charCodeAt(i) + ((hash << 5) - hash);
-    }
-    const range = 108.0 - 88.0;
-    const normalized = Math.abs(hash % 1000) / 1000;
-    return (88.0 + normalized * range).toFixed(1);
-  }, [nowPlaying?.uuid]);
-
-  const frequencyPercent = useMemo(() => {
-    const freqNum = parseFloat(frequency);
-    return ((freqNum - 88.0) / 20.0) * 100;
-  }, [frequency]);
-
-  const ticks = useMemo(() => {
-    const freqNum = parseFloat(frequency);
-    const tickStart = 88;
-    const tickEnd = 108;
-    const tickCount = 21;
-    return Array.from({ length: tickCount }, (_, i) => ({
-      value: tickStart + i,
-      isNear: Math.abs((tickStart + i) - freqNum) < 2,
-    }));
-  }, [frequency]);
 
   const handleNext = useCallback(() => {
     if (queue.length === 0) return;
@@ -134,9 +113,10 @@ export default function PlayerDock() {
     }
   }, [queue, currentStationIndex, startStation]);
 
-  const isMobile = useMediaQuery("(max-width: 1024px)");
+  const isMobile = useMediaQuery("(max-width: 1024px)", false, { getInitialValueInEffect: true });
   const { ref: desktopMetaRef, width: desktopMetaWidth } = useElementSize();
   const [desktopMetaMode, setDesktopMetaMode] = useState<"stacked" | "inline">("stacked");
+  const [mobileDockHidden, setMobileDockHidden] = useState(false);
   const handleOpenListeningPage = useCallback(
     (event?: { stopPropagation?: () => void }) => {
       event?.stopPropagation?.();
@@ -239,12 +219,12 @@ export default function PlayerDock() {
     );
     return primary || summary || facts.length || links.length || imageUrl
       ? {
-          source: aiTrivia.trivia ? "ai" : freeTrivia.trivia ? "free" : "station",
-          summary,
-          imageUrl,
-          facts,
-          links,
-        }
+        source: aiTrivia.trivia ? "ai" : freeTrivia.trivia ? "free" : "station",
+        summary,
+        imageUrl,
+        facts,
+        links,
+      }
       : null;
   }, [aiTrivia.trivia, freeTrivia.trivia, stationFactItems]);
   const canInlineDesktopMeta = useMemo(() => {
@@ -355,16 +335,29 @@ export default function PlayerDock() {
               }}
             />
             <div className="min-w-0">
-              <Text size="sm" fw={600} className="text-amber-50">
-                {state.trivia.summary}
-              </Text>
+              <PretextMeasuredText
+                text={state.trivia.summary}
+                font={DOCK_TRIVIA_FONT}
+                lineHeight={18}
+                collapsedLines={3}
+                lineClassName="text-sm font-semibold text-amber-50"
+                fallbackClassName="text-sm font-semibold text-amber-50"
+              />
             </div>
           </div>
         )}
         {!state.trivia.imageUrl && (
-          <Text size="sm" fw={600} className="text-amber-50">
-            {state.trivia.summary}
-          </Text>
+          <PretextMeasuredText
+            text={state.trivia.summary}
+            font={DOCK_TRIVIA_FONT}
+            lineHeight={18}
+            collapsedLines={3}
+            expandable
+            moreLabel="Expand note"
+            lessLabel="Collapse note"
+            lineClassName="text-sm font-semibold text-amber-50"
+            fallbackClassName="text-sm font-semibold text-amber-50"
+          />
         )}
         <div className="space-y-1 text-xs text-amber-100/70">
           {state.trivia.facts.map((fact) => (
@@ -432,15 +425,28 @@ export default function PlayerDock() {
                   }}
                 />
                 <div className="min-w-0">
-                  <Text size="sm" fw={600} className="text-amber-50">
-                    {mergedTrivia.summary}
-                  </Text>
+                  <PretextMeasuredText
+                    text={mergedTrivia.summary}
+                    font={DOCK_TRIVIA_FONT}
+                    lineHeight={18}
+                    collapsedLines={3}
+                    lineClassName="text-sm font-semibold text-amber-50"
+                    fallbackClassName="text-sm font-semibold text-amber-50"
+                  />
                 </div>
               </div>
             ) : mergedTrivia.summary ? (
-              <Text size="sm" fw={600} className="text-amber-50">
-                {mergedTrivia.summary}
-              </Text>
+              <PretextMeasuredText
+                text={mergedTrivia.summary}
+                font={DOCK_TRIVIA_FONT}
+                lineHeight={18}
+                collapsedLines={3}
+                expandable
+                moreLabel="Expand note"
+                lessLabel="Collapse note"
+                lineClassName="text-sm font-semibold text-amber-50"
+                fallbackClassName="text-sm font-semibold text-amber-50"
+              />
             ) : null}
             <div className="space-y-1 text-xs text-amber-100/70">
               {mergedTrivia.facts.slice(0, 6).map((fact) => (
@@ -511,13 +517,54 @@ export default function PlayerDock() {
     setIsMounted(true);
   }, []);
 
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+
+    const clearance = !isMounted || !nowPlaying || isListeningRoute
+      ? "0px"
+      : isMobile
+        ? "116px"
+        : "156px";
+
+    document.documentElement.style.setProperty("--player-dock-clearance", clearance);
+
+    return () => {
+      document.documentElement.style.removeProperty("--player-dock-clearance");
+    };
+  }, [isListeningRoute, isMobile, isMounted, nowPlaying]);
+
+  useEffect(() => {
+    if (!isMounted || !isMobile || !nowPlaying || isListeningRoute) {
+      setMobileDockHidden(false);
+      return;
+    }
+
+    let lastY = window.scrollY;
+
+    const handleScroll = () => {
+      const nextY = window.scrollY;
+      const delta = nextY - lastY;
+
+      if (insightsOpen || nextY < 72) {
+        setMobileDockHidden(false);
+      } else if (Math.abs(delta) >= 10) {
+        setMobileDockHidden(delta > 0);
+      }
+
+      lastY = nextY;
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [insightsOpen, isListeningRoute, isMobile, isMounted, nowPlaying]);
+
   if (!isMounted || !nowPlaying || isListeningRoute) return null;
 
   // Desktop dock
   return (
     <>
       <Drawer
-        opened={Boolean(isMobile) && insightsOpen}
+        opened={Boolean(isMobile) && insightsOpen && !hasInlineHeroInsights}
         onClose={() => setInsightsOpen(false)}
         position="bottom"
         size="md"
@@ -566,51 +613,6 @@ export default function PlayerDock() {
             boxShadow: '0 24px 60px -24px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 204, 122, 0.18)',
           }}
         >
-          {/* Animated golden shimmer overlay */}
-          <motion.div
-            className="absolute inset-0 pointer-events-none opacity-15"
-            style={{
-              background: 'linear-gradient(90deg, transparent 0%, rgba(245,193,104,0.35) 50%, transparent 100%)',
-            }}
-            animate={{
-              x: ['-100%', '200%'],
-            }}
-            transition={{
-              duration: 3,
-              repeat: Infinity,
-              repeatDelay: 2,
-              ease: 'easeInOut',
-            }}
-          />
-
-          {/* Floating sparkles when playing */}
-          {isPlaying && (
-            <div className="absolute inset-0 pointer-events-none overflow-hidden">
-              {[...Array(6)].map((_, i) => (
-                <motion.div
-                  key={i}
-                  className="absolute w-1 h-1 rounded-full"
-                  style={{
-                    background: 'radial-gradient(circle, rgba(255,180,50,0.9) 0%, transparent 70%)',
-                    left: `${15 + i * 15}%`,
-                    boxShadow: '0 0 6px 2px rgba(255,180,50,0.4)',
-                  }}
-                  animate={{
-                    y: [60, -20],
-                    opacity: [0, 1, 0],
-                    scale: [0.5, 1.2, 0.8],
-                  }}
-                  transition={{
-                    duration: 2 + i * 0.3,
-                    delay: i * 0.4,
-                    repeat: Infinity,
-                    ease: 'easeOut',
-                  }}
-                />
-              ))}
-            </div>
-          )}
-
           <div className="relative z-10 flex items-center gap-5 p-4 pr-6">
             {/* Artwork with glow effect */}
             <div className="h-14 w-14 rounded-xl overflow-hidden flex-shrink-0 relative group"
@@ -621,6 +623,8 @@ export default function PlayerDock() {
               <StationArtwork
                 station={nowPlaying}
                 fallbackClassName="w-full h-full bg-gradient-to-br from-[#141822] to-[#1d2230] flex items-center justify-center text-amber-200 font-mono font-bold text-lg"
+                loading="eager"
+                sizes="56px"
               />
               {/* Hover Overlay */}
               <div className="absolute inset-0 bg-gradient-to-t from-amber-500/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-center pb-2">
@@ -628,15 +632,31 @@ export default function PlayerDock() {
               </div>
             </div>
 
-            {/* Station Info & Tuner */}
+            {/* Station Info */}
             <div ref={desktopMetaRef} className="flex-1 min-w-0 flex flex-col justify-center gap-1.5 min-h-[78px]">
-              <div className={stackedDesktopMeta ? "min-h-[38px] space-y-0.5" : "min-h-[38px] flex items-baseline gap-3"}>
-                <Text size="sm" fw={700} className="truncate text-amber-50">
-                  {title}
-                </Text>
-                <Text size="xs" className="truncate text-amber-200/70 font-medium">
-                  {subtitle}
-                </Text>
+              <div className={stackedDesktopMeta ? "min-h-[38px] space-y-0.5" : "min-h-[38px] flex items-start gap-3"}>
+                <div className={stackedDesktopMeta ? "min-w-0" : "min-w-0 max-w-[58%]"}>
+                  <PretextMeasuredText
+                    text={title}
+                    font={DOCK_TITLE_FONT}
+                    lineHeight={18}
+                    collapsedLines={stackedDesktopMeta ? 2 : 1}
+                    lineClassName="text-sm font-bold text-amber-50"
+                    fallbackClassName="text-sm font-bold text-amber-50"
+                  />
+                </div>
+                {subtitle ? (
+                  <div className={stackedDesktopMeta ? "min-w-0" : "min-w-0 flex-1 pt-0.5"}>
+                    <PretextMeasuredText
+                      text={subtitle}
+                      font={DOCK_SUBTITLE_FONT}
+                      lineHeight={16}
+                      collapsedLines={1}
+                      lineClassName="text-xs font-medium text-amber-200/70"
+                      fallbackClassName="text-xs font-medium text-amber-200/70"
+                    />
+                  </div>
+                ) : null}
               </div>
               <div className="min-h-[18px] flex items-center gap-2">
                 <Text size="xs" className="truncate text-amber-50/80 font-semibold uppercase tracking-[0.2em]">
@@ -645,9 +665,6 @@ export default function PlayerDock() {
                 <span className="text-amber-100/30">•</span>
                 <Text size="xs" className="truncate text-amber-100/70">
                   {triviaTitle}
-                </Text>
-                <Text size="xs" className="font-mono uppercase tracking-[0.22em] text-amber-100/50">
-                  {frequency} MHz
                 </Text>
               </div>
               {notice && (
@@ -698,28 +715,6 @@ export default function PlayerDock() {
                 </div>
               )}
 
-              {/* Minimal Tuner Scale - warm colors */}
-              <div className="flex items-center gap-3">
-                <span className="font-mono text-xs font-bold text-amber-200 tabular-nums tracking-wider">{frequency} MHz</span>
-                <div className="h-1.5 flex-1 bg-gradient-to-r from-[#1d2230] to-[#262c3a] rounded-full overflow-hidden relative">
-                  <motion.div
-                    className="absolute top-0 bottom-0 w-3 rounded-full bg-gradient-to-r from-[#f6c86f] to-[#f1aa45]"
-                    style={{
-                      left: `${frequencyPercent}%`,
-                      transform: 'translateX(-50%)',
-                      boxShadow: '0 0 12px rgba(246,200,111,0.5)',
-                    }}
-                    animate={isPlaying ? { scale: [1, 1.2, 1] } : {}}
-                    transition={{ duration: 0.5, repeat: Infinity }}
-                  />
-                  {/* Subtle ticks */}
-                  <div className="absolute inset-0 flex justify-between px-1">
-                    {[0, 25, 50, 75, 100].map(p => (
-                      <div key={p} className="w-px h-full bg-amber-200/20" />
-                    ))}
-                  </div>
-                </div>
-              </div>
             </div>
 
             {/* Controls - Vibrant style */}
@@ -727,11 +722,10 @@ export default function PlayerDock() {
               <div className="flex items-center gap-2 rounded-full border border-white/10 bg-[#141822] px-2 py-2 shadow-[0_8px_20px_rgba(0,0,0,0.28)]">
                 <button
                   type="button"
-                  className={`inline-flex h-9 w-[152px] shrink-0 items-center justify-center gap-2 rounded-full border px-3 text-[11px] font-semibold transition-colors ${
-                    insightsOpen
-                      ? "border-amber-300/80 bg-amber-500/18 text-amber-50 shadow-[0_0_0_1px_rgba(255,214,127,0.14)_inset]"
-                      : "border-amber-400/35 bg-amber-500/12 text-amber-100 hover:border-amber-400/70"
-                  }`}
+                  className={`inline-flex h-9 w-[152px] shrink-0 items-center justify-center gap-2 rounded-full border px-3 text-[11px] font-semibold transition-colors ${insightsOpen
+                    ? "border-amber-300/80 bg-amber-500/18 text-amber-50 shadow-[0_0_0_1px_rgba(255,214,127,0.14)_inset]"
+                    : "border-amber-400/35 bg-amber-500/12 text-amber-100 hover:border-amber-400/70"
+                    }`}
                   onClick={handleToggleInsights}
                   aria-label="Toggle hero insights"
                   aria-pressed={insightsOpen}
@@ -753,18 +747,16 @@ export default function PlayerDock() {
                   </button>
                 </Tooltip>
 
-                {!isCountryView ? (
-                  <Tooltip label="Open Listening Page" position="top" withArrow>
-                    <button
-                      className="flex h-9 items-center justify-center gap-2 rounded-full border border-amber-400/22 bg-[#161a22] px-3 text-amber-100 hover:border-amber-400/60 transition-all active:scale-95 shadow-md"
-                      onClick={handleOpenListeningPage}
-                      aria-label="Open listening page"
-                    >
-                      <IconMoonStars size={15} />
-                      Zen
-                    </button>
-                  </Tooltip>
-                ) : null}
+                <Tooltip label="Open Listening Page" position="top" withArrow>
+                  <button
+                    className="flex h-9 items-center justify-center gap-2 rounded-full border border-amber-400/22 bg-[#161a22] px-3 text-amber-100 hover:border-amber-400/60 transition-all active:scale-95 shadow-md"
+                    onClick={handleOpenListeningPage}
+                    aria-label="Open listening page"
+                  >
+                    <IconMoonStars size={15} />
+                    Zen
+                  </button>
+                </Tooltip>
               </div>
 
               <div className="flex items-center gap-2 rounded-full border border-white/10 bg-[#141822] px-2 py-2 shadow-[0_8px_20px_rgba(0,0,0,0.28)]">
@@ -825,29 +817,27 @@ export default function PlayerDock() {
         <motion.div
           className="lg:hidden fixed left-0 right-0 z-40 px-3"
           style={{
-            bottom: "calc(env(safe-area-inset-bottom) + 12px)"
+            bottom: "calc(env(safe-area-inset-bottom) + 12px)",
+            pointerEvents: mobileDockHidden ? "none" : "auto",
           }}
           initial={{ y: 100, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+          animate={{ y: mobileDockHidden ? 120 : 0, opacity: mobileDockHidden ? 0 : 1 }}
+          transition={{ type: 'spring', damping: 28, stiffness: 240 }}
         >
           <motion.div
             data-raptor={raptorMiniEnabled ? "true" : "false"}
-            className={`rounded-[2rem] overflow-hidden active:scale-[0.98] transition-transform relative ${raptorMiniEnabled ? 'py-2 px-3' : 'py-3 px-4'}`}
+            className={`rounded-[1.75rem] overflow-hidden active:scale-[0.985] transition-transform relative ${raptorMiniEnabled ? 'py-2 px-3' : 'py-2.5 px-3.5'}`}
             style={{
               background: 'linear-gradient(135deg, rgba(12,14,18,0.96) 0%, rgba(18,22,30,0.94) 100%)',
               backdropFilter: 'blur(18px)',
               WebkitBackdropFilter: 'blur(18px)',
-              boxShadow: '0 18px 40px -18px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,204,122,0.15) inset',
+              boxShadow: '0 16px 36px -18px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,204,122,0.15) inset',
               border: '1px solid rgba(255,204,122,0.15)',
             }}
           >
-            {/* Glass Shine Overlay */}
-            <div className="absolute inset-0 bg-gradient-to-b from-white/5 to-transparent opacity-40 pointer-events-none" />
-
-            <div className="flex items-center gap-3.5 relative z-10 pt-1 px-1">
+            <div className="flex items-center gap-3 relative z-10 px-0.5 py-0.5">
               <div
-                className={`${raptorMiniEnabled ? 'h-10 w-10' : 'h-12 w-12'} overflow-visible flex items-center justify-center text-sm flex-shrink-0 relative`}
+                className={`${raptorMiniEnabled ? 'h-10 w-10' : 'h-11 w-11'} overflow-visible flex items-center justify-center text-sm flex-shrink-0 relative`}
               >
                 <div
                   className="w-full h-full rounded-xl overflow-hidden relative z-0"
@@ -858,31 +848,47 @@ export default function PlayerDock() {
                   <StationArtwork
                     station={nowPlaying}
                     fallbackClassName="w-full h-full flex items-center justify-center text-amber-200 bg-transparent backdrop-blur"
+                    loading="eager"
+                    sizes="44px"
                   />
                 </div>
 
                 {/* AI Button - Pinned to Artwork */}
-                <button
-                  type="button"
-                  className="absolute -top-1.5 -right-1.5 z-10 inline-flex h-6 items-center justify-center gap-1 rounded-full border border-amber-400/50 bg-[#171b24] px-2 text-[10px] font-semibold text-amber-100 shadow-[0_2px_10px_rgba(245,193,104,0.35)] active:scale-95 transition-all"
-                  onClick={handleOpenInsights}
-                  aria-label="Open AI insights"
-                >
-                  <IconSparkles size={12} />
-                  AI
-                </button>
+                {!hasInlineHeroInsights ? (
+                  <button
+                    type="button"
+                    className="absolute -top-1.5 -right-1.5 z-10 inline-flex h-6 items-center justify-center gap-1 rounded-full border border-amber-400/50 bg-[#171b24] px-2 text-[10px] font-semibold text-amber-100 shadow-[0_2px_10px_rgba(245,193,104,0.35)] active:scale-95 transition-all"
+                    onClick={handleOpenInsights}
+                    aria-label="Open AI insights"
+                  >
+                    <IconSparkles size={12} />
+                    AI
+                  </button>
+                ) : null}
               </div>
 
               <div className="min-w-0 flex-1 flex flex-col justify-center">
-                <div className="flex items-center gap-2">
-                  <div className="text-[13px] font-bold text-amber-50 truncate leading-tight shadow-sm">{title}</div>
-                </div>
-                <div className="text-[9px] text-amber-50/70 truncate uppercase tracking-[0.2em] mt-0.5">
+                <PretextMeasuredText
+                  text={title}
+                  font={DOCK_MOBILE_TITLE_FONT}
+                  lineHeight={16}
+                  collapsedLines={raptorMiniEnabled ? 1 : 2}
+                  lineClassName="text-[13px] font-bold leading-tight text-amber-50"
+                  fallbackClassName="text-[13px] font-bold leading-tight text-amber-50"
+                />
+                <div className="mt-0.5 text-[9px] text-amber-50/68 truncate uppercase tracking-[0.18em]">
                   {queueSourceLabel}
                 </div>
-                <div className="text-[11px] text-amber-200/80 truncate leading-tight mt-0.5 font-bold tracking-wide">
-                  {subtitle}
-                </div>
+                {subtitle ? (
+                  <PretextMeasuredText
+                    text={subtitle}
+                    font={DOCK_MOBILE_SUBTITLE_FONT}
+                    lineHeight={14}
+                    collapsedLines={1}
+                    lineClassName="mt-0.5 text-[11px] font-semibold leading-tight text-amber-200/80"
+                    fallbackClassName="mt-0.5 text-[11px] font-semibold leading-tight text-amber-200/80"
+                  />
+                ) : null}
               </div>
 
               {/* Mobile Controls - Embossed Glass */}
@@ -904,20 +910,18 @@ export default function PlayerDock() {
                   <IconMapPin size={15} />
                 </button>
 
-                {!isCountryView ? (
-                  <button
-                    className="flex h-9 w-9 items-center justify-center rounded-full text-amber-100/80 active:scale-95 transition-all"
-                    style={{
-                      background: 'rgba(20,24,32,0.85)',
-                      border: '1px solid rgba(255,204,122,0.18)',
-                      boxShadow: '0 6px 16px rgba(0,0,0,0.35)',
-                    }}
-                    onClick={handleOpenListeningPage}
-                    aria-label="Open listening page"
-                  >
-                    <IconMoonStars size={15} />
-                  </button>
-                ) : null}
+                <button
+                  className="flex h-9 w-9 items-center justify-center rounded-full text-amber-100/80 active:scale-95 transition-all"
+                  style={{
+                    background: 'rgba(20,24,32,0.85)',
+                    border: '1px solid rgba(255,204,122,0.18)',
+                    boxShadow: '0 6px 16px rgba(0,0,0,0.35)',
+                  }}
+                  onClick={handleOpenListeningPage}
+                  aria-label="Open listening page"
+                >
+                  <IconMoonStars size={15} />
+                </button>
 
                 {/* Prev */}
                 <button
@@ -974,48 +978,6 @@ export default function PlayerDock() {
             </div>
 
 
-            {/* Mobile Bottom Bar - Text Ticker & Freq */}
-            <div className="mt-3 mx-1 mb-0.5"
-              style={{
-                position: "relative",
-                width: "auto",
-                height: "26px",
-                background: "rgba(20,24,32,0.9)",
-                borderRadius: "8px",
-                padding: "0 10px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                boxShadow: "inset 0 1px 2px rgba(0,0,0,0.2)",
-                border: "1px solid rgba(255,204,122,0.15)"
-              }}
-            >
-              {/* Marquee Song Title */}
-              <div className="flex-1 overflow-hidden relative h-full flex items-center mask-image-linear-gradient-to-r">
-                <div className="whitespace-nowrap text-[10px] font-mono font-medium text-amber-100/70 uppercase tracking-wide">
-                  {triviaTitle}
-                </div>
-              </div>
-
-              {/* Frequency Display */}
-              <div
-                style={{
-                  fontFamily: "monospace",
-                  fontSize: "0.75rem",
-                  fontWeight: "bold",
-                  color: "#f5c168",
-                  display: "flex",
-                  alignItems: "baseline",
-                  gap: "2px",
-                  paddingLeft: "12px",
-                  position: "relative",
-                  zIndex: 2
-                }}
-              >
-                <span>{frequency}</span>
-                <span style={{ fontSize: "0.55rem", opacity: 0.8 }}>MHz</span>
-              </div>
-            </div>
           </motion.div>
         </motion.div>
       )}

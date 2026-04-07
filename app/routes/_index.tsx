@@ -65,6 +65,14 @@ import { useHydrated } from "~/hooks/useHydrated";
 
 const MAX_EXPANDED_LANGUAGES = 4;
 const ENGLISH_TOKENS = new Set(["english", "en", "eng", "en-us", "en-gb", "en-uk"]);
+const COUNTRY_NAME_ALIASES = new Map<string, string>([
+  ["the united states of america", "united states"],
+  ["united states of america", "united states"],
+  ["usa", "united states"],
+  ["u s a", "united states"],
+  ["uk", "united kingdom"],
+  ["great britain", "united kingdom"],
+]);
 
 function normalizeLanguageToken(value: string) {
   return value.trim().toLowerCase();
@@ -72,6 +80,24 @@ function normalizeLanguageToken(value: string) {
 
 function isEnglishLanguage(value: string) {
   return ENGLISH_TOKENS.has(normalizeLanguageToken(value));
+}
+
+function normalizeCountryNameForCompare(value?: string | null) {
+  const normalized = (value ?? "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+
+  return COUNTRY_NAME_ALIASES.get(normalized) ?? normalized;
+}
+
+function isSameCountryName(left?: string | null, right?: string | null) {
+  const normalizedLeft = normalizeCountryNameForCompare(left);
+  const normalizedRight = normalizeCountryNameForCompare(right);
+  return Boolean(normalizedLeft && normalizedRight && normalizedLeft === normalizedRight);
 }
 
 function matchesCatalogSearch(station: Station, query: string) {
@@ -217,11 +243,16 @@ export default function Index() {
 
   // Domain hooks - all state management extracted
   const player = useRadioPlayer();
+  const renderedNowPlaying = hydrated ? player.nowPlaying : null;
+  const renderedIsPlaying = hydrated ? player.isPlaying : false;
+  const renderedQueue = hydrated ? player.queue : [];
+  const renderedCurrentStationIndex = hydrated ? player.currentStationIndex : 0;
+  const renderedQueueSourceLabel = hydrated ? player.queueSourceLabel : "Direct Tune";
   const mode = useListeningMode();
   const { favoriteStationIds, toggleFavorite } = useFavorites();
   const { recentStations, addToRecent } = useRecentStations();
   const { triggerHoverStatic } = useHoverAudio();
-  const atlas = useAtlasState(countries, player.nowPlaying, selectedCountry);
+  const atlas = useAtlasState(countries, renderedNowPlaying, selectedCountry);
   const cards = usePlayerCards(recentStations, stations, mode.exploreStations, mode.listeningMode);
 
   // UI state (minimal - most extracted to hooks)
@@ -418,11 +449,11 @@ export default function Index() {
     () =>
       applyStationFilters(stations, stationFilters, {
         unavailableIds,
-        pinnedStationId: player.nowPlaying?.uuid,
+        pinnedStationId: renderedNowPlaying?.uuid,
         pageProtocol,
         isSafari,
       }),
-    [stations, stationFilters, unavailableIds, player.nowPlaying?.uuid, pageProtocol, isSafari]
+    [stations, stationFilters, unavailableIds, renderedNowPlaying?.uuid, pageProtocol, isSafari]
   );
 
   const isStationFilterActive = isStationFilterDirty(stationFilters);
@@ -690,7 +721,7 @@ export default function Index() {
   }, [player.nowPlaying, addToRecent]);
 
   useEffect(() => {
-    if (selectedCountry && player.nowPlaying && player.nowPlaying.country !== selectedCountry) {
+    if (selectedCountry && player.nowPlaying && !isSameCountryName(player.nowPlaying.country, selectedCountry)) {
       player.stop();
       setHasDismissedPlayer(true);
     }
@@ -765,7 +796,7 @@ export default function Index() {
     return (
       <div className="bg-[#0a0a0c] min-h-screen">
         <WorldHome
-          nowPlaying={player.nowPlaying}
+          nowPlaying={renderedNowPlaying}
           onPlayStation={(station, queueSession) =>
             handlers.handleStartStation(station, {
               autoPlay: true,
@@ -808,7 +839,7 @@ export default function Index() {
         ) : !selectedCountry ? (
           <>
             <HeroSection topCountries={topCountries} totalStations={derived.totalStations} continents={derived.continents.length}
-              nowPlaying={player.nowPlaying} isPlaying={player.isPlaying} searchQueryRaw={searchDraft} onStartListening={handlers.handleStartListening}
+              nowPlaying={renderedNowPlaying} isPlaying={renderedIsPlaying} searchQueryRaw={searchDraft} onStartListening={handlers.handleStartListening}
               onQuickRetune={handlers.handleQuickRetune} onMissionExploreWorld={() => setViewMode('world')}
               onMissionStayLocal={handlers.handleMissionStayLocal} onHoverSound={triggerHoverStatic}
               onSearch={handleSearchInput}
@@ -820,7 +851,7 @@ export default function Index() {
                 <div className="pointer-events-none absolute left-4 top-5 h-[13rem] w-[30rem] max-w-full rounded-full bg-[radial-gradient(circle_at_16%_18%,rgba(245,177,45,0.11),transparent_46%),radial-gradient(circle_at_72%_58%,rgba(136,116,99,0.08),transparent_36%)] blur-2xl" />
                 <div className="relative">
                   <JourneyModule
-                    nowPlaying={player.nowPlaying}
+                    nowPlaying={renderedNowPlaying}
                     recentStations={recentStations}
                     topCountries={topCountries}
                     onStartListening={handlers.handleStartListening}
@@ -845,7 +876,7 @@ export default function Index() {
                   </div>
                   <StationGrid
                     stations={catalogStations ?? []}
-                    nowPlaying={player.nowPlaying}
+                    nowPlaying={renderedNowPlaying}
                     stationRefs={stationRefs}
                     onPlayStation={(station) =>
                       handleStartStation(station, { queueSession: searchQueueSession })}
@@ -931,7 +962,7 @@ export default function Index() {
 
               <SignalBand
                 topCountries={topCountries}
-                nowPlaying={player.nowPlaying}
+                nowPlaying={renderedNowPlaying}
                 recentStations={recentStations}
               />
             </div>
@@ -944,23 +975,23 @@ export default function Index() {
               stationCount={stations.length}
               stations={stations}
               onBack={handlers.handleBackToWorldView}
-              nowPlaying={player.nowPlaying}
-              isPlaying={player.isPlaying}
+              nowPlaying={renderedNowPlaying}
+              isPlaying={renderedIsPlaying}
               onPlayPause={player.playPause}
               onNext={playNext}
               onPrev={playPrevious}
-              queue={player.queue}
-              currentIndex={player.currentStationIndex}
-              queueSourceLabel={player.queueSourceLabel}
+              queue={renderedQueue}
+              currentIndex={renderedCurrentStationIndex}
+              queueSourceLabel={renderedQueueSourceLabel}
               onSelectStation={(station) =>
                 handleStartStation(station, { queueSession: countryQueueSession })}
               transparent={false}
             />
 
-            {player.nowPlaying && (
+            {renderedNowPlaying && (
               <section className="rounded-3xl border border-white/10 bg-[var(--rp-surface)] px-6 py-6 md:px-10 md:py-8 shadow-[0_18px_40px_rgba(0,0,0,0.5)] backdrop-blur-xl">
                 <JourneyModule
-                  nowPlaying={player.nowPlaying}
+                  nowPlaying={renderedNowPlaying}
                   recentStations={recentStations}
                   topCountries={topCountries}
                   onStartListening={handlers.handleStartListening}
@@ -970,7 +1001,7 @@ export default function Index() {
               </section>
             )}
 
-            <section className="rounded-3xl border border-white/10 bg-[var(--rp-surface)] px-4 py-5 md:px-6 md:py-6 shadow-[0_18px_40px_rgba(0,0,0,0.5)] backdrop-blur-xl">
+            <section className="rounded-3xl border border-white/10 bg-[var(--rp-surface)] px-4 py-5 shadow-[0_18px_40px_rgba(0,0,0,0.5)] backdrop-blur-xl max-md:-mx-4 max-md:rounded-none max-md:border-x-0 max-md:bg-transparent max-md:shadow-none max-md:backdrop-blur-0 md:px-6 md:py-6">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <Text fw={700} size="sm" c="var(--rp-text)">
@@ -1048,7 +1079,7 @@ export default function Index() {
               <div className="relative z-0 mt-6">
                 <StationGrid
                   stations={filteredStations}
-                  nowPlaying={player.nowPlaying}
+                  nowPlaying={renderedNowPlaying}
                   stationRefs={stationRefs}
                   onPlayStation={(station) =>
                     handleStartStation(station, { queueSession: countryQueueSession })}

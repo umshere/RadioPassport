@@ -165,7 +165,7 @@ export function StationCard({
       style={{ contentVisibility: "auto", containIntrinsicSize: "360px" }}
     >
       <div
-        className={`station-card group h-full flex flex-col rounded-[2rem] border p-5 transition-all duration-300 hover:z-10 hover:-translate-y-1 ${cardStatusClass}`}
+        className={`station-card group h-full flex flex-col rounded-[2rem] border p-5 transition-all duration-300 hover:z-30 hover:-translate-y-1 ${cardStatusClass}`}
         style={{
           position: 'relative',
           overflow: 'hidden',
@@ -235,92 +235,92 @@ export function StationCard({
               </div>
 
               <div ref={contentRef} className="flex min-w-0 flex-1 flex-col gap-2.5">
-              <div className="min-w-0" data-testid="station-name">
-                <PretextMeasuredText
-                  text={station.name}
-                  font={STATION_TITLE_FONT}
-                  lineHeight={22}
-                  collapsedLines={2}
-                  lineClassName="text-[15px] font-bold tracking-tight text-[var(--rp-text)]"
-                  fallbackClassName="text-[15px] font-bold tracking-tight text-[var(--rp-text)]"
-                />
-              </div>
-              <Text size="xs" c="var(--rp-muted-2)" className="font-semibold uppercase tracking-[0.18em]">
-                {regionLine}
-              </Text>
-              <div className="flex flex-wrap items-center gap-1.5">
-                {statusDisplay && (
-                  <div
-                    className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold"
-                    style={{ background: "rgba(0,0,0,0.4)", color: "rgba(248,243,230,0.8)" }}
-                  >
-                    <span className="opacity-80">{statusDisplay.icon}</span>
-                    <span>{statusDisplay.label}</span>
-                  </div>
-                )}
-                {isHlsStream && (
-                  <div
-                    className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold"
-                    style={{ background: "rgba(245, 177, 45, 0.12)", color: "var(--rp-gold)" }}
-                  >
-                    HLS
-                  </div>
-                )}
-                {isHttpStream && (
-                  <div
-                    className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold"
-                    style={{ background: "rgba(245, 177, 45, 0.12)", color: "var(--rp-gold)" }}
-                  >
-                    HTTP
-                  </div>
-                )}
-                {diagnosticInfo && (
-                  <Tooltip
-                    label={diagnosticInfo}
-                    position="top"
-                    withArrow
-                    multiline
-                    w={220}
-                  >
-                    <ActionIcon
-                      variant="transparent"
-                      size="xs"
-                      color="gray"
-                      className="opacity-50 transition-opacity hover:opacity-100"
+                <div className="min-w-0" data-testid="station-name">
+                  <PretextMeasuredText
+                    text={station.name}
+                    font={STATION_TITLE_FONT}
+                    lineHeight={22}
+                    collapsedLines={2}
+                    lineClassName="text-[15px] font-bold tracking-tight text-[var(--rp-text)]"
+                    fallbackClassName="text-[15px] font-bold tracking-tight text-[var(--rp-text)]"
+                  />
+                </div>
+                <Text size="xs" c="var(--rp-muted-2)" className="font-semibold uppercase tracking-[0.18em]">
+                  {regionLine}
+                </Text>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {statusDisplay && (
+                    <div
+                      className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold"
+                      style={{ background: "rgba(0,0,0,0.4)", color: "rgba(248,243,230,0.8)" }}
                     >
-                      <IconInfoCircle size={14} />
-                    </ActionIcon>
-                  </Tooltip>
-                )}
+                      <span className="opacity-80">{statusDisplay.icon}</span>
+                      <span>{statusDisplay.label}</span>
+                    </div>
+                  )}
+                  {isHlsStream && (
+                    <div
+                      className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold"
+                      style={{ background: "rgba(245, 177, 45, 0.12)", color: "var(--rp-gold)" }}
+                    >
+                      HLS
+                    </div>
+                  )}
+                  {isHttpStream && (
+                    <div
+                      className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold"
+                      style={{ background: "rgba(245, 177, 45, 0.12)", color: "var(--rp-gold)" }}
+                    >
+                      HTTP
+                    </div>
+                  )}
+                  {diagnosticInfo && (
+                    <Tooltip
+                      label={diagnosticInfo}
+                      position="top"
+                      withArrow
+                      multiline
+                      w={220}
+                    >
+                      <ActionIcon
+                        variant="transparent"
+                        size="xs"
+                        color="gray"
+                        className="opacity-50 transition-opacity hover:opacity-100"
+                      >
+                        <IconInfoCircle size={14} />
+                      </ActionIcon>
+                    </Tooltip>
+                  )}
+                </div>
               </div>
-            </div>
             </div>
 
             <div className="grid grid-cols-2 gap-x-3 gap-y-2.5 border-t border-white/6 pt-3">
-                <div className="min-w-0">
-                  <div className="text-[9px] font-semibold uppercase tracking-[0.18em] text-[var(--rp-muted-2)]">
-                    Language
-                  </div>
-                  <Text size="sm" c="var(--rp-text)" fw={600} className="mt-1 leading-5">
-                    {languageLine}
-                  </Text>
+              <div className="min-w-0">
+                <div className="text-[9px] font-semibold uppercase tracking-[0.18em] text-[var(--rp-muted-2)]">
+                  Language
                 </div>
-                <div className="min-w-0">
-                  <div className="text-[9px] font-semibold uppercase tracking-[0.18em] text-[var(--rp-muted-2)]">
-                    Quality
-                  </div>
-                  <Text size="sm" c="var(--rp-text)" fw={600} className="mt-1 leading-5">
-                    {qualityLine}
-                  </Text>
+                <Text size="sm" c="var(--rp-text)" fw={600} className="mt-1 leading-5">
+                  {languageLine}
+                </Text>
+              </div>
+              <div className="min-w-0">
+                <div className="text-[9px] font-semibold uppercase tracking-[0.18em] text-[var(--rp-muted-2)]">
+                  Quality
                 </div>
-                <div className="min-w-0 col-span-2">
-                  <div className="text-[9px] font-semibold uppercase tracking-[0.18em] text-[var(--rp-muted-2)]">
-                    Freshness
-                  </div>
-                  <Text size="sm" c="var(--rp-text)" fw={600} className="mt-1 leading-5">
-                    {signalLine ?? "Awaiting check"}
-                  </Text>
+                <Text size="sm" c="var(--rp-text)" fw={600} className="mt-1 leading-5">
+                  {qualityLine}
+                </Text>
+              </div>
+              <div className="min-w-0 col-span-2">
+                <div className="text-[9px] font-semibold uppercase tracking-[0.18em] text-[var(--rp-muted-2)]">
+                  Freshness
                 </div>
+                <Text size="sm" c="var(--rp-text)" fw={600} className="mt-1 leading-5">
+                  {signalLine ?? "Awaiting check"}
+                </Text>
+              </div>
             </div>
 
             <div className="mt-auto min-w-0 border-t border-white/6 pt-3">
@@ -349,8 +349,8 @@ export function StationCard({
             leftSection={<IconPlayerPlayFilled size={16} />}
             variant="filled"
             className="flex-1 text-white border-0 hover:-translate-y-[1px] transition-all active:translate-y-0"
-              style={{
-                background: isCurrent
+            style={{
+              background: isCurrent
                 ? 'linear-gradient(135deg, #f5b12d 0%, #ffc857 100%)'
                 : 'linear-gradient(135deg, #171b24 0%, #202636 100%)',
               color: isCurrent ? '#0b0c10' : 'var(--rp-text)',

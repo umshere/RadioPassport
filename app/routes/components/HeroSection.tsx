@@ -242,7 +242,7 @@ function normalizeHeroDisplayText(value: string) {
   if (/%[0-9A-Fa-f]{2}/.test(normalized)) {
     try {
       normalized = decodeURIComponent(normalized);
-    } catch {}
+    } catch { }
   }
 
   if (normalized.includes("+")) {
@@ -581,11 +581,11 @@ function ElasticHeroText({
       style={
         canRenderInteractive
           ? {
-              letterSpacing: letterSpacing ? `${letterSpacing}px` : undefined,
-              position: "relative",
-              display: as === "span" ? "inline-block" : "block",
-              height: `${lines!.length * lineHeight}px`,
-            }
+            letterSpacing: letterSpacing ? `${letterSpacing}px` : undefined,
+            position: "relative",
+            display: as === "span" ? "inline-block" : "block",
+            height: `${lines!.length * lineHeight}px`,
+          }
           : undefined
       }
       onPointerMove={canRenderInteractive ? handlePointerMove : undefined}
@@ -751,9 +751,8 @@ function HeroSignalSnippet({
       transition={{ duration: isActive ? 4.8 : 7.4 + snippet.repulsion / 12, repeat: Infinity, ease: "easeInOut" }}
     >
       <div
-        className={`mb-1 font-semibold uppercase tracking-[0.24em] ${
-          isActive ? "text-[11px] text-[rgba(245,177,45,0.96)]" : "text-[10px] text-[rgba(245,177,45,0.68)]"
-        }`}
+        className={`mb-1 font-semibold uppercase tracking-[0.24em] ${isActive ? "text-[11px] text-[rgba(245,177,45,0.96)]" : "text-[10px] text-[rgba(245,177,45,0.68)]"
+          }`}
       >
         {snippet.label}
       </div>
@@ -904,15 +903,15 @@ export function HeroSection({
     () =>
       hydratedNowPlaying
         ? [
-            hydratedNowPlaying.stationuuid,
-            hydratedNowPlaying.changeuuid,
-            hydratedNowPlaying.urlResolved,
-            hydratedNowPlaying.url,
-            hydratedNowPlaying.name,
-            hydratedNowPlaying.country,
-          ]
-            .filter(Boolean)
-            .join("|")
+          hydratedNowPlaying.stationuuid,
+          hydratedNowPlaying.changeuuid,
+          hydratedNowPlaying.urlResolved,
+          hydratedNowPlaying.url,
+          hydratedNowPlaying.name,
+          hydratedNowPlaying.country,
+        ]
+          .filter(Boolean)
+          .join("|")
         : "",
     [
       hydratedNowPlaying?.changeuuid,
@@ -989,9 +988,9 @@ export function HeroSection({
     const tags = hydratedNowPlaying?.tagList?.length
       ? hydratedNowPlaying.tagList
       : (hydratedNowPlaying?.tags ?? "")
-          .split(",")
-          .map((value) => value.trim())
-          .filter(Boolean);
+        .split(",")
+        .map((value) => value.trim())
+        .filter(Boolean);
     return tags.slice(0, 3).join(" • ");
   }, [hydratedNowPlaying?.tagList, hydratedNowPlaying?.tags]);
   const heroStationFacts = useMemo(
@@ -1096,6 +1095,7 @@ export function HeroSection({
   const showHeroInsightCloud =
     hydratedInsightsOpen &&
     Boolean(heroArtworkSrc || hydratedNowPlaying || heroTrackLine || aiTrivia.trivia || freeTrivia.trivia || heroInsightLinks.length);
+  const showMobileHeroInsight = showHeroInsightCloud && !isLg;
   const canRenderHeroInsightCloudItems = showHeroInsightCloud && hasMeasuredInsightCloud;
   const hasHeroCardArtwork = Boolean(heroArtworkSrc && !heroArtworkFailed);
   const insightCloudWidth = heroInsightCloudWidth || 640;
@@ -1427,6 +1427,15 @@ export function HeroSection({
     const fullFits = fitsPretextWidth("Quick Retune", HERO_CTA_FONT, fullWidthBudget - primaryAllowance, 48);
     return fullFits ? "Quick Retune" : "Retune";
   }, [ctaRowWidth]);
+  const toggleHeroInsights = () => {
+    if (hydratedInsightsOpen) {
+      setInsightsOpen(false);
+      setHeroInsightExpanded(false);
+      return;
+    }
+    setAiTriviaExpanded(true);
+    setInsightsOpen(true);
+  };
   const heroNoteStatus = useMemo(() => {
     if (heroNoteWidth <= 0) return "Live now";
     const chromeAllowance = 26 + 8 + 16 + 18;
@@ -1469,21 +1478,21 @@ export function HeroSection({
       left: leftPhrases.length
         ? leftPhrases
         : [
-            "Early notes drift in before the route card turns.",
-            "Passport stamps wake with a soft crate-dig hiss.",
-          ],
+          "Early notes drift in before the route card turns.",
+          "Passport stamps wake with a soft crate-dig hiss.",
+        ],
       center: centerPhrases.length
         ? centerPhrases
         : [
-            "The dial moves, the copy reflows, the atlas stays composed.",
-            "Live metadata bends through the center lane without shifting the poster.",
-          ],
+          "The dial moves, the copy reflows, the atlas stays composed.",
+          "Live metadata bends through the center lane without shifting the poster.",
+        ],
       right: rightPhrases.length
         ? rightPhrases
         : [
-            `${country} is glowing on the dial right now.`,
-            "Country context lands like a field note instead of a data dump.",
-          ],
+          `${country} is glowing on the dial right now.`,
+          "Country context lands like a field note instead of a data dump.",
+        ],
     };
   }, [
     featureCountryLabel,
@@ -1846,19 +1855,17 @@ export function HeroSection({
               initial={false}
               animate={{
                 clipPath: heroInsightExpanded
-                  ? `inset(${Math.max(0, heroInsightCardLayout.cardTop + 2)}px ${
-                      Math.max(
-                        0,
-                        insightCloudWidth - (heroInsightCardLayout.cardLeft + heroInsightCardLayout.cardWidth) + 2
-                      )
-                    }px ${
-                      Math.max(
-                        0,
-                        insightCloudHeight -
-                          (heroInsightCardLayout.cardTop + heroInsightCardLayout.cardHeight) +
-                          2
-                      )
-                    }px ${Math.max(0, heroInsightCardLayout.cardLeft + 2)}px round 2rem)`
+                  ? `inset(${Math.max(0, heroInsightCardLayout.cardTop + 2)}px ${Math.max(
+                    0,
+                    insightCloudWidth - (heroInsightCardLayout.cardLeft + heroInsightCardLayout.cardWidth) + 2
+                  )
+                  }px ${Math.max(
+                    0,
+                    insightCloudHeight -
+                    (heroInsightCardLayout.cardTop + heroInsightCardLayout.cardHeight) +
+                    2
+                  )
+                  }px ${Math.max(0, heroInsightCardLayout.cardLeft + 2)}px round 2rem)`
                   : "inset(0px 0px 0px 0px round 0rem)",
               }}
               transition={{ duration: 0.34, ease: [0.22, 1, 0.36, 1] }}
@@ -1877,10 +1884,10 @@ export function HeroSection({
                     key={item.id}
                     {...(item.href
                       ? {
-                          href: item.href,
-                          target: "_blank",
-                          rel: "noreferrer",
-                        }
+                        href: item.href,
+                        target: "_blank",
+                        rel: "noreferrer",
+                      }
                       : {})}
                     initial={false}
                     animate={{
@@ -1910,11 +1917,10 @@ export function HeroSection({
                     onClick={(event: React.MouseEvent<HTMLElement>) => event.stopPropagation()}
                   >
                     <div
-                      className={`rounded-[1.45rem] border px-3 py-2 shadow-[0_16px_30px_rgba(0,0,0,0.18)] ${
-                        heroInsightExpanded
+                      className={`rounded-[1.45rem] border px-3 py-2 shadow-[0_16px_30px_rgba(0,0,0,0.18)] ${heroInsightExpanded
                           ? "border-[rgba(245,177,45,0.1)] bg-[linear-gradient(180deg,rgba(20,22,30,0.74)_0%,rgba(14,16,22,0.6)_100%)] backdrop-blur-[6px]"
                           : "border-[rgba(245,177,45,0.12)] bg-[linear-gradient(180deg,rgba(8,10,16,0.2)_0%,rgba(8,10,16,0.28)_100%)] backdrop-blur-[10px]"
-                      }`}
+                        }`}
                     >
                       <div className="flex items-center gap-2">
                         {Icon ? <Icon size={12} className="text-[var(--rp-gold)]" /> : null}
@@ -1990,143 +1996,143 @@ export function HeroSection({
                     exit={{ opacity: 0, y: 8 }}
                     transition={{ duration: 0.28, delay: 0.22, ease: "easeOut" }}
                   >
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="min-w-0 flex-1">
-                      <div className="text-[10px] font-semibold uppercase tracking-[0.24em] text-[var(--rp-gold)]">
-                        Listening story
-                      </div>
-                      <div className="mt-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-[rgba(247,240,224,0.58)]">
-                        {heroInsightSourceLabel}
-                      </div>
-                    </div>
-                    <div className="flex items-start gap-2">
-                      {hasHeroCardArtwork ? (
-                        <div className="mr-1 overflow-hidden rounded-[1.15rem] border border-white/12 shadow-[0_16px_30px_rgba(0,0,0,0.32)]">
-                          <img
-                            src={heroArtworkSrc ?? ""}
-                            alt=""
-                            aria-hidden="true"
-                            className="h-[4.65rem] w-[4.65rem] object-cover"
-                          />
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="min-w-0 flex-1">
+                        <div className="text-[10px] font-semibold uppercase tracking-[0.24em] text-[var(--rp-gold)]">
+                          Listening story
                         </div>
-                      ) : null}
-                      {heroInsightHeaderLinks.map((link) => {
-                        const Icon = renderHeroLinkIcon(link.kind);
-                        return (
-                          <a
-                            key={`header-${link.url}`}
-                            href={link.url}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-[rgba(245,177,45,0.14)] bg-[rgba(255,255,255,0.04)] text-[var(--rp-gold)]"
-                            aria-label={link.label}
-                            title={link.label}
-                            onClick={(event) => event.stopPropagation()}
-                          >
-                            <Icon size={13} />
-                          </a>
-                        );
-                      })}
-                      {featureCountryCode ? (
-                        <div className="rounded-[1rem] border border-white/10 bg-[rgba(255,255,255,0.04)] px-2 py-1.5">
-                          <div className="flex items-center gap-2">
-                            <CountryFlag iso={featureCountryCode} size={16} rounded />
-                            {heroInsightTopBadges.length > 0 ? (
-                              <div className="flex flex-wrap gap-1.5">
-                                {heroInsightTopBadges.map((badge) => (
-                                  <span
-                                    key={badge}
-                                    className="rounded-full border border-[rgba(245,177,45,0.14)] bg-[rgba(255,255,255,0.03)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-[rgba(247,240,224,0.72)]"
-                                  >
-                                    {badge}
-                                  </span>
-                                ))}
-                              </div>
-                            ) : null}
-                          </div>
+                        <div className="mt-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-[rgba(247,240,224,0.58)]">
+                          {heroInsightSourceLabel}
                         </div>
-                      ) : null}
-                      <button
-                        type="button"
-                        className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-[rgba(255,255,255,0.04)] text-[rgba(247,240,224,0.68)] hover:text-[var(--rp-text)]"
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          closeHeroInsightCard();
-                        }}
-                        aria-label="Close listening story"
-                      >
-                        <IconX size={14} />
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="mt-4 max-w-[36rem] space-y-2">
-                    <div
-                      className="max-w-[34rem] text-[1.72rem] font-semibold leading-tight text-[var(--rp-text)]"
-                      title={heroInsightHeadingFull !== heroInsightHeading ? heroInsightHeadingFull : undefined}
-                    >
-                      {heroInsightHeading}
-                    </div>
-                    {heroInsightSubline ? (
-                      <div className="text-[12px] font-medium uppercase tracking-[0.16em] text-[rgba(247,240,224,0.48)]">
-                        {heroInsightSubline}
                       </div>
-                    ) : null}
-                  </div>
-
-                  <div className="mt-4 max-w-[36rem]">
-                    <PretextMeasuredText
-                      text={heroInsightSummary}
-                      font={PRETEXT_HERO_FONT}
-                      lineHeight={23}
-                      collapsedLines={6}
-                      lineClassName="text-[15px] font-medium leading-[1.48] text-[rgba(247,240,224,0.9)]"
-                      fallbackClassName="text-[15px] font-medium leading-[1.48] text-[rgba(247,240,224,0.9)]"
-                      />
-                    </div>
-                  <div
-                    className="mt-5 rounded-[1.6rem] border border-[rgba(245,177,45,0.08)] bg-[rgba(255,255,255,0.02)] px-4 py-4"
-                    style={{ minHeight: `${heroInsightCardLayout.metadataHeight}px` }}
-                  >
-                    <motion.div
-                      initial={{ opacity: 0, y: 8 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: 4 }}
-                      transition={{ duration: 0.24, delay: 0.26, ease: "easeOut" }}
-                      className="grid grid-cols-2 gap-3"
-                    >
-                      {heroCardMetadataItems.map((item) => {
-                        const FactIcon = renderHeroFactIcon(item.concept);
-                        return (
-                          <div
-                            key={`card-${item.label}-${item.value}`}
-                            className="rounded-[1.2rem] border border-[rgba(245,177,45,0.1)] bg-[linear-gradient(180deg,rgba(20,22,30,0.6)_0%,rgba(14,16,22,0.48)_100%)] px-3 py-2"
-                          >
-                            <div className="flex items-center gap-2">
-                              <span className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-[rgba(245,177,45,0.12)] bg-[rgba(255,255,255,0.03)] text-[var(--rp-gold)]">
-                                <FactIcon size={12} />
-                              </span>
-                              <div
-                                className="text-[9px] font-semibold uppercase tracking-[0.2em] text-[var(--rp-gold)]"
-                                style={{ letterSpacing: "0.16em" }}
-                              >
-                                {item.shortLabel}
-                              </div>
-                            </div>
-                            <PretextMeasuredText
-                              text={item.value}
-                              font={HERO_CLOUD_TEXT_FONT}
-                              lineHeight={17}
-                              collapsedLines={2}
-                              className="mt-1"
-                              lineClassName="text-[12px] font-medium leading-[1.35] text-[rgba(247,240,224,0.84)]"
-                              fallbackClassName="text-[12px] font-medium leading-[1.35] text-[rgba(247,240,224,0.84)]"
+                      <div className="flex items-start gap-2">
+                        {hasHeroCardArtwork ? (
+                          <div className="mr-1 overflow-hidden rounded-[1.15rem] border border-white/12 shadow-[0_16px_30px_rgba(0,0,0,0.32)]">
+                            <img
+                              src={heroArtworkSrc ?? ""}
+                              alt=""
+                              aria-hidden="true"
+                              className="h-[4.65rem] w-[4.65rem] object-cover"
                             />
                           </div>
-                        );
-                      })}
-                    </motion.div>
-                  </div>
+                        ) : null}
+                        {heroInsightHeaderLinks.map((link) => {
+                          const Icon = renderHeroLinkIcon(link.kind);
+                          return (
+                            <a
+                              key={`header-${link.url}`}
+                              href={link.url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-[rgba(245,177,45,0.14)] bg-[rgba(255,255,255,0.04)] text-[var(--rp-gold)]"
+                              aria-label={link.label}
+                              title={link.label}
+                              onClick={(event) => event.stopPropagation()}
+                            >
+                              <Icon size={13} />
+                            </a>
+                          );
+                        })}
+                        {featureCountryCode ? (
+                          <div className="rounded-[1rem] border border-white/10 bg-[rgba(255,255,255,0.04)] px-2 py-1.5">
+                            <div className="flex items-center gap-2">
+                              <CountryFlag iso={featureCountryCode} size={16} rounded />
+                              {heroInsightTopBadges.length > 0 ? (
+                                <div className="flex flex-wrap gap-1.5">
+                                  {heroInsightTopBadges.map((badge) => (
+                                    <span
+                                      key={badge}
+                                      className="rounded-full border border-[rgba(245,177,45,0.14)] bg-[rgba(255,255,255,0.03)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-[rgba(247,240,224,0.72)]"
+                                    >
+                                      {badge}
+                                    </span>
+                                  ))}
+                                </div>
+                              ) : null}
+                            </div>
+                          </div>
+                        ) : null}
+                        <button
+                          type="button"
+                          className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-[rgba(255,255,255,0.04)] text-[rgba(247,240,224,0.68)] hover:text-[var(--rp-text)]"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            closeHeroInsightCard();
+                          }}
+                          aria-label="Close listening story"
+                        >
+                          <IconX size={14} />
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="mt-4 max-w-[36rem] space-y-2">
+                      <div
+                        className="max-w-[34rem] text-[1.72rem] font-semibold leading-tight text-[var(--rp-text)]"
+                        title={heroInsightHeadingFull !== heroInsightHeading ? heroInsightHeadingFull : undefined}
+                      >
+                        {heroInsightHeading}
+                      </div>
+                      {heroInsightSubline ? (
+                        <div className="text-[12px] font-medium uppercase tracking-[0.16em] text-[rgba(247,240,224,0.48)]">
+                          {heroInsightSubline}
+                        </div>
+                      ) : null}
+                    </div>
+
+                    <div className="mt-4 max-w-[36rem]">
+                      <PretextMeasuredText
+                        text={heroInsightSummary}
+                        font={PRETEXT_HERO_FONT}
+                        lineHeight={23}
+                        collapsedLines={6}
+                        lineClassName="text-[15px] font-medium leading-[1.48] text-[rgba(247,240,224,0.9)]"
+                        fallbackClassName="text-[15px] font-medium leading-[1.48] text-[rgba(247,240,224,0.9)]"
+                      />
+                    </div>
+                    <div
+                      className="mt-5 rounded-[1.6rem] border border-[rgba(245,177,45,0.08)] bg-[rgba(255,255,255,0.02)] px-4 py-4"
+                      style={{ minHeight: `${heroInsightCardLayout.metadataHeight}px` }}
+                    >
+                      <motion.div
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 4 }}
+                        transition={{ duration: 0.24, delay: 0.26, ease: "easeOut" }}
+                        className="grid grid-cols-2 gap-3"
+                      >
+                        {heroCardMetadataItems.map((item) => {
+                          const FactIcon = renderHeroFactIcon(item.concept);
+                          return (
+                            <div
+                              key={`card-${item.label}-${item.value}`}
+                              className="rounded-[1.2rem] border border-[rgba(245,177,45,0.1)] bg-[linear-gradient(180deg,rgba(20,22,30,0.6)_0%,rgba(14,16,22,0.48)_100%)] px-3 py-2"
+                            >
+                              <div className="flex items-center gap-2">
+                                <span className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-[rgba(245,177,45,0.12)] bg-[rgba(255,255,255,0.03)] text-[var(--rp-gold)]">
+                                  <FactIcon size={12} />
+                                </span>
+                                <div
+                                  className="text-[9px] font-semibold uppercase tracking-[0.2em] text-[var(--rp-gold)]"
+                                  style={{ letterSpacing: "0.16em" }}
+                                >
+                                  {item.shortLabel}
+                                </div>
+                              </div>
+                              <PretextMeasuredText
+                                text={item.value}
+                                font={HERO_CLOUD_TEXT_FONT}
+                                lineHeight={17}
+                                collapsedLines={2}
+                                className="mt-1"
+                                lineClassName="text-[12px] font-medium leading-[1.35] text-[rgba(247,240,224,0.84)]"
+                                fallbackClassName="text-[12px] font-medium leading-[1.35] text-[rgba(247,240,224,0.84)]"
+                              />
+                            </div>
+                          );
+                        })}
+                      </motion.div>
+                    </div>
                   </motion.div>
                 </motion.div>
               ) : null}
@@ -2211,21 +2217,23 @@ export function HeroSection({
               />
             </motion.div>
 
-            <ElasticHeroText
-              as="p"
-              text="Tune into live radio from every country, then follow a clear route into local stations, listening notes, and country-level discovery."
-              font={heroBodyFont}
-              lineHeight={isLg ? 28 : 24}
-              enabled={canUseInteractiveNotes}
-              radius={176}
-              strength={20}
-              spring={{ stiffness: 110, damping: 18, mass: 0.56 }}
-              rotateSpring={{ stiffness: 96, damping: 18, mass: 0.52 }}
-              rotateFactor={1.55}
-              scaleBoost={0.024}
-              velocityBoost={0.22}
-              className="mt-3 max-w-xl text-[15px] font-medium leading-6 text-[var(--rp-muted)] sm:text-[17px]"
-            />
+            {!showMobileHeroInsight ? (
+              <ElasticHeroText
+                as="p"
+                text="Tune into live radio from every country, then follow a clear route into local stations, listening notes, and country-level discovery."
+                font={heroBodyFont}
+                lineHeight={isLg ? 28 : 24}
+                enabled={canUseInteractiveNotes}
+                radius={176}
+                strength={20}
+                spring={{ stiffness: 110, damping: 18, mass: 0.56 }}
+                rotateSpring={{ stiffness: 96, damping: 18, mass: 0.52 }}
+                rotateFactor={1.55}
+                scaleBoost={0.024}
+                velocityBoost={0.22}
+                className="mt-3 max-w-xl text-[15px] font-medium leading-6 text-[var(--rp-muted)] sm:text-[17px]"
+              />
+            ) : null}
 
             <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-2 text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--rp-muted-2)]">
               <ElasticHeroText
@@ -2285,32 +2293,34 @@ export function HeroSection({
               />
             </div>
 
-            <div className="relative mt-3 h-[3.5rem] max-w-[27rem]">
-              <div className="pointer-events-none absolute inset-x-0 top-0 rounded-full border border-[rgba(245,177,45,0.14)] bg-[rgba(8,10,16,0.3)] px-4 py-2 shadow-[0_14px_28px_rgba(0,0,0,0.18)] backdrop-blur-sm">
-                <div className="mb-1 flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--rp-gold)]">
-                  <span className="text-[11px]">♪</span>
-                  Signal script
+            {!showMobileHeroInsight ? (
+              <div className="relative mt-3 h-[3.5rem] max-w-[27rem]">
+                <div className="pointer-events-none absolute inset-x-0 top-0 rounded-full border border-[rgba(245,177,45,0.14)] bg-[rgba(8,10,16,0.3)] px-4 py-2 shadow-[0_14px_28px_rgba(0,0,0,0.18)] backdrop-blur-sm">
+                  <div className="mb-1 flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--rp-gold)]">
+                    <span className="text-[11px]">♪</span>
+                    Signal script
+                  </div>
+                  <AnimatePresence initial={false} mode="wait">
+                    <motion.div
+                      key={heroSignalDisplayText}
+                      initial={{ opacity: 0, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -4 }}
+                      transition={{ duration: 0.24, ease: "easeOut" }}
+                    >
+                      <PretextMeasuredText
+                        text={heroSignalDisplayText}
+                        font={HERO_SIGNAL_FONT}
+                        lineHeight={18}
+                        collapsedLines={2}
+                        lineClassName="text-[13px] font-medium text-[rgba(247,240,224,0.82)]"
+                        fallbackClassName="text-[13px] font-medium text-[rgba(247,240,224,0.82)]"
+                      />
+                    </motion.div>
+                  </AnimatePresence>
                 </div>
-                <AnimatePresence initial={false} mode="wait">
-                  <motion.div
-                    key={heroSignalDisplayText}
-                    initial={{ opacity: 0, y: 6 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -4 }}
-                    transition={{ duration: 0.24, ease: "easeOut" }}
-                  >
-                    <PretextMeasuredText
-                      text={heroSignalDisplayText}
-                      font={HERO_SIGNAL_FONT}
-                      lineHeight={18}
-                      collapsedLines={2}
-                      lineClassName="text-[13px] font-medium text-[rgba(247,240,224,0.82)]"
-                      fallbackClassName="text-[13px] font-medium text-[rgba(247,240,224,0.82)]"
-                    />
-                  </motion.div>
-                </AnimatePresence>
               </div>
-            </div>
+            ) : null}
 
             <div className="mt-5 max-w-2xl">
               <div className="relative group">
@@ -2374,6 +2384,122 @@ export function HeroSection({
                 <IconCompass size={18} className="text-[var(--rp-gold)]" />
                 {quickRetuneLabel}
               </button>
+
+              {!isLg && showHeroInsightCloud ? (
+                <button
+                  type="button"
+                  className={`flex h-12 items-center gap-2 rounded-full border px-5 text-sm font-semibold transition-all ${hydratedInsightsOpen
+                    ? "border-[rgba(245,177,45,0.42)] bg-[rgba(245,177,45,0.14)] text-[var(--rp-gold)]"
+                    : "border-white/10 bg-black/40 text-[var(--rp-text)] hover:bg-black/60"}`}
+                  onClick={toggleHeroInsights}
+                  aria-pressed={hydratedInsightsOpen}
+                >
+                  <IconSparkles size={17} className="text-[var(--rp-gold)]" />
+                  {hydratedInsightsOpen ? "Hide Story" : "Open Story"}
+                </button>
+              ) : null}
+
+              {showMobileHeroInsight ? (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.26, ease: "easeOut" }}
+                  className="w-full rounded-[1.65rem] border border-[rgba(245,177,45,0.18)] bg-[linear-gradient(180deg,rgba(12,14,18,0.88)_0%,rgba(14,17,24,0.82)_100%)] p-4 shadow-[0_18px_44px_rgba(0,0,0,0.38)] backdrop-blur-xl"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <div className="text-[10px] font-semibold uppercase tracking-[0.24em] text-[var(--rp-gold)]">
+                        Listening story
+                      </div>
+                      <div className="mt-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-[rgba(247,240,224,0.56)]">
+                        {heroInsightSourceLabel}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-[rgba(255,255,255,0.04)] text-[rgba(247,240,224,0.68)]"
+                      onClick={toggleHeroInsights}
+                      aria-label="Hide listening story"
+                    >
+                      <IconX size={14} />
+                    </button>
+                  </div>
+
+                  <div className="mt-3 flex items-start gap-3">
+                    {hasHeroCardArtwork ? (
+                      <div className="overflow-hidden rounded-[1rem] border border-white/12 shadow-[0_12px_24px_rgba(0,0,0,0.28)]">
+                        <img
+                          src={heroArtworkSrc ?? ""}
+                          alt=""
+                          aria-hidden="true"
+                          className="h-14 w-14 object-cover"
+                        />
+                      </div>
+                    ) : null}
+                    <div className="min-w-0 flex-1">
+                      <PretextMeasuredText
+                        text={heroInsightHeadingFull}
+                        font={HERO_INSIGHT_TITLE_FONT}
+                        lineHeight={34}
+                        collapsedLines={2}
+                        lineClassName="text-[1.3rem] font-semibold leading-tight text-[var(--rp-text)]"
+                        fallbackClassName="text-[1.3rem] font-semibold leading-tight text-[var(--rp-text)]"
+                      />
+                      {heroInsightSubline ? (
+                        <div className="mt-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-[rgba(247,240,224,0.48)]">
+                          {heroInsightSubline}
+                        </div>
+                      ) : null}
+                    </div>
+                  </div>
+
+                  <div className="mt-3">
+                    <PretextMeasuredText
+                      text={heroInsightSummary}
+                      font={PRETEXT_HERO_FONT}
+                      lineHeight={21}
+                      collapsedLines={3}
+                      expandable
+                      moreLabel="Expand note"
+                      lessLabel="Collapse note"
+                      lineClassName="text-[14px] font-medium leading-[1.45] text-[rgba(247,240,224,0.88)]"
+                      fallbackClassName="text-[14px] font-medium leading-[1.45] text-[rgba(247,240,224,0.88)]"
+                    />
+                  </div>
+
+                  {heroCardMetadataItems.length > 0 ? (
+                    <div className="mt-3 grid grid-cols-2 gap-2">
+                      {heroCardMetadataItems.slice(0, isSm ? 4 : 2).map((item) => {
+                        const FactIcon = renderHeroFactIcon(item.concept);
+                        return (
+                          <div
+                            key={`mobile-${item.label}-${item.value}`}
+                            className="rounded-[1.1rem] border border-[rgba(245,177,45,0.1)] bg-[rgba(255,255,255,0.03)] px-3 py-2"
+                          >
+                            <div className="flex items-center gap-2">
+                              <span className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-[rgba(245,177,45,0.12)] bg-[rgba(255,255,255,0.03)] text-[var(--rp-gold)]">
+                                <FactIcon size={12} />
+                              </span>
+                              <div className="text-[9px] font-semibold uppercase tracking-[0.18em] text-[var(--rp-gold)]">
+                                {item.shortLabel}
+                              </div>
+                            </div>
+                            <PretextMeasuredText
+                              text={item.value}
+                              font={HERO_CLOUD_TEXT_FONT}
+                              lineHeight={16}
+                              collapsedLines={2}
+                              className="mt-1"
+                              lineClassName="text-[12px] font-medium leading-[1.35] text-[rgba(247,240,224,0.84)]"
+                              fallbackClassName="text-[12px] font-medium leading-[1.35] text-[rgba(247,240,224,0.84)]"
+                            />
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : null}
+                </motion.div>
+              ) : null}
 
             </div>
           </div>

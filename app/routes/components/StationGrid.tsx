@@ -28,7 +28,7 @@ export function StationGrid({
   emptyMessage,
   unavailableIds,
 }: StationGridProps) {
-  const isMobile = useMediaQuery("(max-width: 639px)");
+  const isMobile = useMediaQuery("(max-width: 639px)", false, { getInitialValueInEffect: true });
 
   if (isFetchingExplore) {
     return <SkeletonGrid count={6} />;
@@ -65,7 +65,7 @@ export function StationGrid({
 
   // Desktop: Use grid view
   return (
-    <div id="station-grid" className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+    <div id="station-grid" className="grid grid-cols-1 gap-4 pt-2 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
       {stations.map((station, index) => {
         const isCurrent = nowPlaying?.uuid === station.uuid;
         const isFavorite = favoriteStationIds?.has(station.uuid) ?? false;

@@ -8,6 +8,9 @@ interface StationArtworkProps {
     fallbackClassName?: string;
     alt?: string;
     fallbackStyle?: React.CSSProperties;
+    loading?: "lazy" | "eager";
+    decoding?: "async" | "sync" | "auto";
+    sizes?: string;
 }
 
 export function StationArtwork({
@@ -15,7 +18,10 @@ export function StationArtwork({
     className = "w-full h-full object-cover",
     fallbackClassName = "w-full h-full flex items-center justify-center text-white font-bold",
     alt = "artwork",
-    fallbackStyle
+    fallbackStyle,
+    loading = "lazy",
+    decoding = "async",
+    sizes,
 }: StationArtworkProps) {
     const [imgFailed, setImgFailed] = useState(false);
 
@@ -54,6 +60,9 @@ export function StationArtwork({
                 src={artworkUrl}
                 alt={alt}
                 className={className}
+                loading={loading}
+                decoding={decoding}
+                sizes={sizes}
                 onError={() => setImgFailed(true)}
             />
         );
