@@ -5,20 +5,24 @@ import { Vector3 } from "three";
 
 import type { SceneComponent } from "./types";
 
-function getNumericOption(source: Record<string, unknown> | null | undefined, key: string) {
-  if (!source) return undefined;
-  const candidate = source[key];
-  return typeof candidate === "number" && Number.isFinite(candidate) ? candidate : undefined;
-}
-
-function getStringOption(source: Record<string, unknown> | null | undefined, key: string) {
-  if (!source) return undefined;
-  const candidate = source[key];
-  return typeof candidate === "string" ? candidate : undefined;
-}
-
 const GLOBE_RADIUS = 2.4;
 const MARKER_BASE_SCALE = 0.055;
+
+function getAnimationPreset(animation?: string | null) {
+  const key = animation?.trim().toLowerCase().replace(/[_\s]+/g, "-") ?? "";
+
+  switch (key) {
+    case "slow-pan":
+      return { rotationSpeed: 0.08, markerColor: "#e9ecef" };
+    case "cascade-drop":
+      return { rotationSpeed: 0.18, markerColor: "#ffd8a8" };
+    case "sunrise-spin":
+      return { rotationSpeed: 0.22, markerColor: "#fff3bf" };
+    case "slow-orbit":
+    default:
+      return { rotationSpeed: 0.12, markerColor: "#f8f9fa" };
+  }
+}
 
 function hashToRange(seed: string, min: number, max: number) {
   let hash = 0;
@@ -124,10 +128,9 @@ const GlobeContent = ({
   activeStationId?: Parameters<SceneComponent>[0]["activeStationId"];
 }) => {
   const rotationGroup = useRef<Group>(null);
+  const animationPreset = useMemo(() => getAnimationPreset(descriptor.animation), [descriptor.animation]);
 
-  const rotationSpeed = useMemo(() => {
-    return getNumericOption(descriptor.animation, "rotationSpeed") ?? 0.12;
-  }, [descriptor.animation]);
+  const rotationSpeed = animationPreset.rotationSpeed;
 
   useFrame((_, delta) => {
     if (rotationGroup.current) {
@@ -135,13 +138,7 @@ const GlobeContent = ({
     }
   });
 
-  const markerColor = useMemo(() => {
-    const candidate = getStringOption(descriptor.animation, "markerColor");
-    if (candidate && candidate.trim().length > 0) {
-      return candidate;
-    }
-    return "#f8f9fa";
-  }, [descriptor.animation]);
+  const markerColor = animationPreset.markerColor;
 
   const markerPositions = useMemo(() => {
     return descriptor.stations.map((station) => {

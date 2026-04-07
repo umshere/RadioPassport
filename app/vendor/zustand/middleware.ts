@@ -17,9 +17,11 @@ export function persist<T extends object>(
   options: PersistOptions<T>
 ): StateCreator<T> {
   return (set, get, api) => {
+    const partializedState =
+      typeof options.partialize === "function" ? options.partialize(get()) : undefined;
     const allowList =
-      typeof options.partialize === "function"
-        ? new Set(Object.keys(options.partialize(get())))
+      partializedState && typeof partializedState === "object"
+        ? new Set(Object.keys(partializedState as Record<string, unknown>))
         : undefined;
 
     const storage = options.storage;

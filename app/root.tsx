@@ -1,7 +1,7 @@
 import type { LinksFunction } from "@remix-run/node";
-import { Links, Meta, Outlet, Scripts, ScrollRestoration, useNavigation } from "@remix-run/react";
+import { isRouteErrorResponse, Link, Links, Meta, Outlet, Scripts, ScrollRestoration, useNavigation, useRouteError } from "@remix-run/react";
 import { MantineProvider, createTheme } from "@mantine/core";
-import { useCallback, useEffect, useRef } from "react";
+import { type ReactNode, useCallback, useEffect, useRef } from "react";
 import { usePlayerStore } from "~/state/playerStore";
 import { isStationTemporarilyUnavailable, useStationAvailabilityStore } from "~/state/stationAvailabilityStore";
 import { isMixedContentStream } from "~/utils/streamHeuristics";
@@ -35,6 +35,37 @@ export const links: LinksFunction = () => [
   { rel: "icon", type: "image/png", sizes: "48x48", href: "/favicon48.png" },
   { rel: "manifest", href: "/manifest.json" },
 ];
+
+function Document({ children, title }: { children: ReactNode; title?: string }) {
+  return (
+    <html lang="en" className="min-h-full" suppressHydrationWarning>
+      <head>
+        <meta charSet="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+        <meta name="theme-color" content="#0b0c10" />
+        <meta name="description" content="Radio Passport: Explore the world's radio stations with an elegant, minimal interface" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link href="https://api.fontshare.com/v2/css?f[]=general-sans@400,500,600,700,800&display=swap" rel="stylesheet" />
+        <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+        {title ? <title>{title}</title> : null}
+        <Meta />
+        <Links />
+      </head>
+      <body
+        className="min-h-screen text-[var(--rp-text)] bg-[var(--rp-bg)]"
+        style={{ background: "var(--rp-bg)" }}
+        suppressHydrationWarning
+      >
+        <MantineProvider theme={theme} defaultColorScheme="light">
+          {children}
+        </MantineProvider>
+        <ScrollRestoration />
+        <Scripts />
+      </body>
+    </html>
+  );
+}
 
 const ocean = [
   "#e1f0ff",
@@ -156,64 +187,98 @@ export default function App() {
   }, []);
 
   return (
-    <html lang="en" className="min-h-full" suppressHydrationWarning>
-      <head>
-        <meta charSet="utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-        <meta name="theme-color" content="#0b0c10" />
-        <meta name="description" content="Radio Passport: Explore the world's radio stations with an elegant, minimal interface" />
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://api.fontshare.com/v2/css?f[]=general-sans@400,500,600,700,800&display=swap" rel="stylesheet" />
-        <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
-        <Meta />
-        <Links />
-      </head>
-      <body
-        className="min-h-screen text-[var(--rp-text)] bg-[var(--rp-bg)]"
-        style={{
-          background: "var(--rp-bg)",
-        }}
-        suppressHydrationWarning
-      >
-        <MantineProvider theme={theme} defaultColorScheme="light">
-          <>
-            {/* Loading progress bar */}
-            {isNavigating && (
-              <div className="fixed top-0 left-0 right-0 z-[200] h-1 bg-[#0b0c10]">
-                <div className="h-full bg-gradient-to-r from-[#f6c86f] via-[#f1aa45] to-[#e99f2b] animate-[loading_1s_ease-in-out_infinite]"
-                  style={{
-                    animation: "loading 1s ease-in-out infinite",
-                    transformOrigin: "left"
-                  }}
-                />
-              </div>
-            )}
-
-            {/* Mobile Sidebar Menu */}
-            <MobileSidebarMenu />
-
-            {/* Global app shell header */}
-            <AppHeader />
-
-            {/* Main content area */}
+    <Document>
+      <>
+        {isNavigating && (
+          <div className="fixed top-0 left-0 right-0 z-[200] h-1 bg-[#0b0c10]">
             <div
-              className="w-full"
-              style={{ paddingBottom: "calc(var(--player-dock-clearance, 0px) + 1.5rem)" }}
-            >
-              <Outlet />
-            </div>
+              className="h-full bg-gradient-to-r from-[#f6c86f] via-[#f1aa45] to-[#e99f2b] animate-[loading_1s_ease-in-out_infinite]"
+              style={{
+                animation: "loading 1s ease-in-out infinite",
+                transformOrigin: "left",
+              }}
+            />
+          </div>
+        )}
 
-            {/* Player surfaces */}
-            <PlayerDock />
-            <TuningOverlay />
-            <GlobalAudioBridge />
-          </>
-        </MantineProvider>
-        <ScrollRestoration />
-        <Scripts />
-      </body>
-    </html>
+        <MobileSidebarMenu />
+        <AppHeader />
+
+        <div
+          className="w-full"
+          style={{ paddingBottom: "calc(var(--player-dock-clearance, 0px) + 1.5rem)" }}
+        >
+          <Outlet />
+        </div>
+
+        <PlayerDock />
+        <TuningOverlay />
+        <GlobalAudioBridge />
+      </>
+    </Document>
+  );
+}
+
+export function ErrorBoundary() {
+  const error = useRouteError();
+
+  let title = "Something went wrong";
+  let message = "The page hit an unexpected problem. You can jump back to the atlas or try reloading this route.";
+  let statusLabel = "Application error";
+  let details: string | null = null;
+
+  if (isRouteErrorResponse(error)) {
+    title = `${error.status} ${error.statusText}`;
+    statusLabel = "Request error";
+    if (typeof error.data === "string" && error.data.trim()) {
+      message = error.data;
+    } else if (error.status === 404) {
+      message = "That page is not available anymore, or the route changed during the redesign.";
+    } else {
+      message = "The route failed to load correctly. Try going back to the home atlas and re-entering this view.";
+    }
+  } else if (error instanceof Error) {
+    message = error.message || message;
+    details = error.stack ?? null;
+  }
+
+  return (
+    <Document title={`${title} | Radio Passport`}>
+      <div className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(245,177,45,0.12),transparent_28%),linear-gradient(180deg,#090b10_0%,#11141b_100%)] px-6 py-10 text-[var(--rp-text)]">
+        <div className="mx-auto flex min-h-[calc(100vh-5rem)] max-w-3xl items-center justify-center">
+          <div className="w-full rounded-[2rem] border border-white/10 bg-[rgba(9,11,16,0.84)] p-8 shadow-[0_24px_80px_rgba(0,0,0,0.35)] backdrop-blur-xl sm:p-10">
+            <div className="inline-flex items-center gap-2 rounded-full border border-[rgba(245,177,45,0.28)] bg-[rgba(245,177,45,0.1)] px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.24em] text-[var(--rp-gold)]">
+              {statusLabel}
+            </div>
+            <h1 className="mt-6 text-3xl font-semibold tracking-tight text-white sm:text-4xl">{title}</h1>
+            <p className="mt-4 max-w-2xl text-base leading-7 text-white/72">{message}</p>
+            <div className="mt-8 flex flex-wrap gap-3">
+              <Link
+                to="/"
+                className="inline-flex items-center rounded-full border border-[rgba(245,177,45,0.38)] bg-[rgba(245,177,45,0.12)] px-5 py-3 text-sm font-semibold text-[var(--rp-gold)]"
+              >
+                Back to Atlas
+              </Link>
+              <button
+                type="button"
+                onClick={() => window.location.reload()}
+                className="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-5 py-3 text-sm font-semibold text-white/78"
+              >
+                Reload Page
+              </button>
+            </div>
+            {details ? (
+              <details className="mt-8 rounded-[1.25rem] border border-white/10 bg-black/20 p-4 text-sm text-white/58">
+                <summary className="cursor-pointer font-semibold text-white/72">Technical details</summary>
+                <pre className="mt-3 overflow-x-auto whitespace-pre-wrap break-words font-mono text-[12px] leading-6 text-white/55">
+                  {details}
+                </pre>
+              </details>
+            ) : null}
+          </div>
+        </div>
+      </div>
+    </Document>
   );
 }
 
