@@ -16,6 +16,7 @@ import {
 } from "@tabler/icons-react";
 import type { Station } from "~/types/radio";
 import { usePlayerStore } from "~/state/playerStore";
+import { sanitizeArtworkUrl } from "~/utils/stations";
 
 type NowPlayingProps = {
   station: Station | null;
@@ -44,6 +45,8 @@ export function NowPlaying({ station, onNext, onPrevious }: NowPlayingProps) {
   const stop = usePlayerStore((state) => state.stop);
 
   if (!station) return null;
+
+  const artworkUrl = sanitizeArtworkUrl(station.favicon);
 
   const handleVolumeChange = (value: number) => {
     setVolume(value / 100);
@@ -92,7 +95,7 @@ export function NowPlaying({ station, onNext, onPrevious }: NowPlayingProps) {
           style={{
             width: "100%",
             height: "180px",
-            backgroundImage: station.favicon ? `url(${station.favicon})` : undefined,
+            backgroundImage: artworkUrl ? `url(${artworkUrl})` : undefined,
             backgroundSize: "cover",
             backgroundPosition: "center",
             display: "flex",
@@ -104,7 +107,7 @@ export function NowPlaying({ station, onNext, onPrevious }: NowPlayingProps) {
             letterSpacing: "0.05em",
           }}
         >
-          {!station.favicon && getFallbackInitials(station.name)}
+          {!artworkUrl && getFallbackInitials(station.name)}
         </div>
       </div>
 

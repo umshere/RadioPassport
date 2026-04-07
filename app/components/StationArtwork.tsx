@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import type { Station } from '~/types/radio';
-import { sanitizeArtworkUrl } from '~/utils/stations';
+import { markArtworkUrlFailed, sanitizeArtworkUrl } from '~/utils/stations';
 
 interface StationArtworkProps {
     station: Partial<Station>;
@@ -63,7 +63,10 @@ export function StationArtwork({
                 loading={loading}
                 decoding={decoding}
                 sizes={sizes}
-                onError={() => setImgFailed(true)}
+                onError={() => {
+                    markArtworkUrlFailed(artworkUrl);
+                    setImgFailed(true);
+                }}
             />
         );
     }

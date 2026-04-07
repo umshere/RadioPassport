@@ -80,6 +80,16 @@ export function useNowPlayingMetadata(
         const res = await fetch(`/api/now-playing?${params.toString()}`, {
           signal: controller.signal,
         });
+        if (!res.ok) {
+          if (cancelled) return;
+          setState({
+            status: res.status === 404 ? "empty" : "error",
+            track: null,
+            message: res.status === 404 ? "Metadata unavailable for this station." : "Unable to read stream metadata.",
+            lastUpdated: Date.now(),
+          });
+          return;
+        }
         const data = (await res.json()) as NowPlayingResponse;
         if (cancelled) return;
 

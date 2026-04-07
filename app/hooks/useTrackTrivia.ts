@@ -86,7 +86,14 @@ export function useTrackTrivia({
     fetch(`/api/now-playing-trivia?${params.toString()}`, {
       signal: controller.signal,
     })
-      .then((res) => res.json() as Promise<TrackTriviaResponse>)
+      .then(async (res) => {
+        if (!res.ok) {
+          return res.status === 404
+            ? ({ status: "empty", reason: "Trivia unavailable." } as TrackTriviaResponse)
+            : ({ status: "error", reason: "Trivia lookup failed." } as TrackTriviaResponse);
+        }
+        return res.json() as Promise<TrackTriviaResponse>;
+      })
       .then((data) => {
         if (controller.signal.aborted) return;
         if (data.status === "ok") {

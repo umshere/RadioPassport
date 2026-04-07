@@ -97,7 +97,9 @@ export function StationDossier({ station, context, loading, onRecommendationClic
                 <div className="w-20 h-20 rounded-2xl overflow-hidden border border-white/10 shadow-2xl relative group shrink-0 ml-4 p-1 bg-black/40">
                     <div className="w-full h-full rounded-xl overflow-hidden relative">
                         {station.favicon ? (
-                            <img src={station.favicon} alt={station.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                            <img src={station.favicon} alt={station.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" onError={(event) => {
+                                event.currentTarget.style.display = 'none';
+                            }} />
                         ) : (
                             <div className="w-full h-full bg-gradient-to-br from-[#12141d] to-black flex items-center justify-center">
                                 <IconBroadcast size={28} className="text-white/20" />

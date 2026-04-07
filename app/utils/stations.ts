@@ -37,6 +37,22 @@ const INVALID_ASSET_TOKENS = new Set([
   "0",
 ]);
 
+const failedArtworkUrls = new Set<string>();
+
+export function markArtworkUrlFailed(url?: string | null) {
+  if (!url) return;
+  const normalized = sanitizeArtworkUrl(url);
+  if (normalized) {
+    failedArtworkUrls.add(normalized);
+  }
+}
+
+export function isKnownFailedArtworkUrl(url?: string | null) {
+  if (!url) return false;
+  const normalized = sanitizeArtworkUrl(url);
+  return normalized ? failedArtworkUrls.has(normalized) : false;
+}
+
 export function sanitizeArtworkUrl(url?: string | null): string | null {
   if (typeof url !== "string") return null;
   const trimmed = url.trim();
@@ -47,7 +63,7 @@ export function sanitizeArtworkUrl(url?: string | null): string | null {
     /^\//.test(trimmed) ||
     /^data:image\//i.test(trimmed)
   ) {
-    return trimmed;
+    return failedArtworkUrls.has(trimmed) ? null : trimmed;
   }
   return null;
 }

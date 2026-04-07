@@ -141,16 +141,8 @@ export async function loader({ request }: LoaderFunctionArgs) {
     const rawStations =
       stationsResult.status === "fulfilled" ? stationsResult.value : null;
 
-    if (countriesResult.status === "rejected") {
-      console.error("Failed to load countries:", countriesResult.reason);
-    }
-
     if (!rawStations) {
-      if (stationsResult.status === "rejected") {
-        console.error("Failed to load stations:", stationsResult.reason);
-      } else {
-        console.warn("Stations unavailable from all mirrors; continuing with countries.");
-      }
+      // Expected fallback path when RadioBrowser mirrors are flaky.
     } else if (country) {
       const normalized = normalizeStations(
         Array.isArray(rawStations) ? rawStations : []
@@ -171,8 +163,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
         },
       }
     );
-  } catch (error) {
-    console.error("Error loading radio data:", error);
+  } catch {
     // If even countries fail, returned defaults
     return json({ countries: [], stations: [], selectedCountry: country, initialView: view });
   }
@@ -704,7 +695,6 @@ export default function Index() {
       })
       .catch((error) => {
         if (cancelled) return;
-        console.warn("Catalog search failed", error);
         setCatalogStations([]);
       })
       .finally(() => {

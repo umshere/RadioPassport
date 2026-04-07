@@ -8,6 +8,11 @@ type RbFetchOptions = {
   timeoutMs?: number;
 };
 
+type MirrorFailure = {
+  base: string;
+  reason: string;
+};
+
 // Prefer a few known mirrors; order loosely by reliability/geo spread.
 const MIRRORS = [
   "https://de1.api.radio-browser.info",
@@ -66,28 +71,50 @@ async function tryFetchJson<T extends Json>(
   path: string,
   init: RequestInit | undefined,
   timeoutMs: number
-): Promise<T | null> {
+): Promise<{ data: T | null; failure?: MirrorFailure }> {
   const { signal, cleanup } = buildSignal(init, timeoutMs);
   try {
     const url = `${base}${path}`;
     const res = await fetch(url, withHeaders({ ...init, signal }));
     if (!res.ok) {
-      console.warn(`[RadioBrowser] Fetch failed: ${url} (${res.status})`);
-      return null;
+      return {
+        data: null,
+        failure: { base, reason: `HTTP ${res.status} for ${path}` },
+      };
     }
     const ct = res.headers.get("content-type") ?? "";
     // Relaxed check: just ensure it's not HTML error page
     if (ct.includes("text/html")) {
-      console.warn(`[RadioBrowser] Unexpected content-type: ${ct} for ${url}`);
-      return null;
+      return {
+        data: null,
+        failure: { base, reason: `Unexpected content-type ${ct || "unknown"}` },
+      };
     }
-    return (await res.json()) as T;
+    return { data: (await res.json()) as T };
   } catch (err) {
-    console.warn(`[RadioBrowser] Connection error for ${base}:`, err);
-    return null;
+    return {
+      data: null,
+      failure: {
+        base,
+        reason: err instanceof Error ? err.name : "Connection error",
+      },
+    };
   } finally {
     cleanup();
   }
+}
+
+function logRadioBrowserFailure(path: string, failures: MirrorFailure[]) {
+  if (typeof window !== "undefined") return;
+  if (process.env.NODE_ENV === "production") return;
+  if (!failures.length) return;
+
+  const summary = failures
+    .slice(0, 4)
+    .map((entry) => `${entry.base.replace(/^https?:\/\//, "")}: ${entry.reason}`)
+    .join(" | ");
+
+  console.warn(`[RadioBrowser] All mirrors failed for ${path}. ${summary}`);
 }
 
 /**
@@ -109,21 +136,24 @@ export async function rbFetchJson<T extends Json>(
   options?: RbFetchOptions
 ): Promise<T | null> {
   const timeoutMs = options?.timeoutMs ?? DEFAULT_TIMEOUT_MS;
+  const failures: MirrorFailure[] = [];
 
   // Try cached mirror first for speed.
   if (cachedBase) {
     const hit = await tryFetchJson<T>(cachedBase, path, init, CACHED_TIMEOUT_MS);
-    if (hit) return hit;
+    if (hit.data) return hit.data;
+    if (hit.failure) failures.push(hit.failure);
     cachedBase = null;
   }
 
   for (const base of MIRRORS) {
     if (base === cachedBase) continue; // already tried
-    const data = await tryFetchJson<T>(base, path, init, timeoutMs);
-    if (data) {
+    const result = await tryFetchJson<T>(base, path, init, timeoutMs);
+    if (result.data) {
       cachedBase = base;
-      return data;
+      return result.data;
     }
+    if (result.failure) failures.push(result.failure);
   }
 
   // As a very last resort, try the generic domain (may be slower/less reliable).
@@ -133,9 +163,12 @@ export async function rbFetchJson<T extends Json>(
     init,
     timeoutMs
   );
-  if (fallback) return fallback;
+  if (fallback.data) return fallback.data;
+  if (fallback.failure) failures.push(fallback.failure);
 
   if (options?.softFail) return null;
+
+  logRadioBrowserFailure(path, failures);
 
   throw new Error(`RadioBrowser fetch failed for path: ${path}`);
 }
