@@ -1,7 +1,7 @@
 import { Link, useNavigate } from "@remix-run/react";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { Text } from "@mantine/core";
-import { useMediaQuery } from "@mantine/hooks";
+import { useElementSize, useMediaQuery } from "@mantine/hooks";
 import { motion } from "framer-motion";
 import {
   IconArrowLeft,
@@ -20,6 +20,7 @@ import { useTrackTrivia } from "~/hooks/useTrackTrivia";
 import { useHydrated } from "~/hooks/useHydrated";
 import { usePlayerStore } from "~/state/playerStore";
 import { useUIStore } from "~/state/uiStore";
+import { getPretextLineCount, getPretextTightWidth } from "~/utils/pretextLayout";
 
 const LISTEN_TITLE_FONT =
   '600 58px "General Sans", "SF Pro Display", "Segoe UI", "Helvetica Neue", Arial, sans-serif';
@@ -35,6 +36,8 @@ const LISTEN_STACK_TITLE_FONT =
   '700 28px "General Sans", "SF Pro Display", "Segoe UI", "Helvetica Neue", Arial, sans-serif';
 const LISTEN_STACK_PREVIEW_FONT =
   '700 18px "General Sans", "SF Pro Text", "Segoe UI", "Helvetica Neue", Arial, sans-serif';
+const LISTEN_STACK_META_FONT =
+  '600 11px "General Sans", "SF Pro Text", "Segoe UI", "Helvetica Neue", Arial, sans-serif';
 
 type ListenFact = {
   label: string;
@@ -74,6 +77,43 @@ const STACK_CARD_TONES: StackCardTone[] = [
   },
 ];
 
+function splitStationTags(tags: string | null | undefined) {
+  if (!tags) return [];
+  return tags
+    .split(",")
+    .map((tag) => tag.trim())
+    .filter(Boolean);
+}
+
+function dedupeFacts(facts: ListenFact[]) {
+  const seen = new Set<string>();
+  return facts.filter((fact) => {
+    const key = `${fact.label.toLowerCase()}::${fact.value.toLowerCase()}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function estimateFactRows(facts: ListenFact[], width: number) {
+  if (!facts.length || width <= 0) return 0;
+  const gap = 8;
+  let rows = 1;
+  let usedWidth = 0;
+
+  for (const fact of facts) {
+    const chipWidth = Math.ceil(getPretextTightWidth(`${fact.label} • ${fact.value}`, LISTEN_STACK_META_FONT)) + 32;
+    if (usedWidth > 0 && usedWidth + gap + chipWidth > width) {
+      rows += 1;
+      usedWidth = chipWidth;
+      continue;
+    }
+    usedWidth += usedWidth > 0 ? gap + chipWidth : chipWidth;
+  }
+
+  return rows;
+}
+
 export default function ListeningPage() {
   const navigate = useNavigate();
   const hydrated = useHydrated();
@@ -95,6 +135,7 @@ export default function ListeningPage() {
   const currentStationIndex = hydrated ? storedCurrentStationIndex : 0;
   const isMobileTitle = useMediaQuery("(max-width: 639px)", false, { getInitialValueInEffect: true });
   const isStackCompact = useMediaQuery("(max-width: 1023px)", false, { getInitialValueInEffect: true });
+  const { ref: frontCardMeasureRef, width: frontCardWidth } = useElementSize();
 
   const nowPlayingMeta = useNowPlayingMetadata(nowPlaying, isPlaying);
   const freeTrivia = useTrackTrivia({
@@ -233,6 +274,55 @@ export default function ListeningPage() {
     ? [...(aiTrivia.trivia?.links ?? []), ...(freeTrivia.trivia?.links ?? [])].slice(0, 3)
     : [];
   const activeInsightImage = aiTrivia.trivia?.imageUrl ?? freeTrivia.trivia?.imageUrl ?? null;
+  const activeTags = splitStationTags(activeCard?.tags ?? nowPlaying.tags);
+  const cardLocationLabel = activeCard?.country ? `Country: ${activeCard.country}` : queueSourceLabel;
+  const cardSubline = [activeCard?.state, activeCard?.language].filter(Boolean).join(" • ") || activeCard?.country || "Live stream";
+  const metadataCardTitle = trackLine !== "Listening live"
+    ? trackLine
+    : activeTags.slice(0, 2).join(" • ") || (activeCard?.homepage ? "Official station source available" : "Live stream ready");
+  const metadataCardSummary = insightsEnabled
+    ? summary || "Station metadata will settle here."
+    : [
+      activeTags.length ? `Tags drifting through this signal: ${activeTags.slice(0, 3).join(" • ")}.` : null,
+      activeCard?.homepage ? "Official station source is available for a deeper handoff." : null,
+      activeCard?.hls ? "Adaptive HLS stream available on this station." : null,
+      activeCard?.healthStatus === "good" ? "Recent signal checks look healthy." : null,
+      !activeTags.length && !activeCard?.homepage && !activeCard?.hls ? "Live metadata is quiet right now, but the stream is still active." : null,
+    ]
+      .filter(Boolean)
+      .join(" ");
+  const stackFacts = insightsEnabled
+    ? dedupeFacts(factItems).slice(0, 4)
+    : dedupeFacts(
+      [
+        activeCard?.language ? { label: "Language", value: activeCard.language } : null,
+        activeCard?.bitrate ? { label: "Signal", value: `${activeCard.bitrate} kbps` } : null,
+        activeCard?.codec ? { label: "Codec", value: activeCard.codec.toUpperCase() } : null,
+        activeTags[0] ? { label: "Tag", value: activeTags[0] } : null,
+        activeCard?.homepage ? { label: "Source", value: "Official" } : null,
+      ].filter((fact): fact is ListenFact => Boolean(fact))
+    ).slice(0, 4);
+  const frontCardTop = isStackCompact ? 148 : 172;
+  const frontCardInnerWidth = Math.max(0, frontCardWidth - (isStackCompact ? 32 : 48));
+  const frontCardTitleWidth = Math.max(180, frontCardInnerWidth - (isStackCompact ? 106 : 124));
+  const titleLineCount = frontCardTitleWidth > 0
+    ? Math.max(1, Math.min(2, getPretextLineCount(activeCard?.name ?? nowPlaying.name, LISTEN_STACK_TITLE_FONT, frontCardTitleWidth, 34)))
+    : 2;
+  const summaryCollapsedLines = insightsEnabled ? (isStackCompact ? 4 : 5) : (isStackCompact ? 3 : 4);
+  const summaryLineCount = frontCardInnerWidth > 0
+    ? Math.max(1, getPretextLineCount(metadataCardSummary || "Signal note pending.", LISTEN_BODY_FONT, frontCardInnerWidth - 8, 23))
+    : summaryCollapsedLines;
+  const visibleSummaryLines = Math.min(summaryCollapsedLines, summaryLineCount);
+  const factRowCount = estimateFactRows(stackFacts, frontCardInnerWidth);
+  const frontCardMinHeight = (() => {
+    const baseHeight = isStackCompact ? 308 : 336;
+    const titleHeight = Math.max(78, titleLineCount * 34 + 18);
+    const summaryHeight = 52 + visibleSummaryLines * 23;
+    const factsHeight = factRowCount > 0 ? factRowCount * 42 + 12 : 0;
+    const controlsHeight = 126;
+    return baseHeight + titleHeight + summaryHeight + factsHeight + controlsHeight;
+  })();
+  const stackStageMinHeight = Math.max(isStackCompact ? 690 : 760, frontCardTop + frontCardMinHeight + 36);
 
   return (
     <main className="min-h-screen overflow-hidden bg-[#07090d] text-[var(--rp-text)]">
@@ -390,7 +480,7 @@ export default function ListeningPage() {
           </div>
 
           <div className="flex h-full min-h-0 flex-col justify-center lg:min-h-[700px]">
-            <div className="relative min-h-[31rem] sm:min-h-[35rem] lg:min-h-[41rem]">
+            <div className="relative" style={{ minHeight: `${stackStageMinHeight}px` }}>
               <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_72%_20%,rgba(245,177,45,0.28),transparent_18%),radial-gradient(circle_at_32%_78%,rgba(90,118,255,0.2),transparent_22%)] blur-2xl" />
               <div className="pointer-events-none absolute left-[10%] right-[10%] top-3 h-[11rem] rounded-[2.8rem] bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0.01))] opacity-70 blur-sm" />
 
@@ -459,12 +549,14 @@ export default function ListeningPage() {
               ) : null}
 
               <motion.article
+                ref={frontCardMeasureRef}
                 initial={false}
                 animate={{ y: 0, scale: 1, rotate: 0 }}
                 transition={{ type: "spring", stiffness: 260, damping: 28, mass: 0.92 }}
                 onTouchStart={handleStackTouchStart}
                 onTouchEnd={handleStackTouchEnd}
-                className="absolute bottom-0 left-3 right-3 z-20 h-[24rem] overflow-hidden rounded-[2.2rem] border border-[rgba(245,177,45,0.32)] bg-[linear-gradient(165deg,rgba(15,16,20,0.98)_0%,rgba(20,18,15,0.96)_34%,rgba(11,12,16,0.98)_100%)] p-4 shadow-[0_34px_70px_rgba(0,0,0,0.42)] backdrop-blur-xl sm:left-8 sm:right-8 sm:h-[26rem] sm:p-5 lg:left-12 lg:right-12 lg:h-[30rem] lg:p-6"
+                className="absolute left-3 right-3 z-20 overflow-hidden rounded-[2.2rem] border border-[rgba(245,177,45,0.32)] bg-[linear-gradient(165deg,rgba(15,16,20,0.98)_0%,rgba(20,18,15,0.96)_34%,rgba(11,12,16,0.98)_100%)] p-4 shadow-[0_34px_70px_rgba(0,0,0,0.42)] backdrop-blur-xl sm:left-8 sm:right-8 sm:p-5 lg:left-12 lg:right-12 lg:p-6"
+                style={{ top: `${frontCardTop}px`, minHeight: `${frontCardMinHeight}px` }}
               >
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_82%_14%,rgba(245,177,45,0.24),transparent_18%),radial-gradient(circle_at_18%_78%,rgba(96,142,255,0.14),transparent_22%)]" />
                 <div className="absolute inset-0 opacity-50" style={{ backgroundImage: "url('/listening-zen-hero.svg')", backgroundPosition: "center", backgroundSize: "cover" }} />
@@ -484,7 +576,7 @@ export default function ListeningPage() {
                   <div className="mt-5 flex min-h-[7.75rem] items-start justify-between gap-4 sm:min-h-[8.5rem]">
                     <div className="min-w-0 max-w-[74%]">
                       <div className="text-[10px] font-semibold uppercase tracking-[0.24em] text-white/52">
-                        {queueSourceLabel}
+                        {cardLocationLabel}
                       </div>
                       <PretextMeasuredText
                         text={activeCard?.name ?? nowPlaying.name}
@@ -495,7 +587,7 @@ export default function ListeningPage() {
                         fallbackClassName="mt-2 text-[2rem] font-semibold leading-tight tracking-tight text-white sm:text-[2.35rem]"
                       />
                       <div className="mt-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-white/48">
-                        {[activeCard?.country, activeCard?.state].filter(Boolean).join(" • ")}
+                        {cardSubline}
                       </div>
                     </div>
 
@@ -523,14 +615,14 @@ export default function ListeningPage() {
                     </div>
                   </div>
 
-                  <div className="mt-5 h-[7.75rem] rounded-[1.6rem] border border-white/10 bg-[rgba(7,9,13,0.34)] p-4 backdrop-blur-sm sm:h-[8.25rem]">
+                  <div className="mt-5 rounded-[1.6rem] border border-white/10 bg-[rgba(7,9,13,0.34)] p-4 backdrop-blur-sm">
                     <div className="flex items-center justify-between gap-3">
                       <div>
                         <div className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/44">
-                          {insightsEnabled ? "AI Summary" : "Metadata"}
+                          {trackLine !== "Listening live" ? "Current track" : insightsEnabled ? "AI Summary" : "Station brief"}
                         </div>
                         <Text size="sm" fw={700} c="white">
-                          {trackLine}
+                          {metadataCardTitle}
                         </Text>
                       </div>
                       <button
@@ -545,10 +637,10 @@ export default function ListeningPage() {
                       </button>
                     </div>
                     <PretextMeasuredText
-                      text={summary || "Station metadata will settle here."}
+                      text={metadataCardSummary || "Station metadata will settle here."}
                       font={LISTEN_BODY_FONT}
                       lineHeight={23}
-                      collapsedLines={2}
+                      collapsedLines={summaryCollapsedLines}
                       expandable={insightsEnabled}
                       moreLabel="Expand note"
                       lessLabel="Collapse note"
@@ -558,8 +650,8 @@ export default function ListeningPage() {
                     />
                   </div>
 
-                  <div className="mt-4 min-h-[4.75rem] flex flex-wrap content-start gap-2 overflow-hidden">
-                    {factItems.slice(0, 4).map((fact) => (
+                  <div className="mt-4 flex flex-wrap content-start gap-2 overflow-hidden">
+                    {stackFacts.map((fact) => (
                       <div
                         key={`stack-${fact.label}-${fact.value}`}
                         className="rounded-full border border-white/10 bg-black/28 px-3 py-2 text-[11px] font-medium text-white/82"
