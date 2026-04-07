@@ -111,6 +111,17 @@ const HERO_INSIGHT_CLOUD_SLOTS = [
   { x: 0.4, y: 0.88 },
 ];
 
+type GraphemeSegment = { segment: string };
+
+type IntlWithSegmenter = typeof Intl & {
+  Segmenter?: new (
+    locales?: string | string[],
+    options?: { granularity?: "grapheme" | "word" | "sentence" }
+  ) => {
+    segment(input: string): Iterable<GraphemeSegment>;
+  };
+};
+
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
 }
@@ -326,10 +337,14 @@ function safePretextLineCount(text: string, font: string, width: number, lineHei
   return getPretextLineCount(text, font, width, lineHeight);
 }
 
-const graphemeSegmenter =
-  typeof Intl !== "undefined" && "Segmenter" in Intl
-    ? new Intl.Segmenter(undefined, { granularity: "grapheme" })
+const SegmenterCtor =
+  typeof Intl !== "undefined"
+    ? (Intl as IntlWithSegmenter).Segmenter ?? null
     : null;
+
+const graphemeSegmenter = SegmenterCtor
+  ? new SegmenterCtor(undefined, { granularity: "grapheme" })
+  : null;
 
 function splitGraphemes(text: string) {
   if (!text) return [];
@@ -684,35 +699,27 @@ function HeroSignalSnippet({
   });
   const snippetX = useSpring(offsetX, { stiffness: 160, damping: 22, mass: 0.42 });
   const snippetY = useSpring(offsetY, { stiffness: 160, damping: 22, mass: 0.42 });
-  const snippetOpacity = useSpring(
-    useTransform(() => {
-      if (!enabled) return isActive ? 0.88 : 0.56;
-      return activeZone === null ? 0.6 : isActive ? 1 : 0.22;
-    }),
-    { stiffness: 180, damping: 24, mass: 0.4 }
-  );
-  const snippetScale = useSpring(
-    useTransform(() => {
-      if (!enabled) return isActive ? 1.03 : 1;
-      return isActive ? 1.085 : 0.985;
-    }),
-    { stiffness: 180, damping: 24, mass: 0.38 }
-  );
-  const snippetBlur = useSpring(
-    useTransform(() => {
-      if (!enabled || activeZone === null) return 0;
-      return isActive ? 0 : 0.65;
-    }),
-    { stiffness: 200, damping: 24, mass: 0.34 }
-  );
+  const snippetOpacityTarget = useTransform((): number => {
+    if (!enabled) return isActive ? 0.88 : 0.56;
+    return activeZone === null ? 0.6 : isActive ? 1 : 0.22;
+  });
+  const snippetOpacity = useSpring(snippetOpacityTarget, { stiffness: 180, damping: 24, mass: 0.4 });
+  const snippetScaleTarget = useTransform((): number => {
+    if (!enabled) return isActive ? 1.03 : 1;
+    return isActive ? 1.085 : 0.985;
+  });
+  const snippetScale = useSpring(snippetScaleTarget, { stiffness: 180, damping: 24, mass: 0.38 });
+  const snippetBlurTarget = useTransform((): number => {
+    if (!enabled || activeZone === null) return 0;
+    return isActive ? 0 : 0.65;
+  });
+  const snippetBlur = useSpring(snippetBlurTarget, { stiffness: 200, damping: 24, mass: 0.34 });
   const snippetFilter = useMotionTemplate`blur(${snippetBlur}px)`;
-  const snippetGlow = useSpring(
-    useTransform(() => {
-      if (!enabled || activeZone === null) return isActive ? 0.22 : 0.08;
-      return isActive ? 0.34 : 0.04;
-    }),
-    { stiffness: 180, damping: 24, mass: 0.36 }
-  );
+  const snippetGlowTarget = useTransform((): number => {
+    if (!enabled || activeZone === null) return isActive ? 0.22 : 0.08;
+    return isActive ? 0.34 : 0.04;
+  });
+  const snippetGlow = useSpring(snippetGlowTarget, { stiffness: 180, damping: 24, mass: 0.36 });
   const snippetRotate = useSpring(
     useTransform(() => {
       if (!enabled || fieldWidth <= 0 || fieldHeight <= 0) return 0;
@@ -903,9 +910,8 @@ export function HeroSection({
     () =>
       hydratedNowPlaying
         ? [
-          hydratedNowPlaying.stationuuid,
-          hydratedNowPlaying.changeuuid,
-          hydratedNowPlaying.urlResolved,
+          hydratedNowPlaying.uuid,
+          hydratedNowPlaying.streamUrl,
           hydratedNowPlaying.url,
           hydratedNowPlaying.name,
           hydratedNowPlaying.country,
@@ -914,12 +920,11 @@ export function HeroSection({
           .join("|")
         : "",
     [
-      hydratedNowPlaying?.changeuuid,
       hydratedNowPlaying?.country,
       hydratedNowPlaying?.name,
-      hydratedNowPlaying?.stationuuid,
+      hydratedNowPlaying?.streamUrl,
       hydratedNowPlaying?.url,
-      hydratedNowPlaying?.urlResolved,
+      hydratedNowPlaying?.uuid,
     ]
   );
 
@@ -1331,7 +1336,7 @@ export function HeroSection({
   const heroInsightCloudLayouts = useMemo(
     () =>
       heroInsightCloudItems.map((item, index) => {
-        const cloudSlot = HERO_INSIGHT_CLOUD_SLOTS[index % HERO_INSIGHT_CLOUD_SLOTS.length];
+        const cloudSlot = HERO_INSIGHT_CLOUD_SLOTS[index % HERO_INSIGHT_CLOUD_SLOTS.length] ?? HERO_INSIGHT_CLOUD_SLOTS[0]!;
         const { cardLeft, cardTop, cardWidth, cardHeight, metadataTop } = heroInsightCardLayout;
         const gridGap = 12;
         const focusWidth = clamp((cardWidth - 48 - gridGap) / 2, 152, 224);
@@ -1645,7 +1650,7 @@ export function HeroSection({
       id: noteIdRef.current++,
       x,
       y,
-      glyph: glyphs[Math.floor(Math.random() * glyphs.length)],
+      glyph: glyphs[Math.floor(Math.random() * glyphs.length)] ?? "♪",
       driftX: (Math.random() - 0.5) * 42,
       driftY: 56 + Math.random() * 42,
       rotation: (Math.random() - 0.5) * 26,
@@ -1686,7 +1691,7 @@ export function HeroSection({
       lastPointerZoneRef.current = zone;
       setActiveSignalZone(zone);
       const phrases = heroSignalOptions[zone];
-      const text = phrases[Math.floor(Math.random() * phrases.length)];
+      const text = phrases[Math.floor(Math.random() * phrases.length)] ?? heroSignalPrompt;
       queueHeroSignalText(text);
     }
     if (now - lastPointerPulseRef.current >= 180) {
@@ -2036,7 +2041,7 @@ export function HeroSection({
                         {featureCountryCode ? (
                           <div className="rounded-[1rem] border border-white/10 bg-[rgba(255,255,255,0.04)] px-2 py-1.5">
                             <div className="flex items-center gap-2">
-                              <CountryFlag iso={featureCountryCode} size={16} rounded />
+                              <CountryFlag iso={featureCountryCode} size={16} title={featureCountryLabel} />
                               {heroInsightTopBadges.length > 0 ? (
                                 <div className="flex flex-wrap gap-1.5">
                                   {heroInsightTopBadges.map((badge) => (

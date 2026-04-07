@@ -123,7 +123,9 @@ export default function ListeningPage() {
   const orderedQueue = useMemo(() => {
     if (!nowPlaying) return [];
     if (queue.length === 0) return [nowPlaying];
-    const rotated = queue.map((_, offset) => queue[(currentStationIndex + offset) % queue.length]);
+    const rotated = Array.from({ length: queue.length }, (_, offset) => queue[(currentStationIndex + offset) % queue.length]).filter(
+      (station): station is (typeof queue)[number] => Boolean(station)
+    );
     if (rotated[0]?.uuid === nowPlaying.uuid) return rotated;
     return [nowPlaying, ...rotated.filter((station) => station.uuid !== nowPlaying.uuid)];
   }, [currentStationIndex, nowPlaying, queue]);
@@ -394,7 +396,7 @@ export default function ListeningPage() {
 
               {previewCards.length > 0 ? (
                 previewCards.map((station, index) => {
-                  const tone = STACK_CARD_TONES[(index + 1) % STACK_CARD_TONES.length];
+                  const tone = STACK_CARD_TONES[(index + 1) % STACK_CARD_TONES.length] ?? STACK_CARD_TONES[0]!;
                   const depth = index + 1;
                   const topOffset = isStackCompact ? 8 + depth * 16 : 12 + depth * 22;
                   const insetX = isStackCompact ? 18 + depth * 14 : 44 + depth * 22;
