@@ -110,67 +110,67 @@ export function AtlasGrid({ displaySections, onPreviewCountry, stampedCountries 
               {continentCountries.map((country, index) => {
                 const isStamped = stampedCountries?.has(country.iso_3166_1) ?? false;
                 return (
-                <motion.div
-                  key={country.name}
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: index * 0.05 }}
-                  whileHover={{ y: -8, scale: 1.02 }}
-                >
-                  <Link
-                    to={`/?country=${encodeURIComponent(country.name)}`}
-                    className="group relative flex h-full min-h-[12rem] flex-col overflow-hidden rounded-[1.4rem] border border-white/10 bg-[rgba(5,8,14,0.4)] p-4 backdrop-blur-xl transition-all shadow-[0_14px_32px_rgba(0,0,0,0.32)] hover:-translate-y-1 hover:border-white/20 hover:shadow-[0_18px_40px_rgba(0,0,0,0.46)]"
-                    prefetch="intent"
+                  <motion.div
+                    key={country.name}
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: index * 0.05 }}
+                    whileHover={{ y: -8, scale: 1.02 }}
                   >
-                    {/* Glass sheen effect */}
-                    <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/8 to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
+                    <Link
+                      to={`/?country=${encodeURIComponent(country.name)}`}
+                      className="group relative flex h-full min-h-[12rem] flex-col overflow-hidden rounded-[1.4rem] border border-white/10 bg-[rgba(5,8,14,0.4)] p-4 backdrop-blur-xl transition-all shadow-[0_14px_32px_rgba(0,0,0,0.32)] hover:-translate-y-1 hover:border-white/20 hover:shadow-[0_18px_40px_rgba(0,0,0,0.46)]"
+                      prefetch="intent"
+                    >
+                      {/* Glass sheen effect */}
+                      <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/8 to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
 
-                    <div className="relative z-10 flex flex-1 flex-col gap-3">
-                      <div className="flex items-start justify-between gap-2">
-                        <CountryFlag
-                          iso={country.iso_3166_1}
-                          title={`${country.name} flag`}
-                          size={42}
-                          className="rounded-lg border border-white/20 shadow-[0_10px_22px_rgba(0,0,0,0.45)]"
-                        />
-                        <div className="flex flex-col items-end gap-2">
-                          {isStamped && (
-                            <span className="rounded-full border border-[rgba(245,177,45,0.5)] bg-[rgba(245,177,45,0.12)] px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.2em] text-[var(--rp-gold)]">
-                              Stamped
-                            </span>
-                          )}
-                          <div className="flex items-center gap-1.5 rounded-full border border-white/10 bg-black/30 px-2.5 py-1 backdrop-blur-sm">
-                            <IconBroadcast size={10} className="text-[var(--rp-gold)]" />
-                            <span className="text-[10px] font-bold text-[var(--rp-muted)] font-mono">
-                              {country.stationcount}
-                            </span>
+                      <div className="relative z-10 flex flex-1 flex-col gap-3">
+                        <div className="flex items-start justify-between gap-2">
+                          <CountryFlag
+                            iso={country.iso_3166_1}
+                            title={`${country.name} flag`}
+                            size={42}
+                            className="rounded-lg border border-white/20 shadow-[0_10px_22px_rgba(0,0,0,0.45)]"
+                          />
+                          <div className="flex flex-col items-end gap-2">
+                            {isStamped && (
+                              <span className="rounded-full border border-[rgba(245,177,45,0.5)] bg-[rgba(245,177,45,0.12)] px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.2em] text-[var(--rp-gold)]">
+                                Stamped
+                              </span>
+                            )}
+                            <div className="flex items-center gap-1.5 rounded-full border border-white/10 bg-black/30 px-2.5 py-1 backdrop-blur-sm">
+                              <IconBroadcast size={10} className="text-[var(--rp-gold)]" />
+                              <span className="text-[10px] font-bold text-[var(--rp-muted)] font-mono">
+                                {country.stationcount}
+                              </span>
+                            </div>
                           </div>
+                        </div>
+
+                        <div className="space-y-1">
+                          <Text fw={800} size="md" c="var(--rp-text)" className="leading-tight line-clamp-2 group-hover:text-[var(--rp-gold)] transition-colors">
+                            {country.name}
+                          </Text>
+                          <Text size="xs" c="var(--rp-muted)" className="font-medium flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-[var(--rp-gold)] inline-block animate-pulse" />
+                            {country.stationcount > 0 ? 'Live now' : 'No signal'}
+                          </Text>
                         </div>
                       </div>
 
-                      <div className="space-y-1">
-                        <Text fw={800} size="md" c="var(--rp-text)" className="leading-tight line-clamp-2 group-hover:text-[var(--rp-gold)] transition-colors">
-                          {country.name}
-                        </Text>
-                        <Text size="xs" c="var(--rp-muted)" className="font-medium flex items-center gap-1">
-                          <span className="w-1.5 h-1.5 rounded-full bg-[var(--rp-gold)] inline-block animate-pulse" />
-                          {country.stationcount > 0 ? 'Live now' : 'No signal'}
-                        </Text>
-                      </div>
-                    </div>
-
-                    {/* Pending overlay when navigating to this country */}
-                    {navigation.state !== "idle" && pendingCountry === country.name && (
-                      <div
-                        className="absolute inset-0 z-20 grid place-items-center bg-black/60 backdrop-blur-sm rounded-2xl"
-                        aria-hidden="true"
-                      >
-                        <Loader size="sm" color="yellow" />
-                      </div>
-                    )}
-                  </Link>
-                </motion.div>
-              );
+                      {/* Pending overlay when navigating to this country */}
+                      {navigation.state !== "idle" && pendingCountry === country.name && (
+                        <div
+                          className="absolute inset-0 z-20 grid place-items-center bg-black/60 backdrop-blur-sm rounded-2xl"
+                          aria-hidden="true"
+                        >
+                          <Loader size="sm" color="yellow" />
+                        </div>
+                      )}
+                    </Link>
+                  </motion.div>
+                );
               })}
             </div>
           </motion.section>

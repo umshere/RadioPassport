@@ -32,7 +32,7 @@ export const links: LinksFunction = () => [
     rel: "stylesheet",
     href: "https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap",
   },
-  { rel: "icon", type: "image/png", sizes: "48x48", href: "/favicon48.png" },
+  { rel: "icon", type: "image/png", href: "/RPLOGO.png" },
   { rel: "manifest", href: "/manifest.json" },
 ];
 

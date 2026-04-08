@@ -9,8 +9,8 @@
     "orientation": "portrait-primary",
     "icons": [
         {
-            "src": "/favicon48.png",
-            "sizes": "48x48",
+            "src": "/RPLOGO.png",
+            "sizes": "any",
             "type": "image/png",
             "purpose": "any"
         }
