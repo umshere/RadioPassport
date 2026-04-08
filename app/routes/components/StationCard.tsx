@@ -1,11 +1,11 @@
 import { useMemo } from "react";
 import { useElementSize } from "@mantine/hooks";
-import { Text, ActionIcon, Button, Tooltip } from "@mantine/core";
-import { IconPlayerPlayFilled, IconHeart, IconInfoCircle } from "@tabler/icons-react";
+import { Text, ActionIcon, Button } from "@mantine/core";
+import { IconPlayerPlayFilled, IconHeart } from "@tabler/icons-react";
 import { PretextMeasuredText } from "~/components/PretextMeasuredText";
 import type { Station } from "~/types/radio";
 import { vibrate } from "~/utils/haptics";
-import { deriveStationHealth } from "~/utils/stationMeta";
+import { deriveStationAvailability, deriveStationHealth } from "~/utils/stationMeta";
 import { getPretextLineCount } from "~/utils/pretextLayout";
 
 type StationCardProps = {
@@ -54,18 +54,32 @@ function getStationInitials(name: string): string {
   return name.slice(0, 2).toUpperCase();
 }
 
-// Convert status to user-friendly display
-function getStatusDisplay(status?: string | null): { icon: string; label: string } | null {
-  if (!status) return null;
-  switch (status) {
-    case "good":
-      return { icon: "🟢", label: "Live" };
-    case "warning":
-      return { icon: "🟡", label: "Unstable" };
-    case "error":
-      return { icon: "🔴", label: "Offline" };
+function getAvailabilityPillStyles(tone: "available" | "slow" | "retry" | "unknown") {
+  switch (tone) {
+    case "available":
+      return {
+        background: "rgba(16, 185, 129, 0.16)",
+        color: "rgb(167, 243, 208)",
+        borderColor: "rgba(16, 185, 129, 0.32)",
+      };
+    case "slow":
+      return {
+        background: "rgba(245, 158, 11, 0.15)",
+        color: "rgb(253, 230, 138)",
+        borderColor: "rgba(245, 158, 11, 0.3)",
+      };
+    case "retry":
+      return {
+        background: "rgba(244, 63, 94, 0.14)",
+        color: "rgb(254, 205, 211)",
+        borderColor: "rgba(244, 63, 94, 0.3)",
+      };
     default:
-      return { icon: "⚪", label: "Unknown" };
+      return {
+        background: "rgba(148, 163, 184, 0.14)",
+        color: "rgb(226, 232, 240)",
+        borderColor: "rgba(148, 163, 184, 0.22)",
+      };
   }
 }
 
@@ -81,9 +95,8 @@ export function StationCard({
   const { ref: contentRef, width: contentWidth } = useElementSize();
   const hasStream = Boolean(station.streamUrl);
   const healthMeta = deriveStationHealth(station);
+  const availabilityMeta = deriveStationAvailability(station, isUnavailable);
   const streamCandidate = (station.streamUrl ?? station.url ?? "").trim().toLowerCase();
-  const isHttpStream = streamCandidate.startsWith("http://");
-  const isHlsStream = Boolean(station.hls);
   const signalLine = compactSignalLabel(healthMeta?.label, isUnavailable);
   const languageLine = station.language?.trim() || "Mixed";
   const regionLine = station.state?.trim() || "National";
@@ -116,16 +129,6 @@ export function StationCard({
     return station.country || "Open stream";
   }, [compactMeta, signalLine, station.country, station.language, station.tagList, styleLine]);
 
-  // Diagnostics for tooltip (hidden by default)
-  const diagnosticInfo = useMemo(() => {
-    const parts: string[] = [];
-    if (station.bitrate > 0) parts.push(`${station.bitrate} kbps`);
-    if (station.languageCodes?.length) parts.push(station.languageCodes.join(", "));
-    if (healthMeta?.label) parts.push(healthMeta.label);
-    if (station.tagList && station.tagList.length > 1) parts.push(`Tags: ${station.tagList.slice(0, 3).join(", ")}`);
-    return parts.join(" • ");
-  }, [station.bitrate, station.languageCodes, station.tagList, healthMeta]);
-
   const cardStatusClass = [
     isCurrent
       ? "border-[rgba(245,177,45,0.58)] bg-[linear-gradient(180deg,rgba(42,33,20,0.98)_0%,rgba(22,18,14,0.95)_100%)]"
@@ -140,7 +143,7 @@ export function StationCard({
     .join(" ");
 
   const externalHref = getExternalHref(station);
-  const statusDisplay = isUnavailable ? { icon: "🔴", label: "Unavailable" } : getStatusDisplay(healthMeta?.status);
+  const availabilityPillStyles = getAvailabilityPillStyles(availabilityMeta.tone);
   const fallbackGradient = generateFallbackGradient(station.name);
   const initials = getStationInitials(station.name);
 
@@ -249,48 +252,13 @@ export function StationCard({
                   {regionLine}
                 </Text>
                 <div className="flex flex-wrap items-center gap-1.5">
-                  {statusDisplay && (
+                  {availabilityMeta && (
                     <div
-                      className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold"
-                      style={{ background: "rgba(0,0,0,0.4)", color: "rgba(248,243,230,0.8)" }}
+                      className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em]"
+                      style={availabilityPillStyles}
                     >
-                      <span className="opacity-80">{statusDisplay.icon}</span>
-                      <span>{statusDisplay.label}</span>
+                      <span>{availabilityMeta.shortLabel}</span>
                     </div>
-                  )}
-                  {isHlsStream && (
-                    <div
-                      className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold"
-                      style={{ background: "rgba(245, 177, 45, 0.12)", color: "var(--rp-gold)" }}
-                    >
-                      HLS
-                    </div>
-                  )}
-                  {isHttpStream && (
-                    <div
-                      className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold"
-                      style={{ background: "rgba(245, 177, 45, 0.12)", color: "var(--rp-gold)" }}
-                    >
-                      HTTP
-                    </div>
-                  )}
-                  {diagnosticInfo && (
-                    <Tooltip
-                      label={diagnosticInfo}
-                      position="top"
-                      withArrow
-                      multiline
-                      w={220}
-                    >
-                      <ActionIcon
-                        variant="transparent"
-                        size="xs"
-                        color="gray"
-                        className="opacity-50 transition-opacity hover:opacity-100"
-                      >
-                        <IconInfoCircle size={14} />
-                      </ActionIcon>
-                    </Tooltip>
                   )}
                 </div>
               </div>
@@ -315,10 +283,11 @@ export function StationCard({
               </div>
               <div className="min-w-0 col-span-2">
                 <div className="text-[9px] font-semibold uppercase tracking-[0.18em] text-[var(--rp-muted-2)]">
-                  Freshness
+                  Status
                 </div>
                 <Text size="sm" c="var(--rp-text)" fw={600} className="mt-1 leading-5">
-                  {signalLine ?? "Awaiting check"}
+                  {availabilityMeta.detailLabel}
+                  {signalLine ? ` • ${signalLine}` : ""}
                 </Text>
               </div>
             </div>

@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import { useMemo, useState } from "react";
 import { IconPlayerPlayFilled, IconHeart, IconHeartFilled } from "@tabler/icons-react";
 import type { Station } from "~/types/radio";
+import { deriveStationAvailability } from "~/utils/stationMeta";
 import {
     generateStationGradient,
     detectGenre,
@@ -9,54 +10,26 @@ import {
     getStationColors
 } from "~/utils/colorExtraction";
 
-function getProbeBadgeCopy(status: Station["probeStatus"]) {
-    switch (status) {
-        case "ok":
-            return "Live";
-        case "slow":
-            return "Slow";
-        case "down":
-            return "Retry";
-        default:
-            return null;
-    }
-}
-
-function getProbeBadgeClass(status: Station["probeStatus"], isCurrent: boolean) {
-    if (status === "ok") {
+function getAvailabilityBadgeClass(
+    tone: "available" | "slow" | "retry" | "unknown",
+    isCurrent: boolean
+) {
+    if (tone === "available") {
         return isCurrent
             ? "border-emerald-300/35 bg-emerald-500/18 text-emerald-100"
             : "border-emerald-500/30 bg-emerald-500/15 text-emerald-200";
     }
-    if (status === "slow") {
+    if (tone === "slow") {
         return isCurrent
             ? "border-amber-300/35 bg-amber-400/20 text-amber-50"
             : "border-amber-500/35 bg-amber-500/14 text-amber-100";
     }
-    if (status === "down") {
+    if (tone === "retry") {
         return isCurrent
             ? "border-rose-300/35 bg-rose-500/18 text-rose-50"
             : "border-rose-500/35 bg-rose-500/15 text-rose-100";
     }
     return "border-white/15 bg-black/35 text-white/70";
-}
-
-function formatProbeAge(checkedAt?: string | null) {
-    if (!checkedAt) return null;
-    const timestamp = Date.parse(checkedAt);
-    if (Number.isNaN(timestamp)) return null;
-
-    const deltaMs = Date.now() - timestamp;
-    if (deltaMs < 45_000) return "checked now";
-
-    const minutes = Math.round(deltaMs / 60_000);
-    if (minutes < 60) return `${minutes}m ago`;
-
-    const hours = Math.round(minutes / 60);
-    if (hours < 24) return `${hours}h ago`;
-
-    const days = Math.round(hours / 24);
-    return `${days}d ago`;
 }
 
 type PremiumStationCardProps = {
@@ -91,8 +64,7 @@ export function PremiumStationCard({
     const colors = useMemo(() => getStationColors(station.tagList), [station.tagList]);
     const fallbackGradient = useMemo(() => generateStationGradient(station.name), [station.name]);
     const fallbackImage = useMemo(() => getThemedFallbackImage(genre), [genre]);
-    const probeBadge = useMemo(() => getProbeBadgeCopy(station.probeStatus), [station.probeStatus]);
-    const probeAge = useMemo(() => formatProbeAge(station.probeCheckedAt), [station.probeCheckedAt]);
+    const availabilityMeta = useMemo(() => deriveStationAvailability(station), [station]);
 
     const artworkUrl = station.favicon && !imageError ? station.favicon : fallbackImage;
 
@@ -213,11 +185,11 @@ export function PremiumStationCard({
                 </motion.div>
 
                 {/* Favorite Button */}
-                {probeBadge && (
+                {availabilityMeta && (
                     <div
-                        className={`absolute top-2 left-2 z-10 rounded-full border px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] backdrop-blur-sm ${getProbeBadgeClass(station.probeStatus, isCurrent)}`}
+                        className={`absolute top-2 left-2 z-10 rounded-full border px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] backdrop-blur-sm ${getAvailabilityBadgeClass(availabilityMeta.tone, isCurrent)}`}
                     >
-                        {probeBadge}
+                        {availabilityMeta.shortLabel}
                     </div>
                 )}
 
@@ -279,15 +251,9 @@ export function PremiumStationCard({
                         </>
                     )}
                 </div>
-                {(probeBadge || probeAge) && (
+                {availabilityMeta && (
                     <div className={`mt-1 flex items-center gap-1.5 text-[10px] uppercase tracking-[0.18em] ${isCurrent ? 'text-white/58' : 'text-white/38'}`}>
-                        {probeAge && <span>{probeAge}</span>}
-                        {probeAge && typeof station.probeLatencyMs === "number" && station.probeStatus !== "down" && (
-                            <span className="text-white/24">•</span>
-                        )}
-                        {typeof station.probeLatencyMs === "number" && station.probeStatus !== "down" && (
-                            <span>{station.probeLatencyMs}ms</span>
-                        )}
+                        {availabilityMeta && <span>{availabilityMeta.detailLabel}</span>}
                     </div>
                 )}
             </div>

@@ -274,7 +274,7 @@ async function finalizeHomeCuratedShelf(
   });
 
   const availabilityNote = probedStationCount > 0
-    ? `${probedPlayableCount} of ${probedStationCount} top stations responded to a live server probe before render.`
+    ? "Live signals checked before render."
     : shelf.availabilityNote;
 
   return {
@@ -434,7 +434,7 @@ async function loadBehaviorShelf(snapshot: BehaviorSnapshot): Promise<HomeCurate
     averageHealthScore,
     likelyUpCount,
     mixNote: `Weighted by ${snapshot.favoriteStationIds.length} favorites, ${snapshot.recentStationIds.length} recents, and ${snapshot.skippedStationIds.length} skips to keep the shelf closer to your actual behavior.`,
-    availabilityNote: `${likelyUpCount} of ${selectedStations.length} shortlisted stations are marked likely up before probing.`,
+    availabilityNote: "Availability is screened before stations land in the mix.",
   });
 }
 

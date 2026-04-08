@@ -8,6 +8,12 @@ export type StationHealthMeta = {
   label: string;
 };
 
+export type StationAvailabilityMeta = {
+  tone: "available" | "slow" | "retry" | "unknown";
+  shortLabel: string;
+  detailLabel: string;
+};
+
 export function getHealthBadgeStyle(status: StationHealthStatus): CSSProperties {
   switch (status) {
     case "error":
@@ -51,6 +57,57 @@ export function deriveStationHealth(station: Station): StationHealthMeta | null 
   }
 
   return null;
+}
+
+export function deriveStationAvailability(
+  station: Station,
+  isUnavailable = false
+): StationAvailabilityMeta {
+  if (isUnavailable || station.probeStatus === "down" || station.healthStatus === "error") {
+    return {
+      tone: "retry",
+      shortLabel: "Unavailable",
+      detailLabel: "Needs retry",
+    };
+  }
+
+  if (station.probeStatus === "ok") {
+    return {
+      tone: "available",
+      shortLabel: "Available now",
+      detailLabel: "Checked live",
+    };
+  }
+
+  if (station.probeStatus === "slow") {
+    return {
+      tone: "slow",
+      shortLabel: "Slow response",
+      detailLabel: "Live but sluggish",
+    };
+  }
+
+  if (station.healthStatus === "good" || station.isStreamHealthy) {
+    return {
+      tone: "available",
+      shortLabel: "Likely available",
+      detailLabel: "Healthy stream",
+    };
+  }
+
+  if (station.healthStatus === "warning") {
+    return {
+      tone: "slow",
+      shortLabel: "Check stream",
+      detailLabel: "Recent warning",
+    };
+  }
+
+  return {
+    tone: "unknown",
+    shortLabel: "Awaiting check",
+    detailLabel: "No live probe yet",
+  };
 }
 
 export function formatRelativeTime(iso: string, locale = "en"): string | null {

@@ -148,12 +148,8 @@ export function CuratedShelfDeck({
                                 </div>
 
                                 <div className="flex flex-wrap gap-2 lg:max-w-[22rem] lg:justify-end">
-                                    <StatPill label="likely up" value={`${shelf.likelyUpCount}/${shelf.stations.length}`} tone={shelf.theme.border} />
+                                    <StatPill label="stations" value={String(shelf.stations.length)} tone={shelf.theme.border} />
                                     <StatPill label="countries" value={String(shelf.topCountries.length)} tone="rgba(112, 196, 184, 0.64)" />
-                                    <StatPill label="avg health" value={`${shelf.averageHealthScore}`} tone="rgba(245, 177, 45, 0.7)" />
-                                    {shelf.probedStationCount > 0 && (
-                                        <StatPill label="probed" value={`${shelf.probedPlayableCount}/${shelf.probedStationCount}`} tone="rgba(159, 232, 182, 0.68)" />
-                                    )}
                                 </div>
                             </div>
 
