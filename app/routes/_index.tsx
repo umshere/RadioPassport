@@ -256,22 +256,41 @@ async function fetchStationsByUuid(ids: string[]): Promise<Station[]> {
   return normalizeStations(Array.isArray(raw) ? raw : []);
 }
 
+// Soft timeout helpers — let background work finish and warm caches,
+// but don't block the server response beyond the deadline.
+function withDeadline<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((resolve) => setTimeout(() => resolve(fallback), ms)),
+  ]);
+}
+
 async function finalizeHomeCuratedShelf(
   shelf: Omit<HomeCuratedShelf, "stations" | "probedPlayableCount" | "probedStationCount" | "aiReason"> & { stations: Station[] }
 ): Promise<HomeCuratedShelf> {
-  const probedStations = await probeShelfStations(shelf.stations, 5);
+  // Probe and AI reason run in parallel. Each has a deadline so a slow
+  // OpenRouter free-model call or unreachable stream never holds up the page.
+  // Both still run to completion in background and warm their caches.
+  const [probedStations, aiReason] = await Promise.all([
+    withDeadline(probeShelfStations(shelf.stations, 5), 4000, shelf.stations),
+    withDeadline(
+      buildAiShelfReason({
+        shelfId: shelf.id,
+        title: shelf.title,
+        description: shelf.description,
+        topCountries: shelf.topCountries,
+        topTags: shelf.topTags,
+        likelyUpCount: shelf.likelyUpCount,
+        stationCount: shelf.stations.length,
+      }),
+      2500,
+      null
+    ),
+  ]);
+
   const probedSubset = probedStations.slice(0, 5);
   const probedPlayableCount = probedSubset.filter((station) => station.probeStatus === "ok" || station.probeStatus === "slow").length;
   const probedStationCount = probedSubset.filter((station) => station.probeStatus && station.probeStatus !== "unknown").length;
-  const aiReason = await buildAiShelfReason({
-    shelfId: shelf.id,
-    title: shelf.title,
-    description: shelf.description,
-    topCountries: shelf.topCountries,
-    topTags: shelf.topTags,
-    likelyUpCount: shelf.likelyUpCount,
-    stationCount: shelf.stations.length,
-  });
 
   const availabilityNote = probedStationCount > 0
     ? "Live signals checked before render."
