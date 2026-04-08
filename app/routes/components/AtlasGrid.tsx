@@ -109,8 +109,6 @@ export function AtlasGrid({ displaySections, onPreviewCountry, stampedCountries 
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 md:gap-4">
               {continentCountries.map((country, index) => {
                 const isStamped = stampedCountries?.has(country.iso_3166_1) ?? false;
-                const isLead = index === 0;
-                const isFeatured = index > 0 && index < 3;
                 return (
                 <motion.div
                   key={country.name}
@@ -121,13 +119,7 @@ export function AtlasGrid({ displaySections, onPreviewCountry, stampedCountries 
                 >
                   <Link
                     to={`/?country=${encodeURIComponent(country.name)}`}
-                    className={`group relative flex h-full flex-col overflow-hidden rounded-[1.4rem] border p-4 backdrop-blur-xl transition-all shadow-[0_14px_32px_rgba(0,0,0,0.32)] hover:-translate-y-1 hover:shadow-[0_18px_40px_rgba(0,0,0,0.46)] ${
-                      isLead
-                        ? "border-[rgba(245,177,45,0.22)] bg-[linear-gradient(180deg,rgba(18,14,7,0.42)_0%,rgba(8,12,18,0.58)_100%)] md:col-span-2"
-                        : isFeatured
-                          ? "border-white/12 bg-[rgba(8,12,18,0.52)]"
-                          : "border-white/10 bg-[rgba(5,8,14,0.4)]"
-                    }`}
+                    className="group relative flex h-full min-h-[12rem] flex-col overflow-hidden rounded-[1.4rem] border border-white/10 bg-[rgba(5,8,14,0.4)] p-4 backdrop-blur-xl transition-all shadow-[0_14px_32px_rgba(0,0,0,0.32)] hover:-translate-y-1 hover:border-white/20 hover:shadow-[0_18px_40px_rgba(0,0,0,0.46)]"
                     prefetch="intent"
                   >
                     {/* Glass sheen effect */}
@@ -157,18 +149,13 @@ export function AtlasGrid({ displaySections, onPreviewCountry, stampedCountries 
                       </div>
 
                       <div className="space-y-1">
-                        <Text fw={800} size={isLead ? "lg" : "md"} c="var(--rp-text)" className="leading-tight line-clamp-2 group-hover:text-[var(--rp-gold)] transition-colors">
+                        <Text fw={800} size="md" c="var(--rp-text)" className="leading-tight line-clamp-2 group-hover:text-[var(--rp-gold)] transition-colors">
                           {country.name}
                         </Text>
                         <Text size="xs" c="var(--rp-muted)" className="font-medium flex items-center gap-1">
                           <span className="w-1.5 h-1.5 rounded-full bg-[var(--rp-gold)] inline-block animate-pulse" />
                           {country.stationcount > 0 ? 'Live now' : 'No signal'}
                         </Text>
-                        {isLead && (
-                          <Text size="xs" c="var(--rp-muted)" className="max-w-[26ch] leading-5">
-                            Strongest entry point in this region. Start here for the clearest route into local stations and country-level notes.
-                          </Text>
-                        )}
                       </div>
                     </div>
 

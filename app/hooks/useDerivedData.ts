@@ -58,17 +58,22 @@ export function useDerivedData(
 
   const continentSections = useMemo(
     () =>
-      Object.entries(countriesByContinent).sort(([, a], [, b]) => {
-        const totalA = a.reduce(
+      Object.entries(countriesByContinent)
+        .map(([continent, continentCountries]) => [
+          continent,
+          [...continentCountries].sort((a, b) => b.stationcount - a.stationcount),
+        ] as [string, Country[]])
+        .sort(([, a], [, b]) => {
+          const totalA = a.reduce(
           (sum, country) => sum + country.stationcount,
           0
         );
-        const totalB = b.reduce(
+          const totalB = b.reduce(
           (sum, country) => sum + country.stationcount,
           0
         );
-        return totalB - totalA;
-      }),
+          return totalB - totalA;
+        }),
     [countriesByContinent]
   );
 

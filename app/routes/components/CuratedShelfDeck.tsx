@@ -90,6 +90,14 @@ export function CuratedShelfDeck({
                             boxShadow: "0 12px 28px rgba(0,0,0,0.18)",
                         }}
                     >
+                        {(() => {
+                            const leadStation = shelf.stations[0] ?? null;
+                            const desktopColumnClass = shelf.stations.length >= 8 ? "lg:grid-cols-6" : "lg:grid-cols-5";
+                            const primaryGridCapacity = shelf.stations.length >= 8 ? 8 : 6;
+                            const primaryGridStations = shelf.stations.slice(1, primaryGridCapacity + 1);
+                            const overflowStations = shelf.stations.slice(primaryGridCapacity + 1);
+
+                            return (
                         <div className="space-y-5">
                             <div className="flex flex-col gap-4 border-b border-white/8 pb-4 lg:flex-row lg:items-start lg:justify-between lg:gap-8">
                                 <div className="min-w-0 space-y-3">
@@ -169,14 +177,14 @@ export function CuratedShelfDeck({
 
                             <div className="min-w-0 lg:pt-1">
                                 <div className="space-y-3 lg:hidden">
-                                    {shelf.stations[0] && (
+                                    {leadStation && (
                                         <div className="w-full">
                                             <PremiumStationCard
-                                                station={shelf.stations[0]}
+                                                station={leadStation}
                                                 index={0}
-                                                isPlaying={isPlaying && nowPlaying?.uuid === shelf.stations[0].uuid}
-                                                isCurrent={nowPlaying?.uuid === shelf.stations[0].uuid}
-                                                isFavorite={favoriteIds.has(shelf.stations[0].uuid)}
+                                                isPlaying={isPlaying && nowPlaying?.uuid === leadStation.uuid}
+                                                isCurrent={nowPlaying?.uuid === leadStation.uuid}
+                                                isFavorite={favoriteIds.has(leadStation.uuid)}
                                                 onPlay={(picked) => onPlayStation(shelf.id, picked)}
                                                 onToggleFavorite={onToggleFavorite}
                                                 size="md"
@@ -207,35 +215,96 @@ export function CuratedShelfDeck({
                                     )}
                                 </div>
 
-                                <div className="hidden lg:grid lg:grid-cols-5 lg:auto-rows-fr lg:items-start lg:gap-4">
-                                    {shelf.stations.map((station, index) => {
-                                        const isLead = index === 0;
-                                        const cardSize = "md";
-                                        const wrapperClass = isLead
-                                            ? "row-span-2 col-span-2 min-h-[20rem]"
-                                            : index < 5
-                                                ? "min-h-[10.5rem]"
-                                                : "min-h-[9.5rem]";
+                                <div className="hidden lg:block">
+                                    <div className={`lg:grid ${desktopColumnClass} lg:auto-rows-fr lg:items-start lg:gap-4`}>
+                                        {leadStation && (
+                                            <div className="row-span-2 col-span-2 flex min-h-[20rem] items-start">
+                                                <PremiumStationCard
+                                                    station={leadStation}
+                                                    index={0}
+                                                    isPlaying={isPlaying && nowPlaying?.uuid === leadStation.uuid}
+                                                    isCurrent={nowPlaying?.uuid === leadStation.uuid}
+                                                    isFavorite={favoriteIds.has(leadStation.uuid)}
+                                                    onPlay={(picked) => onPlayStation(shelf.id, picked)}
+                                                    onToggleFavorite={onToggleFavorite}
+                                                    size="md"
+                                                    fillWidth
+                                                />
+                                            </div>
+                                        )}
 
-                                        return (
-                                            <div key={`${shelf.id}-${station.uuid}-desktop`} className={`${wrapperClass} flex items-start`}>
+                                        {primaryGridStations.map((station, index) => (
+                                            <div
+                                                key={`${shelf.id}-${station.uuid}-desktop-primary`}
+                                                className={`flex items-start ${index < 3 ? "min-h-[10.5rem]" : "min-h-[9.5rem]"}`}
+                                            >
                                                 <PremiumStationCard
                                                     station={station}
-                                                    index={index}
+                                                    index={index + 1}
                                                     isPlaying={isPlaying && nowPlaying?.uuid === station.uuid}
                                                     isCurrent={nowPlaying?.uuid === station.uuid}
                                                     isFavorite={favoriteIds.has(station.uuid)}
                                                     onPlay={(picked) => onPlayStation(shelf.id, picked)}
                                                     onToggleFavorite={onToggleFavorite}
-                                                    size={cardSize}
+                                                    size="md"
                                                     fillWidth
                                                 />
                                             </div>
-                                        );
-                                    })}
+                                        ))}
+                                    </div>
+
+                                    {overflowStations.length > 0 && (
+                                        <div className="mt-4">
+                                            {overflowStations.length === 1 && overflowStations[0] ? (
+                                                <div className="flex">
+                                                    <div className="w-full max-w-[14rem]">
+                                                        <PremiumStationCard
+                                                            station={overflowStations[0]}
+                                                            index={primaryGridCapacity + 1}
+                                                            isPlaying={isPlaying && nowPlaying?.uuid === overflowStations[0].uuid}
+                                                            isCurrent={nowPlaying?.uuid === overflowStations[0].uuid}
+                                                            isFavorite={favoriteIds.has(overflowStations[0].uuid)}
+                                                            onPlay={(picked) => onPlayStation(shelf.id, picked)}
+                                                            onToggleFavorite={onToggleFavorite}
+                                                            size="md"
+                                                            fillWidth
+                                                        />
+                                                    </div>
+                                                </div>
+                                            ) : overflowStations.length > 1 ? (
+                                                <div
+                                                    className={`grid gap-4 ${
+                                                        overflowStations.length === 2
+                                                            ? "lg:grid-cols-2"
+                                                            : overflowStations.length === 3
+                                                                ? "lg:grid-cols-3"
+                                                                : "lg:grid-cols-2 xl:grid-cols-4"
+                                                    }`}
+                                                >
+                                                    {overflowStations.map((station, index) => (
+                                                        <div key={`${shelf.id}-${station.uuid}-desktop-overflow`} className="flex items-start">
+                                                            <PremiumStationCard
+                                                                station={station}
+                                                                index={index + primaryGridCapacity + 1}
+                                                                isPlaying={isPlaying && nowPlaying?.uuid === station.uuid}
+                                                                isCurrent={nowPlaying?.uuid === station.uuid}
+                                                                isFavorite={favoriteIds.has(station.uuid)}
+                                                                onPlay={(picked) => onPlayStation(shelf.id, picked)}
+                                                                onToggleFavorite={onToggleFavorite}
+                                                                size="md"
+                                                                fillWidth
+                                                            />
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            ) : null}
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </div>
+                            );
+                        })()}
                     </article>
                 ))}
             </div>

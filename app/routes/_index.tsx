@@ -40,7 +40,6 @@ import { QuickRetuneWidget } from "./components/QuickRetuneWidget";
 import { LoadingView } from "./components/LoadingView";
 import { CollapsibleSection } from "./components/CollapsibleSection";
 import { MobileFilterDrawer } from "./components/MobileFilterDrawer";
-import { JourneyModule } from "./components/JourneyModule";
 import { SignalField } from "~/components/SignalField";
 import { CuratedShelfDeck, type CuratedShelfViewModel } from "./components/CuratedShelfDeck";
 import { annotateHealth } from "~/server/stations/health";
@@ -595,7 +594,6 @@ export default function Index() {
       ? curatedShelves.slice(0, 3)
       : curatedShelves.slice(0, 2);
   }, [curatedShelves, isCatalogSearchActive, recentStations.length, renderedNowPlaying]);
-  const shouldShowJourneyModule = Boolean(renderedNowPlaying || recentStations.length > 0);
 
   useEffect(() => {
     if (typeof document === "undefined") return;
@@ -701,10 +699,6 @@ export default function Index() {
       cancelled = true;
     };
   }, [expandedCountryLanguages, expandedCountryTags, loaderMatchesSearch, loaderStations, selectedCountry]);
-
-  const handleOpenPassport = useCallback(() => {
-    setPassportOpen(true);
-  }, []);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -1132,19 +1126,6 @@ export default function Index() {
             />
 
             <div className="relative z-20 mx-auto -mt-6 flex w-full max-w-7xl flex-col gap-7 px-4 md:-mt-8 md:gap-8 md:px-6">
-              {shouldShowJourneyModule && (
-                <section className="pt-5 md:pt-6">
-                  <JourneyModule
-                    nowPlaying={renderedNowPlaying}
-                    recentStations={recentStations}
-                    topCountries={topCountries}
-                    onStartListening={handlers.handleStartListening}
-                    onQuickRetune={handlers.handleQuickRetune}
-                    onOpenPassport={handleOpenPassport}
-                  />
-                </section>
-              )}
-
               {visibleCuratedShelves.length > 0 && (
                 <CuratedShelfDeck
                   shelves={visibleCuratedShelves}
@@ -1281,19 +1262,6 @@ export default function Index() {
                 handleStartStation(station, { queueSession: countryQueueSession })}
               transparent={false}
             />
-
-            {renderedNowPlaying && (
-              <section className="rounded-3xl border border-white/10 bg-[var(--rp-surface)] px-6 py-6 md:px-10 md:py-8 shadow-[0_18px_40px_rgba(0,0,0,0.5)] backdrop-blur-xl">
-                <JourneyModule
-                  nowPlaying={renderedNowPlaying}
-                  recentStations={recentStations}
-                  topCountries={topCountries}
-                  onStartListening={handlers.handleStartListening}
-                  onQuickRetune={handlers.handleQuickRetune}
-                  onOpenPassport={handleOpenPassport}
-                />
-              </section>
-            )}
 
             <section className="rounded-3xl border border-white/10 bg-[var(--rp-surface)] px-4 py-5 shadow-[0_18px_40px_rgba(0,0,0,0.5)] backdrop-blur-xl max-md:-mx-4 max-md:rounded-none max-md:border-x-0 max-md:bg-transparent max-md:shadow-none max-md:backdrop-blur-0 md:px-6 md:py-6">
               <div className="flex flex-wrap items-center justify-between gap-3">
