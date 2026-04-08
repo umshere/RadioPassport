@@ -28,7 +28,9 @@ function getConfiguredProviderNames(preferredProvider: ProviderName): ProviderNa
     if (!order.includes(providerName)) order.push(providerName);
   };
 
-  if (preferredProvider !== "gemini") add(preferredProvider);
+  // Always put the preferred provider first so it doesn't wait behind
+  // slower free-tier providers (e.g. OpenRouter) before being tried.
+  add(preferredProvider);
   add("openrouter");
   add("openai");
   add("ollama");
