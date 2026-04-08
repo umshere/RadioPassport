@@ -25,6 +25,9 @@ describe("POST /api/ai/recommend", () => {
     process.env.USE_MOCK = "false";
     process.env.GEMINI_API_KEY = "test-gemini-key";
     process.env.GEMINI_MODEL = "non-existent-model";
+    delete process.env.OPENAI_API_KEY;
+    delete process.env.OPENROUTER_API_KEY;
+    delete process.env.OLLAMA_URL;
     mockedRbFetchJson.mockReset();
     mockedNormalizeStations.mockReset();
   });

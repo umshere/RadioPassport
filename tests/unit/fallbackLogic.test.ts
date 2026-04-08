@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { getProvider, resetProviderCache } from "~/services/ai/providers";
 import { FallbackProvider } from "~/services/ai/providers/FallbackProvider";
 import { GeminiProvider } from "~/services/ai/providers/GeminiProvider";
+import { OpenRouterProvider } from "~/services/ai/providers/OpenRouterProvider";
 
 describe("Fallback Logic Verification", () => {
   const originalEnv = { ...process.env };
@@ -19,6 +20,8 @@ describe("Fallback Logic Verification", () => {
     process.env.AI_PROVIDER = "gemini";
     process.env.GEMINI_API_KEY = "test-key";
     delete process.env.OPENROUTER_API_KEY;
+    delete process.env.OPENAI_API_KEY;
+    delete process.env.OLLAMA_URL;
 
     const provider = getProvider();
     expect(provider).toBeInstanceOf(GeminiProvider);
@@ -32,6 +35,9 @@ describe("Fallback Logic Verification", () => {
 
     const provider = getProvider();
     expect(provider).toBeInstanceOf(FallbackProvider);
+    const providers = (provider as any).providers;
+    expect(providers[0]).toBeInstanceOf(OpenRouterProvider);
+    expect(providers.at(-1)).toBeInstanceOf(GeminiProvider);
   });
 
   it("FallbackProvider executes providers in order", async () => {

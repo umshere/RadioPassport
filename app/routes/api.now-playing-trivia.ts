@@ -274,44 +274,44 @@ async function fetchAiTrivia(
   // Build a fallback chain based on configured provider and available keys
   type ProviderFn = () => Promise<AiTriviaResult>;
   const chain: ProviderFn[] = [];
+  const queuedProviders = new Set<string>();
 
   const hasOpenRouter = Boolean((process.env.OPENROUTER_API_KEY ?? "").trim());
   const hasOpenAI = Boolean((process.env.OPENAI_API_KEY ?? "").trim());
   const hasGemini = Boolean((process.env.GEMINI_API_KEY ?? "").trim());
   const hasOllama = Boolean((process.env.OLLAMA_URL ?? "").trim());
 
-  const pushIf = (cond: boolean, fn: ProviderFn) => {
-    if (cond) chain.push(fn);
+  const pushIf = (name: string, cond: boolean, fn: ProviderFn) => {
+    if (!cond || queuedProviders.has(name)) return;
+    queuedProviders.add(name);
+    chain.push(fn);
   };
 
   // Helper to enqueue by name
   const enqueueByName = (name: string) => {
     const n = name.trim().toLowerCase();
-    if (n === "gemini") pushIf(hasGemini, () => fetchGeminiTrivia(prompt));
+    if (n === "gemini") pushIf(n, hasGemini, () => fetchGeminiTrivia(prompt));
     else if (n === "openrouter")
-      pushIf(hasOpenRouter, () => fetchOpenRouterTrivia(prompt));
-    else if (n === "openai") pushIf(hasOpenAI, () => fetchOpenAiTrivia(prompt));
-    else if (n === "ollama") pushIf(hasOllama, () => fetchOllamaTrivia(prompt));
+      pushIf(n, hasOpenRouter, () => fetchOpenRouterTrivia(prompt));
+    else if (n === "openai")
+      pushIf(n, hasOpenAI, () => fetchOpenAiTrivia(prompt));
+    else if (n === "ollama")
+      pushIf(n, hasOllama, () => fetchOllamaTrivia(prompt));
   };
 
-  // 1) Preferred provider first
-  enqueueByName(AI_PROVIDER);
-  // 2) Fallback order: OpenRouter → OpenAI → Gemini → Ollama (skip duplicates)
-  ["openrouter", "openai", "gemini", "ollama"].forEach((p) => {
-    // avoid duplicate entries by checking function reference presence
-    const beforeLen = chain.length;
-    enqueueByName(p);
-    // If preferred already added the same provider, this will no-op due to cond checks
-  });
+  // Prefer the configured provider unless it is Gemini, then keep Gemini last
+  // because it can incur paid API usage.
+  if (AI_PROVIDER !== "gemini") enqueueByName(AI_PROVIDER);
+  ["openrouter", "openai", "ollama", "gemini"].forEach(enqueueByName);
 
   // Ensure at least one option (even if keys are missing, we'll get an error which we surface)
   if (chain.length === 0) {
-    // No keys present; try Gemini then OpenRouter then OpenAI then Ollama to return a clear error
+    // No keys present; try free/preferred sources before Gemini to return clear errors.
     chain.push(
-      () => fetchGeminiTrivia(prompt),
       () => fetchOpenRouterTrivia(prompt),
       () => fetchOpenAiTrivia(prompt),
-      () => fetchOllamaTrivia(prompt)
+      () => fetchOllamaTrivia(prompt),
+      () => fetchGeminiTrivia(prompt)
     );
   }
 

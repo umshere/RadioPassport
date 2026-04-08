@@ -41,7 +41,6 @@ import { LoadingView } from "./components/LoadingView";
 import { CollapsibleSection } from "./components/CollapsibleSection";
 import { MobileFilterDrawer } from "./components/MobileFilterDrawer";
 import { JourneyModule } from "./components/JourneyModule";
-import { AISplashScreen, shouldShowAISplash } from "./components/AISplashScreen";
 import { SignalField } from "~/components/SignalField";
 import { CuratedShelfDeck, type CuratedShelfViewModel } from "./components/CuratedShelfDeck";
 import { annotateHealth } from "~/server/stations/health";
@@ -309,10 +308,7 @@ async function loadHomeCuratedShelf(definition: (typeof HOME_CURATED_SHELF_DEFIN
     }
   }
 
-  const ranked = rankStations(Array.from(merged.values()), {
-    preferredTags: definition.tags,
-    mood: definition.title,
-  });
+  const ranked = rankStations(Array.from(merged.values()));
   const healthAnnotated = annotateHealth(ranked);
   const shortlisted = healthAnnotated.filter(
     (station) => station.isLikelyUp !== false && station.healthStatus !== "error"
@@ -408,15 +404,7 @@ async function loadBehaviorShelf(snapshot: BehaviorSnapshot): Promise<HomeCurate
   }
 
   const ranked = annotateHealth(
-    rankStations(Array.from(merged.values()), {
-      mood: "More like your recent plays",
-      preferredTags,
-      preferredCountries,
-      preferredLanguages,
-      favoriteStationIds: snapshot.favoriteStationIds,
-      recentStationIds: snapshot.recentStationIds,
-      dislikedStationIds: snapshot.skippedStationIds,
-    })
+    rankStations(Array.from(merged.values()))
   );
   const selectedStations = ranked
     .filter((station) => station.healthStatus !== "error" && station.isLikelyUp !== false)
@@ -509,12 +497,6 @@ import { useUIStore } from "~/state/uiStore";
 
 export default function Index() {
   const hydrated = useHydrated();
-  const [showSplash, setShowSplash] = useState<boolean | null>(null);
-
-  useEffect(() => {
-    if (!hydrated) return;
-    setShowSplash(shouldShowAISplash());
-  }, [hydrated]);
 
   // Remix hooks
   const { countries, stations: loaderStations, curatedShelves: loaderCuratedShelves, selectedCountry: loaderSelectedCountry } = useLoaderData<typeof loader>();
@@ -1130,12 +1112,10 @@ export default function Index() {
 
   return (
     <div className="app-bg relative min-h-screen text-[var(--rp-text)] overflow-x-hidden w-full pb-32">
-      {showSplash ? <AISplashScreen onComplete={() => setShowSplash(false)} /> : null}
       <SignalField quality={selectedCountry ? "lite" : "full"} />
 
       <main
-        className={`relative z-10 flex w-full flex-col gap-0 pt-0 md:pt-2 ${showSplash === null ? "opacity-0" : ""
-          }`}
+        className="relative z-10 flex w-full flex-col gap-0 pt-0 md:pt-2"
         {...swipeHandlers}
         {...ariaHidden}
       >

@@ -23,6 +23,7 @@ export function useRadioPlayer() {
   const clearQueue = usePlayerStore((state) => state.clearQueue);
   const setCrossfadeMs = usePlayerStore((state) => state.setCrossfadeMs);
   const applySceneDescriptor = usePlayerStore((state) => state.applySceneDescriptor);
+  const recordSkippedStation = usePlayerStore((state) => state.recordSkippedStation);
   const startStation = usePlayerStore((state) => state.startStation);
   const playPause = usePlayerStore((state) => state.playPause);
   const stop = usePlayerStore((state) => state.stop);
@@ -50,6 +51,7 @@ export function useRadioPlayer() {
       clearQueue,
       setCrossfadeMs,
       applySceneDescriptor,
+      recordSkippedStation,
       startStation,
       playPause,
       stop,
@@ -75,6 +77,7 @@ export function useRadioPlayer() {
       clearQueue,
       setCrossfadeMs,
       applySceneDescriptor,
+      recordSkippedStation,
       startStation,
       playPause,
       stop,

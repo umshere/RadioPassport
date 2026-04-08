@@ -1,6 +1,6 @@
 # Scene Descriptor Contract
 
-`SceneDescriptor` objects describe how World Mode should look and sound. Providers must return JSON matching this shape:
+`SceneDescriptor` objects describe how AI-curated station scenes should look and sound. Providers must return JSON matching this shape:
 
 ```jsonc
 {

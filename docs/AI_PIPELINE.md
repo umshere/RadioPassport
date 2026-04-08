@@ -15,8 +15,8 @@ Providers live under `app/services/ai/providers/` and must implement the `SceneD
 
 ## Where it is used
 
-- Classic Mode world mixes (card stack experience) call `/api/ai/recommend` via `loadWorldDescriptor` in `app/hooks/useEventHandlers.ts`.
-- World Mode (`/?view=world`) uses `geminiService` instead and does not call this endpoint.
+- World mixes (card stack experience) call `/api/ai/recommend` via `loadWorldDescriptor` in `app/hooks/useEventHandlers.ts`.
+- The old terminal-style Gemini-only view was removed; Gemini should only be reached through provider fallback order.
 
 ## 1. Prompt intake and intent extraction
 
@@ -38,6 +38,14 @@ Providers live under `app/services/ai/providers/` and must implement the `SceneD
 2. Candidates are filtered via `filterStationCandidates` (bitrate, stream health) and deduped before entering the LLM prompt context.
 
 ## 3. Model selection
+
+Provider fallback order keeps Gemini as the last resort:
+
+1. Configured provider, unless it is `gemini`
+2. `openrouter`
+3. `openai`
+4. `ollama`
+5. `gemini`
 
 OpenRouter defaults to `openrouter/free`, OpenRouter's free-model router. This avoids pinning production traffic to free model IDs that can disappear or change behavior without notice.
 
