@@ -2190,11 +2190,11 @@ export function HeroSection({
             </motion.span>
 
             <div className="mt-6 flex items-center gap-4">
-              <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-2xl bg-transparent text-xl font-black tracking-tight text-[var(--rp-gold)] shadow-[0_16px_32px_rgba(0,0,0,0.5)]">
+              <div className="flex h-14 items-center justify-center bg-transparent text-xl font-black tracking-tight text-[var(--rp-gold)]">
                 <img
-                  src="/RP180.png"
+                  src="/RPLOGO.png"
                   alt="Radio Passport"
-                  className="h-full w-full object-cover scale-[1.16] translate-y-0"
+                  className="h-full w-auto object-contain"
                 />
               </div>
               <div>

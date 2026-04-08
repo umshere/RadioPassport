@@ -559,17 +559,6 @@ const StationCardFanItem = memo(
             pointerEvents: "none",
           }}
         />
-        <span
-          aria-hidden
-          style={{
-            position: "absolute",
-            inset: 0,
-            backgroundImage: "url('/texture.png')",
-            opacity: 0.03,
-            mixBlendMode: "multiply",
-            pointerEvents: "none",
-          }}
-        />
         <div
           style={{
             position: "relative",

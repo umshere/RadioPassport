@@ -47,13 +47,13 @@ export default function AppHeader() {
         {/* Logo Area */}
         <Link to="/" className="flex items-center gap-3 flex-shrink-0 group" prefetch="intent" aria-label="Radio Passport">
           <motion.div
-            className="app-header__logo relative flex items-center justify-center rounded-xl bg-transparent shadow-[0_10px_20px_rgba(0,0,0,0.4)] ring-1 ring-white/5 overflow-hidden transition-transform group-hover:scale-105"
-            style={enableFallback ? { width: logoSize, height: logoSize, scale: logoScale } : undefined}
+            className="app-header__logo relative flex items-center justify-center bg-transparent transition-transform group-hover:scale-105"
+            style={enableFallback ? { height: logoSize, scale: logoScale } : undefined}
           >
             <img
-              src="/RP180.png"
+              src="/RPLOGO.png"
               alt="Radio Passport"
-              className="h-full w-full object-cover scale-[1.16] translate-y-0"
+              className="h-full w-auto object-contain"
             />
           </motion.div>
           <div className="flex flex-col">
