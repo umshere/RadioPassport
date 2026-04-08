@@ -4,19 +4,36 @@ import {
   dedupeStations,
   filterStationCandidates,
   normalizePreferenceList,
+  parseJsonObjectFromText,
 } from "./providerUtils";
 import type { SceneDescriptor } from "~/scenes/types";
 import type { Station } from "~/types/radio";
 import { rbFetchJson } from "~/utils/radioBrowser";
 import { normalizeStations } from "~/utils/stations";
+import { getOpenRouterModelRotation } from "./openRouterModels";
 
-const OPTIMIZED_MODEL_ROTATION = [
-  "mistralai/mistral-7b-instruct:free",
-  "meta-llama/llama-3.3-8b-instruct:free",
-  "google/gemma-3n-4b-it:free",
-  "openai/gpt-oss-20b:free",
-  "nvidia/nemotron-2-12b-vl:free",
-];
+type OpenRouterSceneResponse = {
+  visual?: unknown;
+  mood?: unknown;
+  animation?: unknown;
+  play?: unknown;
+  reason?: unknown;
+  selectedStationIds?: unknown;
+  stationEnhancements?: unknown;
+};
+
+function isScenePlayOptions(value: unknown): value is SceneDescriptor["play"] {
+  return (
+    value !== null &&
+    typeof value === "object" &&
+    "strategy" in value &&
+    typeof (value as { strategy?: unknown }).strategy === "string"
+  );
+}
+
+function isHealthStatus(value: unknown): value is Station["healthStatus"] {
+  return value === "good" || value === "warning" || value === "error";
+}
 
 const SYSTEM_PROMPT = `You are Radio Passport's music curator. Create a card_stack scene JSON.
 
@@ -135,7 +152,9 @@ export class OpenRouterProvider implements AiProvider {
 
     let lastError: Error | null = null;
 
-    for (const model of OPTIMIZED_MODEL_ROTATION) {
+    const modelRotation = getOpenRouterModelRotation();
+
+    for (const model of modelRotation) {
       try {
         console.log(`Attempting to use model: ${model}`);
         const response = await this.fetchImpl(
@@ -175,16 +194,18 @@ export class OpenRouterProvider implements AiProvider {
           );
         }
 
-        const jsonMatch = text.match(/\{[\s\S]*\}/);
-        if (!jsonMatch) {
-          throw new Error(
-            `Could not find a valid JSON object in the AI response for model ${model}.`
-          );
-        }
-
-        const aiResponse = JSON.parse(jsonMatch[0]);
-        const selectedIds = new Set(aiResponse.selectedStationIds || []);
-        const stationEnhancements = aiResponse.stationEnhancements || {};
+        const aiResponse =
+          parseJsonObjectFromText(text) as OpenRouterSceneResponse;
+        const selectedIds = new Set(
+          Array.isArray(aiResponse.selectedStationIds)
+            ? aiResponse.selectedStationIds.map(String)
+            : []
+        );
+        const stationEnhancements =
+          aiResponse.stationEnhancements &&
+          typeof aiResponse.stationEnhancements === "object"
+            ? (aiResponse.stationEnhancements as Record<string, Record<string, unknown>>)
+            : {};
 
         const curatedStations = availableStations
           .filter((station) => selectedIds.has(station.uuid))
@@ -193,10 +214,21 @@ export class OpenRouterProvider implements AiProvider {
             if (!enhancement) return station;
             return {
               ...station,
-              highlight: enhancement.highlight || station.highlight,
-              tagList: enhancement.tagList || station.tagList,
-              healthStatus: enhancement.healthStatus || station.healthStatus,
-              healthScore: enhancement.healthScore ?? station.healthScore,
+              highlight:
+                typeof enhancement.highlight === "string"
+                  ? enhancement.highlight
+                  : station.highlight,
+              tagList: Array.isArray(enhancement.tagList)
+                ? enhancement.tagList.map(String)
+                : station.tagList,
+              healthStatus:
+                isHealthStatus(enhancement.healthStatus)
+                  ? enhancement.healthStatus
+                  : station.healthStatus,
+              healthScore:
+                typeof enhancement.healthScore === "number"
+                  ? enhancement.healthScore
+                  : station.healthScore,
             };
           });
 
@@ -209,18 +241,34 @@ export class OpenRouterProvider implements AiProvider {
         }
 
         const descriptor: SceneDescriptor = {
-          visual: aiResponse.visual || "card_stack",
-          mood: aiResponse.mood || "Sonic Journey",
-          animation: aiResponse.animation || "slow_orbit",
-          play: aiResponse.play || {
+          visual:
+            typeof aiResponse.visual === "string"
+              ? aiResponse.visual
+              : "card_stack",
+          mood:
+            typeof aiResponse.mood === "string"
+              ? aiResponse.mood
+              : "Sonic Journey",
+          animation:
+            typeof aiResponse.animation === "string"
+              ? aiResponse.animation
+              : "slow_orbit",
+          play: isScenePlayOptions(aiResponse.play) ? aiResponse.play : {
             strategy: "preview_on_hover",
             crossfadeMs: 4000,
           },
           stations: curatedStations.slice(0, 8),
-          reason: aiResponse.reason,
+          reason:
+            typeof aiResponse.reason === "string"
+              ? aiResponse.reason
+              : undefined,
         };
 
-        console.log(`Successfully generated scene with model: ${model}`);
+        const selectedModel =
+          typeof payload?.model === "string" ? payload.model : model;
+        console.log(
+          `Successfully generated scene with model: ${selectedModel}`
+        );
         return parseSceneDescriptor(descriptor);
       } catch (error) {
         lastError =

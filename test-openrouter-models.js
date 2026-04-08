@@ -22,13 +22,11 @@ const userPrompt = `Pick 6 jazz stations from:
 
 Return ONLY JSON.`;
 
-// Models to test - focusing on fast/free options
+// Models to test - focusing on router-first free options
 const MODELS = [
-  "z-ai/glm-4.5-air:free", // Current (slow)
-  "meta-llama/llama-3.2-3b-instruct:free", // Small = fast (winner!)
-  "meta-llama/llama-3.2-1b-instruct:free", // Even smaller?
-  "google/gemini-flash-1.5:free", // Google Flash 1.5
-  "mistralai/mistral-7b-instruct:free", // Mistral 7B
+  "openrouter/free", // Dynamic free router
+  "z-ai/glm-4.5-air:free", // Controlled fallback candidate
+  "meta-llama/llama-3.3-8b-instruct:free", // Controlled fallback candidate
 ];
 
 async function testModel(modelName) {
@@ -133,9 +131,9 @@ async function runTests() {
     });
 
     const fastest = successful[0];
-    const current = results.find((r) => r.model === "z-ai/glm-4.5-air:free");
+    const current = results.find((r) => r.model === "openrouter/free");
 
-    if (fastest.model !== "z-ai/glm-4.5-air:free" && current?.success) {
+    if (fastest.model !== "openrouter/free" && current?.success) {
       const speedup = (current.duration / fastest.duration).toFixed(1);
       console.log(`\n💡 RECOMMENDATION: Switch to ${fastest.model}`);
       console.log(`   🚀 ${speedup}x faster than current model`);

@@ -68,7 +68,7 @@ async function testRecommendation(prompt) {
 async function main() {
   console.log("🚀 Testing OpenRouter AI Integration");
   console.log(`Base URL: ${BASE_URL}`);
-  console.log(`Provider: OpenRouter (zi-ai/glm-4.5-air:free)`);
+  console.log(`Provider: OpenRouter (openrouter/free)`);
 
   for (const prompt of testPrompts) {
     await testRecommendation(prompt);

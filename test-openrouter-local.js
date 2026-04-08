@@ -4,16 +4,18 @@
  * Local test for OpenRouter provider - tests the provider directly without server
  */
 
-// Simulate environment variables
-process.env.OPENROUTER_API_KEY =
-  "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";
-process.env.OPENROUTER_MODEL = "z-ai/glm-4.5-air:free";
+process.env.OPENROUTER_MODEL ||= "openrouter/free";
 
 async function testOpenRouterAPI() {
   console.log("🧪 Testing OpenRouter API directly...\n");
 
   const apiKey = process.env.OPENROUTER_API_KEY;
   const model = process.env.OPENROUTER_MODEL;
+
+  if (!apiKey) {
+    console.error("OPENROUTER_API_KEY environment variable not set");
+    return false;
+  }
 
   console.log(`Model: ${model}`);
   console.log(`API Key: ${apiKey.substring(0, 20)}...`);

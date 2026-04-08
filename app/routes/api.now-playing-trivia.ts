@@ -1,6 +1,8 @@
 import { json, type LoaderFunctionArgs } from "@remix-run/node";
 import type { TrackTriviaResponse, TrackTrivia } from "~/types/trivia";
 import { resolveTrackImage } from "~/utils/imageSearch";
+import { getOpenRouterTriviaModelRotation } from "~/services/ai/providers/openRouterModels";
+import { parseJsonObjectFromText } from "~/services/ai/providers/providerUtils";
 
 const MUSICBRAINZ_BASE = "https://musicbrainz.org/ws/2";
 const USER_AGENT =
@@ -10,17 +12,6 @@ const AI_CACHE_TTL_MS = 60 * 60 * 1000;
 const AI_PROVIDER = (process.env.AI_PROVIDER ?? "openai").trim().toLowerCase();
 
 const OPENAI_MODEL = process.env.OPENAI_MODEL ?? "gpt-4o-mini";
-const OPENROUTER_MODEL =
-  process.env.OPENROUTER_TRIVIA_MODEL ??
-  process.env.OPENROUTER_MODEL ??
-  "openai/gpt-oss-20b:free";
-const OPENROUTER_TRIVIA_MODELS = (
-  process.env.OPENROUTER_TRIVIA_MODELS ??
-  "openai/gpt-oss-20b:free,google/gemma-3n-4b-it:free,mistralai/mistral-7b-instruct:free"
-)
-  .split(",")
-  .map((model) => model.trim())
-  .filter(Boolean);
 const GEMINI_MODEL = process.env.GEMINI_MODEL ?? "gemini-2.5-flash-lite";
 const GEMINI_API_VERSION = process.env.GEMINI_API_VERSION ?? "v1beta";
 const OLLAMA_MODEL = process.env.OLLAMA_MODEL ?? "radio-passport";
@@ -119,16 +110,9 @@ type AiTriviaResult = {
 
 function parseJsonFromText(text: string): unknown | null {
   try {
-    return JSON.parse(text);
+    return parseJsonObjectFromText(text);
   } catch {
-    const start = text.indexOf("{");
-    const end = text.lastIndexOf("}");
-    if (start === -1 || end === -1 || end <= start) return null;
-    try {
-      return JSON.parse(text.slice(start, end + 1));
-    } catch {
-      return null;
-    }
+    return null;
   }
 }
 
@@ -167,10 +151,7 @@ async function fetchOpenAiTrivia(prompt: string): Promise<AiTriviaResult> {
 async function fetchOpenRouterTrivia(prompt: string): Promise<AiTriviaResult> {
   const apiKey = process.env.OPENROUTER_API_KEY ?? "";
   if (!apiKey) return { trivia: null, error: "Missing OPENROUTER_API_KEY." };
-  const modelsToTry = [
-    OPENROUTER_MODEL,
-    ...OPENROUTER_TRIVIA_MODELS.filter((model) => model !== OPENROUTER_MODEL),
-  ];
+  const modelsToTry = getOpenRouterTriviaModelRotation();
 
   let lastError = "OpenRouter request failed.";
   for (const model of modelsToTry) {

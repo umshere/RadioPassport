@@ -39,15 +39,9 @@ Providers live under `app/services/ai/providers/` and must implement the `SceneD
 
 ## 3. Model selection
 
-OpenRouter rotates through low-latency free models:
+OpenRouter defaults to `openrouter/free`, OpenRouter's free-model router. This avoids pinning production traffic to free model IDs that can disappear or change behavior without notice.
 
-1. `meta-llama/llama-3.3-8b-instruct:free`
-2. `google/gemma-3n-4b-it:free`
-3. `mistralai/mistral-7b-instruct:free`
-4. `openai/gpt-oss-20b:free`
-5. `nvidia/nemotron-2-12b-vl:free`
-
-If a model fails (moderation, invalid JSON, 404), we log the error and move on automatically.
+For controlled fallbacks, set `OPENROUTER_MODEL` as the primary model and `OPENROUTER_MODELS` as a comma-separated list of additional models. The provider appends `openrouter/free` as a final safety fallback, logs model failures, and moves on automatically when a model fails or returns unusable JSON.
 
 ## 4. Post processing and supplementation
 
