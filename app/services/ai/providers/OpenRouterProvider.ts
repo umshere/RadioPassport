@@ -1,5 +1,9 @@
 import { parseSceneDescriptor } from "./sceneDescriptorParser";
-import type { AiProvider, ProviderSceneContext, ProviderSceneIntent } from "./BaseProvider";
+import type {
+  AiProvider,
+  ProviderSceneContext,
+  ProviderSceneIntent,
+} from "./BaseProvider";
 import {
   dedupeStations,
   filterStationCandidates,
@@ -51,61 +55,59 @@ Make it feel like a bespoke mixtape. Return ONLY JSON.`;
 export class OpenRouterProvider implements AiProvider {
   constructor(
     private readonly apiKey: string,
-    private readonly fetchImpl: typeof fetch = fetch
+    private readonly fetchImpl: typeof fetch = fetch,
   ) {
     if (!apiKey) {
       throw new Error(
-        "OPENROUTER_API_KEY is required when using the OpenRouter provider"
+        "OPENROUTER_API_KEY is required when using the OpenRouter provider",
       );
     }
   }
 
   private async fetchAvailableStations(
     limit: number = 60,
-    intent?: ProviderSceneIntent
+    intent?: ProviderSceneIntent,
   ): Promise<Station[]> {
     const baseStations = await this.fetchAndFilter(
-      `/json/stations/search?limit=${limit}&hidebroken=true&order=clickcount&reverse=true&has_geo_info=true`
+      `/json/stations/search?limit=${limit}&hidebroken=true&order=clickcount&reverse=true&has_geo_info=true`,
     );
 
     const targeted: Station[] = [];
-    const preferredCountries = normalizePreferenceList(intent?.preferredCountries);
-    const preferredLanguages = normalizePreferenceList(intent?.preferredLanguages);
+    const preferredCountries = normalizePreferenceList(
+      intent?.preferredCountries,
+    );
+    const preferredLanguages = normalizePreferenceList(
+      intent?.preferredLanguages,
+    );
     const preferredTags = normalizePreferenceList(intent?.preferredTags);
 
     for (const country of preferredCountries.slice(0, 2)) {
       targeted.push(
-        ...(
-          await this.fetchAndFilter(
-            `/json/stations/bycountry/${encodeURIComponent(
-              country
-            )}?limit=30&hidebroken=true&order=clickcount&reverse=true`
-          )
-        )
+        ...(await this.fetchAndFilter(
+          `/json/stations/bycountry/${encodeURIComponent(
+            country,
+          )}?limit=30&hidebroken=true&order=clickcount&reverse=true`,
+        )),
       );
     }
 
     for (const language of preferredLanguages.slice(0, 2)) {
       targeted.push(
-        ...(
-          await this.fetchAndFilter(
-            `/json/stations/bylanguage/${encodeURIComponent(
-              language
-            )}?limit=30&hidebroken=true&order=clickcount&reverse=true`
-          )
-        )
+        ...(await this.fetchAndFilter(
+          `/json/stations/bylanguage/${encodeURIComponent(
+            language,
+          )}?limit=30&hidebroken=true&order=clickcount&reverse=true`,
+        )),
       );
     }
 
     for (const tag of preferredTags.slice(0, 3)) {
       targeted.push(
-        ...(
-          await this.fetchAndFilter(
-            `/json/stations/bytag/${encodeURIComponent(
-              tag
-            )}?limit=30&hidebroken=true&order=clickcount&reverse=true`
-          )
-        )
+        ...(await this.fetchAndFilter(
+          `/json/stations/bytag/${encodeURIComponent(
+            tag,
+          )}?limit=30&hidebroken=true&order=clickcount&reverse=true`,
+        )),
       );
     }
 
@@ -117,7 +119,7 @@ export class OpenRouterProvider implements AiProvider {
     try {
       const rawStations = await rbFetchJson<unknown>(path);
       const stations = normalizeStations(
-        Array.isArray(rawStations) ? rawStations : []
+        Array.isArray(rawStations) ? rawStations : [],
       );
       return filterStationCandidates(stations);
     } catch (error) {
@@ -140,9 +142,12 @@ export class OpenRouterProvider implements AiProvider {
 
   async getSceneDescriptor(
     prompt: string,
-    context?: ProviderSceneContext
+    context?: ProviderSceneContext,
   ): Promise<SceneDescriptor> {
-    const availableStations = await this.fetchAvailableStations(60, context?.intent);
+    const availableStations = await this.fetchAvailableStations(
+      60,
+      context?.intent,
+    );
     if (availableStations.length === 0) {
       throw new Error("No stations available from Radio Browser");
     }
@@ -156,15 +161,12 @@ export class OpenRouterProvider implements AiProvider {
     const MODEL_TIMEOUT_MS = 15_000;
 
     for (const model of modelRotation) {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), MODEL_TIMEOUT_MS);
       try {
         console.log(`Attempting to use model: ${model}`);
-        const response = await this.fetchImpl(
+        const fetchPromise = this.fetchImpl(
           "https://openrouter.ai/api/v1/chat/completions",
           {
             method: "POST",
-            signal: controller.signal,
             headers: {
               "Content-Type": "application/json",
               Authorization: `Bearer ${this.apiKey}`,
@@ -179,13 +181,25 @@ export class OpenRouterProvider implements AiProvider {
               ],
               temperature: 0.8,
             }),
-          }
+          },
         );
+        const timeoutPromise = new Promise<never>((_, reject) =>
+          setTimeout(
+            () =>
+              reject(
+                new Error(
+                  `Model ${model} timed out after ${MODEL_TIMEOUT_MS}ms`,
+                ),
+              ),
+            MODEL_TIMEOUT_MS,
+          ),
+        );
+        const response = await Promise.race([fetchPromise, timeoutPromise]);
 
         if (!response.ok) {
           const errorText = await response.text();
           throw new Error(
-            `OpenRouter request failed for model ${model} with status ${response.status}: ${errorText}`
+            `OpenRouter request failed for model ${model} with status ${response.status}: ${errorText}`,
           );
         }
 
@@ -194,21 +208,25 @@ export class OpenRouterProvider implements AiProvider {
 
         if (!text) {
           throw new Error(
-            `OpenRouter response for model ${model} did not include content`
+            `OpenRouter response for model ${model} did not include content`,
           );
         }
 
-        const aiResponse =
-          parseJsonObjectFromText(text) as OpenRouterSceneResponse;
+        const aiResponse = parseJsonObjectFromText(
+          text,
+        ) as OpenRouterSceneResponse;
         const selectedIds = new Set(
           Array.isArray(aiResponse.selectedStationIds)
             ? aiResponse.selectedStationIds.map(String)
-            : []
+            : [],
         );
         const stationEnhancements =
           aiResponse.stationEnhancements &&
           typeof aiResponse.stationEnhancements === "object"
-            ? (aiResponse.stationEnhancements as Record<string, Record<string, unknown>>)
+            ? (aiResponse.stationEnhancements as Record<
+                string,
+                Record<string, unknown>
+              >)
             : {};
 
         const curatedStations = availableStations
@@ -225,10 +243,9 @@ export class OpenRouterProvider implements AiProvider {
               tagList: Array.isArray(enhancement.tagList)
                 ? enhancement.tagList.map(String)
                 : station.tagList,
-              healthStatus:
-                isHealthStatus(enhancement.healthStatus)
-                  ? enhancement.healthStatus
-                  : station.healthStatus,
+              healthStatus: isHealthStatus(enhancement.healthStatus)
+                ? enhancement.healthStatus
+                : station.healthStatus,
               healthScore:
                 typeof enhancement.healthScore === "number"
                   ? enhancement.healthScore
@@ -238,7 +255,7 @@ export class OpenRouterProvider implements AiProvider {
 
         if (curatedStations.length < 6) {
           console.warn(
-            `AI (${model}) selected too few stations, supplementing with top stations.`
+            `AI (${model}) selected too few stations, supplementing with top stations.`,
           );
           const needed = 8 - curatedStations.length;
           curatedStations.push(...availableStations.slice(0, needed));
@@ -257,10 +274,12 @@ export class OpenRouterProvider implements AiProvider {
             typeof aiResponse.animation === "string"
               ? aiResponse.animation
               : "slow_orbit",
-          play: isScenePlayOptions(aiResponse.play) ? aiResponse.play : {
-            strategy: "preview_on_hover",
-            crossfadeMs: 4000,
-          },
+          play: isScenePlayOptions(aiResponse.play)
+            ? aiResponse.play
+            : {
+                strategy: "preview_on_hover",
+                crossfadeMs: 4000,
+              },
           stations: curatedStations.slice(0, 8),
           reason:
             typeof aiResponse.reason === "string"
@@ -271,7 +290,7 @@ export class OpenRouterProvider implements AiProvider {
         const selectedModel =
           typeof payload?.model === "string" ? payload.model : model;
         console.log(
-          `Successfully generated scene with model: ${selectedModel}`
+          `Successfully generated scene with model: ${selectedModel}`,
         );
         return parseSceneDescriptor(descriptor);
       } catch (error) {
@@ -280,15 +299,13 @@ export class OpenRouterProvider implements AiProvider {
             ? error
             : new Error("An unknown error occurred");
         console.warn(
-          `Model ${model} failed: ${lastError.message}. Trying next model.`
+          `Model ${model} failed: ${lastError.message}. Trying next model.`,
         );
-      } finally {
-        clearTimeout(timeoutId);
       }
     }
 
     throw new Error(
-      `All models in the rotation failed. Last error: ${lastError?.message}`
+      `All models in the rotation failed. Last error: ${lastError?.message}`,
     );
   }
 }

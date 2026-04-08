@@ -36,7 +36,7 @@ const triviaCache = new Map<string, CacheEntry>();
 function getCacheKey(
   source: string,
   title?: string | null,
-  artist?: string | null
+  artist?: string | null,
 ) {
   return `${source}:${(title ?? "").toLowerCase().trim()}|${(artist ?? "")
     .toLowerCase()
@@ -51,7 +51,7 @@ function cleanSearchTerm(value: string): string {
   const withoutBrackets = value.replace(/\[[^\]]*\]|\([^\)]*\)/g, " ");
   const withoutNoise = withoutBrackets.replace(
     /\b(hq|lyrics?|lyric video|official|video|audio|remaster(ed)?|live|full|mix|version|feat\.?|ft\.?|featuring|cover|performance|m\/v|mv|hd|4k|8k|explicit|clean)\b/gi,
-    " "
+    " ",
   );
   return withoutNoise
     .replace(/[“”"']/g, " ")
@@ -68,7 +68,7 @@ function buildSearchQuery(title?: string | null, artist?: string | null) {
 function normalizeTriviaPayload(
   raw: unknown,
   source: "free" | "ai",
-  options?: { links?: TrackTrivia["links"]; imageUrl?: string | null }
+  options?: { links?: TrackTrivia["links"]; imageUrl?: string | null },
 ): TrackTrivia | null {
   if (!raw || typeof raw !== "object") return null;
   const obj = raw as Record<string, unknown>;
@@ -155,15 +155,12 @@ async function fetchOpenRouterTrivia(prompt: string): Promise<AiTriviaResult> {
 
   let lastError = "OpenRouter request failed.";
   for (const model of modelsToTry) {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 12_000);
     let response: Response;
     try {
-      response = await fetch(
+      const fetchPromise = fetch(
         "https://openrouter.ai/api/v1/chat/completions",
         {
           method: "POST",
-          signal: controller.signal,
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${apiKey}`,
@@ -176,14 +173,18 @@ async function fetchOpenRouterTrivia(prompt: string): Promise<AiTriviaResult> {
             ],
             temperature: 0.4,
           }),
-        }
+        },
       );
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error(`Model ${model} timed out`)), 12_000),
+      );
+      response = await Promise.race([fetchPromise, timeoutPromise]);
     } catch (err) {
-      clearTimeout(timeoutId);
-      lastError = `OpenRouter request failed for ${model}: ${err instanceof Error ? err.message : String(err)}`;
+      lastError = `OpenRouter request failed for ${model}: ${
+        err instanceof Error ? err.message : String(err)
+      }`;
       continue;
     }
-    clearTimeout(timeoutId);
     if (!response.ok) {
       const errorText = await response.text();
       const trimmed = errorText.trim().slice(0, 200);
@@ -254,7 +255,7 @@ async function fetchOllamaTrivia(prompt: string): Promise<AiTriviaResult> {
         format: "json",
         stream: false,
       }),
-    }
+    },
   );
   if (!response.ok) {
     return {
@@ -274,7 +275,7 @@ async function fetchOllamaTrivia(prompt: string): Promise<AiTriviaResult> {
 async function fetchAiTrivia(
   title?: string | null,
   artist?: string | null,
-  promptOverride?: string
+  promptOverride?: string,
 ) {
   const promptParts = ["Track info request:"];
   if (title) promptParts.push(`Title: ${title}`);
@@ -322,7 +323,7 @@ async function fetchAiTrivia(
       () => fetchOpenRouterTrivia(prompt),
       () => fetchOpenAiTrivia(prompt),
       () => fetchOllamaTrivia(prompt),
-      () => fetchGeminiTrivia(prompt)
+      () => fetchGeminiTrivia(prompt),
     );
   }
 
@@ -374,7 +375,7 @@ async function fetchJson<T>(url: string): Promise<T | null> {
 
 async function fetchMusicBrainzEnrichment(
   title?: string | null,
-  artist?: string | null
+  artist?: string | null,
 ): Promise<{
   facts: TrackTrivia["facts"];
   links: TrackTrivia["links"];
@@ -413,16 +414,24 @@ async function fetchMusicBrainzEnrichment(
   if (!recording) {
     const fallbackQuery = buildSearchQuery(title ?? "", artist ?? "");
     const fallbackYoutubeUrl = fallbackQuery
-      ? `https://www.youtube.com/results?search_query=${encodeURIComponent(fallbackQuery)}`
+      ? `https://www.youtube.com/results?search_query=${encodeURIComponent(
+          fallbackQuery,
+        )}`
       : null;
     const fallbackWikipediaUrl = fallbackQuery
-      ? `https://en.wikipedia.org/wiki/Special:Search?search=${encodeURIComponent(fallbackQuery)}`
+      ? `https://en.wikipedia.org/wiki/Special:Search?search=${encodeURIComponent(
+          fallbackQuery,
+        )}`
       : null;
     return {
       facts: [],
       links: [
         fallbackYoutubeUrl
-          ? { label: "YouTube", url: fallbackYoutubeUrl, kind: "youtube" as const }
+          ? {
+              label: "YouTube",
+              url: fallbackYoutubeUrl,
+              kind: "youtube" as const,
+            }
           : null,
         fallbackWikipediaUrl
           ? { label: "Wiki", url: fallbackWikipediaUrl, kind: "info" as const }
@@ -460,7 +469,9 @@ async function fetchMusicBrainzEnrichment(
     artistTags = (artistData?.tags ?? []).map((tag) => tag.name).slice(0, 3);
   }
 
-  const recordingTags = (recording.tags ?? []).map((tag) => tag.name).slice(0, 3);
+  const recordingTags = (recording.tags ?? [])
+    .map((tag) => tag.name)
+    .slice(0, 3);
   const tags = [...recordingTags, ...artistTags].filter(Boolean);
 
   const facts: TrackTrivia["facts"] = [];
@@ -468,14 +479,22 @@ async function fetchMusicBrainzEnrichment(
   if (releaseYear) facts.push({ label: "Year", value: releaseYear });
   if (artistArea) facts.push({ label: "Origin", value: artistArea });
   if (duration) facts.push({ label: "Length", value: duration });
-  if (tags.length > 0) facts.push({ label: "Style", value: tags.slice(0, 2).join(", ") });
+  if (tags.length > 0)
+    facts.push({ label: "Style", value: tags.slice(0, 2).join(", ") });
 
-  const searchQuery = buildSearchQuery(recording.title ?? title ?? "", artistName);
+  const searchQuery = buildSearchQuery(
+    recording.title ?? title ?? "",
+    artistName,
+  );
   const youtubeUrl = searchQuery
-    ? `https://www.youtube.com/results?search_query=${encodeURIComponent(searchQuery)}`
+    ? `https://www.youtube.com/results?search_query=${encodeURIComponent(
+        searchQuery,
+      )}`
     : null;
   const wikipediaUrl = searchQuery
-    ? `https://en.wikipedia.org/wiki/Special:Search?search=${encodeURIComponent(searchQuery)}`
+    ? `https://en.wikipedia.org/wiki/Special:Search?search=${encodeURIComponent(
+        searchQuery,
+      )}`
     : null;
 
   const links = [
@@ -516,7 +535,10 @@ async function fetchMusicBrainzEnrichment(
     ? `https://coverartarchive.org/release/${releaseId}/front-250`
     : null;
   if (!imageUrl) {
-    imageUrl = await resolveTrackImage(recording.title ?? title ?? "", artistName);
+    imageUrl = await resolveTrackImage(
+      recording.title ?? title ?? "",
+      artistName,
+    );
   }
 
   return {
@@ -528,7 +550,7 @@ async function fetchMusicBrainzEnrichment(
 
 function mergeTriviaFacts(
   primaryFacts: TrackTrivia["facts"] = [],
-  secondaryFacts: TrackTrivia["facts"] = []
+  secondaryFacts: TrackTrivia["facts"] = [],
 ) {
   const seen = new Set<string>();
   const merged: TrackTrivia["facts"] = [];
@@ -543,7 +565,7 @@ function mergeTriviaFacts(
 
 function mergeTriviaLinks(
   primaryLinks: TrackTrivia["links"] = [],
-  secondaryLinks: TrackTrivia["links"] = []
+  secondaryLinks: TrackTrivia["links"] = [],
 ) {
   const seen = new Set<string>();
   const merged: TrackTrivia["links"] = [];
@@ -582,7 +604,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
   if (!title && !artist) {
     return json<TrackTriviaResponse>(
       { status: "error", reason: "Missing track title or artist." },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -623,7 +645,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
     }
     const enrichment = await fetchMusicBrainzEnrichment(
       trivia.cleanTitle ?? title ?? "",
-      trivia.cleanArtist ?? artist ?? ""
+      trivia.cleanArtist ?? artist ?? "",
     );
 
     const response: TrackTriviaResponse = {
@@ -645,7 +667,9 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const enrichment = await fetchMusicBrainzEnrichment(title, artist);
   const mbTrackLink = enrichment.links?.find((link) => link.kind === "track");
   const recordingId = mbTrackLink?.url.split("/").pop() ?? null;
-  const mbReleaseLink = enrichment.links?.find((link) => link.kind === "release");
+  const mbReleaseLink = enrichment.links?.find(
+    (link) => link.kind === "release",
+  );
   const releaseId = mbReleaseLink?.url.split("/").pop() ?? null;
   const mbArtistLink = enrichment.links?.find((link) => link.kind === "artist");
   const artistId = mbArtistLink?.url.split("/").pop() ?? null;
@@ -661,7 +685,9 @@ export async function loader({ request }: LoaderFunctionArgs) {
           artist?: { id?: string; name?: string };
         }>;
         tags?: Array<{ name: string }>;
-      }>(`${MUSICBRAINZ_BASE}/recording/${recordingId}?fmt=json&inc=artists+releases+tags`)
+      }>(
+        `${MUSICBRAINZ_BASE}/recording/${recordingId}?fmt=json&inc=artists+releases+tags`,
+      )
     : null;
   if (!recording) {
     const response: TrackTriviaResponse = {
