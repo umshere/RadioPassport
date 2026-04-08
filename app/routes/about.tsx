@@ -15,7 +15,7 @@ import {
 
 export const meta = () => [
     { title: "About Radio Passport | Discover Global Radio" },
-    { name: "description", content: "Radio Passport is a global radio discovery experience built for curious listeners." },
+    { name: "description", content: "Radio Passport is a curated live radio discovery experience built to help listeners find the right station quickly." },
 ];
 
 export default function About() {
@@ -39,14 +39,14 @@ export default function About() {
                             className="text-4xl lg:text-6xl font-semibold text-[var(--rp-text)] mt-3"
                             style={{ lineHeight: 1.08 }}
                         >
-                            Radio Passport is a global listening atlas.
+                            Radio Passport is curated live radio discovery.
                         </Title>
                         <Text
                             size="lg"
                             className="text-[var(--rp-muted)] max-w-2xl mx-auto mt-4"
                         >
-                            Built to make radio feel cinematic again — a calm, focused space to drift through stations,
-                            cultures, and late-night signals from anywhere.
+                            Built to make radio feel cinematic again without making discovery feel complicated,
+                            so you can move from moods and regions into strong live stations with less friction.
                         </Text>
                     </div>
                 </Stack>
@@ -62,18 +62,18 @@ export default function About() {
                     <Stack gap="md">
                         <div>
                             <Title order={2} className="text-2xl font-semibold text-[var(--rp-text)] mb-3">
-                                The Vision
+                                The Mission
                             </Title>
                             <Text size="md" className="text-[var(--rp-muted)] leading-relaxed">
-                                Radio is still the most human medium. This project is about honoring that
-                                magic with a modern, thoughtful interface that makes it effortless to explore
-                                stations across borders and time zones.
+                                Radio is still the most human medium. This project is about removing the clutter
+                                around it so discovery feels immediate: useful moods, strong regional picks, live
+                                context, and enough guidance to help you find something worth playing now.
                             </Text>
                         </div>
                         <div className="pt-4 border-t border-white/10">
                             <Text size="md" className="text-[var(--rp-muted)] leading-relaxed italic">
                                 "From small community stations to global broadcasters, Radio Passport turns
-                                discovery into a nightly ritual."
+                                open-ended browsing into a tighter, more intentional listening ritual."
                             </Text>
                         </div>
                     </Stack>
@@ -88,17 +88,17 @@ export default function About() {
                         <FeatureCard
                             icon={<IconCompass size={24} />}
                             title="Guided Discovery"
-                            description="Browse stations by place, mood, and sound — no clutter, just intent."
+                            description="Browse by mood, region, station strength, and listening context without splitting the experience into separate modes."
                         />
                         <FeatureCard
                             icon={<IconSparkles size={24} />}
                             title="Smart Curation"
-                            description="AI-assisted discovery helps you land on stations that fit your moment."
+                            description="AI-assisted picks help surface moods, regional scenes, and strong live stations that fit the moment."
                         />
                         <FeatureCard
                             icon={<IconHeadphones size={24} />}
-                            title="Cinematic UI"
-                            description="Dark, focused, and calm — tuned for long sessions and late-night listening."
+                            title="Focused Listening"
+                            description="Calm, cinematic, and tuned for long sessions without hiding the useful controls or next actions."
                         />
                         <FeatureCard
                             icon={<IconRadio size={24} />}
@@ -132,9 +132,9 @@ export default function About() {
                                 Current Status
                             </Title>
                             <Text className="text-[var(--rp-muted)] mt-3 leading-relaxed">
-                                Radio Passport is in active development with a live streaming core, evolving discovery
-                                flows, and regular UI refinements. The focus right now is stability, speed, and a better
-                                listening ritual across desktop and mobile.
+                                Radio Passport is in active development with a live streaming core, evolving curated
+                                discovery shelves, and regular UI refinements. The focus right now is stability, speed,
+                                and making home the clearest place to start listening on desktop and mobile.
                             </Text>
                             <Divider my="lg" color="rgba(255,255,255,0.08)" />
                             <Group>
@@ -157,7 +157,7 @@ export default function About() {
                                     className="text-[var(--rp-text)] border border-white/10 bg-white/5 hover:bg-white/10"
                                     rightSection={<IconArrowRight size={18} />}
                                 >
-                                    Enter the Atlas
+                                    Start Listening
                                 </Button>
                             </Group>
                         </div>
@@ -201,7 +201,7 @@ export default function About() {
                 {/* CTA Section */}
                 <Stack gap="md" align="center" mb={40}>
                     <Title order={2} className="text-2xl font-semibold text-[var(--rp-text)] text-center">
-                        Ready to Explore Tonight?
+                        Ready to Find Tonight's Station?
                     </Title>
                     <Link to="/">
                         <Button
@@ -210,7 +210,7 @@ export default function About() {
                             className="bg-[var(--rp-gold)] hover:bg-[var(--rp-gold-strong)] text-black"
                             rightSection={<IconArrowRight size={20} />}
                         >
-                            Start Discovering
+                            Open Home
                         </Button>
                     </Link>
                 </Stack>

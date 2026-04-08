@@ -8,10 +8,11 @@ export function useStationNavigation(
   shuffleMode: boolean,
   activeStations: Station[],
   startStation: (station: Station, options?: { autoPlay?: boolean }) => void,
+  recordSkippedStation: (stationId: string) => void,
   countryMap: Map<string, { iso_3166_1: string }>,
   setSelectedContinent: (continent: string | null) => void,
   setActiveContinent: (continent: string | null) => void,
-  selectedCountry: string | null
+  selectedCountry: string | null,
 ) {
   const playNext = useCallback(() => {
     if (activeStations.length === 0) return;
@@ -21,7 +22,11 @@ export function useStationNavigation(
       : (currentStationIndex + 1) % activeStations.length;
 
     const nextStation = activeStations[nextIndex];
+    const currentStation = activeStations[currentStationIndex];
     if (nextStation) {
+      if (currentStation?.uuid && currentStation.uuid !== nextStation.uuid) {
+        recordSkippedStation(currentStation.uuid);
+      }
       setCurrentStationIndex(nextIndex);
 
       const stationCountry = countryMap.get(nextStation.country);
@@ -38,6 +43,7 @@ export function useStationNavigation(
     activeStations,
     shuffleMode,
     startStation,
+    recordSkippedStation,
     countryMap,
     selectedCountry,
     setCurrentStationIndex,
@@ -54,7 +60,14 @@ export function useStationNavigation(
         activeStations.length;
 
     const previousStation = activeStations[previousIndex];
+    const currentStation = activeStations[currentStationIndex];
     if (previousStation) {
+      if (
+        currentStation?.uuid &&
+        currentStation.uuid !== previousStation.uuid
+      ) {
+        recordSkippedStation(currentStation.uuid);
+      }
       setCurrentStationIndex(previousIndex);
 
       const stationCountry = countryMap.get(previousStation.country);
@@ -71,6 +84,7 @@ export function useStationNavigation(
     activeStations,
     shuffleMode,
     startStation,
+    recordSkippedStation,
     countryMap,
     selectedCountry,
     setCurrentStationIndex,

@@ -358,7 +358,7 @@ export function PlayerCardStack({
           {totalStations === 0 ? (
             <div className="travel-log__empty">
               <Text size="sm" c="rgba(226,232,240,0.75)">
-                Your travel log is empty. Explore the atlas to build a trail of stations.
+                Your listening log is empty. Start a station and home will build a trail of recent plays and next picks.
               </Text>
               <div className="travel-log__empty-actions">
                 <Button
@@ -373,7 +373,7 @@ export function PlayerCardStack({
                     border: "1px solid rgba(254,250,226,0.6)",
                   }}
                 >
-                  AI-Curated World
+                  AI-curated picks
                 </Button>
                 <Button
                   radius="xl"
@@ -386,7 +386,7 @@ export function PlayerCardStack({
                     background: "rgba(10,20,38,0.4)",
                   }}
                 >
-                  Stay local
+                  Start local
                 </Button>
               </div>
             </div>

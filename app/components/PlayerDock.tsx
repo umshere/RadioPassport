@@ -60,6 +60,7 @@ export default function PlayerDock() {
   const currentStationIndex = usePlayerStore((state) => state.currentStationIndex);
   const queueSourceLabel = usePlayerStore((state) => state.queueSourceLabel);
   const startStation = usePlayerStore((state) => state.startStation);
+  const recordSkippedStation = usePlayerStore((state) => state.recordSkippedStation);
 
   const toggleQuickRetune = useUIStore((state) => state.toggleQuickRetune);
   const raptorMiniEnabled = useUIStore((state) => state.raptorMiniEnabled);
@@ -76,6 +77,9 @@ export default function PlayerDock() {
 
   const handleNext = useCallback(() => {
     if (queue.length === 0) return;
+    if (nowPlaying?.uuid) {
+      recordSkippedStation(nowPlaying.uuid);
+    }
 
     // Calculate next index with proper wrapping
     const nextIndex = (currentStationIndex + 1) % queue.length;
@@ -85,7 +89,7 @@ export default function PlayerDock() {
       // Update the index in the store before starting the station
       startStation(nextStation, { preserveQueue: true });
     }
-  }, [queue, currentStationIndex, startStation]);
+  }, [queue, currentStationIndex, nowPlaying?.uuid, recordSkippedStation, startStation]);
 
   const handlePrev = useCallback(() => {
     if (queue.length === 0) return;
@@ -102,6 +106,9 @@ export default function PlayerDock() {
 
   const handleRetune = useCallback(() => {
     if (queue.length === 0) return;
+    if (nowPlaying?.uuid) {
+      recordSkippedStation(nowPlaying.uuid);
+    }
     // Pick a random station different from current
     let randomIndex = Math.floor(Math.random() * queue.length);
     if (queue.length > 1 && randomIndex === currentStationIndex) {
@@ -111,7 +118,7 @@ export default function PlayerDock() {
     if (randomStation) {
       startStation(randomStation, { preserveQueue: true });
     }
-  }, [queue, currentStationIndex, startStation]);
+  }, [queue, currentStationIndex, nowPlaying?.uuid, recordSkippedStation, startStation]);
 
   const isMobile = useMediaQuery("(max-width: 1024px)", false, { getInitialValueInEffect: true });
   const { ref: desktopMetaRef, width: desktopMetaWidth } = useElementSize();

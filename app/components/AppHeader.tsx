@@ -1,13 +1,12 @@
-import { useMemo, useState, useEffect } from "react";
-import { Link, useLocation, useNavigate, useSearchParams } from "@remix-run/react";
-import { ActionIcon, Badge, SegmentedControl, Group } from "@mantine/core";
-import { IconSettings, IconSearch, IconWorld, IconRadio } from "@tabler/icons-react";
+import { useState, useEffect } from "react";
+import { Link, useLocation, useNavigate } from "@remix-run/react";
+import { ActionIcon, Badge } from "@mantine/core";
+import { IconSearch } from "@tabler/icons-react";
 import { motion, useReducedMotion, useScroll, useTransform } from "framer-motion";
 import { CountryFlag } from "~/components/CountryFlag";
 import { usePlayerStore } from "~/state/playerStore";
 
 export default function AppHeader() {
-  const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const location = useLocation();
   const nowPlaying = usePlayerStore((state) => state.nowPlaying);
@@ -33,22 +32,6 @@ export default function AppHeader() {
     if (typeof window === "undefined" || typeof CSS === "undefined") return;
     setUseFallback(!CSS.supports("animation-timeline: scroll()"));
   }, []);
-
-  const currentView = searchParams.get("view") === "world" ? "world" : "classical";
-
-  const handleViewChange = (value: string) => {
-    setSearchParams((prev) => {
-      const next = new URLSearchParams(prev);
-      if (value === "world") {
-        next.set("view", "world");
-        next.delete("country");
-        next.delete("q");
-      } else {
-        next.delete("view");
-      }
-      return next;
-    }, { preventScrollReset: true });
-  };
 
   const enableFallback = useFallback && !shouldReduceMotion;
 
@@ -84,7 +67,7 @@ export default function AppHeader() {
               className="app-header__subtitle hidden sm:block text-[9px] text-[var(--rp-muted-2)] font-bold uppercase tracking-widest leading-tight whitespace-nowrap"
               style={enableFallback ? { opacity: subtitleOpacity, y: subtitleY } : undefined}
             >
-              Global sound atlas
+              Curated live radio
             </motion.span>
           </div>
         </Link>
@@ -113,25 +96,10 @@ export default function AppHeader() {
           )}
         </div>
 
-        {/* Right: Mode Toggle & Action Icons */}
+        {/* Right: Discovery Status & Actions */}
         <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
-          <div className="flex items-center">
-            <SegmentedControl
-              value={currentView}
-              onChange={handleViewChange}
-              data={[
-                { label: <Group gap={4} wrap="nowrap"><IconRadio size={14} /><span className="hidden xs:inline">Classic</span></Group>, value: 'classical' },
-                { label: <Group gap={4} wrap="nowrap"><IconWorld size={14} /><span className="hidden xs:inline">World</span></Group>, value: 'world' },
-              ]}
-              size="xs"
-              radius="xl"
-              transitionDuration={300}
-              classNames={{
-                root: "bg-black/50 p-0.5 sm:p-1 border border-white/10 shadow-[0_10px_24px_rgba(0,0,0,0.5)]",
-                label: "font-black uppercase tracking-widest text-[9px] sm:text-[10px] px-2 sm:px-3 text-[var(--rp-muted-2)] data-[active=true]:text-black",
-                indicator: "bg-[var(--rp-gold)]"
-              }}
-            />
+          <div className="hidden sm:flex items-center rounded-full border border-white/10 bg-black/45 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.24em] text-[var(--rp-muted-2)] shadow-[0_10px_24px_rgba(0,0,0,0.45)]">
+            Home discovery
           </div>
 
           <div className="flex items-center gap-1">
@@ -149,7 +117,7 @@ export default function AppHeader() {
                 if (typeof window !== "undefined") {
                   window.sessionStorage.setItem("focusSearch", "1");
                 }
-                navigate(location.pathname.startsWith("/world") ? "/world" : "/", { preventScrollReset: true });
+                navigate("/", { preventScrollReset: true });
               }}
               title="Search"
               className="text-[var(--rp-muted)] hover:text-[var(--rp-gold)]"

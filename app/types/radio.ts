@@ -34,6 +34,9 @@ export type Station = {
   healthStatus?: "good" | "warning" | "error";
   isLikelyUp?: boolean | null;
   healthScore?: number | null;
+  probeStatus?: "ok" | "slow" | "down" | "unknown";
+  probeLatencyMs?: number | null;
+  probeCheckedAt?: string | null;
 };
 
 export type ListeningMode = "world" | "local";

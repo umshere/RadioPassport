@@ -27,7 +27,7 @@ function hasValidStreamUrl(url?: string | null): boolean {
 function resolveQueueIndex(
   stations: Station[],
   station: Station,
-  queueIndex?: number
+  queueIndex?: number,
 ) {
   if (
     typeof queueIndex === "number" &&
@@ -37,7 +37,9 @@ function resolveQueueIndex(
     return queueIndex;
   }
 
-  const existingIndex = stations.findIndex((entry) => entry.uuid === station.uuid);
+  const existingIndex = stations.findIndex(
+    (entry) => entry.uuid === station.uuid,
+  );
   return existingIndex >= 0 ? existingIndex : 0;
 }
 
@@ -61,6 +63,7 @@ type PlayerState = {
   audioLevel: number;
   shuffleMode: boolean;
   currentStationIndex: number;
+  skippedStationIds: string[];
   volume: number;
   setAudioElement: (element: HTMLAudioElement | null) => void;
   setAudioLevel: (level: number) => void;
@@ -75,13 +78,14 @@ type PlayerState = {
       queueSourceType?: QueueSourceType;
       queueSourceLabel?: string;
       queueSourceContext?: QueueSourceContext | null;
-    }
+    },
   ) => void;
   setQueueSession: (session: QueueSession, currentIndex?: number) => void;
   enqueueStations: (stations: Station[]) => void;
   clearQueue: () => void;
   setCrossfadeMs: (value: number) => void;
   setVolume: (volume: number) => void;
+  recordSkippedStation: (stationId: string) => void;
   applySceneDescriptor: (descriptor: SceneDescriptor) => Station | null;
   startStation: (station: Station, options?: StartStationOptions) => void;
   togglePlay: () => void;
@@ -110,7 +114,7 @@ const playerStorage = {
 
 const mergePersistedState = (
   persisted: unknown,
-  current: PlayerState
+  current: PlayerState,
 ): PlayerState => {
   if (!persisted || typeof persisted !== "object") {
     return current;
@@ -168,6 +172,7 @@ export const usePlayerStore = create<PlayerState>(
       audioLevel: 0,
       shuffleMode: false,
       currentStationIndex: 0,
+      skippedStationIds: [],
       volume: 1,
       setAudioElement: (element: HTMLAudioElement | null) => {
         set({ audioElement: element });
@@ -201,12 +206,17 @@ export const usePlayerStore = create<PlayerState>(
           currentStationIndex: 0,
           queueId: metadata?.queueId ?? get().queueId,
           queueSourceType: metadata?.queueSourceType ?? get().queueSourceType,
-          queueSourceLabel: metadata?.queueSourceLabel ?? get().queueSourceLabel,
-          queueSourceContext: metadata?.queueSourceContext ?? get().queueSourceContext,
+          queueSourceLabel:
+            metadata?.queueSourceLabel ?? get().queueSourceLabel,
+          queueSourceContext:
+            metadata?.queueSourceContext ?? get().queueSourceContext,
         });
       },
       setQueueSession: (session: QueueSession, currentIndex = 0) => {
-        const nextIndex = Math.max(0, Math.min(currentIndex, session.stations.length - 1));
+        const nextIndex = Math.max(
+          0,
+          Math.min(currentIndex, session.stations.length - 1),
+        );
         set({
           queue: [...session.stations],
           currentStationIndex: nextIndex,
@@ -240,6 +250,15 @@ export const usePlayerStore = create<PlayerState>(
         if (audio) {
           audio.volume = newVolume;
         }
+      },
+      recordSkippedStation: (stationId: string) => {
+        if (!stationId) return;
+        set((state) => ({
+          skippedStationIds: [
+            stationId,
+            ...state.skippedStationIds.filter((id) => id !== stationId),
+          ].slice(0, 20),
+        }));
       },
       applySceneDescriptor: (descriptor: SceneDescriptor) => {
         const stations = Array.isArray(descriptor.stations)
@@ -285,7 +304,11 @@ export const usePlayerStore = create<PlayerState>(
 
         if (nextSession && nextSession.stations.length > 0) {
           nextQueue = [...nextSession.stations];
-          nextIndex = resolveQueueIndex(nextQueue, station, options?.queueIndex);
+          nextIndex = resolveQueueIndex(
+            nextQueue,
+            station,
+            options?.queueIndex,
+          );
           queueId = nextSession.queueId;
           queueSourceType = nextSession.queueSourceType;
           queueSourceLabel = nextSession.queueSourceLabel;
@@ -383,6 +406,6 @@ export const usePlayerStore = create<PlayerState>(
         currentStationIndex: state.currentStationIndex,
         volume: state.volume,
       }),
-    }
-  )
+    },
+  ),
 );

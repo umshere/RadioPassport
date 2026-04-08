@@ -22,6 +22,7 @@ export function PremiumPlayerDock() {
     const queue = usePlayerStore((state) => state.queue);
     const currentStationIndex = usePlayerStore((state) => state.currentStationIndex);
     const startStation = usePlayerStore((state) => state.startStation);
+    const recordSkippedStation = usePlayerStore((state) => state.recordSkippedStation);
 
     const [isExpanded, setIsExpanded] = useState(false);
 
@@ -39,18 +40,24 @@ export function PremiumPlayerDock() {
         const nextIndex = (currentStationIndex + 1) % queue.length;
         const nextStation = queue[nextIndex];
         if (nextStation) {
+            if (nowPlaying?.uuid && nowPlaying.uuid !== nextStation.uuid) {
+                recordSkippedStation(nowPlaying.uuid);
+            }
             startStation(nextStation, { preserveQueue: true });
         }
-    }, [queue, currentStationIndex, startStation]);
+    }, [queue, currentStationIndex, nowPlaying?.uuid, recordSkippedStation, startStation]);
 
     const handlePrev = useCallback(() => {
         if (queue.length === 0) return;
         const prevIndex = (currentStationIndex - 1 + queue.length) % queue.length;
         const prevStation = queue[prevIndex];
         if (prevStation) {
+            if (nowPlaying?.uuid && nowPlaying.uuid !== prevStation.uuid) {
+                recordSkippedStation(nowPlaying.uuid);
+            }
             startStation(prevStation, { preserveQueue: true });
         }
-    }, [queue, currentStationIndex, startStation]);
+    }, [queue, currentStationIndex, nowPlaying?.uuid, recordSkippedStation, startStation]);
 
     if (!nowPlaying) return null;
 

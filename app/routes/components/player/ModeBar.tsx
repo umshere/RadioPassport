@@ -123,8 +123,8 @@ export function ModeBar({
         event.error === "no-speech"
           ? "No speech detected. Try again."
           : event.error === "not-allowed"
-          ? "Microphone access was blocked."
-          : "Speech recognition error. Try again.";
+            ? "Microphone access was blocked."
+            : "Speech recognition error. Try again.";
       setVoiceError(errorMessage);
     };
 
@@ -203,7 +203,7 @@ export function ModeBar({
     ? isListening
       ? "Listening…"
       : descriptorHelperText
-    : "Voice input is available in world mode";
+    : "Voice input is available for curated picks";
 
   const announcement = truncate(descriptorHelperText);
 
@@ -244,7 +244,7 @@ export function ModeBar({
             MODE
           </Text>
           <Text size="xs" c="#fefae0" fw={600}>
-            {listeningMode === "world" ? "Explore World" : "Stay Local"}
+            {listeningMode === "world" ? "Curated Picks" : "Stay Local"}
           </Text>
         </div>
 

@@ -18,9 +18,6 @@ export default function Footer() {
                             <Link to="/" className="text-[var(--rp-muted)] hover:text-[var(--rp-text)] transition-colors">
                                 Home
                             </Link>
-                            <Link to="/?view=world" className="text-[var(--rp-muted)] hover:text-[var(--rp-text)] transition-colors">
-                                World Mode
-                            </Link>
                             <Link to="/about" className="text-[var(--rp-muted)] hover:text-[var(--rp-text)] transition-colors">
                                 About
                             </Link>
@@ -54,7 +51,7 @@ export default function Footer() {
                 {/* Bottom bar */}
                 <div className="mt-6 flex flex-col items-center gap-2 border-t border-white/10 pt-4 md:flex-row md:justify-between">
                     <Text size="xs" c="dimmed" className="flex items-center gap-1 text-[var(--rp-muted-2)]">
-                        Built with <IconHeart size={11} className="text-[var(--rp-gold)]" fill="currentColor" /> for music lovers
+                        Built with <IconHeart size={11} className="text-[var(--rp-gold)]" fill="currentColor" /> for listeners chasing the right station, fast
                     </Text>
                     <Text size="xs" c="dimmed" className="text-[var(--rp-muted-2)]">
                         © {currentYear} Radio Passport. All rights reserved.

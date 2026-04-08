@@ -837,11 +837,8 @@ type HeroSectionProps = {
   searchQueryRaw: string;
   onStartListening: () => void;
   onQuickRetune: () => void;
-  onMissionExploreWorld?: () => void;
-  onMissionStayLocal?: () => void;
   onHoverSound?: () => void;
   onSearch?: (query: string) => void;
-  onOpenPassport?: () => void;
 };
 
 export function HeroSection({
@@ -941,7 +938,7 @@ export function HeroSection({
     return base;
   }, [continents, topCountries, totalStations]);
 
-  const currentHeroTicker = heroTickerItems[0] ?? "Global radio passport updates";
+  const currentHeroTicker = heroTickerItems[0] ?? "Curated live radio updates";
   const nowPlayingMeta = useNowPlayingMetadata(hydratedNowPlaying, hydratedIsPlaying);
   const freeTrivia = useTrackTrivia({
     track: nowPlayingMeta.track,
@@ -1022,7 +1019,7 @@ export function HeroSection({
     if (hydratedNowPlaying) {
       return `${hydratedNowPlaying.name} is live from ${featureCountryLabel}.${heroTagLine ? ` ${heroTagLine}.` : ""} The hero adapts to metadata as the signal settles.`;
     }
-    return `${featureCountryLabel} is a strong first stop. Pick a station, then move through the atlas with route cards, country notes, and live context that adapt to the signal.`;
+    return `${featureCountryLabel} is a strong place to begin. Start with a live station, then keep moving through moods, nearby countries, and listening context that sharpen as the signal settles.`;
   }, [featureCountryLabel, heroTagLine, heroTrackLine, hydratedNowPlaying]);
   const heroMergedFacts = useMemo<TriviaFact[]>(() => {
     const facts = [...(aiTrivia.trivia?.facts ?? []), ...(freeTrivia.trivia?.facts ?? []), ...heroStationFacts];
@@ -1365,7 +1362,7 @@ export function HeroSection({
   const canUseInteractiveNotes = isHydrated && !shouldReduceMotion;
   const signalNote =
     heroInsightSummary ||
-    `${featureCountryLabel} is a strong first stop. Pick a station, then move through the atlas with route cards, country notes, and live context that adapt to the signal.`;
+    `${featureCountryLabel} is a strong place to begin. Start with a live station, then keep moving through moods, nearby countries, and listening context that sharpen as the signal settles.`;
 
   useEffect(() => {
     setIsHydrated(true);
@@ -1484,12 +1481,12 @@ export function HeroSection({
         ? leftPhrases
         : [
           "Early notes drift in before the route card turns.",
-          "Passport stamps wake with a soft crate-dig hiss.",
+          "Recent picks wake with a soft crate-dig hiss.",
         ],
       center: centerPhrases.length
         ? centerPhrases
         : [
-          "The dial moves, the copy reflows, the atlas stays composed.",
+          "The dial moves, the copy reflows, the home feed stays composed.",
           "Live metadata bends through the center lane without shifting the poster.",
         ],
       right: rightPhrases.length
@@ -1923,8 +1920,8 @@ export function HeroSection({
                   >
                     <div
                       className={`rounded-[1.45rem] border px-3 py-2 shadow-[0_16px_30px_rgba(0,0,0,0.18)] ${heroInsightExpanded
-                          ? "border-[rgba(245,177,45,0.1)] bg-[linear-gradient(180deg,rgba(20,22,30,0.74)_0%,rgba(14,16,22,0.6)_100%)] backdrop-blur-[6px]"
-                          : "border-[rgba(245,177,45,0.12)] bg-[linear-gradient(180deg,rgba(8,10,16,0.2)_0%,rgba(8,10,16,0.28)_100%)] backdrop-blur-[10px]"
+                        ? "border-[rgba(245,177,45,0.1)] bg-[linear-gradient(180deg,rgba(20,22,30,0.74)_0%,rgba(14,16,22,0.6)_100%)] backdrop-blur-[6px]"
+                        : "border-[rgba(245,177,45,0.12)] bg-[linear-gradient(180deg,rgba(8,10,16,0.2)_0%,rgba(8,10,16,0.28)_100%)] backdrop-blur-[10px]"
                         }`}
                     >
                       <div className="flex items-center gap-2">
@@ -2021,23 +2018,28 @@ export function HeroSection({
                             />
                           </div>
                         ) : null}
-                        {heroInsightHeaderLinks.map((link) => {
-                          const Icon = renderHeroLinkIcon(link.kind);
-                          return (
-                            <a
-                              key={`header-${link.url}`}
-                              href={link.url}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-[rgba(245,177,45,0.14)] bg-[rgba(255,255,255,0.04)] text-[var(--rp-gold)]"
-                              aria-label={link.label}
-                              title={link.label}
-                              onClick={(event) => event.stopPropagation()}
-                            >
-                              <Icon size={13} />
-                            </a>
-                          );
-                        })}
+                        {heroInsightHeaderLinks.length > 0 ? (
+                          <div className="rounded-[1rem] border border-white/10 bg-[rgba(255,255,255,0.04)] px-2.5 py-1.5">
+                            <div className="text-[9px] font-semibold uppercase tracking-[0.18em] text-[rgba(247,240,224,0.52)]">
+                              Sources
+                            </div>
+                            <div className="mt-1 flex flex-wrap gap-1.5">
+                              {heroInsightHeaderLinks.map((link) => {
+                                const Icon = renderHeroLinkIcon(link.kind);
+                                return (
+                                  <span
+                                    key={`header-${link.url}`}
+                                    className="inline-flex items-center gap-1 rounded-full border border-[rgba(245,177,45,0.14)] bg-[rgba(255,255,255,0.03)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-[rgba(247,240,224,0.72)]"
+                                    title={link.label}
+                                  >
+                                    <Icon size={11} className="text-[var(--rp-gold)]" />
+                                    <span>{link.label}</span>
+                                  </span>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        ) : null}
                         {featureCountryCode ? (
                           <div className="rounded-[1rem] border border-white/10 bg-[rgba(255,255,255,0.04)] px-2 py-1.5">
                             <div className="flex items-center gap-2">
@@ -2193,7 +2195,7 @@ export function HeroSection({
                   Radio Passport
                 </div>
                 <div className="mt-1 text-[10px] font-semibold uppercase tracking-[0.28em] text-[var(--rp-muted-2)]">
-                  Global Sound Atlas
+                  Curated Live Radio
                 </div>
               </div>
             </div>
@@ -2205,7 +2207,7 @@ export function HeroSection({
             >
               <ElasticHeroText
                 as="h1"
-                text="A listening atlas for people who travel by sound."
+                text="Live radio, organized around what you want to hear next."
                 font={heroHeadlineFont}
                 lineHeight={isLg ? 52 : isSm ? 46 : 36}
                 enabled={canUseInteractiveNotes}
@@ -2225,7 +2227,7 @@ export function HeroSection({
             {!showMobileHeroInsight ? (
               <ElasticHeroText
                 as="p"
-                text="Tune into live radio from every country, then follow a clear route into local stations, listening notes, and country-level discovery."
+                text="Start with moods, regions, news, and strong live stations, then branch into country pages, recent picks, and deeper listening notes only when you need them."
                 font={heroBodyFont}
                 lineHeight={isLg ? 28 : 24}
                 enabled={canUseInteractiveNotes}
@@ -2339,7 +2341,7 @@ export function HeroSection({
                     type="text"
                     value={searchQueryRaw}
                     onChange={(e) => onSearch?.(e.target.value)}
-                    placeholder="Search countries, stations, genres, or moods..."
+                    placeholder="Search stations, moods, countries, or news..."
                     className="w-full bg-transparent px-5 py-4 text-base font-medium text-[var(--rp-text)] focus:outline-none placeholder:text-[var(--rp-muted-2)]"
                   />
                   {searchQueryRaw && (

@@ -1,4 +1,8 @@
-import type { AiRecommendationResponse, RecommendRequestBody, VoiceCommandPayload } from "~/types/ai";
+import type {
+  AiRecommendationResponse,
+  RecommendRequestBody,
+  VoiceCommandPayload,
+} from "~/types/ai";
 import type { SceneDescriptor } from "~/scenes/types";
 
 export type AiOrchestratorResult = {
@@ -9,7 +13,7 @@ export type AiOrchestratorResult = {
 
 export async function callAiOrchestrator(
   payload: VoiceCommandPayload,
-  options?: { signal?: AbortSignal }
+  options?: { signal?: AbortSignal },
 ): Promise<AiOrchestratorResult> {
   const body: RecommendRequestBody = {
     prompt: payload.transcript,
@@ -38,7 +42,9 @@ export async function callAiOrchestrator(
   });
 
   if (!response.ok) {
-    throw new Error(`AI orchestrator request failed: ${response.status} ${response.statusText}`);
+    throw new Error(
+      `AI orchestrator request failed: ${response.status} ${response.statusText}`,
+    );
   }
 
   const data = (await response.json()) as AiRecommendationResponse;
@@ -49,7 +55,7 @@ export async function callAiOrchestrator(
 
   return {
     descriptor,
-    summary: descriptor.reason ?? descriptor.mood ?? "World Mode mix",
+    summary: descriptor.reason ?? descriptor.mood ?? "Curated mix",
     mood: descriptor.mood ?? payload.mood,
   };
 }

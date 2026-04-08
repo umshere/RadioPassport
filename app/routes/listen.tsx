@@ -224,7 +224,7 @@ export default function ListeningPage() {
           <div className="space-y-2">
             <h1 className="text-3xl font-semibold text-white">Listening page is waiting for a station</h1>
             <p className="max-w-xl text-sm text-white/65">
-              Start a station from the atlas, search results, or a country page, then return here for the uncluttered listening board.
+              Start a station from home discovery, search results, or a country page, then return here for the uncluttered listening board.
             </p>
           </div>
           <Link
@@ -232,7 +232,7 @@ export default function ListeningPage() {
             className="inline-flex items-center gap-2 rounded-full border border-[rgba(245,177,45,0.4)] bg-[rgba(245,177,45,0.12)] px-5 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-[var(--rp-gold)]"
           >
             <IconArrowLeft size={14} />
-            Back to Atlas
+            Back Home
           </Link>
         </div>
       </main>

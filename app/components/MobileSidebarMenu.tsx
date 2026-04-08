@@ -3,7 +3,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { StationArtwork } from "./StationArtwork";
 import {
     IconHome,
-    IconWorld,
     IconCompass,
     IconMenu2,
     IconX,
@@ -21,7 +20,6 @@ type MenuItem = {
 
 const MENU_ITEMS: MenuItem[] = [
     { to: "/", label: "Home", icon: IconHome },
-    { to: "/?view=world", label: "World", icon: IconWorld },
     { to: "/about", label: "About", icon: IconCompass },
 ];
 
@@ -101,7 +99,7 @@ export default function MobileSidebarMenu() {
                                 </div>
                                 <div className="min-w-0 flex-1">
                                     <h2 className="text-lg font-black tracking-tight text-amber-50 whitespace-nowrap">Radio Passport</h2>
-                                    <p className="text-[10px] font-bold text-amber-100/60 uppercase tracking-widest whitespace-nowrap">Global sound atlas</p>
+                                    <p className="text-[10px] font-bold text-amber-100/60 uppercase tracking-widest whitespace-nowrap">Curated live radio</p>
                                 </div>
                             </div>
                             <button
@@ -184,7 +182,7 @@ export default function MobileSidebarMenu() {
                             <div className="text-xs text-center text-amber-100/60">
                                 Radio Passport v1.0
                                 <br />
-                                Discover global sounds
+                                Discover something worth playing
                             </div>
                         </div>
                     </motion.aside>

@@ -43,7 +43,7 @@ function Document({ children, title }: { children: ReactNode; title?: string }) 
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
         <meta name="theme-color" content="#0b0c10" />
-        <meta name="description" content="Radio Passport: Explore the world's radio stations with an elegant, minimal interface" />
+        <meta name="description" content="Radio Passport: Curated live radio discovery with moods, regional picks, and strong stations worth playing now" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://api.fontshare.com/v2/css?f[]=general-sans@400,500,600,700,800&display=swap" rel="stylesheet" />
@@ -223,7 +223,7 @@ export function ErrorBoundary() {
   const error = useRouteError();
 
   let title = "Something went wrong";
-  let message = "The page hit an unexpected problem. You can jump back to the atlas or try reloading this route.";
+  let message = "The page hit an unexpected problem. You can jump back home or try reloading this route.";
   let statusLabel = "Application error";
   let details: string | null = null;
 
@@ -235,7 +235,7 @@ export function ErrorBoundary() {
     } else if (error.status === 404) {
       message = "That page is not available anymore, or the route changed during the redesign.";
     } else {
-      message = "The route failed to load correctly. Try going back to the home atlas and re-entering this view.";
+      message = "The route failed to load correctly. Try going back home and re-entering this view.";
     }
   } else if (error instanceof Error) {
     message = error.message || message;
@@ -257,7 +257,7 @@ export function ErrorBoundary() {
                 to="/"
                 className="inline-flex items-center rounded-full border border-[rgba(245,177,45,0.38)] bg-[rgba(245,177,45,0.12)] px-5 py-3 text-sm font-semibold text-[var(--rp-gold)]"
               >
-                Back to Atlas
+                Back Home
               </Link>
               <button
                 type="button"
@@ -307,6 +307,7 @@ function GlobalAudioBridge() {
   const markFailed = useStationAvailabilityStore((state) => state.markFailed);
   const clearFailure = useStationAvailabilityStore((state) => state.clearFailure);
   const setNotice = usePlayerNoticeStore((state) => state.setNotice);
+  const recordSkippedStation = usePlayerStore((state) => state.recordSkippedStation);
 
   const clearRetryTimer = useCallback(() => {
     const active = retryRef.current.timer;
@@ -397,6 +398,9 @@ function GlobalAudioBridge() {
       }
 
       const label = failedStation?.name ? `“${failedStation.name}”` : "That station";
+      if (failedStation?.uuid) {
+        recordSkippedStation(failedStation.uuid);
+      }
       setNotice({
         kind: "warning",
         message: `${label} failed (${reason.replace(/_/g, " ")}). Skipping to the next station…`,
@@ -405,7 +409,7 @@ function GlobalAudioBridge() {
 
       state.startStation(candidate, { preserveQueue: true, autoPlay: true });
     },
-    [setNotice]
+    [recordSkippedStation, setNotice]
   );
 
   const tryPlaybackRecovery = useCallback(
@@ -585,7 +589,7 @@ function GlobalAudioBridge() {
 
     mediaSession.metadata = new MediaMetadata({
       title: nowPlaying.name ?? "Radio Passport",
-      artist: nowPlaying.country ?? "Global Sound Atlas",
+      artist: nowPlaying.country ?? "Curated Live Radio",
       album: "Radio Passport",
       artwork,
     });

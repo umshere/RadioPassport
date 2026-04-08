@@ -27,7 +27,11 @@ interface UseEventHandlersProps {
   setActiveCardIndex: (index: number) => void;
   handleStartStation: (
     station: Station,
-    options?: { autoPlay?: boolean; preserveQueue?: boolean; queueSession?: QueueSession | null }
+    options?: {
+      autoPlay?: boolean;
+      preserveQueue?: boolean;
+      queueSession?: QueueSession | null;
+    },
   ) => void;
   topCountries: Country[];
   countries: Country[];
@@ -36,7 +40,6 @@ interface UseEventHandlersProps {
     resetContinent: () => void;
     selectContinent: (continent: string | null) => void;
   };
-  setViewMode: (mode: 'classical' | 'world') => void;
 }
 
 /**
@@ -58,7 +61,6 @@ export function useEventHandlers({
   topCountries,
   countries,
   atlasNavigation,
-  setViewMode,
 }: UseEventHandlersProps) {
   const setIsFetchingExplore = mode.setIsFetchingExplore;
   const setExploreStations = mode.setExploreStations;
@@ -71,10 +73,12 @@ export function useEventHandlers({
       try {
         const payload = await rbFetchJson<unknown>(
           `/json/stations/bycountry/${encodeURIComponent(
-            countryName
-          )}?limit=1&hidebroken=true&order=clickcount&reverse=true`
+            countryName,
+          )}?limit=1&hidebroken=true&order=clickcount&reverse=true`,
         );
-        const stations = normalizeStations(Array.isArray(payload) ? payload : []);
+        const stations = normalizeStations(
+          Array.isArray(payload) ? payload : [],
+        );
         const first = pickTopStation(stations);
         if (first) {
           vibrate(12);
@@ -84,7 +88,7 @@ export function useEventHandlers({
         console.error("Failed to preview country station", error);
       }
     },
-    [handleStartStation]
+    [handleStartStation],
   );
 
   const handleStartListening = useCallback(() => {
@@ -118,7 +122,7 @@ export function useEventHandlers({
       atlasNavigation.selectContinent(continent);
       scrollToId("atlas");
     },
-    [atlasNavigation]
+    [atlasNavigation],
   );
 
   const handleQuickRetuneCountrySelect = useCallback(
@@ -133,10 +137,12 @@ export function useEventHandlers({
       try {
         const payload = await rbFetchJson<unknown>(
           `/json/stations/bycountry/${encodeURIComponent(
-            countryName
-          )}?limit=1&hidebroken=true&order=clickcount&reverse=true`
+            countryName,
+          )}?limit=1&hidebroken=true&order=clickcount&reverse=true`,
         );
-        const stations = normalizeStations(Array.isArray(payload) ? payload : []);
+        const stations = normalizeStations(
+          Array.isArray(payload) ? payload : [],
+        );
         const topStation = pickTopStation(stations);
         if (topStation) {
           vibrate(12);
@@ -148,7 +154,7 @@ export function useEventHandlers({
 
       setTimeout(() => scrollToId("station-grid"), 300);
     },
-    [atlasNavigation, mode, navigate, handleStartStation]
+    [atlasNavigation, mode, navigate, handleStartStation],
   );
 
   const handleSurpriseRetune = useCallback(async () => {
@@ -166,8 +172,8 @@ export function useEventHandlers({
     try {
       const payload = await rbFetchJson<unknown>(
         `/json/stations/bycountry/${encodeURIComponent(
-          random.name
-        )}?limit=1&hidebroken=true&order=clickcount&reverse=true`
+          random.name,
+        )}?limit=1&hidebroken=true&order=clickcount&reverse=true`,
       );
       const stations = normalizeStations(Array.isArray(payload) ? payload : []);
       const topStation = pickTopStation(stations);
@@ -200,15 +206,15 @@ export function useEventHandlers({
           new Set(
             [selectedCountry, nowPlaying?.country]
               .filter((value): value is string => Boolean(value))
-              .map((value) => value.trim())
-          )
+              .map((value) => value.trim()),
+          ),
         );
         const preferredLanguages = Array.from(
           new Set(
             [nowPlaying?.language]
               .filter((value): value is string => Boolean(value))
-              .map((value) => value.trim())
-          )
+              .map((value) => value.trim()),
+          ),
         );
         const favoriteIds = Array.from(favoriteStationIds);
         const recentIds = recentStations.map((station) => station.uuid);
@@ -238,7 +244,7 @@ export function useEventHandlers({
         setExploreError(
           error instanceof Error
             ? error.message
-            : "We could not curate a world mix. Please try again."
+            : "We could not curate a world mix. Please try again.",
         );
         return false;
       } finally {
@@ -257,25 +263,24 @@ export function useEventHandlers({
       setActiveCardIndex,
       handleStartStation,
       setExploreError,
-    ]
+    ],
   );
 
-  const handleMissionExploreWorld = useCallback(() => {
+  const handleMissionExploreWorld = useCallback(async () => {
     mode.setListeningMode("world");
     setIsQuickRetuneOpen(false);
-    setViewMode("world");
-  }, [
-    mode,
-    setViewMode,
-    setIsQuickRetuneOpen,
-  ]);
+    scrollIfOffscreen("player", "center");
+    if (mode.exploreStations.length === 0 && !mode.isFetchingExplore) {
+      await requestWorldDescriptor(currentStationId);
+    }
+  }, [currentStationId, mode, requestWorldDescriptor, setIsQuickRetuneOpen]);
 
   const handleWorldMoodRefresh = useCallback(
     async (options?: { mood?: string }) => {
       if (mode.isFetchingExplore) return false;
       return requestWorldDescriptor(currentStationId, options?.mood);
     },
-    [mode.isFetchingExplore, requestWorldDescriptor, currentStationId]
+    [mode.isFetchingExplore, requestWorldDescriptor, currentStationId],
   );
 
   const handleMissionStayLocal = useCallback(() => {

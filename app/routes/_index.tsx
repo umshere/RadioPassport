@@ -3,8 +3,7 @@ import { useLoaderData, useNavigate, useSearchParams } from "@remix-run/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Collapse, Drawer, ScrollArea, Text, Title } from "@mantine/core";
 import { useSwipeable } from "react-swipeable";
-import { IconAdjustmentsHorizontal, IconWorld, IconSearch } from "@tabler/icons-react";
-import { WorldHome } from "~/components/WorldMode/WorldHome";
+import { IconAdjustmentsHorizontal, IconSearch } from "@tabler/icons-react";
 
 
 import { BRAND } from "~/constants/brand";
@@ -44,7 +43,11 @@ import { MobileFilterDrawer } from "./components/MobileFilterDrawer";
 import { JourneyModule } from "./components/JourneyModule";
 import { AISplashScreen, shouldShowAISplash } from "./components/AISplashScreen";
 import { SignalField } from "~/components/SignalField";
-import { SignalBand } from "./components/SignalBand";
+import { CuratedShelfDeck, type CuratedShelfViewModel } from "./components/CuratedShelfDeck";
+import { annotateHealth } from "~/server/stations/health";
+import { usePlayerStore } from "~/state/playerStore";
+import { probeShelfStations } from "~/server/stations/probe";
+import { buildAiShelfReason } from "~/server/stations/shelfReason";
 
 
 import Footer from "~/components/Footer";
@@ -119,24 +122,358 @@ function matchesCatalogSearch(station: Station, query: string) {
   return tokens.every((token) => haystack.includes(token));
 }
 
+type HomeCuratedShelf = {
+  id: string;
+  eyebrow: string;
+  title: string;
+  description: string;
+  badge: string;
+  theme: {
+    glow: string;
+    border: string;
+    pill: string;
+  };
+  stations: Station[];
+  topCountries: string[];
+  topTags: string[];
+  languageCount: number;
+  averageHealthScore: number;
+  likelyUpCount: number;
+  probedPlayableCount: number;
+  probedStationCount: number;
+  mixNote: string;
+  availabilityNote: string;
+  aiReason: string | null;
+};
+
+type BehaviorSnapshot = {
+  favoriteStationIds: string[];
+  recentStationIds: string[];
+  skippedStationIds: string[];
+};
+
+const USER_BEHAVIOR_COOKIE = "rp-user-signals";
+
+function readCookieValue(cookieHeader: string | null, name: string) {
+  if (!cookieHeader) return null;
+  const parts = cookieHeader.split(/;\s*/);
+  for (const part of parts) {
+    const [key, ...rest] = part.split("=");
+    if (key !== name) continue;
+    return rest.join("=");
+  }
+  return null;
+}
+
+function parseBehaviorSnapshot(cookieHeader: string | null): BehaviorSnapshot {
+  const raw = readCookieValue(cookieHeader, USER_BEHAVIOR_COOKIE);
+  if (!raw) {
+    return { favoriteStationIds: [], recentStationIds: [], skippedStationIds: [] };
+  }
+
+  try {
+    const decoded = JSON.parse(decodeURIComponent(raw)) as Partial<BehaviorSnapshot>;
+    return {
+      favoriteStationIds: Array.isArray(decoded.favoriteStationIds) ? decoded.favoriteStationIds.slice(0, 20) : [],
+      recentStationIds: Array.isArray(decoded.recentStationIds) ? decoded.recentStationIds.slice(0, 12) : [],
+      skippedStationIds: Array.isArray(decoded.skippedStationIds) ? decoded.skippedStationIds.slice(0, 20) : [],
+    };
+  } catch {
+    return { favoriteStationIds: [], recentStationIds: [], skippedStationIds: [] };
+  }
+}
+
+function writeBehaviorSnapshot(snapshot: BehaviorSnapshot) {
+  return encodeURIComponent(
+    JSON.stringify({
+      favoriteStationIds: snapshot.favoriteStationIds.slice(0, 20),
+      recentStationIds: snapshot.recentStationIds.slice(0, 12),
+      skippedStationIds: snapshot.skippedStationIds.slice(0, 20),
+    })
+  );
+}
+
+const HOME_CURATED_SHELF_DEFINITIONS = [
+  {
+    id: "night-signals",
+    eyebrow: "After dark",
+    title: "Night Signals",
+    description: "Ambient, chill, and low-tempo stations that feel settled enough for long listening sessions.",
+    badge: "Mood-led",
+    tags: ["ambient", "chillout", "downtempo"],
+    theme: {
+      glow: "rgba(93, 151, 208, 0.18)",
+      border: "rgba(93, 151, 208, 0.34)",
+      pill: "rgba(93, 151, 208, 0.14)",
+    },
+  },
+  {
+    id: "pulse-lift",
+    eyebrow: "Move the dial",
+    title: "Pulse Lift",
+    description: "Brighter rhythmic stations when the user wants motion, drive, and less drift.",
+    badge: "Energy",
+    tags: ["electronic", "dance", "house"],
+    theme: {
+      glow: "rgba(232, 109, 80, 0.18)",
+      border: "rgba(232, 109, 80, 0.34)",
+      pill: "rgba(232, 109, 80, 0.14)",
+    },
+  },
+  {
+    id: "newsroom-live",
+    eyebrow: "Spoken now",
+    title: "Newsroom Live",
+    description: "News, talk, and spoken-word stations worth checking right now.",
+    badge: "Utility",
+    tags: ["news", "talk", "culture"],
+    theme: {
+      glow: "rgba(245, 177, 45, 0.18)",
+      border: "rgba(245, 177, 45, 0.34)",
+      pill: "rgba(245, 177, 45, 0.14)",
+    },
+  },
+] as const;
+
+function collectTopValues(values: string[], limit: number) {
+  const counts = new Map<string, number>();
+  for (const value of values) {
+    const normalized = value.trim();
+    if (!normalized) continue;
+    counts.set(normalized, (counts.get(normalized) ?? 0) + 1);
+  }
+  return Array.from(counts.entries())
+    .sort((left, right) => right[1] - left[1])
+    .slice(0, limit)
+    .map(([value]) => value);
+}
+
+async function fetchStationsByUuid(ids: string[]): Promise<Station[]> {
+  if (ids.length === 0) return [];
+  const raw = await rbFetchJson<unknown>(
+    `/json/stations/byuuid?uuids=${encodeURIComponent(ids.join(","))}`,
+    undefined,
+    { softFail: true, timeoutMs: 4500 }
+  );
+  return normalizeStations(Array.isArray(raw) ? raw : []);
+}
+
+async function finalizeHomeCuratedShelf(
+  shelf: Omit<HomeCuratedShelf, "stations" | "probedPlayableCount" | "probedStationCount" | "aiReason"> & { stations: Station[] }
+): Promise<HomeCuratedShelf> {
+  const probedStations = await probeShelfStations(shelf.stations, 5);
+  const probedSubset = probedStations.slice(0, 5);
+  const probedPlayableCount = probedSubset.filter((station) => station.probeStatus === "ok" || station.probeStatus === "slow").length;
+  const probedStationCount = probedSubset.filter((station) => station.probeStatus && station.probeStatus !== "unknown").length;
+  const aiReason = await buildAiShelfReason({
+    shelfId: shelf.id,
+    title: shelf.title,
+    description: shelf.description,
+    topCountries: shelf.topCountries,
+    topTags: shelf.topTags,
+    likelyUpCount: shelf.likelyUpCount,
+    stationCount: shelf.stations.length,
+  });
+
+  const availabilityNote = probedStationCount > 0
+    ? `${probedPlayableCount} of ${probedStationCount} top stations responded to a live server probe before render.`
+    : shelf.availabilityNote;
+
+  return {
+    ...shelf,
+    stations: probedStations,
+    probedPlayableCount,
+    probedStationCount,
+    availabilityNote,
+    aiReason,
+  };
+}
+
+async function loadHomeCuratedShelf(definition: (typeof HOME_CURATED_SHELF_DEFINITIONS)[number]): Promise<HomeCuratedShelf> {
+  const results = await Promise.allSettled(
+    definition.tags.map((tag) =>
+      rbFetchJson<unknown>(
+        `/json/stations/bytag/${encodeURIComponent(tag)}?limit=24&hidebroken=true&order=clickcount&reverse=true`,
+        undefined,
+        { softFail: true }
+      )
+    )
+  );
+
+  const merged = new Map<string, Station>();
+  for (const result of results) {
+    if (result.status !== "fulfilled") continue;
+    const normalized = normalizeStations(Array.isArray(result.value) ? result.value : []);
+    for (const station of normalized) {
+      merged.set(station.uuid, station);
+    }
+  }
+
+  const ranked = rankStations(Array.from(merged.values()), {
+    preferredTags: definition.tags,
+    mood: definition.title,
+  });
+  const healthAnnotated = annotateHealth(ranked);
+  const shortlisted = healthAnnotated.filter(
+    (station) => station.isLikelyUp !== false && station.healthStatus !== "error"
+  );
+  const selectedStations = (shortlisted.length >= 6 ? shortlisted : healthAnnotated).slice(0, 8);
+  const topCountries = collectTopValues(selectedStations.map((station) => station.country).filter(Boolean), 4);
+  const topTags = collectTopValues(
+    selectedStations.flatMap((station) => station.tagList?.filter(Boolean) ?? []),
+    6
+  );
+  const topLanguages = collectTopValues(
+    selectedStations.map((station) => station.language ?? "").filter(Boolean),
+    4
+  );
+  const averageHealthScore = selectedStations.length
+    ? Math.round(
+      selectedStations.reduce((total, station) => total + (station.healthScore ?? 55), 0) /
+      selectedStations.length
+    )
+    : 0;
+  const likelyUpCount = selectedStations.filter((station) => station.isLikelyUp !== false).length;
+  const mixNoteParts = [
+    topCountries.length ? `Mostly ${topCountries.slice(0, 2).join(" and ")}` : null,
+    topTags.length ? `leaning ${topTags.slice(0, 3).join(", ")}` : null,
+  ].filter(Boolean);
+
+  return finalizeHomeCuratedShelf({
+    id: definition.id,
+    eyebrow: definition.eyebrow,
+    title: definition.title,
+    description: definition.description,
+    badge: definition.badge,
+    theme: definition.theme,
+    stations: selectedStations,
+    topCountries,
+    topTags,
+    languageCount: topLanguages.length,
+    averageHealthScore,
+    likelyUpCount,
+    mixNote: mixNoteParts.length
+      ? `${mixNoteParts.join(" with ")}.`
+      : "Cross-country picks with enough spread to avoid a flat one-tag row.",
+    availabilityNote:
+      likelyUpCount === selectedStations.length
+        ? `All shortlisted stations are currently marked likely up from Radio Browser health data.`
+        : `${likelyUpCount} of ${selectedStations.length} shortlisted stations are marked likely up; weaker candidates were pushed down the row.`,
+  });
+}
+
+async function loadBehaviorShelf(snapshot: BehaviorSnapshot): Promise<HomeCuratedShelf | null> {
+  const seedIds = Array.from(new Set([...snapshot.favoriteStationIds, ...snapshot.recentStationIds])).slice(0, 10);
+  if (seedIds.length < 2) return null;
+
+  const seeds = await fetchStationsByUuid(seedIds);
+  if (seeds.length === 0) return null;
+
+  const preferredTags = collectTopValues(
+    seeds.flatMap((station) => station.tagList?.filter(Boolean) ?? []),
+    4
+  );
+  const preferredCountries = collectTopValues(seeds.map((station) => station.country).filter(Boolean), 3);
+  const preferredLanguages = collectTopValues(seeds.map((station) => station.language ?? "").filter(Boolean), 3);
+
+  const tagRequests = preferredTags.map((tag) =>
+    rbFetchJson<unknown>(
+      `/json/stations/bytag/${encodeURIComponent(tag)}?limit=24&hidebroken=true&order=clickcount&reverse=true`,
+      undefined,
+      { softFail: true }
+    )
+  );
+  const countryRequests = preferredCountries.map((country) =>
+    rbFetchJson<unknown>(
+      `/json/stations/bycountry/${encodeURIComponent(country)}?limit=24&hidebroken=true&order=clickcount&reverse=true`,
+      undefined,
+      { softFail: true }
+    )
+  );
+
+  const results = await Promise.allSettled([...tagRequests, ...countryRequests]);
+  const merged = new Map<string, Station>();
+  for (const station of seeds) {
+    if (!snapshot.skippedStationIds.includes(station.uuid)) {
+      merged.set(station.uuid, station);
+    }
+  }
+  for (const result of results) {
+    if (result.status !== "fulfilled") continue;
+    const normalized = normalizeStations(Array.isArray(result.value) ? result.value : []);
+    for (const station of normalized) {
+      if (snapshot.skippedStationIds.includes(station.uuid)) continue;
+      merged.set(station.uuid, station);
+    }
+  }
+
+  const ranked = annotateHealth(
+    rankStations(Array.from(merged.values()), {
+      mood: "More like your recent plays",
+      preferredTags,
+      preferredCountries,
+      preferredLanguages,
+      favoriteStationIds: snapshot.favoriteStationIds,
+      recentStationIds: snapshot.recentStationIds,
+      dislikedStationIds: snapshot.skippedStationIds,
+    })
+  );
+  const selectedStations = ranked
+    .filter((station) => station.healthStatus !== "error" && station.isLikelyUp !== false)
+    .slice(0, 8);
+  if (selectedStations.length < 4) return null;
+
+  const averageHealthScore = Math.round(
+    selectedStations.reduce((total, station) => total + (station.healthScore ?? 55), 0) /
+    selectedStations.length
+  );
+  const likelyUpCount = selectedStations.filter((station) => station.isLikelyUp !== false).length;
+
+  return finalizeHomeCuratedShelf({
+    id: "behavior-recent",
+    eyebrow: "Behavior-driven",
+    title: "More Like Your Recent Plays",
+    description: "Built from the stations you favorite, revisit, and skip so home can steer toward your taste instead of generic popularity.",
+    badge: "Personal",
+    theme: {
+      glow: "rgba(137, 122, 255, 0.18)",
+      border: "rgba(137, 122, 255, 0.34)",
+      pill: "rgba(137, 122, 255, 0.14)",
+    },
+    stations: selectedStations,
+    topCountries: collectTopValues(selectedStations.map((station) => station.country).filter(Boolean), 4),
+    topTags: collectTopValues(selectedStations.flatMap((station) => station.tagList?.filter(Boolean) ?? []), 6),
+    languageCount: collectTopValues(selectedStations.map((station) => station.language ?? "").filter(Boolean), 4).length,
+    averageHealthScore,
+    likelyUpCount,
+    mixNote: `Weighted by ${snapshot.favoriteStationIds.length} favorites, ${snapshot.recentStationIds.length} recents, and ${snapshot.skippedStationIds.length} skips to keep the shelf closer to your actual behavior.`,
+    availabilityNote: `${likelyUpCount} of ${selectedStations.length} shortlisted stations are marked likely up before probing.`,
+  });
+}
+
 export async function loader({ request }: LoaderFunctionArgs) {
   const url = new URL(request.url);
-  const view = url.searchParams.get("view");
-  const isWorldView = view === "world";
-  const country = isWorldView ? null : url.searchParams.get("country");
+  const country = url.searchParams.get("country");
+  const behaviorSnapshot = parseBehaviorSnapshot(request.headers.get("Cookie"));
 
   try {
     const stationsPath = country
       ? `/json/stations/bycountry/${encodeURIComponent(country)}?limit=100&hidebroken=true&order=clickcount&reverse=true`
       : `/json/stations/topclicks?limit=40&hidebroken=true`;
 
-    const [countriesResult, stationsResult] = await Promise.allSettled([
+    const [countriesResult, stationsResult, curatedShelvesResult, behaviorShelfResult] = await Promise.allSettled([
       rbFetchJson<Country[]>(`/json/countries`),
       rbFetchJson<unknown>(stationsPath, undefined, { softFail: true }),
+      Promise.all(HOME_CURATED_SHELF_DEFINITIONS.map((definition) => loadHomeCuratedShelf(definition))),
+      loadBehaviorShelf(behaviorSnapshot),
     ]);
 
     const countries =
       countriesResult.status === "fulfilled" ? countriesResult.value : [];
+    const curatedShelves =
+      curatedShelvesResult.status === "fulfilled" ? curatedShelvesResult.value.filter((shelf) => shelf.stations.length > 0) : [];
+    const behaviorShelf =
+      behaviorShelfResult.status === "fulfilled" ? behaviorShelfResult.value : null;
     let stations: Station[] = [];
     const rawStations =
       stationsResult.status === "fulfilled" ? stationsResult.value : null;
@@ -149,14 +486,13 @@ export async function loader({ request }: LoaderFunctionArgs) {
       );
       stations = rankStations(normalized);
     } else {
-      // Default stations for World Mode / Global view
       stations = normalizeStations(
         Array.isArray(rawStations) ? rawStations : []
       );
     }
 
     return json(
-      { countries, stations, selectedCountry: country, initialView: view },
+      { countries, stations, curatedShelves: behaviorShelf ? [behaviorShelf, ...curatedShelves] : curatedShelves, selectedCountry: country },
       {
         headers: {
           "Cache-Control": "public, max-age=300, stale-while-revalidate=600",
@@ -165,7 +501,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
     );
   } catch {
     // If even countries fail, returned defaults
-    return json({ countries: [], stations: [], selectedCountry: country, initialView: view });
+    return json({ countries: [], stations: [], curatedShelves: [], selectedCountry: country });
   }
 }
 
@@ -181,7 +517,7 @@ export default function Index() {
   }, [hydrated]);
 
   // Remix hooks
-  const { countries, stations: loaderStations, selectedCountry: loaderSelectedCountry, initialView } = useLoaderData<typeof loader>();
+  const { countries, stations: loaderStations, curatedShelves: loaderCuratedShelves, selectedCountry: loaderSelectedCountry } = useLoaderData<typeof loader>();
   const [sp, setSp] = useSearchParams();
   const navigate = useNavigate();
 
@@ -207,31 +543,6 @@ export default function Index() {
   const isCatalogSearchActive = catalogQuery.length >= 2;
   const atlasQuery = isCatalogSearchActive ? "" : searchQuery;
 
-  // View configuration
-  const viewParam = sp.get("view");
-  const [viewMode, setViewModeState] = useState<'classical' | 'world'>(
-    initialView === 'world' || viewParam === 'world' ? 'world' : 'classical'
-  );
-
-  // Synchronize viewMode with URL
-  const setViewMode = useCallback((mode: 'classical' | 'world') => {
-    setViewModeState(mode);
-    setSp(prev => {
-      const next = new URLSearchParams(prev);
-      if (mode === 'world') next.set("view", "world");
-      else next.delete("view");
-      return next;
-    }, { preventScrollReset: true });
-  }, [setSp]);
-
-  // Handle back/forward navigation for view param
-  useEffect(() => {
-    const currentView = sp.get("view") === 'world' ? 'world' : 'classical';
-    if (currentView !== viewMode) {
-      setViewModeState(currentView);
-    }
-  }, [sp, viewMode]);
-
   // Domain hooks - all state management extracted
   const player = useRadioPlayer();
   const renderedNowPlaying = hydrated ? player.nowPlaying : null;
@@ -242,6 +553,7 @@ export default function Index() {
   const mode = useListeningMode();
   const { favoriteStationIds, toggleFavorite } = useFavorites();
   const { recentStations, addToRecent } = useRecentStations();
+  const skippedStationIds = usePlayerStore((state) => state.skippedStationIds);
   const { triggerHoverStatic } = useHoverAudio();
   const atlas = useAtlasState(countries, renderedNowPlaying, selectedCountry);
   const cards = usePlayerCards(recentStations, stations, mode.exploreStations, mode.listeningMode);
@@ -284,6 +596,34 @@ export default function Index() {
     }
     return set;
   }, [failuresById]);
+  const curatedShelves = useMemo<CuratedShelfViewModel[]>(
+    () =>
+      loaderCuratedShelves
+        .map((shelf) => ({
+          ...shelf,
+          stations: shelf.stations.filter((station) => !unavailableIds.has(station.uuid)).slice(0, 10),
+        }))
+        .filter((shelf) => shelf.stations.length > 0),
+    [loaderCuratedShelves, unavailableIds]
+  );
+  const visibleCuratedShelves = useMemo<CuratedShelfViewModel[]>(() => {
+    if (isCatalogSearchActive) return [];
+    if (curatedShelves.length <= 2) return curatedShelves;
+    return (renderedNowPlaying || recentStations.length > 0)
+      ? curatedShelves.slice(0, 3)
+      : curatedShelves.slice(0, 2);
+  }, [curatedShelves, isCatalogSearchActive, recentStations.length, renderedNowPlaying]);
+  const shouldShowJourneyModule = Boolean(renderedNowPlaying || recentStations.length > 0);
+
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const cookieValue = writeBehaviorSnapshot({
+      favoriteStationIds: Array.from(favoriteStationIds),
+      recentStationIds: recentStations.map((station) => station.uuid),
+      skippedStationIds,
+    });
+    document.cookie = `${USER_BEHAVIOR_COOKIE}=${cookieValue}; Path=/; Max-Age=${60 * 60 * 24 * 30}; SameSite=Lax`;
+  }, [favoriteStationIds, recentStations, skippedStationIds]);
 
   useEffect(() => {
     if (!selectedCountry || !loaderMatchesSearch) {
@@ -482,20 +822,6 @@ export default function Index() {
     });
   }, [catalogQuery, catalogStations]);
 
-  const worldQueueSession = useMemo<QueueSession | null>(() => {
-    const worldStations = mode.exploreStations.length > 0 ? mode.exploreStations : stations;
-    if (worldStations.length === 0) return null;
-    return createQueueSession({
-      sourceType: "world",
-      sourceLabel: "World Mix",
-      stations: worldStations,
-      context: {
-        view: "world",
-      },
-      seed: viewMode,
-    });
-  }, [mode.exploreStations, stations, viewMode]);
-
   const aiMixQueueSession = useMemo<QueueSession | null>(() => {
     if (cards.activeStationsSnapshot.length === 0) return null;
     return createQueueSession({
@@ -509,6 +835,26 @@ export default function Index() {
       seed: `${mode.listeningMode}:${selectedCountry ?? "global"}`,
     });
   }, [cards.activeStationsSnapshot, mode.listeningMode, selectedCountry]);
+
+  const curatedQueueSessions = useMemo(() => {
+    const sessions = new Map<string, QueueSession>();
+    for (const shelf of curatedShelves) {
+      sessions.set(
+        shelf.id,
+        createQueueSession({
+          sourceType: "atlas",
+          sourceLabel: shelf.title,
+          stations: shelf.stations,
+          context: {
+            view: "classical",
+            description: shelf.description,
+          },
+          seed: shelf.id,
+        })
+      );
+    }
+    return sessions;
+  }, [curatedShelves]);
 
   useEffect(() => {
     if (!selectedCountry || !countryQueueSession || !player.nowPlaying) return;
@@ -552,6 +898,7 @@ export default function Index() {
     player.shuffleMode,
     navigationStations,
     player.startStation,
+    player.recordSkippedStation,
     atlas.countryMap,
     atlas.setSelectedContinent,
     atlas.setActiveContinent,
@@ -601,7 +948,6 @@ export default function Index() {
     topCountries,
     countries,
     atlasNavigation,
-    setViewMode,
   });
   const { handleWorldMoodRefresh } = handlers;
 
@@ -782,43 +1128,14 @@ export default function Index() {
   // Render
   const ariaHidden = isQuickRetuneOpen ? { "aria-hidden": true, style: { pointerEvents: "none" as const, userSelect: "none" as const } } : {};
 
-  if (viewMode === 'world') {
-    return (
-      <div className="bg-[#0a0a0c] min-h-screen">
-        <WorldHome
-          nowPlaying={renderedNowPlaying}
-          onPlayStation={(station, queueSession) =>
-            handlers.handleStartStation(station, {
-              autoPlay: true,
-              queueSession: queueSession ?? worldQueueSession,
-            })}
-          initialStations={stations}
-        />
-        <QuickRetuneWidget
-          isOpen={isQuickRetuneOpen}
-          onOpenChange={setQuickRetuneOpen}
-          continents={derived.continents}
-          activeContinent={atlas.activeContinent}
-          onContinentSelect={handlers.handleContinentSelect}
-          countriesByContinent={derived.continentData}
-          topCountries={topCountries}
-          onCountrySelect={handlers.handleQuickRetuneCountrySelect}
-          onSurprise={handlers.handleSurpriseRetune}
-        />
-        <Footer />
-      </div>
-    );
-  }
-
   return (
     <div className="app-bg relative min-h-screen text-[var(--rp-text)] overflow-x-hidden w-full pb-32">
       {showSplash ? <AISplashScreen onComplete={() => setShowSplash(false)} /> : null}
       <SignalField quality={selectedCountry ? "lite" : "full"} />
 
       <main
-        className={`relative z-10 flex w-full flex-col gap-0 pt-0 md:pt-2 ${
-          showSplash === null ? "opacity-0" : ""
-        }`}
+        className={`relative z-10 flex w-full flex-col gap-0 pt-0 md:pt-2 ${showSplash === null ? "opacity-0" : ""
+          }`}
         {...swipeHandlers}
         {...ariaHidden}
       >
@@ -830,16 +1147,13 @@ export default function Index() {
           <>
             <HeroSection topCountries={topCountries} totalStations={derived.totalStations} continents={derived.continents.length}
               nowPlaying={renderedNowPlaying} isPlaying={renderedIsPlaying} searchQueryRaw={searchDraft} onStartListening={handlers.handleStartListening}
-              onQuickRetune={handlers.handleQuickRetune} onMissionExploreWorld={() => setViewMode('world')}
-              onMissionStayLocal={handlers.handleMissionStayLocal} onHoverSound={triggerHoverStatic}
+              onQuickRetune={handlers.handleQuickRetune} onHoverSound={triggerHoverStatic}
               onSearch={handleSearchInput}
-              onOpenPassport={handleOpenPassport}
             />
 
             <div className="relative z-20 mx-auto -mt-6 flex w-full max-w-7xl flex-col gap-7 px-4 md:-mt-8 md:gap-8 md:px-6">
-              <section className="relative -mx-4 px-4 pt-5 md:-mx-6 md:px-6 md:pt-6">
-                <div className="pointer-events-none absolute left-4 top-5 h-[13rem] w-[30rem] max-w-full rounded-full bg-[radial-gradient(circle_at_16%_18%,rgba(245,177,45,0.11),transparent_46%),radial-gradient(circle_at_72%_58%,rgba(136,116,99,0.08),transparent_36%)] blur-2xl" />
-                <div className="relative">
+              {shouldShowJourneyModule && (
+                <section className="pt-5 md:pt-6">
                   <JourneyModule
                     nowPlaying={renderedNowPlaying}
                     recentStations={recentStations}
@@ -848,8 +1162,23 @@ export default function Index() {
                     onQuickRetune={handlers.handleQuickRetune}
                     onOpenPassport={handleOpenPassport}
                   />
-                </div>
-              </section>
+                </section>
+              )}
+
+              {visibleCuratedShelves.length > 0 && (
+                <CuratedShelfDeck
+                  shelves={visibleCuratedShelves}
+                  nowPlaying={renderedNowPlaying}
+                  isPlaying={renderedIsPlaying}
+                  favoriteIds={favoriteStationIds}
+                  onPlayStation={(shelfId, station) =>
+                    handleStartStation(station, {
+                      queueSession: curatedQueueSessions.get(shelfId) ?? null,
+                    })
+                  }
+                  onToggleFavorite={handleToggleFavorite}
+                />
+              )}
 
               {catalogQuery.length >= 2 && (
                 <section className="space-y-4">
@@ -886,14 +1215,14 @@ export default function Index() {
                     <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
                       <div>
                         <Text size="xs" c="var(--rp-muted-2)" className="font-semibold uppercase tracking-[0.32em]">
-                          {atlas.activeContinent ? `${atlas.activeContinent} route` : "Atlas guide"}
+                          {atlas.activeContinent ? `${atlas.activeContinent} guide` : "Discovery guide"}
                         </Text>
                         <Title order={2} style={{ fontSize: "1.6rem", fontWeight: 700, color: "var(--rp-text)", marginBottom: "0.15rem" }}>
-                          {atlasQuery ? `Search results for "${atlasQuery}"` : atlas.activeContinent ? `Start in ${atlas.activeContinent}` : "Choose a region, then enter a country flow"}
+                          {atlasQuery ? `Search results for "${atlasQuery}"` : atlas.activeContinent ? `Start in ${atlas.activeContinent}` : "Choose a region, then open a country shelf"}
                         </Title>
                         <div className="flex items-center gap-3">
                           <Text size="xs" c="var(--rp-muted)">
-                            {atlasQuery ? "Showing matching countries from the global atlas." : atlas.activeContinent ? "The first countries carry the strongest route into live stations, country notes, and listening context." : "Pick a region first. The atlas then narrows into curated country routes instead of a flat directory."}
+                            {atlasQuery ? "Showing matching countries from the live discovery index." : atlas.activeContinent ? "The first countries carry the strongest path into live stations, country notes, and listening context." : "Pick a region first. Home then narrows into curated country discovery instead of a flat directory."}
                           </Text>
                           {(atlasQuery || atlas.activeContinent) && (
                             <button
@@ -910,7 +1239,7 @@ export default function Index() {
                       </div>
                       <div className="text-right">
                         <Text size="xs" c="var(--rp-text)" className="whitespace-nowrap font-semibold uppercase tracking-[0.22em]">
-                          {atlas.activeContinent ?? "Global atlas"}
+                          {atlas.activeContinent ?? "Global discovery"}
                         </Text>
                         <Text size="xs" c="var(--rp-muted-2)" className="whitespace-nowrap font-mono tracking-[0.16em] uppercase">
                           {derived.filteredCountries.length.toLocaleString()} of {topCountries.length.toLocaleString()} spotlight countries
@@ -923,38 +1252,33 @@ export default function Index() {
                     </div>
                   </div>
                   <div className="relative mt-6 md:mt-8">
-                  {derived.filteredCountries.length > 0 ? (
-                    <AtlasGrid
-                      displaySections={derived.displaySections}
-                      onPreviewCountry={handlers.handlePreviewCountryPlay}
-                      stampedCountries={stampedCountryCodes}
-                    />
-                  ) : (
-                    <div className="py-16 text-center bg-[var(--rp-card)] rounded-3xl border-2 border-dashed border-white/10 backdrop-blur-sm">
-                      <div className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-black/40 text-[var(--rp-muted)] mb-4">
-                        <IconSearch size={24} />
+                    {derived.filteredCountries.length > 0 ? (
+                      <AtlasGrid
+                        displaySections={derived.displaySections}
+                        onPreviewCountry={handlers.handlePreviewCountryPlay}
+                        stampedCountries={stampedCountryCodes}
+                      />
+                    ) : (
+                      <div className="py-16 text-center bg-[var(--rp-card)] rounded-3xl border-2 border-dashed border-white/10 backdrop-blur-sm">
+                        <div className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-black/40 text-[var(--rp-muted)] mb-4">
+                          <IconSearch size={24} />
+                        </div>
+                        <Title order={3} size="h4" c="var(--rp-text)" fw={800} className="mb-1">No signals found</Title>
+                        <Text size="sm" c="var(--rp-muted)" className="max-w-xs mx-auto mb-6">
+                          We couldn't find any countries matching "{atlasQuery}". Try another name or return to the full discovery index.
+                        </Text>
+                        <button
+                          onClick={() => handleSearch("")}
+                          className="px-6 py-2 rounded-full bg-[var(--rp-gold)] text-black text-xs font-bold uppercase tracking-widest hover:bg-[var(--rp-gold-strong)] transition-all"
+                        >
+                          Clear Search
+                        </button>
                       </div>
-                      <Title order={3} size="h4" c="var(--rp-text)" fw={800} className="mb-1">No signals found</Title>
-                      <Text size="sm" c="var(--rp-muted)" className="max-w-xs mx-auto mb-6">
-                        We couldn't find any countries matching "{atlasQuery}". Try another name or explore the full atlas.
-                      </Text>
-                      <button
-                        onClick={() => handleSearch("")}
-                        className="px-6 py-2 rounded-full bg-[var(--rp-gold)] text-black text-xs font-bold uppercase tracking-widest hover:bg-[var(--rp-gold-strong)] transition-all"
-                      >
-                        Clear Search
-                      </button>
-                    </div>
-                  )}
+                    )}
                   </div>
                 </div>
               </section>
 
-              <SignalBand
-                topCountries={topCountries}
-                nowPlaying={renderedNowPlaying}
-                recentStations={recentStations}
-              />
             </div>
           </>
         ) : (
@@ -1082,7 +1406,7 @@ export default function Index() {
               </div>
             </section>
           </div>
-      )}
+        )}
       </main>
 
       <QuickRetuneWidget isOpen={isQuickRetuneOpen} onOpenChange={setQuickRetuneOpen} continents={derived.continents}
@@ -1130,12 +1454,13 @@ export default function Index() {
                   {passportEntries.length.toLocaleString()} destinations visited
                 </Text>
               </div>
-              <a
-                href="/?view=world&tab=passport"
+              <button
+                type="button"
+                onClick={() => setPassportOpen(false)}
                 className="inline-flex h-9 items-center justify-center rounded-full border border-[rgba(245,177,45,0.5)] bg-[rgba(245,177,45,0.12)] px-4 text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--rp-gold)] shadow-[0_12px_24px_rgba(0,0,0,0.45)] hover:bg-[rgba(245,177,45,0.2)]"
               >
-                Full passport
-              </a>
+                Back to home
+              </button>
             </div>
           </div>
           <ScrollArea h="calc(100vh - 140px)" type="never">

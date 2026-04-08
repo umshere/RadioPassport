@@ -9,6 +9,56 @@ import {
     getStationColors
 } from "~/utils/colorExtraction";
 
+function getProbeBadgeCopy(status: Station["probeStatus"]) {
+    switch (status) {
+        case "ok":
+            return "Live";
+        case "slow":
+            return "Slow";
+        case "down":
+            return "Retry";
+        default:
+            return null;
+    }
+}
+
+function getProbeBadgeClass(status: Station["probeStatus"], isCurrent: boolean) {
+    if (status === "ok") {
+        return isCurrent
+            ? "border-emerald-300/35 bg-emerald-500/18 text-emerald-100"
+            : "border-emerald-500/30 bg-emerald-500/15 text-emerald-200";
+    }
+    if (status === "slow") {
+        return isCurrent
+            ? "border-amber-300/35 bg-amber-400/20 text-amber-50"
+            : "border-amber-500/35 bg-amber-500/14 text-amber-100";
+    }
+    if (status === "down") {
+        return isCurrent
+            ? "border-rose-300/35 bg-rose-500/18 text-rose-50"
+            : "border-rose-500/35 bg-rose-500/15 text-rose-100";
+    }
+    return "border-white/15 bg-black/35 text-white/70";
+}
+
+function formatProbeAge(checkedAt?: string | null) {
+    if (!checkedAt) return null;
+    const timestamp = Date.parse(checkedAt);
+    if (Number.isNaN(timestamp)) return null;
+
+    const deltaMs = Date.now() - timestamp;
+    if (deltaMs < 45_000) return "checked now";
+
+    const minutes = Math.round(deltaMs / 60_000);
+    if (minutes < 60) return `${minutes}m ago`;
+
+    const hours = Math.round(minutes / 60);
+    if (hours < 24) return `${hours}h ago`;
+
+    const days = Math.round(hours / 24);
+    return `${days}d ago`;
+}
+
 type PremiumStationCardProps = {
     station: Station;
     index?: number;
@@ -19,6 +69,7 @@ type PremiumStationCardProps = {
     onToggleFavorite?: (station: Station) => void;
     size?: 'sm' | 'md' | 'lg';
     showGenre?: boolean;
+    fillWidth?: boolean;
 };
 
 export function PremiumStationCard({
@@ -31,6 +82,7 @@ export function PremiumStationCard({
     onToggleFavorite,
     size = 'md',
     showGenre = true,
+    fillWidth = false,
 }: PremiumStationCardProps) {
     const [imageError, setImageError] = useState(false);
     const [isHovered, setIsHovered] = useState(false);
@@ -39,6 +91,8 @@ export function PremiumStationCard({
     const colors = useMemo(() => getStationColors(station.tagList), [station.tagList]);
     const fallbackGradient = useMemo(() => generateStationGradient(station.name), [station.name]);
     const fallbackImage = useMemo(() => getThemedFallbackImage(genre), [genre]);
+    const probeBadge = useMemo(() => getProbeBadgeCopy(station.probeStatus), [station.probeStatus]);
+    const probeAge = useMemo(() => formatProbeAge(station.probeCheckedAt), [station.probeCheckedAt]);
 
     const artworkUrl = station.favicon && !imageError ? station.favicon : fallbackImage;
 
@@ -47,6 +101,7 @@ export function PremiumStationCard({
         md: 'w-40 h-40 md:w-44 md:h-44',
         lg: 'w-48 h-48 md:w-56 md:h-56',
     };
+    const artworkSizeClass = fillWidth ? 'w-full aspect-square' : sizeClasses[size];
 
     const initials = useMemo(() => {
         const words = station.name.split(/\s+/).filter(w => w.length > 0);
@@ -58,7 +113,7 @@ export function PremiumStationCard({
 
     return (
         <motion.div
-            className="group relative cursor-pointer"
+            className={`group relative cursor-pointer ${fillWidth ? 'w-full' : ''}`}
             initial={{ opacity: 0, y: 20, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             transition={{ delay: index * 0.03 }}
@@ -70,22 +125,22 @@ export function PremiumStationCard({
         >
             {/* Card Container */}
             <div
-                className={`${sizeClasses[size]} relative rounded-2xl overflow-hidden border`}
+                className={`${artworkSizeClass} relative rounded-2xl overflow-hidden border`}
                 style={{
-                    borderColor: isCurrent ? 'rgba(245, 177, 45, 0.52)' : isHovered ? 'rgba(245, 177, 45, 0.24)' : 'rgba(255,255,255,0.1)',
+                    borderColor: isCurrent ? 'rgba(245, 177, 45, 0.42)' : isHovered ? 'rgba(245, 177, 45, 0.18)' : 'rgba(255,255,255,0.08)',
                     boxShadow: isCurrent
-                        ? `0 18px 38px -16px rgba(245,177,45,0.34), 0 10px 24px -12px rgba(0,0,0,0.56), inset 0 1px 0 rgba(255,214,127,0.08)`
+                        ? `0 14px 30px -18px rgba(245,177,45,0.28), 0 8px 18px -14px rgba(0,0,0,0.42)`
                         : isHovered
-                            ? '0 16px 30px -16px rgba(0,0,0,0.48), inset 0 1px 0 rgba(255,255,255,0.04)'
-                            : '0 12px 24px -16px rgba(0,0,0,0.42), inset 0 1px 0 rgba(255,255,255,0.03)',
+                            ? '0 14px 24px -18px rgba(0,0,0,0.34)'
+                            : '0 10px 18px -18px rgba(0,0,0,0.28)',
                 }}
             >
                 <div
                     className="absolute inset-0"
                     style={{
                         background: isCurrent
-                            ? 'linear-gradient(180deg, rgba(42,33,20,0.92) 0%, rgba(18,15,12,0.84) 100%)'
-                            : 'linear-gradient(180deg, rgba(16,19,26,0.9) 0%, rgba(11,13,18,0.86) 100%)',
+                            ? 'linear-gradient(180deg, rgba(34,28,20,0.56) 0%, rgba(12,14,18,0.28) 100%)'
+                            : 'linear-gradient(180deg, rgba(12,14,18,0.3) 0%, rgba(10,12,16,0.12) 100%)',
                     }}
                 />
 
@@ -112,18 +167,18 @@ export function PremiumStationCard({
                     className="absolute inset-0 pointer-events-none transition-opacity duration-300 z-[2]"
                     style={{
                         background: isCurrent
-                            ? 'linear-gradient(to top, rgba(0,0,0,0.74) 0%, rgba(0,0,0,0.22) 44%, transparent 76%)'
-                            : 'linear-gradient(to top, rgba(0,0,0,0.76) 0%, rgba(0,0,0,0.26) 40%, transparent 74%)',
-                        opacity: isHovered ? 1 : 0.82,
+                            ? 'linear-gradient(to top, rgba(0,0,0,0.56) 0%, rgba(0,0,0,0.16) 42%, transparent 72%)'
+                            : 'linear-gradient(to top, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.12) 38%, transparent 68%)',
+                        opacity: isHovered ? 0.92 : 0.68,
                     }}
                 />
 
                 <motion.div
                     className="absolute inset-0 pointer-events-none z-[3]"
                     style={{
-                        background: 'linear-gradient(180deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.01) 26%, transparent 58%, rgba(245,177,45,0.05) 100%)',
+                        background: 'linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.005) 24%, transparent 56%, rgba(245,177,45,0.03) 100%)',
                     }}
-                    animate={{ opacity: isCurrent ? 0.9 : isHovered ? 0.72 : 0.46 }}
+                    animate={{ opacity: isCurrent ? 0.64 : isHovered ? 0.4 : 0.22 }}
                 />
 
                 {isCurrent && (
@@ -158,9 +213,17 @@ export function PremiumStationCard({
                 </motion.div>
 
                 {/* Favorite Button */}
+                {probeBadge && (
+                    <div
+                        className={`absolute top-2 left-2 z-10 rounded-full border px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] backdrop-blur-sm ${getProbeBadgeClass(station.probeStatus, isCurrent)}`}
+                    >
+                        {probeBadge}
+                    </div>
+                )}
+
                 {onToggleFavorite && (
                     <motion.button
-                        className="absolute top-2 right-2 z-10 flex items-center justify-center w-8 h-8 rounded-full bg-black/40 backdrop-blur-sm border border-white/20"
+                        className="absolute top-2 right-2 z-10 flex items-center justify-center w-8 h-8 rounded-full bg-black/28 backdrop-blur-sm border border-white/14"
                         onClick={(e) => {
                             e.stopPropagation();
                             onToggleFavorite(station);
@@ -201,7 +264,7 @@ export function PremiumStationCard({
             </div>
 
             {/* Station Info */}
-            <div className="mt-3 px-1">
+            <div className="mt-2.5 px-1">
                 <h3 className={`font-semibold text-sm truncate transition-colors ${isCurrent ? 'text-[var(--rp-gold)]' : 'text-white group-hover:text-white/92'}`}>
                     {station.name}
                 </h3>
@@ -216,6 +279,17 @@ export function PremiumStationCard({
                         </>
                     )}
                 </div>
+                {(probeBadge || probeAge) && (
+                    <div className={`mt-1 flex items-center gap-1.5 text-[10px] uppercase tracking-[0.18em] ${isCurrent ? 'text-white/58' : 'text-white/38'}`}>
+                        {probeAge && <span>{probeAge}</span>}
+                        {probeAge && typeof station.probeLatencyMs === "number" && station.probeStatus !== "down" && (
+                            <span className="text-white/24">•</span>
+                        )}
+                        {typeof station.probeLatencyMs === "number" && station.probeStatus !== "down" && (
+                            <span>{station.probeLatencyMs}ms</span>
+                        )}
+                    </div>
+                )}
             </div>
         </motion.div>
     );
