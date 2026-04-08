@@ -153,14 +153,18 @@ export class OpenRouterProvider implements AiProvider {
     let lastError: Error | null = null;
 
     const modelRotation = getOpenRouterModelRotation();
+    const MODEL_TIMEOUT_MS = 15_000;
 
     for (const model of modelRotation) {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), MODEL_TIMEOUT_MS);
       try {
         console.log(`Attempting to use model: ${model}`);
         const response = await this.fetchImpl(
           "https://openrouter.ai/api/v1/chat/completions",
           {
             method: "POST",
+            signal: controller.signal,
             headers: {
               "Content-Type": "application/json",
               Authorization: `Bearer ${this.apiKey}`,
@@ -278,6 +282,8 @@ export class OpenRouterProvider implements AiProvider {
         console.warn(
           `Model ${model} failed: ${lastError.message}. Trying next model.`
         );
+      } finally {
+        clearTimeout(timeoutId);
       }
     }
 

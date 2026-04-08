@@ -155,24 +155,35 @@ async function fetchOpenRouterTrivia(prompt: string): Promise<AiTriviaResult> {
 
   let lastError = "OpenRouter request failed.";
   for (const model of modelsToTry) {
-    const response = await fetch(
-      "https://openrouter.ai/api/v1/chat/completions",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify({
-          model,
-          messages: [
-            { role: "system", content: AI_SYSTEM_PROMPT },
-            { role: "user", content: prompt },
-          ],
-          temperature: 0.4,
-        }),
-      }
-    );
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 12_000);
+    let response: Response;
+    try {
+      response = await fetch(
+        "https://openrouter.ai/api/v1/chat/completions",
+        {
+          method: "POST",
+          signal: controller.signal,
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${apiKey}`,
+          },
+          body: JSON.stringify({
+            model,
+            messages: [
+              { role: "system", content: AI_SYSTEM_PROMPT },
+              { role: "user", content: prompt },
+            ],
+            temperature: 0.4,
+          }),
+        }
+      );
+    } catch (err) {
+      clearTimeout(timeoutId);
+      lastError = `OpenRouter request failed for ${model}: ${err instanceof Error ? err.message : String(err)}`;
+      continue;
+    }
+    clearTimeout(timeoutId);
     if (!response.ok) {
       const errorText = await response.text();
       const trimmed = errorText.trim().slice(0, 200);

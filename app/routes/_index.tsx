@@ -438,12 +438,38 @@ async function loadBehaviorShelf(snapshot: BehaviorSnapshot): Promise<HomeCurate
   });
 }
 
+// In-process server-side cache for home page non-personalized data.
+// Prevents re-fetching all RadioBrowser + probe + AI calls on every back-navigation.
+type HomepageInMemCache = {
+  countries: Country[];
+  topStations: Station[];
+  curatedShelves: HomeCuratedShelf[];
+  expiresAt: number;
+};
+let _hpCache: HomepageInMemCache | null = null;
+const HP_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
 export async function loader({ request }: LoaderFunctionArgs) {
   const url = new URL(request.url);
   const country = url.searchParams.get("country");
   const behaviorSnapshot = parseBehaviorSnapshot(request.headers.get("Cookie"));
 
   try {
+    const now = Date.now();
+
+    // Fast path: back-navigation from country view — serve cached home data
+    // and only reload the personalized behavior shelf (which has its own sub-caches)
+    if (!country && _hpCache && _hpCache.expiresAt > now) {
+      const behaviorShelf = await loadBehaviorShelf(behaviorSnapshot).catch(() => null);
+      const mergedShelves = behaviorShelf
+        ? [behaviorShelf, ..._hpCache.curatedShelves]
+        : _hpCache.curatedShelves;
+      return json(
+        { countries: _hpCache.countries, stations: _hpCache.topStations, curatedShelves: mergedShelves, selectedCountry: null },
+        { headers: { "Cache-Control": "public, max-age=300, stale-while-revalidate=600" } }
+      );
+    }
+
     const stationsPath = country
       ? `/json/stations/bycountry/${encodeURIComponent(country)}?limit=100&hidebroken=true&order=clickcount&reverse=true`
       : `/json/stations/topclicks?limit=40&hidebroken=true`;
@@ -476,6 +502,10 @@ export async function loader({ request }: LoaderFunctionArgs) {
       stations = normalizeStations(
         Array.isArray(rawStations) ? rawStations : []
       );
+      // Populate cache for subsequent back-navigations from country views
+      if (countries.length > 0) {
+        _hpCache = { countries, topStations: stations, curatedShelves, expiresAt: now + HP_CACHE_TTL };
+      }
     }
 
     return json(
