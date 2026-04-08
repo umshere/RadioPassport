@@ -66,9 +66,9 @@ export function AtlasGrid({ displaySections, onPreviewCountry, stampedCountries 
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, amount: 0.1 }}
             transition={{ duration: 0.5, ease: "easeOut" }}
-            className="overflow-hidden rounded-[1.9rem] border border-white/10 bg-[linear-gradient(180deg,rgba(10,13,20,0.88)_0%,rgba(12,16,25,0.82)_100%)] p-6 shadow-[0_18px_40px_rgba(0,0,0,0.42)] backdrop-blur-xl md:p-7"
+            className="overflow-hidden rounded-[1.9rem] border border-white/10 bg-[linear-gradient(180deg,rgba(10,13,20,0.88)_0%,rgba(12,16,25,0.82)_100%)] p-6 shadow-[0_18px_40px_rgba(0,0,0,0.42)] backdrop-blur-xl md:rounded-none md:border-0 md:bg-transparent md:p-0 md:shadow-none md:backdrop-blur-0"
           >
-            <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+            <div className="mb-5 flex flex-col gap-3 md:mb-6 md:flex-row md:items-start md:justify-between">
               <div className="flex items-start gap-3">
                 <ThemeIcon
                   size={44}

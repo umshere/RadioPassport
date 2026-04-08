@@ -1170,7 +1170,7 @@ export default function Index() {
               )}
 
               <section id="atlas">
-                <div className="relative overflow-hidden rounded-[2.2rem] border border-white/8 bg-[linear-gradient(180deg,rgba(8,12,18,0.56)_0%,rgba(8,12,18,0.42)_100%)] px-4 py-5 shadow-[0_18px_42px_rgba(0,0,0,0.28)] backdrop-blur-md md:px-6 md:py-6">
+                <div className="relative overflow-hidden rounded-[2rem] border border-white/10 bg-[linear-gradient(180deg,rgba(8,12,18,0.56)_0%,rgba(8,12,18,0.42)_100%)] px-4 py-5 shadow-[0_18px_42px_rgba(0,0,0,0.28)] backdrop-blur-md md:rounded-[2.2rem] md:border-white/8 md:px-6 md:py-6">
                   <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(245,177,45,0.1),transparent_26%),radial-gradient(circle_at_bottom_left,rgba(245,177,45,0.04),transparent_22%)]" />
                   <div className="relative px-1 py-2 md:px-2">
                     <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
@@ -1207,35 +1207,37 @@ export default function Index() {
                         </Text>
                       </div>
                     </div>
-
-                    <div className="mt-4 overflow-x-auto scroll-track pt-4">
+                  </div>
+                  <div className="relative mt-5 md:mt-8">
+                    <div className="overflow-x-auto scroll-track pt-2 md:pt-0">
                       <AtlasFilters continents={derived.continents} activeContinent={atlas.activeContinent} onContinentSelect={atlas.setActiveContinent} />
                     </div>
-                  </div>
-                  <div className="relative mt-6 md:mt-8">
-                    {derived.filteredCountries.length > 0 ? (
-                      <AtlasGrid
-                        displaySections={derived.displaySections}
-                        onPreviewCountry={handlers.handlePreviewCountryPlay}
-                        stampedCountries={stampedCountryCodes}
-                      />
-                    ) : (
-                      <div className="py-16 text-center bg-[var(--rp-card)] rounded-3xl border-2 border-dashed border-white/10 backdrop-blur-sm">
-                        <div className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-black/40 text-[var(--rp-muted)] mb-4">
-                          <IconSearch size={24} />
+
+                    <div className="mt-5 md:mt-6 max-md:rounded-[1.8rem] max-md:border max-md:border-white/10 max-md:bg-[linear-gradient(180deg,rgba(7,10,16,0.82)_0%,rgba(9,13,20,0.72)_100%)] max-md:p-4 max-md:shadow-[inset_0_1px_0_rgba(255,255,255,0.03),0_16px_34px_rgba(0,0,0,0.22)]">
+                      {derived.filteredCountries.length > 0 ? (
+                        <AtlasGrid
+                          displaySections={derived.displaySections}
+                          onPreviewCountry={handlers.handlePreviewCountryPlay}
+                          stampedCountries={stampedCountryCodes}
+                        />
+                      ) : (
+                        <div className="py-16 text-center bg-[var(--rp-card)] rounded-3xl border-2 border-dashed border-white/10 backdrop-blur-sm">
+                          <div className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-black/40 text-[var(--rp-muted)] mb-4">
+                            <IconSearch size={24} />
+                          </div>
+                          <Title order={3} size="h4" c="var(--rp-text)" fw={800} className="mb-1">No signals found</Title>
+                          <Text size="sm" c="var(--rp-muted)" className="max-w-xs mx-auto mb-6">
+                            We couldn't find any countries matching "{atlasQuery}". Try another name or return to the full discovery index.
+                          </Text>
+                          <button
+                            onClick={() => handleSearch("")}
+                            className="px-6 py-2 rounded-full bg-[var(--rp-gold)] text-black text-xs font-bold uppercase tracking-widest hover:bg-[var(--rp-gold-strong)] transition-all"
+                          >
+                            Clear Search
+                          </button>
                         </div>
-                        <Title order={3} size="h4" c="var(--rp-text)" fw={800} className="mb-1">No signals found</Title>
-                        <Text size="sm" c="var(--rp-muted)" className="max-w-xs mx-auto mb-6">
-                          We couldn't find any countries matching "{atlasQuery}". Try another name or return to the full discovery index.
-                        </Text>
-                        <button
-                          onClick={() => handleSearch("")}
-                          className="px-6 py-2 rounded-full bg-[var(--rp-gold)] text-black text-xs font-bold uppercase tracking-widest hover:bg-[var(--rp-gold-strong)] transition-all"
-                        >
-                          Clear Search
-                        </button>
-                      </div>
-                    )}
+                      )}
+                    </div>
                   </div>
                 </div>
               </section>

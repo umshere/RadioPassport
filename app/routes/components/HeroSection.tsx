@@ -1736,6 +1736,13 @@ export function HeroSection({
             "linear-gradient(90deg, rgba(8,10,16,0.9) 0%, rgba(8,10,16,0.72) 34%, rgba(8,10,16,0.3) 58%, rgba(8,10,16,0.82) 100%), radial-gradient(circle at 18% 22%, rgba(245, 177, 45, 0.18), transparent 32%), radial-gradient(circle at 80% 12%, rgba(255, 200, 90, 0.1), transparent 24%), linear-gradient(180deg, rgba(11,12,16,0.2) 0%, rgba(11,12,16,0.55) 72%, rgba(15,17,24,0.96) 100%)",
         }}
       />
+      <div
+        className="pointer-events-none absolute inset-x-0 bottom-0 h-[48%]"
+        style={{
+          background:
+            "linear-gradient(180deg, rgba(8,10,16,0) 0%, rgba(8,10,16,0.06) 12%, rgba(8,10,16,0.18) 26%, rgba(8,10,16,0.38) 46%, rgba(8,10,16,0.68) 68%, rgba(8,10,16,0.9) 84%, rgba(8,10,16,1) 100%), radial-gradient(70% 100% at 50% 100%, rgba(8,10,16,0.98) 0%, rgba(8,10,16,0.72) 38%, rgba(8,10,16,0.18) 72%, rgba(8,10,16,0) 100%)",
+        }}
+      />
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_left,rgba(245,177,45,0.16),transparent_26%)]" />
       <motion.div
         aria-hidden="true"

@@ -315,7 +315,7 @@ export function CountryOverview({
         </div>
 
         <div className="space-y-5">
-          <div className="relative overflow-hidden rounded-[1.9rem] border border-white/10 bg-black/25 p-5 shadow-[0_18px_36px_rgba(0,0,0,0.32)] md:p-6">
+          <div className="relative overflow-hidden rounded-[1.9rem] border border-white/10 bg-black/25 p-5 shadow-[0_18px_36px_rgba(0,0,0,0.32)] max-md:rounded-none max-md:border-0 max-md:bg-transparent max-md:p-0 max-md:shadow-none md:p-6">
             <div className="pointer-events-none absolute inset-0">
               <div className="absolute inset-y-0 right-0 hidden w-[46%] lg:block">
                 <div className="absolute inset-y-5 left-6 right-5 overflow-hidden rounded-[2rem] border border-[rgba(255,255,255,0.08)] bg-[linear-gradient(180deg,rgba(15,18,25,0.72),rgba(9,11,17,0.62))] shadow-[0_24px_50px_rgba(0,0,0,0.35)]">
@@ -526,7 +526,7 @@ export function CountryOverview({
                 </div>
               </div>
 
-              <div className="mt-5 rounded-[1.6rem] border border-white/10 bg-black/25 p-4 lg:mt-5 lg:self-start">
+              <div className="mt-5 rounded-[1.6rem] border border-white/10 bg-black/25 p-4 max-md:mt-6 max-md:rounded-none max-md:border-0 max-md:bg-transparent max-md:px-0 max-md:py-0 max-md:shadow-none lg:mt-5 lg:self-start">
                 <div className="flex items-start justify-between gap-4">
                   <div>
                     <Text size="xs" className="font-semibold uppercase tracking-[0.28em] text-[var(--rp-muted-2)]">
@@ -580,7 +580,7 @@ export function CountryOverview({
                   </Text>
                 </div>
                 <div className="mt-4 grid gap-3 sm:grid-cols-3">
-                  <div className="rounded-[1.2rem] border border-white/10 bg-black/25 p-3">
+                  <div className="rounded-[1.2rem] border border-white/10 bg-black/25 p-3 max-md:rounded-none max-md:border-0 max-md:bg-transparent max-md:p-0">
                     <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.22em] text-[var(--rp-muted-2)]">
                       <IconLanguage size={13} />
                       Languages
@@ -589,7 +589,7 @@ export function CountryOverview({
                       {countryContext.topLanguages.join(" • ") || "Mixed"}
                     </Text>
                   </div>
-                  <div className="rounded-[1.2rem] border border-white/10 bg-black/25 p-3">
+                  <div className="rounded-[1.2rem] border border-white/10 bg-black/25 p-3 max-md:rounded-none max-md:border-0 max-md:bg-transparent max-md:p-0">
                     <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.22em] text-[var(--rp-muted-2)]">
                       <IconTags size={13} />
                       Country Mix
@@ -598,7 +598,7 @@ export function CountryOverview({
                       {countryContext.topGenres.join(" • ") || "Open format"}
                     </Text>
                   </div>
-                  <div className="rounded-[1.2rem] border border-white/10 bg-black/25 p-3">
+                  <div className="rounded-[1.2rem] border border-white/10 bg-black/25 p-3 max-md:rounded-none max-md:border-0 max-md:bg-transparent max-md:p-0">
                     <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.22em] text-[var(--rp-muted-2)]">
                       <IconClock size={13} />
                       Local Time
