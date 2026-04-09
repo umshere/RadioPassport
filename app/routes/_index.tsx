@@ -466,7 +466,7 @@ type HomepageInMemCache = {
   expiresAt: number;
 };
 let _hpCache: HomepageInMemCache | null = null;
-const HP_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+const HP_CACHE_TTL = 30 * 60 * 1000; // 30 minutes
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const url = new URL(request.url);
@@ -485,7 +485,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
         : _hpCache.curatedShelves;
       return json(
         { countries: _hpCache.countries, stations: _hpCache.topStations, curatedShelves: mergedShelves, selectedCountry: null },
-        { headers: { "Cache-Control": "public, max-age=300, stale-while-revalidate=600" } }
+        { headers: { "Cache-Control": "public, max-age=1800, stale-while-revalidate=3600" } }
       );
     }
 
@@ -531,7 +531,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
       { countries, stations, curatedShelves: behaviorShelf ? [behaviorShelf, ...curatedShelves] : curatedShelves, selectedCountry: country },
       {
         headers: {
-          "Cache-Control": "public, max-age=300, stale-while-revalidate=600",
+          "Cache-Control": "public, max-age=1800, stale-while-revalidate=3600",
         },
       }
     );
