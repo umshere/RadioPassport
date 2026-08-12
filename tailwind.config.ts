@@ -5,6 +5,13 @@ export default {
   theme: {
     extend: {
       colors: {
+        charcoal: "#14120F",
+        surface: "#1C1915",
+        "surface-2": "#26221C",
+        paper: "#F2EDE4",
+        muted: "#A89F90",
+        coral: "#E5535F",
+        signal: "#6FB5C4",
         // Soft, elegant color palette inspired by Apple design
         glass: {
           50: "rgba(255, 255, 255, 0.05)",

@@ -1,9 +1,23 @@
 import type { LinksFunction } from "@remix-run/node";
-import { isRouteErrorResponse, Link, Links, Meta, Outlet, Scripts, ScrollRestoration, useNavigation, useRouteError } from "@remix-run/react";
+import {
+  isRouteErrorResponse,
+  Link,
+  Links,
+  Meta,
+  Outlet,
+  Scripts,
+  ScrollRestoration,
+  useLocation,
+  useNavigation,
+  useRouteError,
+} from "@remix-run/react";
 import { MantineProvider, createTheme } from "@mantine/core";
 import { type ReactNode, useCallback, useEffect, useRef } from "react";
 import { usePlayerStore } from "~/state/playerStore";
-import { isStationTemporarilyUnavailable, useStationAvailabilityStore } from "~/state/stationAvailabilityStore";
+import {
+  isStationTemporarilyUnavailable,
+  useStationAvailabilityStore,
+} from "~/state/stationAvailabilityStore";
 import { isMixedContentStream } from "~/utils/streamHeuristics";
 import {
   canRetryPlayback,
@@ -19,14 +33,20 @@ import { TuningOverlay } from "~/components/TuningOverlay";
 import { usePlayerNoticeStore } from "~/state/playerNoticeStore";
 import type { Station } from "~/types/radio";
 import { sanitizeArtworkUrl } from "~/utils/stations";
+import { JourneyBridge } from "~/components/radio-passport/JourneyBridge";
+import StationInsightsSheet from "~/components/radio-passport/StationInsightsSheet";
 
 export const links: LinksFunction = () => [
   { rel: "stylesheet", href: stylesheet },
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
-  { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
+  {
+    rel: "preconnect",
+    href: "https://fonts.gstatic.com",
+    crossOrigin: "anonymous",
+  },
   {
     rel: "stylesheet",
-    href: "https://api.fontshare.com/v2/css?f[]=general-sans@400,500,600,700,800&display=swap",
+    href: "https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&display=swap",
   },
   {
     rel: "stylesheet",
@@ -36,18 +56,40 @@ export const links: LinksFunction = () => [
   { rel: "manifest", href: "/manifest.json" },
 ];
 
-function Document({ children, title }: { children: ReactNode; title?: string }) {
+function Document({
+  children,
+  title,
+}: {
+  children: ReactNode;
+  title?: string;
+}) {
   return (
     <html lang="en" className="min-h-full" suppressHydrationWarning>
       <head>
         <meta charSet="utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+        <meta
+          name="viewport"
+          content="width=device-width, initial-scale=1, viewport-fit=cover"
+        />
         <meta name="theme-color" content="#0b0c10" />
-        <meta name="description" content="Radio Passport: Curated live radio discovery with moods, regional picks, and strong stations worth playing now" />
+        <meta
+          name="description"
+          content="Radio Passport: Curated live radio discovery with moods, regional picks, and strong stations worth playing now"
+        />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://api.fontshare.com/v2/css?f[]=general-sans@400,500,600,700,800&display=swap" rel="stylesheet" />
-        <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+        <link
+          rel="preconnect"
+          href="https://fonts.gstatic.com"
+          crossOrigin="anonymous"
+        />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&display=swap"
+          rel="stylesheet"
+        />
+        <link
+          href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap"
+          rel="stylesheet"
+        />
         {title ? <title>{title}</title> : null}
         <Meta />
         <Links />
@@ -130,12 +172,12 @@ const theme = createTheme({
   primaryShade: 8,
   defaultRadius: "xl",
   fontFamily:
-    '"General Sans", "SF Pro Text", -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif',
+    '"Sora", "SF Pro Text", -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif',
   fontFamilyMonospace:
     '"IBM Plex Mono", "SF Mono", Monaco, "Cascadia Code", "Courier New", monospace',
   headings: {
     fontFamily:
-      '"General Sans", "SF Pro Text", -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif',
+      '"Sora", "SF Pro Text", -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif',
     fontWeight: "700",
   },
   shadows: {
@@ -155,6 +197,7 @@ const theme = createTheme({
 export default function App() {
   const previousTitleRef = useRef("Radio Passport");
   const navigation = useNavigation();
+  const location = useLocation();
   const isNavigating = navigation.state !== "idle";
 
   useEffect(() => {
@@ -201,17 +244,25 @@ export default function App() {
           </div>
         )}
 
-        <MobileSidebarMenu />
-        <AppHeader />
+        {location.pathname !== "/" ? (
+          <>
+            <MobileSidebarMenu />
+            <AppHeader />
+          </>
+        ) : null}
 
         <div
           className="w-full"
-          style={{ paddingBottom: "calc(var(--player-dock-clearance, 0px) + 1.5rem)" }}
+          style={{
+            paddingBottom: "calc(var(--player-dock-clearance, 0px) + 1.5rem)",
+          }}
         >
           <Outlet />
         </div>
 
         <PlayerDock />
+        <StationInsightsSheet />
+        <JourneyBridge />
         <TuningOverlay />
         <GlobalAudioBridge />
       </>
@@ -223,23 +274,34 @@ export function ErrorBoundary() {
   const error = useRouteError();
 
   let title = "Something went wrong";
-  let message = "The page hit an unexpected problem. You can jump back home or try reloading this route.";
+  let message =
+    "The page hit an unexpected problem. You can jump back home or try reloading this route.";
   let statusLabel = "Application error";
   let details: string | null = null;
 
   if (isRouteErrorResponse(error)) {
     title = `${error.status} ${error.statusText}`;
     statusLabel = "Request error";
-    if (typeof error.data === "string" && error.data.trim()) {
+    if (error.status === 404) {
+      message =
+        "That page is not available anymore, or the route changed during the redesign.";
+    } else if (typeof error.data === "string" && error.data.trim()) {
       message = error.data;
-    } else if (error.status === 404) {
-      message = "That page is not available anymore, or the route changed during the redesign.";
     } else {
-      message = "The route failed to load correctly. Try going back home and re-entering this view.";
+      message =
+        "The route failed to load correctly. Try going back home and re-entering this view.";
     }
   } else if (error instanceof Error) {
     message = error.message || message;
     details = error.stack ?? null;
+  }
+
+  if (isRouteErrorResponse(error) && error.status === 404) {
+    return (
+      <Document title="404 | Radio Passport">
+        <NotFoundEasterEgg title={title} message={message} />
+      </Document>
+    );
   }
 
   return (
@@ -250,8 +312,12 @@ export function ErrorBoundary() {
             <div className="inline-flex items-center gap-2 rounded-full border border-[rgba(245,177,45,0.28)] bg-[rgba(245,177,45,0.1)] px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.24em] text-[var(--rp-gold)]">
               {statusLabel}
             </div>
-            <h1 className="mt-6 text-3xl font-semibold tracking-tight text-white sm:text-4xl">{title}</h1>
-            <p className="mt-4 max-w-2xl text-base leading-7 text-white/72">{message}</p>
+            <h1 className="mt-6 text-3xl font-semibold tracking-tight text-white sm:text-4xl">
+              {title}
+            </h1>
+            <p className="mt-4 max-w-2xl text-base leading-7 text-white/72">
+              {message}
+            </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link
                 to="/"
@@ -269,7 +335,9 @@ export function ErrorBoundary() {
             </div>
             {details ? (
               <details className="mt-8 rounded-[1.25rem] border border-white/10 bg-black/20 p-4 text-sm text-white/58">
-                <summary className="cursor-pointer font-semibold text-white/72">Technical details</summary>
+                <summary className="cursor-pointer font-semibold text-white/72">
+                  Technical details
+                </summary>
                 <pre className="mt-3 overflow-x-auto whitespace-pre-wrap break-words font-mono text-[12px] leading-6 text-white/55">
                   {details}
                 </pre>
@@ -282,10 +350,68 @@ export function ErrorBoundary() {
   );
 }
 
+function NotFoundEasterEgg({
+  title,
+  message,
+}: {
+  title: string;
+  message: string;
+}) {
+  return (
+    <main className="not-found-easter-egg relative min-h-screen overflow-hidden bg-[#07111d] px-5 py-8 text-[var(--rp-text)] sm:px-8">
+      <div className="not-found-easter-egg__pattern" aria-hidden="true" />
+
+      <section className="relative z-10 mx-auto flex min-h-[calc(100vh-4rem)] w-full max-w-5xl flex-col items-start justify-center">
+        <Link
+          to="/"
+          className="mb-8 inline-flex w-fit items-center gap-2 rounded-full border border-white/12 bg-black/28 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.22em] text-white/70 backdrop-blur-md transition hover:border-[rgba(245,177,45,0.42)] hover:text-[var(--rp-gold)]"
+          prefetch="intent"
+        >
+          Radio Passport
+        </Link>
+
+        <div className="max-w-[42rem]">
+          <p className="font-mono text-sm font-semibold uppercase tracking-[0.34em] text-[var(--rp-gold)]">
+            Signal lost
+          </p>
+          <h1 className="mt-4 max-w-full text-[clamp(3rem,10vw,6rem)] font-black leading-none tracking-tight text-white">
+            {title}
+          </h1>
+          <p className="mt-5 max-w-xl text-base leading-7 text-white/72 sm:text-lg">
+            {message}
+          </p>
+        </div>
+
+        <div className="mt-10 flex flex-wrap gap-3">
+          <Link
+            to="/"
+            className="inline-flex items-center rounded-full border border-[rgba(245,177,45,0.38)] bg-[rgba(245,177,45,0.14)] px-5 py-3 text-sm font-bold text-[var(--rp-gold)] shadow-[0_16px_40px_rgba(0,0,0,0.26)] backdrop-blur-md transition hover:bg-[rgba(245,177,45,0.2)]"
+            prefetch="intent"
+          >
+            Back Home
+          </Link>
+          <button
+            type="button"
+            onClick={() => window.location.reload()}
+            className="inline-flex items-center rounded-full border border-white/12 bg-white/8 px-5 py-3 text-sm font-bold text-white/76 backdrop-blur-md transition hover:bg-white/12 hover:text-white"
+          >
+            Retry Route
+          </button>
+        </div>
+      </section>
+    </main>
+  );
+}
+
 function GlobalAudioBridge() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const nowPlayingRef = useRef<ReturnType<typeof usePlayerStore.getState>["nowPlaying"]>(null);
-  const retryRef = useRef<{ stationId: string | null; attempts: number; timer: number | null }>({
+  const nowPlayingRef =
+    useRef<ReturnType<typeof usePlayerStore.getState>["nowPlaying"]>(null);
+  const retryRef = useRef<{
+    stationId: string | null;
+    attempts: number;
+    timer: number | null;
+  }>({
     stationId: null,
     attempts: 0,
     timer: null,
@@ -300,14 +426,20 @@ function GlobalAudioBridge() {
   const isPlaying = usePlayerStore((state) => state.isPlaying);
   const nowPlaying = usePlayerStore((state) => state.nowPlaying);
   const queue = usePlayerStore((state) => state.queue);
-  const currentStationIndex = usePlayerStore((state) => state.currentStationIndex);
+  const currentStationIndex = usePlayerStore(
+    (state) => state.currentStationIndex
+  );
   const startStation = usePlayerStore((state) => state.startStation);
   const playPause = usePlayerStore((state) => state.playPause);
   const stop = usePlayerStore((state) => state.stop);
   const markFailed = useStationAvailabilityStore((state) => state.markFailed);
-  const clearFailure = useStationAvailabilityStore((state) => state.clearFailure);
+  const clearFailure = useStationAvailabilityStore(
+    (state) => state.clearFailure
+  );
   const setNotice = usePlayerNoticeStore((state) => state.setNotice);
-  const recordSkippedStation = usePlayerStore((state) => state.recordSkippedStation);
+  const recordSkippedStation = usePlayerStore(
+    (state) => state.recordSkippedStation
+  );
 
   const clearRetryTimer = useCallback(() => {
     const active = retryRef.current.timer;
@@ -321,7 +453,11 @@ function GlobalAudioBridge() {
     if (!url) return "";
     const trimmed = url.trim();
     const lower = trimmed.toLowerCase();
-    if (!trimmed || ["null", "undefined", "n/a", "na", "-", "0"].includes(lower)) return "";
+    if (
+      !trimmed ||
+      ["null", "undefined", "n/a", "na", "-", "0"].includes(lower)
+    )
+      return "";
     try {
       const candidate = trimmed.startsWith("//")
         ? `${window.location.protocol}${trimmed}`
@@ -337,19 +473,25 @@ function GlobalAudioBridge() {
   }, []);
 
   const autoSkipToNext = useCallback(
-    (failedStation: Station | null, reason: Parameters<typeof markFailed>[1]) => {
+    (
+      failedStation: Station | null,
+      reason: Parameters<typeof markFailed>[1]
+    ) => {
       const now = Date.now();
       const guard = autoSkipRef.current;
       if (now - guard.lastSkipAt < 800) return;
       guard.lastSkipAt = now;
 
       // Avoid infinite spin if a bunch of stations fail quickly.
-      guard.recentFailures = guard.recentFailures.filter((ts) => now - ts < 20_000);
+      guard.recentFailures = guard.recentFailures.filter(
+        (ts) => now - ts < 20_000
+      );
       guard.recentFailures.push(now);
       if (guard.recentFailures.length >= 4) {
         setNotice({
           kind: "error",
-          message: "Playback paused: too many stations failed in a row. Try toggling filters or switching countries.",
+          message:
+            "Playback paused: too many stations failed in a row. Try toggling filters or switching countries.",
           durationMs: 6000,
         });
         return;
@@ -371,7 +513,8 @@ function GlobalAudioBridge() {
 
       const startIndex = Math.max(0, state.currentStationIndex);
       const pinnedId = state.nowPlaying?.uuid ?? null;
-      const protocol = typeof window !== "undefined" ? window.location.protocol : "https:";
+      const protocol =
+        typeof window !== "undefined" ? window.location.protocol : "https:";
 
       let candidate: Station | null = null;
       for (let offset = 1; offset <= currentQueue.length; offset++) {
@@ -379,7 +522,8 @@ function GlobalAudioBridge() {
         const station = currentQueue[idx];
         if (!station) continue;
         if (pinnedId && station.uuid === pinnedId) continue;
-        if (isStationTemporarilyUnavailable(availability[station.uuid], now)) continue;
+        if (isStationTemporarilyUnavailable(availability[station.uuid], now))
+          continue;
         const url = station.streamUrl ?? station.url ?? "";
         if (isMixedContentStream(url, protocol)) continue;
         candidate = station;
@@ -391,19 +535,25 @@ function GlobalAudioBridge() {
         state.setIsPlaying(false);
         setNotice({
           kind: "warning",
-          message: "Couldn’t find another playable station in this queue. Try changing filters.",
+          message:
+            "Couldn’t find another playable station in this queue. Try changing filters.",
           durationMs: 5000,
         });
         return;
       }
 
-      const label = failedStation?.name ? `“${failedStation.name}”` : "That station";
+      const label = failedStation?.name
+        ? `“${failedStation.name}”`
+        : "That station";
       if (failedStation?.uuid) {
         recordSkippedStation(failedStation.uuid);
       }
       setNotice({
         kind: "warning",
-        message: `${label} failed (${reason.replace(/_/g, " ")}). Skipping to the next station…`,
+        message: `${label} failed (${reason.replace(
+          /_/g,
+          " "
+        )}). Skipping to the next station…`,
         durationMs: 4500,
       });
 
@@ -431,7 +581,9 @@ function GlobalAudioBridge() {
       retryState.attempts += 1;
       const retryAttempt = retryState.attempts;
       const delay = getRetryDelayMs(retryAttempt);
-      const streamUrl = normalizeStreamUrl(station.streamUrl ?? station.url ?? "");
+      const streamUrl = normalizeStreamUrl(
+        station.streamUrl ?? station.url ?? ""
+      );
       if (!streamUrl) return false;
 
       setNotice({
@@ -488,8 +640,8 @@ function GlobalAudioBridge() {
       const reason = isMixedContentStream(url, window.location.protocol)
         ? "mixed_content"
         : current.hls
-          ? "hls_stream"
-          : "audio_error";
+        ? "hls_stream"
+        : "audio_error";
       if (tryPlaybackRecovery(current, reason)) {
         return;
       }
@@ -516,7 +668,14 @@ function GlobalAudioBridge() {
       audio.removeEventListener("playing", handlePlaying);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [autoSkipToNext, clearFailure, clearRetryTimer, markFailed, setIsPlaying, tryPlaybackRecovery]);
+  }, [
+    autoSkipToNext,
+    clearFailure,
+    clearRetryTimer,
+    markFailed,
+    setIsPlaying,
+    tryPlaybackRecovery,
+  ]);
 
   useEffect(() => {
     nowPlayingRef.current = nowPlaying;
@@ -607,7 +766,9 @@ function GlobalAudioBridge() {
       return;
     }
 
-    const streamUrl = normalizeStreamUrl(nowPlaying.streamUrl ?? nowPlaying.url ?? "");
+    const streamUrl = normalizeStreamUrl(
+      nowPlaying.streamUrl ?? nowPlaying.url ?? ""
+    );
     if (!streamUrl) {
       audio.pause();
       audio.removeAttribute("src");
@@ -649,8 +810,8 @@ function GlobalAudioBridge() {
           const reason = isMixedContentStream(url, window.location.protocol)
             ? "mixed_content"
             : nowPlaying.hls
-              ? "hls_stream"
-              : "play_rejected";
+            ? "hls_stream"
+            : "play_rejected";
           if (tryPlaybackRecovery(nowPlaying, reason)) {
             return;
           }
@@ -661,7 +822,14 @@ function GlobalAudioBridge() {
       audio.pause();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [autoSkipToNext, isPlaying, markFailed, nowPlaying, setIsPlaying, tryPlaybackRecovery]);
+  }, [
+    autoSkipToNext,
+    isPlaying,
+    markFailed,
+    nowPlaying,
+    setIsPlaying,
+    tryPlaybackRecovery,
+  ]);
 
   useEffect(() => {
     if (!isPlaying) {

@@ -10,6 +10,9 @@ type StationLike = Partial<Station> & {
   tags?: string | null;
   language?: string | null;
   state?: string | null;
+  city?: string | null;
+  geo_lat?: number | string | null;
+  geo_long?: number | string | null;
   languagecodes?: string | null;
   homepage?: string | null;
   lastcheckok?: number | boolean;
@@ -68,15 +71,22 @@ export function sanitizeArtworkUrl(url?: string | null): string | null {
   return null;
 }
 
-export function normalizeStation(raw: StationLike | null | undefined): Station | null {
+export function normalizeStation(
+  raw: StationLike | null | undefined
+): Station | null {
   if (!raw) return null;
 
-  const uuid = raw.uuid ?? raw.stationuuid ?? (typeof raw.url === "string" ? raw.url : undefined);
-  const rawResolved = (raw as { url_resolved?: string | null | undefined }).url_resolved;
+  const uuid =
+    raw.uuid ??
+    raw.stationuuid ??
+    (typeof raw.url === "string" ? raw.url : undefined);
+  const rawResolved = (raw as { url_resolved?: string | null | undefined })
+    .url_resolved;
   const resolvedUrl = typeof rawResolved === "string" ? rawResolved.trim() : "";
   const rawUrl = typeof raw.url === "string" ? raw.url.trim() : "";
   const streamUrl = resolvedUrl || rawUrl || null;
-  const homepage = typeof raw.homepage === "string" ? raw.homepage.trim() || null : null;
+  const homepage =
+    typeof raw.homepage === "string" ? raw.homepage.trim() || null : null;
   const name = raw.name?.trim() ?? null;
 
   if (!uuid || !name || (!streamUrl && !homepage)) {
@@ -94,27 +104,40 @@ export function normalizeStation(raw: StationLike | null | undefined): Station |
     }
   }
 
-  const languageCodes = typeof raw.languagecodes === "string"
-    ? raw.languagecodes
-        .split(",")
-        .map((code) => code.trim())
-        .filter(Boolean)
-    : undefined;
+  const languageCodes =
+    typeof raw.languagecodes === "string"
+      ? raw.languagecodes
+          .split(",")
+          .map((code) => code.trim())
+          .filter(Boolean)
+      : undefined;
 
-  const tagList = typeof raw.tags === "string"
-    ? raw.tags
-        .split(",")
-        .map((tag) => tag.trim())
-        .filter(Boolean)
-    : undefined;
+  const tagList =
+    typeof raw.tags === "string"
+      ? raw.tags
+          .split(",")
+          .map((tag) => tag.trim())
+          .filter(Boolean)
+      : undefined;
 
-  const lastCheckOk = typeof raw.lastcheckok === "boolean" ? raw.lastcheckok : raw.lastcheckok === 1;
-  const lastCheckOkTime = raw.lastcheckoktime_iso8601 ?? raw.lastcheckoktime ?? null;
+  const lastCheckOk =
+    typeof raw.lastcheckok === "boolean"
+      ? raw.lastcheckok
+      : raw.lastcheckok === 1;
+  const lastCheckOkTime =
+    raw.lastcheckoktime_iso8601 ?? raw.lastcheckoktime ?? null;
   const lastCheckTime = raw.lastchecktime_iso8601 ?? raw.lastchecktime ?? null;
-  const lastLocalCheckTime = raw.lastlocalchecktime_iso8601 ?? raw.lastlocalchecktime ?? null;
-  const sslError = typeof raw.ssl_error === "boolean" ? raw.ssl_error : raw.ssl_error === 1;
+  const lastLocalCheckTime =
+    raw.lastlocalchecktime_iso8601 ?? raw.lastlocalchecktime ?? null;
+  const sslError =
+    typeof raw.ssl_error === "boolean" ? raw.ssl_error : raw.ssl_error === 1;
   const hls = typeof raw.hls === "boolean" ? raw.hls : raw.hls === 1;
-  const votes = typeof raw.votes === "number" ? raw.votes : raw.votes ? Number(raw.votes) : undefined;
+  const votes =
+    typeof raw.votes === "number"
+      ? raw.votes
+      : raw.votes
+      ? Number(raw.votes)
+      : undefined;
   const clickCount =
     typeof raw.clickcount === "number"
       ? raw.clickcount
@@ -127,8 +150,17 @@ export function normalizeStation(raw: StationLike | null | undefined): Station |
       : raw.clicktrend
       ? Number(raw.clicktrend)
       : undefined;
+  const latitude =
+    raw.geo_lat === null || raw.geo_lat === undefined || raw.geo_lat === ""
+      ? null
+      : Number(raw.geo_lat);
+  const longitude =
+    raw.geo_long === null || raw.geo_long === undefined || raw.geo_long === ""
+      ? null
+      : Number(raw.geo_long);
 
-  const isStreamHealthy = Boolean(streamUrl) && !sslError && (lastCheckOk ?? true);
+  const isStreamHealthy =
+    Boolean(streamUrl) && !sslError && (lastCheckOk ?? true);
   let healthStatus: Station["healthStatus"] = undefined;
   if (!streamUrl) healthStatus = "warning";
   else if (sslError || lastCheckOk === false) healthStatus = "warning";
@@ -149,6 +181,15 @@ export function normalizeStation(raw: StationLike | null | undefined): Station |
         ? raw.iso_3166_1 || null
         : null,
     state: raw.state && raw.state.trim() ? raw.state : null,
+    city: raw.city && raw.city.trim() ? raw.city.trim() : null,
+    latitude:
+      Number.isFinite(latitude) && latitude! >= -90 && latitude! <= 90
+        ? latitude
+        : null,
+    longitude:
+      Number.isFinite(longitude) && longitude! >= -180 && longitude! <= 180
+        ? longitude
+        : null,
     language: raw.language && raw.language.trim() ? raw.language : null,
     languageCodes,
     tags: raw.tags ?? null,
@@ -170,7 +211,9 @@ export function normalizeStation(raw: StationLike | null | undefined): Station |
   };
 }
 
-export function normalizeStations(rawStations: StationLike[] | null | undefined): Station[] {
+export function normalizeStations(
+  rawStations: StationLike[] | null | undefined
+): Station[] {
   if (!Array.isArray(rawStations)) return [];
   const normalized: Station[] = [];
   for (const raw of rawStations) {

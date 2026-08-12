@@ -13,6 +13,11 @@ export type Station = {
   country: string;
   countryCode?: string | null;
   state: string | null;
+  /** Radio Browser's optional city-like location field. Never inferred by the UI. */
+  city?: string | null;
+  /** Optional Radio Browser station coordinates; absent coordinates remain absent. */
+  latitude?: number | null;
+  longitude?: number | null;
   language: string | null;
   languageCodes?: string[];
   tags: string | null;

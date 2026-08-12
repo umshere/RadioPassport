@@ -1,46 +1,12 @@
-import { useState, useEffect } from "react";
+import { useEffect, useMemo } from "react";
+import { useJourneyStore } from "~/state/journeyStore";
 
 export function useFavorites() {
-  const [favoriteStationIds, setFavoriteStationIds] = useState<Set<string>>(
-    new Set()
-  );
-
-  // Load favorites from localStorage
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const stored = window.localStorage.getItem("radio-passport-favorites");
-    if (stored) {
-      try {
-        const parsed = JSON.parse(stored) as string[];
-        if (Array.isArray(parsed)) {
-          setFavoriteStationIds(new Set(parsed));
-        }
-      } catch (error) {
-        console.error("Failed to parse stored favorites", error);
-      }
-    }
-  }, []);
-
-  // Save favorites to localStorage
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    window.localStorage.setItem(
-      "radio-passport-favorites",
-      JSON.stringify(Array.from(favoriteStationIds))
-    );
-  }, [favoriteStationIds]);
-
-  const toggleFavorite = (stationId: string) => {
-    setFavoriteStationIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(stationId)) {
-        next.delete(stationId);
-      } else {
-        next.add(stationId);
-      }
-      return next;
-    });
-  };
+  const ids = useJourneyStore((state) => state.favoriteStationIds);
+  const hydrate = useJourneyStore((state) => state.hydrate);
+  const toggleFavorite = useJourneyStore((state) => state.toggleFavorite);
+  useEffect(() => hydrate(), [hydrate]);
+  const favoriteStationIds = useMemo(() => new Set(ids), [ids]);
 
   return {
     favoriteStationIds,
