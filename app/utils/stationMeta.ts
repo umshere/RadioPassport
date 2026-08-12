@@ -37,6 +37,20 @@ export function getHealthBadgeStyle(status: StationHealthStatus): CSSProperties 
   }
 }
 
+/** Catalog metadata older than this is stale evidence, not a current health signal. */
+export const HEALTH_FRESHNESS_WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
+
+export function isEvidenceFresh(
+  iso?: string | null,
+  now = Date.now(),
+  windowMs = HEALTH_FRESHNESS_WINDOW_MS
+): boolean {
+  if (!iso) return false;
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return false;
+  return now - date.getTime() <= windowMs;
+}
+
 export function deriveStationHealth(station: Station): StationHealthMeta | null {
   const { healthStatus, sslError, lastCheckOk, lastCheckOkTime } = station;
   const relative = lastCheckOkTime ? formatRelativeTime(lastCheckOkTime) : null;
@@ -53,7 +67,9 @@ export function deriveStationHealth(station: Station): StationHealthMeta | null 
   }
 
   if ((healthStatus === "good" || lastCheckOk) && relative) {
-    return { status: "good", label: `Last checked OK · ${relative}` };
+    return isEvidenceFresh(lastCheckOkTime)
+      ? { status: "good", label: `Last checked OK · ${relative}` }
+      : { status: "warning", label: `Not recently verified · ${relative}` };
   }
 
   return null;
@@ -88,11 +104,17 @@ export function deriveStationAvailability(
   }
 
   if (station.healthStatus === "good" || station.isStreamHealthy) {
-    return {
-      tone: "available",
-      shortLabel: "Likely available",
-      detailLabel: "Healthy stream",
-    };
+    return isEvidenceFresh(station.lastCheckOkTime)
+      ? {
+          tone: "available",
+          shortLabel: "Likely available",
+          detailLabel: "Healthy stream",
+        }
+      : {
+          tone: "unknown",
+          shortLabel: "Not recently verified",
+          detailLabel: "Not recently verified",
+        };
   }
 
   if (station.healthStatus === "warning") {
@@ -162,6 +184,24 @@ export function scoreStation(
   }
 
   if (station.isStreamHealthy) score += 10;
+
+  switch (station.probeStatus) {
+    case "ok":
+      score += 60;
+      break;
+    case "slow":
+      score += 15;
+      break;
+    case "down":
+      score -= 200;
+      break;
+    default:
+      break;
+  }
+
+  if (isEvidenceFresh(station.lastCheckOkTime)) {
+    score += 10;
+  }
 
   if (typeof station.clickTrend === "number") {
     score += Math.max(Math.min(station.clickTrend, 60), -40);

@@ -58,9 +58,10 @@ export async function loader({ request }: LoaderFunctionArgs) {
   }
 
   const searchedStations = await searchStationsByQuery(query, 72);
-  const mergedStations = dedupeStations([...searchedStations, ...snapshot.stations]);
 
-  return json({ ...snapshot, stations: mergedStations }, {
+  // A focused query already returns bounded, relevant candidates — do not
+  // re-attach the full multi-thousand-station snapshot to the response.
+  return json({ ...snapshot, stations: searchedStations }, {
     headers: {
       "Cache-Control": "no-store",
     },

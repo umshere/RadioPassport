@@ -30,13 +30,31 @@ import {
   type CountryDrilldownState,
 } from "~/components/radio-passport/countryData";
 import { applyAiPreviewPool } from "~/components/radio-passport/aiPreview";
-import { catalogRequestState } from "~/components/radio-passport/searchState";
+import {
+  catalogRequestState,
+  describeEmptyResults,
+  nextQueryHref,
+  parseInitialQuery,
+  shouldClearBrowsingFilters,
+  suggestVocabularyTerm,
+  toggleSelection,
+} from "~/components/radio-passport/searchState";
 import WhyTheseChip from "~/components/WhyTheseChip";
 import type { SceneDescriptor } from "~/scenes/types";
 import { useStationInsightsStore } from "~/state/stationInsightsStore";
 import { prepareCatalogSearchStations } from "~/components/radio-passport/stationInsights";
+import { isMixedContentStream } from "~/utils/streamHeuristics";
+import { rankStations } from "~/utils/stationMeta";
 
-export async function loader(_: LoaderFunctionArgs) {
+const PROBE_SHELF_LIMIT = 8;
+
+type ProbeSnapshot = Pick<
+  Station,
+  "probeStatus" | "probeLatencyMs" | "probeCheckedAt"
+>;
+
+export async function loader({ request }: LoaderFunctionArgs) {
+  const initialQuery = parseInitialQuery(request.url);
   try {
     const [countriesRaw, stationsRaw] = await Promise.all([
       rbFetchJson<Country[]>("/json/countries", undefined, { softFail: true }),
@@ -51,9 +69,10 @@ export async function loader(_: LoaderFunctionArgs) {
       stations: normalizeStations(
         Array.isArray(stationsRaw) ? stationsRaw : []
       ),
+      initialQuery,
     });
   } catch {
-    return json({ countries: [], stations: [] });
+    return json({ countries: [], stations: [], initialQuery });
   }
 }
 
@@ -96,7 +115,7 @@ function stationMatchesMood(station: Station, mood: string | null) {
     );
 }
 export default function Index() {
-  const { countries, stations: initialStations } =
+  const { countries, stations: initialStations, initialQuery } =
     useLoaderData<typeof loader>();
   const nowPlaying = usePlayerStore((state) => state.nowPlaying);
   const isPlaying = usePlayerStore((state) => state.isPlaying);
@@ -111,7 +130,21 @@ export default function Index() {
   const [mode, setMode] = useState<"mood" | "place">("mood");
   const [mood, setMood] = useState<string | null>(null);
   const [place, setPlace] = useState<string | null>(null);
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(initialQuery);
+  const [probeResults, setProbeResults] = useState<
+    Record<string, ProbeSnapshot>
+  >({});
+  // Seeded identically to the SSR assumption (real production is https) so
+  // the first client render matches server HTML exactly; corrected after
+  // mount only if the actual page protocol differs (e.g. local http dev).
+  const [pageProtocol, setPageProtocol] = useState<"http:" | "https:">(
+    "https:"
+  );
+  useEffect(() => {
+    const actual = window.location.protocol === "http:" ? "http:" : "https:";
+    if (actual !== pageProtocol) setPageProtocol(actual);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [catalog, setCatalog] = useState<Station[]>([]);
   const [catalogLoading, setCatalogLoading] = useState(false);
   const [expanded, setExpanded] = useState(false);
@@ -161,21 +194,32 @@ export default function Index() {
       : listening.listeningMode === "world" && listening.exploreStations.length
       ? listening.exploreStations
       : initialStations;
-  const filtered = useMemo(
-    () =>
-      baseStations
-        .filter(
-          (station) =>
-            stationMatches(station, query) &&
-            stationMatchesMood(station, mode === "mood" ? mood : null) &&
-            (mode !== "place" ||
-              !place ||
-              stationLocation(station) === place) &&
-            (!countryFilter || station.country === countryFilter)
-        )
-        .slice(0, 120),
-    [baseStations, countryFilter, mood, mode, place, query]
-  );
+  const filtered = useMemo(() => {
+    const candidates = baseStations.filter(
+      (station) =>
+        stationMatches(station, query) &&
+        stationMatchesMood(station, mode === "mood" ? mood : null) &&
+        (mode !== "place" || !place || stationLocation(station) === place) &&
+        (!countryFilter || station.country === countryFilter) &&
+        // Known browser-incompatible streams (HTTP on an HTTPS page) never
+        // belong in the leading playable list.
+        !isMixedContentStream(station.streamUrl ?? station.url, pageProtocol)
+    );
+    const withProbes = candidates.map((station) => {
+      const probe = probeResults[station.uuid];
+      return probe ? { ...station, ...probe } : station;
+    });
+    return rankStations(withProbes).slice(0, 120);
+  }, [
+    baseStations,
+    countryFilter,
+    mood,
+    mode,
+    pageProtocol,
+    place,
+    probeResults,
+    query,
+  ]);
   const places = useMemo(() => {
     const map = new Map<string, GlobePlace>();
     filtered.forEach((station) => {
@@ -235,10 +279,82 @@ export default function Index() {
     },
     [country, mood, place, query, recordPlayed, selectedPool, startStation]
   );
-  const selectPlace = (next: string) => {
+  const chooseMood = useCallback((item: string | null) => {
+    setMode("mood");
+    setPlace(null);
+    setQuery("");
+    setMood((current) => toggleSelection(current, item));
+  }, []);
+  const choosePlace = useCallback((item: string | null) => {
     setMode("place");
-    setPlace((old) => (old === next ? null : next));
-  };
+    setMood(null);
+    setQuery("");
+    setPlace((current) => toggleSelection(current, item));
+  }, []);
+  const handleQueryChange = useCallback((value: string) => {
+    setQuery(value);
+    if (shouldClearBrowsingFilters(value)) {
+      setMood(null);
+      setPlace(null);
+    }
+  }, []);
+  const clearSearch = useCallback(() => setQuery(""), []);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const next = nextQueryHref(window.location, query);
+    const current = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+    if (next !== current) {
+      window.history.replaceState(null, "", next);
+    }
+  }, [query]);
+  const shelfStations = useMemo(
+    () => filtered.slice(0, PROBE_SHELF_LIMIT),
+    [filtered]
+  );
+  const shelfProbeKey = shelfStations
+    .filter((station) => !probeResults[station.uuid])
+    .map((station) => station.uuid)
+    .join(",");
+  useEffect(() => {
+    if (!shelfProbeKey) return;
+    const targets = shelfStations.filter(
+      (station) => !probeResults[station.uuid]
+    );
+    if (!targets.length) return;
+    let cancelled = false;
+    fetch("/api/stations/probe", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        stations: targets.map((station) => ({
+          uuid: station.uuid,
+          url: station.url,
+          streamUrl: station.streamUrl,
+        })),
+      }),
+    })
+      .then((response) => (response.ok ? response.json() : Promise.reject()))
+      .then((data: { stations?: Array<ProbeSnapshot & { uuid: string }> }) => {
+        if (cancelled || !Array.isArray(data.stations)) return;
+        setProbeResults((current) => {
+          const next = { ...current };
+          for (const entry of data.stations!) {
+            if (!entry.uuid) continue;
+            next[entry.uuid] = {
+              probeStatus: entry.probeStatus,
+              probeLatencyMs: entry.probeLatencyMs ?? null,
+              probeCheckedAt: entry.probeCheckedAt ?? null,
+            };
+          }
+          return next;
+        });
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shelfProbeKey]);
   const loadCountry = useCallback(
     async (next: string, force = false) => {
       const key = countryCacheKey(next);
@@ -310,18 +426,31 @@ export default function Index() {
       listening.setIsFetchingExplore(false);
     }
   }, [aiStatus, favorites, listening, mood, nowPlaying, played]);
+  const vocabularySuggestion =
+    query.trim().length >= 3 ? suggestVocabularyTerm(query) : null;
+  const emptyState = describeEmptyResults({ query, mode, mood, place });
   return (
     <main className="rp-home">
       <header className="rp-home-header">
         <SignalWordmark />
         <div className="rp-header-search">
-          <span>⌕</span>
+          <span aria-hidden="true">⌕</span>
           <input
             value={query}
-            onChange={(event) => setQuery(event.target.value)}
+            onChange={(event) => handleQueryChange(event.target.value)}
             placeholder="Where do you want to go? Kerala, jazz, rainy night…"
             aria-label="Search stations, tags, locations, countries, languages, and moods"
           />
+          {query.trim() && (
+            <button
+              type="button"
+              onClick={clearSearch}
+              aria-label="Clear search"
+              className="grid h-11 w-11 shrink-0 place-items-center rounded-full text-base text-muted hover:text-coral"
+            >
+              ×
+            </button>
+          )}
         </div>
         <button
           type="button"
@@ -349,50 +478,72 @@ export default function Index() {
           <div className="rp-mode">
             <button
               type="button"
-              onClick={() => setMode("mood")}
+              onClick={() => chooseMood(null)}
               className={mode === "mood" ? "active" : ""}
             >
               MOOD
             </button>
             <button
               type="button"
-              onClick={() => setMode("place")}
+              onClick={() => choosePlace(null)}
               className={mode === "place" ? "active" : ""}
             >
               PLACE
             </button>
           </div>
           <div className="rp-chip-list">
-            {mode === "mood"
-              ? MOODS.map((item) => (
+            {mode === "mood" ? (
+              <>
+                <button
+                  type="button"
+                  className={`rp-chip ${mood === null ? "active" : ""}`}
+                  aria-pressed={mood === null}
+                  onClick={() => chooseMood(null)}
+                >
+                  All moods
+                </button>
+                {MOODS.map((item) => (
                   <button
                     type="button"
                     className={`rp-chip ${mood === item ? "active" : ""}`}
-                    onClick={() =>
-                      setMood((value) => (value === item ? null : item))
-                    }
-                    key={item}
-                  >
-                    {item}
-                  </button>
-                ))
-              : placeChips.map((item) => (
-                  <button
-                    type="button"
-                    className={`rp-chip ${place === item ? "active" : ""}`}
-                    onClick={() => selectPlace(item)}
+                    aria-pressed={mood === item}
+                    onClick={() => chooseMood(item)}
                     key={item}
                   >
                     {item}
                   </button>
                 ))}
-            <button
-              type="button"
-              className="rp-chip rp-chip-dashed"
-              onClick={() => setAtlas(true)}
-            >
-              All places →
-            </button>
+              </>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  className={`rp-chip ${place === null ? "active" : ""}`}
+                  aria-pressed={place === null}
+                  onClick={() => choosePlace(null)}
+                >
+                  All places
+                </button>
+                {placeChips.map((item) => (
+                  <button
+                    type="button"
+                    className={`rp-chip ${place === item ? "active" : ""}`}
+                    aria-pressed={place === item}
+                    onClick={() => choosePlace(item)}
+                    key={item}
+                  >
+                    {item}
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  className="rp-chip rp-chip-dashed"
+                  onClick={() => setAtlas(true)}
+                >
+                  Browse atlas →
+                </button>
+              </>
+            )}
           </div>
           {query.trim() && (
             <div className="rp-quick-places">
@@ -405,7 +556,7 @@ export default function Index() {
                 .map((item) => (
                   <button
                     type="button"
-                    onClick={() => selectPlace(item)}
+                    onClick={() => choosePlace(item)}
                     key={item}
                   >
                     {item}
@@ -435,6 +586,19 @@ export default function Index() {
                 : "Explore world →"}
             </button>
           </div>
+          {vocabularySuggestion && (
+            <p className="mt-1 text-xs text-muted">
+              Did you mean{" "}
+              <button
+                type="button"
+                className="text-coral underline"
+                onClick={() => handleQueryChange(vocabularySuggestion)}
+              >
+                {vocabularySuggestion}
+              </button>
+              ?
+            </p>
+          )}
           {aiStatus === "error" && listening.exploreError && (
             <p className="mt-2 text-xs text-muted" role="alert">
               {listening.exploreError}
@@ -457,10 +621,40 @@ export default function Index() {
             ))}
           </div>
           {filtered.length === 0 && !catalogLoading && (
-            <p className="py-8 text-sm text-muted">
-              No live stations match that route. Try a country, language, tag,
-              city, or mood.
-            </p>
+            <div className="py-8 text-sm text-muted" role="status">
+              <p>{emptyState.message}</p>
+              {emptyState.actions.length > 0 && (
+                <div className="mt-3 flex flex-wrap gap-3">
+                  {emptyState.actions.includes("clear-search") && (
+                    <button
+                      type="button"
+                      className="rp-text-button"
+                      onClick={clearSearch}
+                    >
+                      Clear search
+                    </button>
+                  )}
+                  {emptyState.actions.includes("show-all-moods") && (
+                    <button
+                      type="button"
+                      className="rp-text-button"
+                      onClick={() => chooseMood(null)}
+                    >
+                      Show all moods
+                    </button>
+                  )}
+                  {emptyState.actions.includes("show-all-places") && (
+                    <button
+                      type="button"
+                      className="rp-text-button"
+                      onClick={() => choosePlace(null)}
+                    >
+                      Show all places
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
           )}
           {filtered.length > 3 && (
             <button
@@ -478,7 +672,7 @@ export default function Index() {
               places={places}
               onSelect={(id) => {
                 const found = places.find((item) => item.id === id);
-                if (found) selectPlace(found.name);
+                if (found) choosePlace(found.name);
               }}
             />
             <span>tap a city to tune in</span>

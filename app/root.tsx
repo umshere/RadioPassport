@@ -14,6 +14,7 @@ import {
 import { MantineProvider, createTheme } from "@mantine/core";
 import { type ReactNode, useCallback, useEffect, useRef } from "react";
 import { usePlayerStore } from "~/state/playerStore";
+import { rehydratePersistedStores } from "~/utils/zustand-lite";
 import {
   isStationTemporarilyUnavailable,
   useStationAvailabilityStore,
@@ -199,6 +200,14 @@ export default function App() {
   const navigation = useNavigation();
   const location = useLocation();
   const isNavigating = navigation.state !== "idle";
+
+  // Persisted stores (player, station availability) start every render from
+  // their plain defaults so the first client paint matches SSR exactly; the
+  // real localStorage value is only merged in here, once hydration has
+  // already completed, so this never causes a hydration mismatch.
+  useEffect(() => {
+    rehydratePersistedStores();
+  }, []);
 
   useEffect(() => {
     if (typeof document === "undefined") return;
@@ -553,8 +562,8 @@ function GlobalAudioBridge() {
         message: `${label} failed (${reason.replace(
           /_/g,
           " "
-        )}). Skipping to the next station…`,
-        durationMs: 4500,
+        )}). Switching to “${candidate.name}”…`,
+        durationMs: 6000,
       });
 
       state.startStation(candidate, { preserveQueue: true, autoPlay: true });

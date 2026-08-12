@@ -141,6 +141,22 @@ export function createStore<T>(initializer: StateCreator<T>): UseBoundStore<T> {
 
 export const create = createStore;
 
+// Stores registered here read their persisted value only when explicitly
+// triggered post-mount (see `rehydratePersistedStores`), never during the
+// synchronous initializer call. SSR always starts a persisted store from its
+// plain defaults; if the client merged localStorage in synchronously here
+// (before the first paint), that first client render would already differ
+// from the server-rendered HTML whenever a previous session had persisted
+// state, producing a hydration mismatch. Deferring the read to a client-only
+// effect keeps the first paint identical on both sides.
+const pendingRehydrations: Array<() => void> = [];
+
+export function rehydratePersistedStores(): void {
+  for (const rehydrate of pendingRehydrations) {
+    rehydrate();
+  }
+}
+
 export function persist<T extends object>(
   initializer: StateCreator<T>,
   options: PersistOptions<T>
@@ -171,38 +187,26 @@ export function persist<T extends object>(
       }
     };
 
-    let initialState = initializer(setWithPersist, get, api);
-
-    if (storage) {
-      try {
-        const storedValue = storage.getItem(options.name);
-        if (storedValue) {
-          const parsed = JSON.parse(storedValue) as unknown;
-          if (options.merge) {
-            initialState = options.merge(parsed, initialState);
-          } else {
-            initialState = {
-              ...initialState,
-              ...(parsed as Record<string, unknown>),
-            };
-          }
-        }
-      } catch {
-        // ignore parse errors
-      }
-    }
+    const initialState = initializer(setWithPersist, get, api);
 
     // Don't call set during initialization to avoid triggering listeners prematurely
-    // Just return the hydrated initial state
+    // Just return the plain initial state — SSR-consistent on first paint.
     hasHydrated = true;
 
-    // Persist the initial state after hydration
     if (storage) {
-      try {
-        persistState(initialState);
-      } catch {
-        // ignore persistence errors
-      }
+      pendingRehydrations.push(() => {
+        try {
+          const storedValue = storage.getItem(options.name);
+          if (!storedValue) return;
+          const parsed = JSON.parse(storedValue) as unknown;
+          const merged = options.merge
+            ? options.merge(parsed, get())
+            : { ...get(), ...(parsed as Record<string, unknown>) };
+          set(merged as T);
+        } catch {
+          // ignore parse errors
+        }
+      });
     }
 
     return initialState;
