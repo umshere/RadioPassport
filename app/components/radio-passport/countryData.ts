@@ -1,6 +1,7 @@
 import { rankStations } from "~/utils/stationMeta";
 import { rbFetchJson } from "~/utils/radioBrowser";
 import { normalizeStations } from "~/utils/stations";
+import { normalizeLanguages } from "~/utils/languages";
 import type { Station } from "~/types/radio";
 
 export type CountryDrilldownState =
@@ -59,7 +60,9 @@ function rankedValues(values: Array<string | null | undefined>) {
 export function aggregateCountryStationContext(stations: Station[]): CountryStationContext {
   return {
     playableCount: stations.filter((station) => Boolean(station.streamUrl || station.url)).length,
-    languages: rankedValues(stations.map((station) => station.language)).slice(0, 4),
+    languages: rankedValues(
+      stations.flatMap((station) => normalizeLanguages(station.language))
+    ).slice(0, 4),
     tags: rankedValues(stations.flatMap((station) => station.tagList?.length ? station.tagList : (station.tags ?? "").split(","))).slice(0, 5),
   };
 }

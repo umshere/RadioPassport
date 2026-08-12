@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { Country, Station } from "~/types/radio";
 import { getContinent } from "~/utils/geography";
 import type { PassportStamp } from "~/state/journeyStore";
@@ -8,6 +8,11 @@ import { StationRow, stationLocation } from "./StationRow";
 import { shouldOverlayHandleEscape } from "./stationInsights";
 import { canRestoreFocusToTrigger } from "./stationInsights";
 import { useStationInsightsStore } from "~/state/stationInsightsStore";
+import {
+  formatLanguageList,
+  normalizeLanguages,
+} from "~/utils/languages";
+import { displayCountryName } from "~/utils/countryNames";
 
 function Overlay({
   children,
@@ -120,24 +125,26 @@ export function AtlasOverlay({
   openCountry: (country: string) => void;
 }) {
   const normalized = query.toLowerCase().trim();
-  const languagesByCountry = new Map<string, string>();
+  const languagesByCountry = new Map<string, string[]>();
   stations.forEach((station) => {
-    if (
-      station.country &&
-      !languagesByCountry.has(station.country) &&
-      station.language
-    )
-      languagesByCountry.set(station.country, station.language);
+    if (!station.country || !station.language) return;
+    const prior = languagesByCountry.get(station.country) ?? [];
+    const next = [...prior];
+    for (const lang of normalizeLanguages(station.language)) {
+      if (!next.some((entry) => entry.toLowerCase() === lang.toLowerCase())) {
+        next.push(lang);
+      }
+    }
+    languagesByCountry.set(station.country, next);
   });
-  const visible = countries.filter(
-    (country) =>
-      !normalized ||
-      `${country.name} ${country.iso_3166_1} ${
-        languagesByCountry.get(country.name) ?? ""
-      }`
-        .toLowerCase()
-        .includes(normalized)
-  );
+  const visible = countries.filter((country) => {
+    if (!normalized) return true;
+    const displayName = displayCountryName(country.name, country.iso_3166_1);
+    const languages = languagesByCountry.get(country.name)?.join(" ") ?? "";
+    const haystack =
+      `${country.name} ${displayName} ${country.iso_3166_1} ${languages}`.toLowerCase();
+    return haystack.includes(normalized);
+  });
   const regions = Array.from(
     new Set(
       visible.map((country) => getContinent(country.iso_3166_1) || "Other")
@@ -184,11 +191,22 @@ export function AtlasOverlay({
                       {country.iso_3166_1 || "--"}
                     </span>
                     <span className="min-w-0 flex-1 text-left">
-                      <strong className="block truncate">{country.name}</strong>
-                      <small className="block truncate text-muted">
-                        {languagesByCountry.get(country.name) ||
-                          "Language unavailable"}
-                      </small>
+                      <strong className="block truncate">
+                        {displayCountryName(
+                          country.name,
+                          country.iso_3166_1
+                        )}
+                      </strong>
+                      {(() => {
+                        const langs = formatLanguageList(
+                          languagesByCountry.get(country.name) ?? []
+                        );
+                        return langs ? (
+                          <small className="block truncate text-muted">
+                            {langs}
+                          </small>
+                        ) : null;
+                      })()}
                     </span>
                     <span className="rp-telemetry">
                       {country.stationcount.toLocaleString()}
@@ -227,17 +245,29 @@ export function CountryOverlay({
   onRetry: () => void;
 }) {
   const [languageFilter, setLanguageFilter] = useState<string | null>(null);
-  const languages = Array.from(
-    new Set(
-      stations
-        .map((station) => station.language)
-        .filter((value): value is string => Boolean(value))
-    )
-  ).slice(0, 8);
+  const languageChips = useMemo(() => {
+    const labels: string[] = [];
+    const seen = new Set<string>();
+    for (const station of stations) {
+      for (const lang of normalizeLanguages(station.language)) {
+        const key = lang.toLowerCase();
+        if (seen.has(key)) continue;
+        seen.add(key);
+        labels.push(lang);
+      }
+    }
+    return labels.slice(0, 8);
+  }, [stations]);
   const visibleStations = languageFilter
-    ? stations.filter((station) => station.language === languageFilter)
+    ? stations.filter((station) =>
+        normalizeLanguages(station.language).some(
+          (lang) => lang.toLowerCase() === languageFilter.toLowerCase()
+        )
+      )
     : stations;
   const context = aggregateCountryStationContext(stations);
+  const languageEyebrow = formatLanguageList(languageChips);
+  const contextLanguageLine = formatLanguageList(context.languages, 4);
   const grouped = new Map<string, Station[]>();
   visibleStations.slice(0, 80).forEach((station) => {
     const key = stationLocation(station);
@@ -253,16 +283,23 @@ export function CountryOverlay({
         <p className="rp-eyebrow">
           {drilldown?.status === "loading"
             ? "LOADING LIVE STATIONS"
-            : `${context.playableCount.toLocaleString()} PLAYABLE STATIONS`}{" "}
-          · {languages.join(" · ") || "LANGUAGE UNAVAILABLE"}
+            : `${context.playableCount.toLocaleString()} PLAYABLE STATIONS`}
+          {languageEyebrow ? ` · ${languageEyebrow}` : ""}
         </p>
-        {drilldown?.status === "ready" && (
+        {drilldown?.status === "ready" &&
+          (languageFilter || contextLanguageLine || context.tags.length > 0) && (
           <p className="mt-2 text-xs text-muted">
             {languageFilter
-              ? `${visibleStations.length.toLocaleString()} matching filter · `
+              ? `${visibleStations.length.toLocaleString()} matching filter`
               : ""}
-            {context.languages.join(" · ") || "Language unavailable"}
-            {context.tags.length ? ` · ${context.tags.join(" · ")}` : ""}
+            {languageFilter && (contextLanguageLine || context.tags.length)
+              ? " · "
+              : ""}
+            {!languageFilter ? contextLanguageLine : ""}
+            {!languageFilter && contextLanguageLine && context.tags.length
+              ? " · "
+              : ""}
+            {context.tags.length ? context.tags.join(" · ") : ""}
           </p>
         )}
       </header>
@@ -287,18 +324,22 @@ export function CountryOverlay({
         </p>
       ) : (
         <>
-          {languages.length > 1 && (
+          {languageChips.length > 1 && (
             <div className="mt-6 flex flex-wrap gap-2">
               <span className="rp-eyebrow self-center">LANGUAGE</span>
-              {languages.map((language) => (
+              {languageChips.map((language) => (
                 <button
                   type="button"
                   className={`rp-chip ${
-                    languageFilter === language ? "active" : ""
+                    languageFilter?.toLowerCase() === language.toLowerCase()
+                      ? "active"
+                      : ""
                   }`}
                   onClick={() =>
                     setLanguageFilter((current) =>
-                      current === language ? null : language
+                      current?.toLowerCase() === language.toLowerCase()
+                        ? null
+                        : language
                     )
                   }
                   key={language}

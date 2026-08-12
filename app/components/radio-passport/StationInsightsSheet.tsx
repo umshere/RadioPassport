@@ -5,9 +5,13 @@ import {
   useState,
   type KeyboardEvent as ReactKeyboardEvent,
 } from "react";
-import { useNowPlayingMetadata } from "~/hooks/useNowPlayingMetadata";
+import type { NowPlayingState } from "~/hooks/useNowPlayingMetadata";
 import { useTrackTrivia } from "~/hooks/useTrackTrivia";
 import { usePlayerStore } from "~/state/playerStore";
+import {
+  IDLE_NOW_PLAYING_METADATA,
+  useNowPlayingMetadataStore,
+} from "~/state/nowPlayingMetadataStore";
 import { useStationInsightsStore } from "~/state/stationInsightsStore";
 import { sanitizeArtworkUrl } from "~/utils/stations";
 import {
@@ -136,10 +140,11 @@ export default function StationInsightsSheet() {
     nowPlaying,
     isPlaying,
   );
-  const metadata = useNowPlayingMetadata(
-    station,
-    canRequestMetadata,
-  );
+  // Read shared dock poller only for the playing station — never start a second poller.
+  const sharedMetadata = useNowPlayingMetadataStore((state) => state.state);
+  const metadata: NowPlayingState = canRequestMetadata
+    ? sharedMetadata
+    : IDLE_NOW_PLAYING_METADATA;
   const currentTrackKey = trackKey(metadata.track);
   const ownsMetadata = canRequestMetadata && metadata.status === "ready" && Boolean(metadata.track);
   const freeTrivia = useTrackTrivia({

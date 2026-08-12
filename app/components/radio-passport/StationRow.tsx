@@ -1,8 +1,26 @@
 import type { Station } from "~/types/radio";
+import { displayCountryName } from "~/utils/countryNames";
 
 export function stationLocation(station: Station) {
   return station.city || station.state || station.country || "Unknown location";
 }
+
+/**
+ * Display label for a station place: "Kochi, India" or "France" (never "France, France").
+ * Country segment uses common display names only — stored country keys are unchanged.
+ */
+export function stationLocationLabel(station: Station) {
+  const location = stationLocation(station);
+  const country = (station.country || "").trim();
+  if (!country) return location;
+  const countryDisplay = displayCountryName(country, station.countryCode);
+  if (location.toLowerCase() === country.toLowerCase()) return countryDisplay;
+  if (location.toLowerCase() === countryDisplay.toLowerCase()) {
+    return countryDisplay;
+  }
+  return `${location}, ${countryDisplay}`;
+}
+
 export function stationTelemetry(station: Station) {
   return station.bitrate
     ? `${station.bitrate}K ${station.codec?.toUpperCase() ?? "AUDIO"}`
@@ -32,7 +50,7 @@ export function StationRow({
   onFavorite: () => void;
   onDetails?: (trigger: HTMLElement) => void;
 }) {
-  const location = stationLocation(station);
+  const locationLabel = stationLocationLabel(station);
   return (
     <div className={`rp-station ${active ? "is-active" : ""}`}>
       <button
@@ -60,14 +78,13 @@ export function StationRow({
         type="button"
         onClick={onPlay}
         className="rp-station-title-action min-w-0 flex-1 text-left"
-        aria-label={`Play ${station.name} from ${location}`}
+        aria-label={`Play ${station.name} from ${locationLabel}`}
       >
         <strong className="block truncate text-[13px] font-bold text-paper">
           {station.name}
         </strong>
         <span className="block truncate text-[11px] text-muted">
-          {station.tagList?.slice(0, 2).join(" · ") ||
-            `${location}, ${station.country}`}
+          {station.tagList?.slice(0, 2).join(" · ") || locationLabel}
         </span>
       </button>
       <span className="rp-telemetry hidden shrink-0 sm:block">

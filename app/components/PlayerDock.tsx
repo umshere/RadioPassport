@@ -1,12 +1,13 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { usePlayerStore } from "~/state/playerStore";
 import { canMutateJourney, useJourneyStore } from "~/state/journeyStore";
 import { usePlayerNoticeStore } from "~/state/playerNoticeStore";
-import {
-  stationLocation,
-  stationTelemetry,
-} from "~/components/radio-passport/StationRow";
+import { stationLocationLabel } from "~/components/radio-passport/StationRow";
 import { useStationInsightsStore } from "~/state/stationInsightsStore";
+import { useNowPlayingMetadata } from "~/hooks/useNowPlayingMetadata";
+import { useNowPlayingMetadataStore } from "~/state/nowPlayingMetadataStore";
+import { CountryFlag } from "~/components/CountryFlag";
+import { sanitizeArtworkUrl } from "~/utils/stations";
 
 export function shouldAnimateDock(isPlaying: boolean, reducedMotion: boolean) {
   return isPlaying && !reducedMotion;
@@ -17,6 +18,24 @@ function hue(id: string) {
     (total, char) => (total * 31 + char.charCodeAt(0)) % 360,
     0
   );
+}
+
+function trackLineFromMetadata(
+  isPlaying: boolean,
+  status: string,
+  track: { artist: string | null; title: string | null; raw: string } | null
+): string | null {
+  if (!isPlaying) return null;
+  if (status === "ready" && track) {
+    const artist = track.artist?.trim() || null;
+    const title = track.title?.trim() || null;
+    if (artist && title) return `${artist} — ${title}`;
+    if (title) return title;
+    if (artist) return artist;
+    const raw = track.raw?.trim();
+    if (raw) return raw;
+  }
+  return "Live broadcast";
 }
 
 export default function PlayerDock() {
@@ -31,10 +50,36 @@ export default function PlayerDock() {
   const toggleFavorite = useJourneyStore((state) => state.toggleFavorite);
   const notice = usePlayerNoticeStore((state) => state.notice);
   const openDetails = useStationInsightsStore((state) => state.open);
+  // Single app-wide poller for the playing station; sheet reads the shared store.
+  const metadata = useNowPlayingMetadata(nowPlaying, isPlaying);
+  const setSharedMetadata = useNowPlayingMetadataStore(
+    (state) => state.setMetadata
+  );
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [logoFailed, setLogoFailed] = useState(false);
+
+  const artwork = nowPlaying ? sanitizeArtworkUrl(nowPlaying.favicon) : null;
+  const showLogo = Boolean(artwork) && !logoFailed;
+  const locationLabel = nowPlaying ? stationLocationLabel(nowPlaying) : "";
+  const countryCode = nowPlaying?.countryCode?.trim() ?? "";
+  const showFlag = countryCode.length === 2;
+  const trackLine = trackLineFromMetadata(
+    isPlaying,
+    metadata.status,
+    metadata.track
+  );
+
+  useEffect(() => {
+    setSharedMetadata(metadata);
+  }, [metadata, setSharedMetadata]);
+
+  useEffect(() => {
+    setLogoFailed(false);
+  }, [nowPlaying?.uuid, artwork]);
+
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas || !nowPlaying) return;
+    if (!canvas || !nowPlaying || showLogo) return;
     const context = canvas.getContext("2d");
     if (!context) return;
     const media = window.matchMedia?.("(prefers-reduced-motion: reduce)");
@@ -87,7 +132,7 @@ export default function PlayerDock() {
       cancelAnimationFrame(raf);
       media?.removeEventListener?.("change", onMotionChange);
     };
-  }, [isPlaying, nowPlaying]);
+  }, [isPlaying, nowPlaying, showLogo]);
   useEffect(() => {
     if (!nowPlaying) return;
     document.documentElement.style.setProperty(
@@ -106,12 +151,38 @@ export default function PlayerDock() {
   };
   return (
     <aside className="rp-dock" aria-label="Now playing">
-      <canvas ref={canvasRef} className="rp-dock-art" aria-hidden="true" />
+      {showLogo ? (
+        <img
+          src={artwork!}
+          alt=""
+          className="rp-dock-art rp-dock-logo"
+          onError={() => setLogoFailed(true)}
+        />
+      ) : (
+        <canvas ref={canvasRef} className="rp-dock-art" aria-hidden="true" />
+      )}
       <div className="min-w-0 flex-1">
         <strong className="block truncate">{nowPlaying.name}</strong>
-        <span className="rp-telemetry block truncate">
-          {stationLocation(nowPlaying)}, {nowPlaying.country} ·{" "}
-          {stationTelemetry(nowPlaying)} · LIVE
+        {trackLine && (
+          <span
+            key={trackLine}
+            className="rp-dock-track block truncate text-paper"
+          >
+            {trackLine}
+          </span>
+        )}
+        <span className="rp-dock-location flex min-w-0 items-center gap-1.5 truncate text-muted">
+          {showFlag && (
+            <CountryFlag
+              iso={countryCode}
+              size={12}
+              width={14}
+              height={10}
+              title={nowPlaying.country}
+              className="rp-dock-flag shrink-0"
+            />
+          )}
+          <span className="truncate">{locationLabel}</span>
         </span>
       </div>
       <button
@@ -120,7 +191,7 @@ export default function PlayerDock() {
           canMutateJourney(hydrated) && toggleFavorite(nowPlaying.uuid)
         }
         disabled={!canMutateJourney(hydrated)}
-        className={`grid h-11 w-11 place-items-center rounded-full text-lg ${
+        className={`rp-dock-favorite hidden h-11 w-11 place-items-center rounded-full text-lg sm:grid ${
           favorites.includes(nowPlaying.uuid) ? "text-coral" : "text-muted"
         }`}
         aria-label="Toggle favorite"

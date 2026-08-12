@@ -199,7 +199,9 @@ export default function Index() {
       (station) =>
         stationMatches(station, query) &&
         stationMatchesMood(station, mode === "mood" ? mood : null) &&
-        (mode !== "place" || !place || stationLocation(station) === place) &&
+        (mode !== "place" ||
+          !place ||
+          stationLocation(station).toLowerCase() === place.toLowerCase()) &&
         (!countryFilter || station.country === countryFilter) &&
         // Known browser-incompatible streams (HTTP on an HTTPS page) never
         // belong in the leading playable list.
@@ -228,34 +230,42 @@ export default function Index() {
         typeof station.longitude !== "number"
       )
         return;
-      const location = stationLocation(station),
-        key = `${station.country}:${location}`;
+      const location = stationLocation(station);
+      const key = `${station.country}:${location.toLowerCase()}`;
       const old = map.get(key);
       map.set(key, {
         id: key,
-        name: location,
+        name: old?.name ?? location,
         count: (old?.count || 0) + 1,
         latitude: station.latitude!,
         longitude: station.longitude!,
-        active: place === location,
+        active: Boolean(
+          place && place.toLowerCase() === location.toLowerCase()
+        ),
         playing: nowPlaying
-          ? stationLocation(nowPlaying) === location &&
+          ? stationLocation(nowPlaying).toLowerCase() ===
+              location.toLowerCase() &&
             nowPlaying.country === station.country
           : false,
       });
     });
     return [...map.values()].sort((a, b) => b.count - a.count).slice(0, 30);
   }, [filtered, nowPlaying, place]);
-  const placeChips = useMemo(
-    () =>
-      Array.from(
-        new Set([
-          ...places.map((item) => item.name),
-          ...initialStations.map(stationLocation),
-        ])
-      ).slice(0, 6),
-    [initialStations, places]
-  );
+  const placeChips = useMemo(() => {
+    const seen = new Set<string>();
+    const chips: string[] = [];
+    for (const name of [
+      ...places.map((item) => item.name),
+      ...initialStations.map(stationLocation),
+    ]) {
+      const key = name.toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      chips.push(name);
+      if (chips.length >= 6) break;
+    }
+    return chips;
+  }, [initialStations, places]);
   const selectedPool = filtered.length ? filtered : baseStations.slice(0, 60);
   const play = useCallback(
     (station: Station, pool = selectedPool, label = "Live now") => {
@@ -527,10 +537,12 @@ export default function Index() {
                 {placeChips.map((item) => (
                   <button
                     type="button"
-                    className={`rp-chip ${place === item ? "active" : ""}`}
-                    aria-pressed={place === item}
+                    className={`rp-chip ${
+                      place?.toLowerCase() === item.toLowerCase() ? "active" : ""
+                    }`}
+                    aria-pressed={place?.toLowerCase() === item.toLowerCase()}
                     onClick={() => choosePlace(item)}
-                    key={item}
+                    key={item.toLowerCase()}
                   >
                     {item}
                   </button>
@@ -564,107 +576,109 @@ export default function Index() {
                 ))}
             </div>
           )}
-          <div className="mt-7 flex items-center justify-between">
-            <span className="rp-eyebrow">
-              <i className="rp-live-dot" />{" "}
-              {query
-                ? catalogLoading
-                  ? "SEARCHING"
-                  : "SEARCH RESULTS"
-                : "LIVE NOW"}
-            </span>
-            <button
-              type="button"
-              className="rp-text-button"
-              onClick={() => void requestAiWorld()}
-              disabled={aiStatus === "loading"}
-            >
-              {aiStatus === "loading"
-                ? "Curating world…"
-                : listening.listeningMode === "world"
-                ? "Refresh AI mix →"
-                : "Explore world →"}
-            </button>
-          </div>
-          {vocabularySuggestion && (
-            <p className="mt-1 text-xs text-muted">
-              Did you mean{" "}
+          <div className="rp-live-block">
+            <div className="mt-7 flex items-center justify-between">
+              <span className="rp-eyebrow">
+                <i className="rp-live-dot" />{" "}
+                {query
+                  ? catalogLoading
+                    ? "SEARCHING"
+                    : "SEARCH RESULTS"
+                  : "LIVE NOW"}
+              </span>
               <button
                 type="button"
-                className="text-coral underline"
-                onClick={() => handleQueryChange(vocabularySuggestion)}
+                className="rp-text-button"
+                onClick={() => void requestAiWorld()}
+                disabled={aiStatus === "loading"}
               >
-                {vocabularySuggestion}
+                {aiStatus === "loading"
+                  ? "Curating world…"
+                  : listening.listeningMode === "world"
+                  ? "Refresh AI mix →"
+                  : "Explore world →"}
               </button>
-              ?
-            </p>
-          )}
-          {aiStatus === "error" && listening.exploreError && (
-            <p className="mt-2 text-xs text-muted" role="alert">
-              {listening.exploreError}
-            </p>
-          )}
-          {listening.listeningMode === "world" && worldDescriptor && (
-            <WhyTheseChip descriptor={worldDescriptor} className="mt-3" />
-          )}
-          <div className={`rp-station-list ${expanded ? "expanded" : ""}`}>
-            {filtered.slice(0, expanded ? 30 : 3).map((station) => (
-              <StationRow
-                key={station.uuid}
-                station={station}
-                active={nowPlaying?.uuid === station.uuid && isPlaying}
-                favorite={favorites.includes(station.uuid)}
-                onPlay={() => play(station)}
-                onFavorite={() => toggleFavorite(station.uuid)}
-                onDetails={(trigger) => openDetails(station, trigger)}
-              />
-            ))}
-          </div>
-          {filtered.length === 0 && !catalogLoading && (
-            <div className="py-8 text-sm text-muted" role="status">
-              <p>{emptyState.message}</p>
-              {emptyState.actions.length > 0 && (
-                <div className="mt-3 flex flex-wrap gap-3">
-                  {emptyState.actions.includes("clear-search") && (
-                    <button
-                      type="button"
-                      className="rp-text-button"
-                      onClick={clearSearch}
-                    >
-                      Clear search
-                    </button>
-                  )}
-                  {emptyState.actions.includes("show-all-moods") && (
-                    <button
-                      type="button"
-                      className="rp-text-button"
-                      onClick={() => chooseMood(null)}
-                    >
-                      Show all moods
-                    </button>
-                  )}
-                  {emptyState.actions.includes("show-all-places") && (
-                    <button
-                      type="button"
-                      className="rp-text-button"
-                      onClick={() => choosePlace(null)}
-                    >
-                      Show all places
-                    </button>
-                  )}
-                </div>
-              )}
             </div>
-          )}
-          {filtered.length > 3 && (
-            <button
-              type="button"
-              className="rp-text-button mt-3"
-              onClick={() => setExpanded((value) => !value)}
-            >
-              {expanded ? "← Back to live now" : "Explore all →"}
-            </button>
-          )}
+            {vocabularySuggestion && (
+              <p className="mt-1 text-xs text-muted">
+                Did you mean{" "}
+                <button
+                  type="button"
+                  className="text-coral underline"
+                  onClick={() => handleQueryChange(vocabularySuggestion)}
+                >
+                  {vocabularySuggestion}
+                </button>
+                ?
+              </p>
+            )}
+            {aiStatus === "error" && listening.exploreError && (
+              <p className="mt-2 text-xs text-muted" role="alert">
+                {listening.exploreError}
+              </p>
+            )}
+            {listening.listeningMode === "world" && worldDescriptor && (
+              <WhyTheseChip descriptor={worldDescriptor} className="mt-3" />
+            )}
+            <div className={`rp-station-list ${expanded ? "expanded" : ""}`}>
+              {filtered.slice(0, expanded ? 30 : 3).map((station) => (
+                <StationRow
+                  key={station.uuid}
+                  station={station}
+                  active={nowPlaying?.uuid === station.uuid && isPlaying}
+                  favorite={favorites.includes(station.uuid)}
+                  onPlay={() => play(station)}
+                  onFavorite={() => toggleFavorite(station.uuid)}
+                  onDetails={(trigger) => openDetails(station, trigger)}
+                />
+              ))}
+            </div>
+            {filtered.length === 0 && !catalogLoading && (
+              <div className="py-8 text-sm text-muted" role="status">
+                <p>{emptyState.message}</p>
+                {emptyState.actions.length > 0 && (
+                  <div className="mt-3 flex flex-wrap gap-3">
+                    {emptyState.actions.includes("clear-search") && (
+                      <button
+                        type="button"
+                        className="rp-text-button"
+                        onClick={clearSearch}
+                      >
+                        Clear search
+                      </button>
+                    )}
+                    {emptyState.actions.includes("show-all-moods") && (
+                      <button
+                        type="button"
+                        className="rp-text-button"
+                        onClick={() => chooseMood(null)}
+                      >
+                        Show all moods
+                      </button>
+                    )}
+                    {emptyState.actions.includes("show-all-places") && (
+                      <button
+                        type="button"
+                        className="rp-text-button"
+                        onClick={() => choosePlace(null)}
+                      >
+                        Show all places
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+            {filtered.length > 3 && (
+              <button
+                type="button"
+                className="rp-text-button mt-3"
+                onClick={() => setExpanded((value) => !value)}
+              >
+                {expanded ? "← Back to live now" : "Explore all →"}
+              </button>
+            )}
+          </div>
         </section>
         <section className="rp-globe-side">
           <div className="rp-globe-wrap">
