@@ -1,6 +1,5 @@
 {
     "buildCommand": "npm run build",
-    "public": true,
     "headers": [
         {
             "source": "/api/(.*)",
