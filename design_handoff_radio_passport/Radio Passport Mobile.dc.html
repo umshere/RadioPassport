@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0C0B09;font-family:'Sora',sans-serif;-webkit-font-smoothing:antialiased;display:flex;justify-content:center;padding:40px 16px}
+a{color:#E5535F;text-decoration:none}a:hover{color:#F2EDE4}
+@keyframes rp-pulse{0%,100%{opacity:.5}50%{opacity:1}}
+@keyframes rp-toast{0%{transform:translateY(12px);opacity:0}12%,85%{transform:translateY(0);opacity:1}100%{transform:translateY(-6px);opacity:0}}
+</style>
+</helmet>
+<x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx" dark="{{ true }}" hint-size="430px,880px">
+<div style="height:100%;background:#14120F;color:#F2EDE4;display:flex;flex-direction:column;position:relative;font-family:'Sora',sans-serif;overflow:hidden">
+
+  <div style="flex:1;overflow:auto;display:flex;flex-direction:column;gap:20px;padding:60px 18px 170px;box-sizing:border-box">
+
+    <div style="display:flex;align-items:center;gap:10px">
+      <svg width="30" height="30" viewBox="0 0 40 40" fill="none" aria-label="Radio Passport logo">
+        <circle cx="20" cy="20" r="18.5" stroke="#E5535F" stroke-width="1.6" stroke-dasharray="2.4 3.4" stroke-linecap="round"></circle>
+        <circle cx="20" cy="20" r="3.2" fill="#F2EDE4"></circle>
+        <path d="M26.5 13.5a9.2 9.2 0 0 1 0 13" stroke="#E5535F" stroke-width="2" stroke-linecap="round"></path>
+        <path d="M13.5 26.5a9.2 9.2 0 0 1 0-13" stroke="#F2EDE4" stroke-width="2" stroke-linecap="round" opacity="0.55"></path>
+      </svg>
+      <span style="font-weight:800;font-size:16px;letter-spacing:-0.01em">Radio Passport</span>
+      <div style="flex:1"></div>
+      <div style="display:flex;align-items:center;gap:7px;padding:7px 13px;border-radius:99px;border:1.5px dashed rgba(229,83,95,0.45);background:rgba(229,83,95,0.06)">
+        <svg width="13" height="13" viewBox="0 0 18 18" style="transform:rotate(-12deg)"><circle cx="9" cy="9" r="7.5" stroke="#E5535F" stroke-width="1.4" stroke-dasharray="1.6 2.2" fill="none"></circle><path d="M5.6 9.2l2.2 2.2 4.4-4.6" stroke="#E5535F" stroke-width="1.6" fill="none" stroke-linecap="round"></path></svg>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:500;color:#E5535F">{{ stampCountPad }}</span>
+      </div>
+    </div>
+
+    <input placeholder="Where do you want to go?" onChange="{{ onSearch }}" value="{{ query }}" style="width:100%;box-sizing:border-box;background:#1C1915;border:1px solid rgba(255,255,255,0.1);border-radius:14px;padding:13px 16px;color:#F2EDE4;font-family:'Sora',sans-serif;font-size:14px;outline:none">
+
+    <div style="position:relative;width:100%;display:flex;justify-content:center">
+      <div style="position:relative;width:min(280px,74vw);aspect-ratio:1">{{ globeCanvas }}</div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:11px">
+      <div style="display:flex;gap:2px;padding:3px;border-radius:99px;background:#1C1915;border:1px solid rgba(255,255,255,0.08);width:fit-content">
+        <button onClick="{{ setModeMood }}" style="cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.14em;padding:9px 20px;border-radius:99px;border:none;background:{{ moodTabBg }};color:{{ moodTabColor }}">MOOD</button>
+        <button onClick="{{ setModePlace }}" style="cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.14em;padding:9px 20px;border-radius:99px;border:none;background:{{ placeTabBg }};color:{{ placeTabColor }}">PLACE</button>
+      </div>
+      <div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;margin:0 -18px;padding-left:18px;padding-right:18px">
+        <sc-for list="{{ chips }}" as="ch" hint-placeholder-count="5">
+          <button onClick="{{ ch.select }}" style="cursor:pointer;flex-shrink:0;font-family:'Sora',sans-serif;font-size:13px;font-weight:600;padding:11px 17px;border-radius:99px;border:1px solid {{ ch.border }};background:{{ ch.bg }};color:{{ ch.color }}">{{ ch.label }}</button>
+        </sc-for>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <sc-if value="{{ placeMatchesOn }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;flex-wrap:wrap;gap:7px;align-items:center">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.18em;color:#A89F90">PLACES</span>
+          <sc-for list="{{ placeMatches }}" as="pm" hint-placeholder-count="2">
+            <button onClick="{{ pm.select }}" style="cursor:pointer;font-family:'Sora',sans-serif;font-size:12px;font-weight:600;padding:8px 14px;border-radius:99px;border:1px solid rgba(229,83,95,0.4);background:rgba(229,83,95,0.08);color:#E5535F">{{ pm.label }}</button>
+          </sc-for>
+        </div>
+      </sc-if>
+      <div style="display:flex;align-items:center;gap:9px">
+        <span style="width:7px;height:7px;border-radius:50%;background:#6FB5C4;animation:rp-pulse 1.6s ease-in-out infinite"></span>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.22em;color:#A89F90">{{ listTitle }}</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <sc-for list="{{ stations }}" as="s" hint-placeholder-count="3">
+          <div onClick="{{ s.play }}" style="cursor:pointer;display:flex;align-items:center;gap:13px;padding:12px 13px;border-radius:14px;border:1px solid {{ s.border }};background:{{ s.bg }};min-height:44px;box-sizing:border-box">
+            <div style="width:44px;height:44px;border-radius:11px;flex-shrink:0;background:{{ s.art }};display:flex;align-items:center;justify-content:center">
+              <sc-if value="{{ s.active }}" hint-placeholder-val="{{ false }}">
+                <div style="display:flex;gap:2.5px;align-items:flex-end;height:15px">
+                  <span style="width:3px;background:#F2EDE4;border-radius:2px;height:60%;animation:rp-pulse 0.8s ease-in-out infinite"></span>
+                  <span style="width:3px;background:#F2EDE4;border-radius:2px;height:100%;animation:rp-pulse 0.65s ease-in-out infinite"></span>
+                  <span style="width:3px;background:#F2EDE4;border-radius:2px;height:40%;animation:rp-pulse 0.9s ease-in-out infinite"></span>
+                </div>
+              </sc-if>
+            </div>
+            <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px">
+              <span style="font-size:14px;font-weight:700;letter-spacing:-0.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:{{ s.nameColor }}">{{ s.name }}</span>
+              <span style="font-size:11.5px;color:#A89F90;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ s.sub }}</span>
+            </div>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#A89F90;flex-shrink:0">{{ s.freq }}</span>
+          </div>
+        </sc-for>
+      </div>
+      <button onClick="{{ exploreAll }}" style="cursor:pointer;background:none;border:none;color:#E5535F;font-family:'Sora',sans-serif;font-size:13px;font-weight:600;text-align:left;padding:6px 0">{{ exploreLabel }}</button>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:12px;padding:16px 18px;border-radius:16px;border:1.5px dashed rgba(229,83,95,0.35);background:rgba(229,83,95,0.04)">
+      <div style="display:flex;align-items:center;gap:10px">
+        <svg width="18" height="18" viewBox="0 0 18 18" style="transform:rotate(-12deg);flex-shrink:0"><circle cx="9" cy="9" r="7.5" stroke="#E5535F" stroke-width="1.3" stroke-dasharray="1.6 2.2" fill="none"></circle><path d="M5.6 9.2l2.2 2.2 4.4-4.6" stroke="#E5535F" stroke-width="1.6" fill="none" stroke-linecap="round"></path></svg>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.22em;color:#F2EDE4">YOUR PASSPORT</span>
+        <div style="flex:1"></div>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#A89F90"><span style="color:#E5535F;font-weight:500">{{ stampCountPad }}</span> / {{ stampTotal }}</span>
+      </div>
+      <div style="height:2px;border-radius:2px;background:rgba(255,255,255,0.08);overflow:hidden"><div style="height:100%;width:{{ stampPct }};background:#E5535F;transition:width .4s"></div></div>
+      <sc-if value="{{ hasStamps }}" hint-placeholder-val="{{ true }}">
+        <div style="display:flex;flex-wrap:wrap;gap:10px">
+          <sc-for list="{{ stampList }}" as="p" hint-placeholder-count="2">
+            <div style="display:flex;flex-direction:column;align-items:center;gap:3px;padding:10px 15px;border-radius:12px;border:1.5px dashed rgba(229,83,95,0.55);background:rgba(229,83,95,0.08);transform:rotate({{ p.tilt }})">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.16em;color:#E5535F">{{ p.country }}</span>
+              <span style="font-size:11px;font-weight:700">{{ p.city }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </sc-if>
+      <sc-if value="{{ noStamps }}" hint-placeholder-val="{{ false }}">
+        <span style="font-size:12px;color:#A89F90;line-height:1.6;text-wrap:pretty">Stay with a station for {{ stampSecs }}s to ink your first stamp.</span>
+      </sc-if>
+    </div>
+  </div>
+
+  <sc-if value="{{ toastOn }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute;left:16px;right:16px;bottom:118px;z-index:60;display:flex;align-items:center;gap:12px;padding:13px 16px;border-radius:15px;background:rgba(28,25,21,0.96);border:1.5px dashed rgba(229,83,95,0.6);box-shadow:0 14px 40px rgba(0,0,0,0.5);animation:rp-toast 4s ease forwards">
+      <svg width="26" height="26" viewBox="0 0 18 18" style="transform:rotate(-12deg);flex-shrink:0"><circle cx="9" cy="9" r="7.5" stroke="#E5535F" stroke-width="1.2" stroke-dasharray="1.6 2.2" fill="none"></circle><path d="M5.6 9.2l2.2 2.2 4.4-4.6" stroke="#E5535F" stroke-width="1.5" fill="none" stroke-linecap="round"></path></svg>
+      <div style="display:flex;flex-direction:column;gap:1px;min-width:0">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.2em;color:#E5535F">PASSPORT STAMPED</span>
+        <span style="font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ toastCity }}</span>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ nowPlaying }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute;left:12px;right:12px;bottom:34px;z-index:50;display:flex;align-items:center;gap:13px;padding:11px 14px;border-radius:18px;background:rgba(28,25,21,0.94);backdrop-filter:blur(18px);border:1px solid rgba(255,255,255,0.1);box-shadow:0 14px 40px rgba(0,0,0,0.55)">
+      <div style="width:46px;height:46px;border-radius:12px;overflow:hidden;flex-shrink:0;background:#14120F">{{ dockCanvas }}</div>
+      <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:1px">
+        <span style="font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ npName }}</span>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:#A89F90;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ npMeta }}</span>
+      </div>
+      <button onClick="{{ togglePlay }}" title="Play / pause" style="cursor:pointer;width:44px;height:44px;border-radius:50%;border:none;background:#E5535F;color:#14120F;display:flex;align-items:center;justify-content:center;flex-shrink:0">{{ playGlyph }}</button>
+      <button onClick="{{ nextStation }}" title="Next" style="cursor:pointer;background:none;border:none;color:#A89F90;padding:8px;min-width:44px;min-height:44px"><svg width="17" height="17" viewBox="0 0 16 16" fill="currentColor"><path d="M10 2h2v12h-2zM3 2v12l6.5-6z"></path></svg></button>
+    </div>
+  </sc-if>
+</div>
+</x-import>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;: {&quot;width&quot;: 470, &quot;height&quot;: 960}, &quot;motion&quot;: {&quot;editor&quot;: &quot;boolean&quot;, &quot;default&quot;: true, &quot;tsType&quot;: &quot;boolean&quot;, &quot;section&quot;: &quot;Behavior&quot;}, &quot;particleDensity&quot;: {&quot;editor&quot;: &quot;range&quot;, &quot;default&quot;: 220, &quot;min&quot;: 80, &quot;max&quot;: 400, &quot;step&quot;: 20, &quot;tsType&quot;: &quot;number&quot;, &quot;section&quot;: &quot;Behavior&quot;}, &quot;stampSeconds&quot;: {&quot;editor&quot;: &quot;int&quot;, &quot;default&quot;: 15, &quot;min&quot;: 3, &quot;max&quot;: 120, &quot;tsType&quot;: &quot;number&quot;, &quot;section&quot;: &quot;Behavior&quot;}}">
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.cities = [
+      { id: "tokyo", city: "Tokyo", country: "JAPAN", code: "JP", lat: 35.7, lon: 139.7, stations: [
+        { id: "jw", name: "J-WAVE", tags: "city pop · eclectic", freq: "81.3", moods: ["latenight", "focus"] },
+        { id: "tfm", name: "Tokyo FM", tags: "pop · talk", freq: "80.0", moods: ["morning"] },
+        { id: "ifm", name: "InterFM", tags: "indie · international", freq: "89.7", moods: ["roadtrip", "latenight"] }]},
+      { id: "kochi", city: "Kochi", country: "INDIA", code: "IN", lat: 9.9, lon: 76.3, stations: [
+        { id: "mango", name: "Radio Mango", tags: "malayalam hits", freq: "91.9", moods: ["morning", "roadtrip"] },
+        { id: "club", name: "Club FM", tags: "malayalam · pop", freq: "94.3", moods: ["dance"] }]},
+      { id: "mumbai", city: "Mumbai", country: "INDIA", code: "IN", lat: 19.1, lon: 72.9, stations: [
+        { id: "mirchi", name: "Radio Mirchi", tags: "bollywood · hindi", freq: "98.3", moods: ["dance", "roadtrip"] }]},
+      { id: "paris", city: "Paris", country: "FRANCE", code: "FR", lat: 48.9, lon: 2.35, stations: [
+        { id: "fip", name: "FIP", tags: "eclectic · jazz", freq: "105.1", moods: ["focus", "latenight"] },
+        { id: "nova", name: "Radio Nova", tags: "electro · world", freq: "101.5", moods: ["dance", "latenight"] }]},
+      { id: "lagos", city: "Lagos", country: "NIGERIA", code: "NG", lat: 6.5, lon: 3.4, stations: [
+        { id: "beat", name: "The Beat 99.9", tags: "afrobeats", freq: "99.9", moods: ["dance"] },
+        { id: "smooth", name: "Smooth FM", tags: "soul · jazz", freq: "98.1", moods: ["morning", "focus"] }]},
+      { id: "seattle", city: "Seattle", country: "USA", code: "US", lat: 47.6, lon: -122.3, stations: [
+        { id: "kexp", name: "KEXP", tags: "indie · alternative", freq: "90.3", moods: ["focus", "roadtrip"] }]},
+      { id: "chicago", city: "Chicago", country: "USA", code: "US", lat: 41.9, lon: -87.6, stations: [
+        { id: "wbez", name: "Vocalo", tags: "urban alternative", freq: "91.1", moods: ["latenight", "dance"] }]},
+      { id: "rio", city: "Rio", country: "BRAZIL", code: "BR", lat: -22.9, lon: -43.2, stations: [
+        { id: "bossa", name: "Rádio Bossa", tags: "bossa nova · MPB", freq: "89.5", moods: ["morning", "focus"] }]},
+      { id: "reyk", city: "Reykjavík", country: "ICELAND", code: "IS", lat: 64.1, lon: -21.9, stations: [
+        { id: "ras", name: "Rás 2", tags: "ambient · post-rock", freq: "90.1", moods: ["latenight", "focus"] }]},
+      { id: "beirut", city: "Beirut", country: "LEBANON", code: "LB", lat: 33.9, lon: 35.5, stations: [
+        { id: "bn", name: "Beirut Nights", tags: "arabic pop · lounge", freq: "88.6", moods: ["latenight", "dance"] }]}
+    ];
+    this.moodDefs = [
+      { id: "latenight", label: "Late Night" }, { id: "morning", label: "Slow Morning" },
+      { id: "dance", label: "Dance" }, { id: "focus", label: "Focus" }, { id: "roadtrip", label: "Road Trip" }];
+    this.state = { mode: "mood", mood: null, place: null, now: null, playing: false, stamps: {}, query: "", toast: null };
+    this.globeRef = React.createRef();
+    this.dockRef = React.createRef();
+    this.globeEl = React.createElement("canvas", {
+      ref: this.globeRef,
+      onClick: (e) => { const r = e.currentTarget.getBoundingClientRect(); this.tap = { x: e.clientX - r.left, y: e.clientY - r.top }; },
+      style: { width: "100%", height: "100%", display: "block", cursor: "pointer" }
+    });
+    this.dockEl = React.createElement("canvas", { ref: this.dockRef, style: { width: "100%", height: "100%", display: "block" } });
+    this.pts = []; this.cityScreens = []; this.tap = null;
+  }
+  seedHue(id) { let h = 0; for (const ch of id) h = (h * 31 + ch.charCodeAt(0)) % 360; return h; }
+  motionOn() { return this.props.motion ?? true; }
+  stampSecs() { return this.props.stampSeconds ?? 15; }
+  langOf(id) { return ({ jw: "Japanese", tfm: "Japanese", ifm: "English Japanese", mango: "Malayalam", club: "Malayalam", mirchi: "Hindi", fip: "French", nova: "French", beat: "English Yoruba", smooth: "English", kexp: "English", wbez: "English", bossa: "Portuguese", ras: "Icelandic", bn: "Arabic" })[id] || ""; }
+  componentDidMount() {
+    const density = this.props.particleDensity ?? 220;
+    for (let i = 0; i < density; i++) {
+      const y = 1 - (i / (density - 1)) * 2, r = Math.sqrt(1 - y * y), th = i * 2.39996;
+      this.pts.push({ x: Math.cos(th) * r, y, z: Math.sin(th) * r, tw: Math.random() * 6.28 });
+    }
+    let rot = 0, t = 0;
+    const D = Math.PI / 180;
+    const loop = () => {
+      this.raf = requestAnimationFrame(loop);
+      if (document.hidden) return;
+      t += 0.016;
+      if (this.motionOn()) rot += 0.0022;
+      const hc = this.globeRef.current;
+      if (hc) {
+        const dpr = Math.min(devicePixelRatio || 1, 2), w = hc.clientWidth, h = hc.clientHeight;
+        if (hc.width !== w * dpr) { hc.width = w * dpr; hc.height = h * dpr; }
+        const g = hc.getContext("2d");
+        g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, w, h);
+        const cx = w / 2, cy = h / 2, rad = Math.min(w, h) * 0.44;
+        for (const p of this.pts) {
+          const x = p.x * Math.cos(rot) - p.z * Math.sin(rot);
+          const z = p.x * Math.sin(rot) + p.z * Math.cos(rot);
+          const depth = (z + 1) / 2;
+          const tw = this.motionOn() ? 0.55 + 0.45 * Math.sin(t * 1.4 + p.tw) : 0.8;
+          g.beginPath();
+          g.arc(cx + x * rad, cy + p.y * rad, 0.5 + depth * 1.1, 0, 6.29);
+          g.fillStyle = `rgba(242,237,228,${(0.06 + depth * 0.3) * tw})`;
+          g.fill();
+        }
+        this.cityScreens = [];
+        for (const c of this.cities) {
+          const la = c.lat * D, lo = c.lon * D + rot;
+          const x = Math.cos(la) * Math.sin(lo), y = -Math.sin(la), z = Math.cos(la) * Math.cos(lo);
+          if (z < 0.05) continue;
+          const sx = cx + x * rad, sy = cy + y * rad;
+          this.cityScreens.push({ id: c.id, x: sx, y: sy });
+          const active = this.state.now && this.state.now.cityId === c.id;
+          const sel = this.state.place === c.id;
+          const pulse = active && this.motionOn() ? 1 + 0.25 * Math.sin(t * 4) : 1;
+          g.beginPath(); g.arc(sx, sy, (sel || active ? 4.6 : 3.4) * pulse, 0, 6.29);
+          g.fillStyle = active ? "#6FB5C4" : sel || this.state.stamps[c.id] ? "#E5535F" : "rgba(229,83,95,0.75)";
+          g.fill();
+          if (active || sel) {
+            g.beginPath(); g.arc(sx, sy, 9, 0, 6.29); g.strokeStyle = "rgba(229,83,95,0.5)"; g.lineWidth = 1; g.stroke();
+            g.font = "600 11px Sora, sans-serif"; g.fillStyle = "#F2EDE4"; g.fillText(c.city, sx + 10, sy - 8);
+          }
+        }
+        if (this.tap) {
+          let best = null, bd = 26;
+          for (const s of this.cityScreens) {
+            const d = Math.hypot(s.x - this.tap.x, s.y - this.tap.y);
+            if (d < bd) { bd = d; best = s; }
+          }
+          this.tap = null;
+          if (best) this.setState({ mode: "place", place: best.id, query: "" });
+        }
+      }
+      const dc = this.dockRef.current;
+      if (dc) {
+        const dpr = Math.min(devicePixelRatio || 1, 2), w = dc.clientWidth, h = dc.clientHeight;
+        if (dc.width !== w * dpr) { dc.width = w * dpr; dc.height = h * dpr; }
+        const g = dc.getContext("2d");
+        g.setTransform(dpr, 0, 0, dpr, 0, 0);
+        const hue = this.state.now ? this.seedHue(this.state.now.id) : 10;
+        g.fillStyle = `hsl(${hue} 30% 12%)`; g.fillRect(0, 0, w, h);
+        const cx = w / 2, cy = h / 2, N = 22, amp = this.state.playing && this.motionOn() ? 1 : 0.25;
+        for (let i = 0; i < N; i++) {
+          const a = (i / N) * 6.283 + t * (this.motionOn() ? 0.5 : 0);
+          const lv = amp * (0.5 + 0.5 * Math.sin(t * 3.1 + i * 1.7)) * (0.4 + 0.6 * Math.sin(i * 12.9898) ** 2);
+          const r1 = w * 0.16 + lv * w * 0.3;
+          g.beginPath();
+          g.arc(cx + Math.cos(a) * r1, cy + Math.sin(a) * r1, 1.3, 0, 6.29);
+          g.fillStyle = i % 4 === 0 ? "rgba(229,83,95,0.95)" : `hsla(${hue} 60% 75% / 0.85)`;
+          g.fill();
+        }
+      }
+    };
+    loop();
+  }
+  componentWillUnmount() { cancelAnimationFrame(this.raf); clearTimeout(this.stampTimer); clearTimeout(this.toastTimer); }
+  playStation(s, c) {
+    clearTimeout(this.stampTimer);
+    this.setState({ now: { ...s, cityId: c.id, city: c.city, country: c.country }, playing: true });
+    if (!this.state.stamps[c.id]) {
+      this.stampTimer = setTimeout(() => {
+        if (!this.state.playing || !this.state.now || this.state.now.id !== s.id) return;
+        this.setState((p) => ({ stamps: { ...p.stamps, [c.id]: true }, toast: { city: `${c.city}, ${this.titleCase(c.country)}` } }));
+        clearTimeout(this.toastTimer);
+        this.toastTimer = setTimeout(() => this.setState({ toast: null }), 4200);
+      }, this.stampSecs() * 1000);
+    }
+  }
+  titleCase(s) { return s.charAt(0) + s.slice(1).toLowerCase(); }
+  pool() {
+    const st = this.state, q = st.query.trim().toLowerCase();
+    let list = [];
+    for (const c of this.cities) for (const s of c.stations) list.push({ s, c });
+    if (q) return list.filter(({ s, c }) => (s.name + s.tags + c.city + c.country + this.langOf(s.id) + s.moods.join(" ")).toLowerCase().includes(q));
+    if (st.mode === "place" && st.place) list = list.filter(({ c }) => c.id === st.place);
+    if (st.mode === "mood" && st.mood) list = list.filter(({ s }) => s.moods.includes(st.mood));
+    return list;
+  }
+  renderVals() {
+    const st = this.state, pool = this.pool();
+    const filtered = st.query || (st.mode === "place" && st.place) || (st.mode === "mood" && st.mood);
+    const shown = filtered ? pool : pool.filter((_, i) => [0, 5, 11].includes(i));
+    const chips = st.mode === "mood"
+      ? this.moodDefs.map((m) => {
+          const on = st.mood === m.id;
+          return { label: m.label, select: () => this.setState({ mood: on ? null : m.id, query: "" }),
+            bg: on ? "rgba(229,83,95,0.16)" : "#1C1915", color: on ? "#E5535F" : "#A89F90",
+            border: on ? "rgba(229,83,95,0.55)" : "rgba(255,255,255,0.1)" };
+        })
+      : this.cities.map((c) => {
+          const on = st.place === c.id;
+          return { label: c.city, select: () => this.setState({ place: on ? null : c.id, query: "" }),
+            bg: on ? "rgba(229,83,95,0.16)" : "#1C1915", color: on ? "#E5535F" : "#A89F90",
+            border: on ? "rgba(229,83,95,0.55)" : "rgba(255,255,255,0.1)" };
+        });
+    const stations = shown.map(({ s, c }) => {
+      const active = st.now && st.now.id === s.id;
+      const hue = this.seedHue(s.id);
+      return { name: s.name, sub: `${s.tags} — ${c.city}`, freq: s.freq, active,
+        play: () => this.playStation(s, c),
+        art: `radial-gradient(circle at 32% 30%, hsl(${hue} 45% 34%), hsl(${hue} 35% 14%))`,
+        bg: active ? "rgba(229,83,95,0.08)" : "#1C1915",
+        border: active ? "rgba(229,83,95,0.5)" : "rgba(255,255,255,0.07)",
+        nameColor: active ? "#E5535F" : "#F2EDE4" };
+    });
+    let placeMatches = [];
+    if (st.query.trim()) {
+      const q2 = st.query.trim().toLowerCase();
+      for (const c of this.cities) if ((c.city + " " + c.country).toLowerCase().includes(q2)) placeMatches.push({ label: `${c.city} →`, select: () => this.setState({ mode: "place", place: c.id, query: "" }) });
+      placeMatches = placeMatches.slice(0, 3);
+    }
+    const stampList = Object.keys(st.stamps).map((id, i) => {
+      const c = this.cities.find((x) => x.id === id);
+      return { city: c.city.toUpperCase(), country: c.country, tilt: `${(i % 3 - 1) * 3}deg` };
+    });
+    const step = (dir) => {
+      const list = pool.length ? pool : this.pool();
+      if (!st.now || !list.length) return;
+      const i = list.findIndex(({ s }) => s.id === st.now.id);
+      const n = list[(i + dir + list.length) % list.length];
+      this.playStation(n.s, n.c);
+    };
+    const nStamps = Object.keys(st.stamps).length;
+    return {
+      chips, stations, placeMatches, placeMatchesOn: placeMatches.length > 0,
+      query: st.query, onSearch: (e) => this.setState({ query: e.target.value }),
+      setModeMood: () => this.setState({ mode: "mood" }),
+      setModePlace: () => this.setState({ mode: "place" }),
+      moodTabBg: st.mode === "mood" ? "#E5535F" : "transparent",
+      moodTabColor: st.mode === "mood" ? "#14120F" : "#A89F90",
+      placeTabBg: st.mode === "place" ? "#E5535F" : "transparent",
+      placeTabColor: st.mode === "place" ? "#14120F" : "#A89F90",
+      listTitle: st.query ? "SEARCH RESULTS" : filtered ? `LIVE · ${pool.length} SIGNALS` : "LIVE NOW",
+      exploreAll: () => this.setState({ mood: null, place: null, query: "" }),
+      exploreLabel: filtered ? "← Back to live now" : "Explore all →",
+      stampCountPad: String(nStamps).padStart(2, "0"),
+      stampTotal: this.cities.length, stampPct: `${Math.round((nStamps / this.cities.length) * 100)}%`,
+      hasStamps: nStamps > 0, noStamps: nStamps === 0, stampSecs: this.stampSecs(),
+      stampList,
+      toastOn: !!st.toast, toastCity: st.toast ? st.toast.city : "",
+      globeCanvas: this.globeEl, dockCanvas: this.dockEl,
+      nowPlaying: !!st.now,
+      npName: st.now ? st.now.name : "",
+      npMeta: st.now ? `${st.now.city}, ${this.titleCase(st.now.country)} · ${st.now.freq} FM · LIVE` : "",
+      togglePlay: () => this.setState((p) => ({ playing: !p.playing })),
+      nextStation: () => step(1),
+      playGlyph: st.playing
+        ? React.createElement("svg", { width: 15, height: 15, viewBox: "0 0 16 16", fill: "currentColor" }, React.createElement("path", { d: "M3.5 2h3.4v12H3.5zM9.1 2h3.4v12H9.1z" }))
+        : React.createElement("svg", { width: 15, height: 15, viewBox: "0 0 16 16", fill: "currentColor" }, React.createElement("path", { d: "M4.5 2.4v11.2L13.6 8z" }))
+    };
+  }
+}
+</script>
+</body>
+</html>

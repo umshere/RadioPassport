@@ -2,12 +2,18 @@ import { OpenAIProvider } from "./OpenAIProvider";
 import { GeminiProvider } from "./GeminiProvider";
 import { OllamaProvider } from "./OllamaProvider";
 import { OpenRouterProvider } from "./OpenRouterProvider";
+import { HeuristicsProvider } from "./HeuristicsProvider";
 import { FallbackProvider } from "./FallbackProvider";
 import type { AiProvider } from "./BaseProvider";
 
 const providerCache: { instance: AiProvider | null } = { instance: null };
 
-type ProviderName = "openai" | "gemini" | "openrouter" | "ollama";
+type ProviderName =
+  | "openai"
+  | "gemini"
+  | "openrouter"
+  | "ollama"
+  | "heuristics";
 
 function normalizeProviderName(value?: string): ProviderName {
   const name = (value ?? "openai").trim().toLowerCase();
@@ -15,22 +21,27 @@ function normalizeProviderName(value?: string): ProviderName {
     name === "openai" ||
     name === "gemini" ||
     name === "openrouter" ||
-    name === "ollama"
+    name === "ollama" ||
+    name === "heuristics"
   ) {
     return name;
   }
   return "openai";
 }
 
-function getConfiguredProviderNames(preferredProvider: ProviderName): ProviderName[] {
+function getConfiguredProviderNames(
+  preferredProvider: ProviderName,
+): ProviderName[] {
   const order: ProviderName[] = [];
   const add = (providerName: ProviderName) => {
     if (!order.includes(providerName)) order.push(providerName);
   };
 
-  // Always put the preferred provider first so it doesn't wait behind
-  // slower free-tier providers (e.g. OpenRouter) before being tried.
-  add(preferredProvider);
+  // Preferred first, except Gemini which stays last-resort.
+  if (preferredProvider !== "gemini") {
+    add(preferredProvider);
+  }
+  add("heuristics");
   add("openrouter");
   add("openai");
   add("ollama");
@@ -41,6 +52,10 @@ function getConfiguredProviderNames(preferredProvider: ProviderName): ProviderNa
 
 function getProviderForName(providerName: ProviderName): AiProvider | null {
   switch (providerName) {
+    case "heuristics": {
+      const apiKey = process.env.HEURISTICS_API_KEY ?? "";
+      return apiKey ? new HeuristicsProvider(apiKey) : null;
+    }
     case "openrouter": {
       const apiKey = process.env.OPENROUTER_API_KEY ?? "";
       return apiKey ? new OpenRouterProvider(apiKey) : null;

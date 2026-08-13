@@ -1,23 +1,22 @@
 # Documentation Index
 
-Welcome to the Radio Passport documentation. This folder collects all the project docs in one place for easier discovery and linking.
+Elsewhere (repo heritage: Radio Passport). Remix + Tailwind. Live radio as a cover of someone else's now.
 
-## Core References
+## Start here
 
+- Product + run: [../readme.md](../readme.md)
+- **Roadmap (shipped / next / paid):** [ROADMAP.md](./ROADMAP.md)
 - Architecture: [ARCHITECTURE.md](./ARCHITECTURE.md)
-- **User Journey & UI Flow**: [UI_FLOW.md](./UI_FLOW.md) - Current Home / Atlas user journeys
-- Scene descriptor contract: [SCENE_DESCRIPTOR.md](./SCENE_DESCRIPTOR.md)
-- Player store behavior: [PLAYER_STORE.md](./PLAYER_STORE.md)
-- Environment variables: [ENVIRONMENT.md](./ENVIRONMENT.md)
-- Testing guide: [TESTING_GUIDE.md](./TESTING_GUIDE.md)
-
-## AI Documentation
-
-- Current AI pipeline: [AI_PIPELINE.md](./AI_PIPELINE.md)
-- AI prompt enhancement: [AI_PROMPT_ENHANCEMENT.md](./AI_PROMPT_ENHANCEMENT.md)
-- Hero insights + Pretext architecture: [PRETEXT_HERO_INSIGHTS.md](./PRETEXT_HERO_INSIGHTS.md)
-
-## Additional Docs
-
+- User journey: [UI_FLOW.md](./UI_FLOW.md)
+- Design tokens + mark: [DESIGN_SPECS.md](./DESIGN_SPECS.md)
+- AI (Flash-only Heuristics): [AI_PIPELINE.md](./AI_PIPELINE.md)
+- Environment: [ENVIRONMENT.md](./ENVIRONMENT.md)
+- Player store: [PLAYER_STORE.md](./PLAYER_STORE.md)
+- Testing: [TESTING_GUIDE.md](./TESTING_GUIDE.md)
 - Changelog: [CHANGELOG.md](./CHANGELOG.md)
-- Design specs: [DESIGN_SPECS.md](./DESIGN_SPECS.md)
+
+## Legacy contracts (still used by recommend)
+
+- Scene descriptor: [SCENE_DESCRIPTOR.md](./SCENE_DESCRIPTOR.md)
+- Prompt history: [AI_PROMPT_ENHANCEMENT.md](./AI_PROMPT_ENHANCEMENT.md)
+- Pretext hero notes: [PRETEXT_HERO_INSIGHTS.md](./PRETEXT_HERO_INSIGHTS.md)

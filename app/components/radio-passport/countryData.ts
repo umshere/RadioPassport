@@ -50,19 +50,30 @@ function rankedValues(values: Array<string | null | undefined>) {
     const label = value.trim();
     const key = label.toLocaleLowerCase();
     const prior = counts.get(key);
-    counts.set(key, { label: prior?.label ?? label, count: (prior?.count ?? 0) + 1 });
+    counts.set(key, {
+      label: prior?.label ?? label,
+      count: (prior?.count ?? 0) + 1,
+    });
   });
   return [...counts.values()]
     .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label))
     .map((entry) => entry.label);
 }
 
-export function aggregateCountryStationContext(stations: Station[]): CountryStationContext {
+export function aggregateCountryStationContext(
+  stations: Station[]
+): CountryStationContext {
   return {
-    playableCount: stations.filter((station) => Boolean(station.streamUrl || station.url)).length,
+    playableCount: stations.filter((station) =>
+      Boolean(station.streamUrl || station.url)
+    ).length,
     languages: rankedValues(
       stations.flatMap((station) => normalizeLanguages(station.language))
     ).slice(0, 4),
-    tags: rankedValues(stations.flatMap((station) => station.tagList?.length ? station.tagList : (station.tags ?? "").split(","))).slice(0, 5),
+    tags: rankedValues(
+      stations.flatMap((station) =>
+        station.tagList?.length ? station.tagList : (station.tags ?? "").split(",")
+      )
+    ).slice(0, 5),
   };
 }

@@ -45,14 +45,14 @@ export default function AppHeader() {
         style={enableFallback ? { height: headerHeight } : undefined}
       >
         {/* Logo Area */}
-        <Link to="/" className="flex items-center gap-3 flex-shrink-0 group" prefetch="intent" aria-label="Radio Passport">
+        <Link to="/" className="flex items-center gap-3 flex-shrink-0 group" prefetch="intent" aria-label="Elsewhere">
           <motion.div
             className="app-header__logo relative flex items-center justify-center bg-transparent transition-transform group-hover:scale-105"
             style={enableFallback ? { height: logoSize, scale: logoScale } : undefined}
           >
             <img
               src="/RPLOGO.png"
-              alt="Radio Passport"
+              alt="Elsewhere"
               className="h-full w-auto object-contain"
             />
           </motion.div>
@@ -61,13 +61,13 @@ export default function AppHeader() {
               className="app-header__title font-black tracking-tight text-[var(--rp-text)] leading-tight whitespace-nowrap text-sm sm:text-base"
               style={enableFallback ? { scale: titleScale, opacity: titleOpacity } : undefined}
             >
-              Radio Passport
+              Elsewhere
             </motion.span>
             <motion.span
               className="app-header__subtitle hidden sm:block text-[9px] text-[var(--rp-muted-2)] font-bold uppercase tracking-widest leading-tight whitespace-nowrap"
               style={enableFallback ? { opacity: subtitleOpacity, y: subtitleY } : undefined}
             >
-              Curated live radio
+              Live radio, elsewhere
             </motion.span>
           </div>
         </Link>
@@ -91,7 +91,7 @@ export default function AppHeader() {
             </div>
           ) : (
             <div className="flex items-center gap-1.5 opacity-70">
-              <span className="text-[11px] font-bold tracking-wide uppercase text-[var(--rp-muted-2)]">Radio Passport</span>
+              <span className="text-[11px] font-bold tracking-wide uppercase text-[var(--rp-muted-2)]">Elsewhere</span>
             </div>
           )}
         </div>

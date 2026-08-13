@@ -87,12 +87,12 @@ export function JourneyBridge() {
   if (!toast) return null;
   return (
     <div className="rp-toast" role="status" aria-live="polite">
-      <span className="rp-eyebrow text-coral">PASSPORT STAMPED</span>
+      <span className="rp-eyebrow text-foil">INKED</span>
       <strong>
-        {toast.city}, {toast.country}
+        {toast.city}
       </strong>
       <small>
-        {toast.stationName} · {toast.telemetry}
+        {toast.stationName} · {toast.country}
       </small>
     </div>
   );

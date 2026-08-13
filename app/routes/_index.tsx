@@ -1,13 +1,16 @@
 import { json, type LoaderFunctionArgs } from "@remix-run/node";
-import { useLoaderData } from "@remix-run/react";
+import { Link, useLoaderData } from "@remix-run/react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { rbFetchJson } from "~/utils/radioBrowser";
 import { normalizeStations } from "~/utils/stations";
 import { createQueueSession } from "~/utils/playerQueue";
 import type { Country, Station } from "~/types/radio";
+import type { InterpretResponse } from "~/types/ai";
 import { usePlayerStore } from "~/state/playerStore";
 import { useJourneyStore } from "~/state/journeyStore";
 import { useListeningMode } from "~/hooks/useListeningMode";
+import { useNowPlayingMetadata } from "~/hooks/useNowPlayingMetadata";
+import { useDispatchStore } from "~/state/dispatchStore";
 import { loadWorldDescriptorPreview } from "~/services/aiOrchestrator";
 import {
   ParticleGlobe,
@@ -30,31 +33,20 @@ import {
   type CountryDrilldownState,
 } from "~/components/radio-passport/countryData";
 import { applyAiPreviewPool } from "~/components/radio-passport/aiPreview";
+import { catalogRequestState } from "~/components/radio-passport/searchState";
+import { getContinent } from "~/utils/geography";
+import { IntentBar } from "~/components/radio-passport/IntentBar";
+import { BRAND } from "~/constants/brand";
 import {
-  catalogRequestState,
-  describeEmptyResults,
-  nextQueryHref,
-  parseInitialQuery,
-  shouldClearBrowsingFilters,
-  suggestVocabularyTerm,
-  toggleSelection,
-} from "~/components/radio-passport/searchState";
-import WhyTheseChip from "~/components/WhyTheseChip";
-import type { SceneDescriptor } from "~/scenes/types";
-import { useStationInsightsStore } from "~/state/stationInsightsStore";
-import { prepareCatalogSearchStations } from "~/components/radio-passport/stationInsights";
-import { isMixedContentStream } from "~/utils/streamHeuristics";
-import { rankStations } from "~/utils/stationMeta";
+  formatClock,
+  formatLocalLabel,
+  localDateAtLongitude,
+  solarHourAtLongitude,
+  stationMatchesSolarHour,
+  type SolarHour,
+} from "~/utils/localTime";
 
-const PROBE_SHELF_LIMIT = 8;
-
-type ProbeSnapshot = Pick<
-  Station,
-  "probeStatus" | "probeLatencyMs" | "probeCheckedAt"
->;
-
-export async function loader({ request }: LoaderFunctionArgs) {
-  const initialQuery = parseInitialQuery(request.url);
+export async function loader(_: LoaderFunctionArgs) {
   try {
     const [countriesRaw, stationsRaw] = await Promise.all([
       rbFetchJson<Country[]>("/json/countries", undefined, { softFail: true }),
@@ -69,17 +61,18 @@ export async function loader({ request }: LoaderFunctionArgs) {
       stations: normalizeStations(
         Array.isArray(stationsRaw) ? stationsRaw : []
       ),
-      initialQuery,
     });
   } catch {
-    return json({ countries: [], stations: [], initialQuery });
+    return json({ countries: [], stations: [] });
   }
 }
 
-const MOODS = ["Late Night", "Slow Morning", "Dance", "Focus", "Road Trip"];
+const HOURS: SolarHour[] = ["Dawn", "Midday", "Dusk", "Night"];
+
 function tokens(value: string | null | undefined) {
   return (value || "").toLowerCase();
 }
+
 function stationMatches(station: Station, query: string) {
   const queryTokens = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
   if (!queryTokens.length) return true;
@@ -96,26 +89,26 @@ function stationMatches(station: Station, query: string) {
     .join(" ");
   return queryTokens.every((token) => haystack.includes(token));
 }
-function stationMatchesMood(station: Station, mood: string | null) {
-  if (!mood) return true;
-  const query =
-    mood === "Late Night"
-      ? "ambient chill lounge"
-      : mood === "Slow Morning"
-      ? "acoustic jazz easy"
-      : mood === "Dance"
-      ? "dance house electronic"
-      : mood === "Focus"
-      ? "classical ambient jazz"
-      : "rock pop country";
-  return query
-    .split(" ")
-    .some((token) =>
-      `${tokens(station.tags)} ${tokens(station.name)}`.includes(token)
-    );
+
+function hueFromId(id: string) {
+  return [...id].reduce(
+    (total, char) => (total * 31 + char.charCodeAt(0)) % 360,
+    0
+  );
 }
+
+function looksLikeSentence(value: string) {
+  const words = value.trim().split(/\s+/).filter(Boolean);
+  return (
+    words.length >= 3 ||
+    /\b(mix|surprise|take me|anywhere|night|rainy|dusk|dawn|somewhere)\b/i.test(
+      value
+    )
+  );
+}
+
 export default function Index() {
-  const { countries, stations: initialStations, initialQuery } =
+  const { countries, stations: initialStations } =
     useLoaderData<typeof loader>();
   const nowPlaying = usePlayerStore((state) => state.nowPlaying);
   const isPlaying = usePlayerStore((state) => state.isPlaying);
@@ -124,43 +117,31 @@ export default function Index() {
   const stamps = useJourneyStore((state) => state.stamps);
   const played = useJourneyStore((state) => state.playedStationIds);
   const memberSince = useJourneyStore((state) => state.memberSince);
+  const travelerNumber = useJourneyStore((state) => state.travelerNumber);
+  const journeyReady = useJourneyStore((state) => state.hydrated);
   const toggleFavorite = useJourneyStore((state) => state.toggleFavorite);
   const recordPlayed = useJourneyStore((state) => state.recordPlayed);
   const listening = useListeningMode();
-  const [mode, setMode] = useState<"mood" | "place">("mood");
-  const [mood, setMood] = useState<string | null>(null);
+  const metadata = useNowPlayingMetadata(nowPlaying, isPlaying);
+  const dispatch = useDispatchStore((state) => state.dispatch);
+  const requestDispatch = useDispatchStore((state) => state.requestDispatch);
+  const [hour, setHour] = useState<SolarHour | null>(null);
   const [place, setPlace] = useState<string | null>(null);
-  const [query, setQuery] = useState(initialQuery);
-  const [probeResults, setProbeResults] = useState<
-    Record<string, ProbeSnapshot>
-  >({});
-  // Seeded identically to the SSR assumption (real production is https) so
-  // the first client render matches server HTML exactly; corrected after
-  // mount only if the actual page protocol differs (e.g. local http dev).
-  const [pageProtocol, setPageProtocol] = useState<"http:" | "https:">(
-    "https:"
-  );
-  useEffect(() => {
-    const actual = window.location.protocol === "http:" ? "http:" : "https:";
-    if (actual !== pageProtocol) setPageProtocol(actual);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const [query, setQuery] = useState("");
   const [catalog, setCatalog] = useState<Station[]>([]);
   const [catalogLoading, setCatalogLoading] = useState(false);
-  const [expanded, setExpanded] = useState(false);
   const [atlas, setAtlas] = useState(false);
   const [atlasQuery, setAtlasQuery] = useState("");
   const [country, setCountry] = useState<string | null>(null);
-  const [countryFilter, setCountryFilter] = useState<string | null>(null);
   const [countryCache, setCountryCache] = useState<
     Record<string, CountryDrilldownState>
   >({});
   const [aiStatus, setAiStatus] = useState<"idle" | "loading" | "error">(
     "idle"
   );
+  const [mixLabel, setMixLabel] = useState<string | null>(null);
   const [passport, setPassport] = useState(false);
-  const [worldDescriptor, setWorldDescriptor] = useState<SceneDescriptor | null>(null);
-  const openDetails = useStationInsightsStore((state) => state.open);
+
   useEffect(() => {
     if (!catalogRequestState(query).shouldFetch) {
       setCatalog([]);
@@ -177,7 +158,11 @@ export default function Index() {
           )
           .then((data: { stations?: Station[] }) => {
             if (!cancelled)
-              setCatalog(prepareCatalogSearchStations(data.stations || [], query, stationMatches));
+              setCatalog(
+                normalizeStations(data.stations || [])
+                  .filter((station) => stationMatches(station, query))
+                  .slice(0, 72)
+              );
           })
           .catch(() => !cancelled && setCatalog([]))
           .finally(() => !cancelled && setCatalogLoading(false)),
@@ -188,183 +173,125 @@ export default function Index() {
       window.clearTimeout(id);
     };
   }, [query]);
+
+  const featured = useMemo(() => {
+    const geo = initialStations.filter(
+      (station) => typeof station.latitude === "number"
+    );
+    return (
+      [...geo].sort(
+        (a, b) => (b.clickCount || 0) - (a.clickCount || 0)
+      )[0] ??
+      initialStations[0] ??
+      null
+    );
+  }, [initialStations]);
+
+  const continueStation = useMemo(() => {
+    if (!journeyReady) return null;
+    const lastId = played[0];
+    if (!lastId) return null;
+    return (
+      initialStations.find((station) => station.uuid === lastId) ??
+      catalog.find((station) => station.uuid === lastId) ??
+      null
+    );
+  }, [catalog, initialStations, journeyReady, played]);
+
   const baseStations =
     query.trim().length >= 2
       ? catalog
       : listening.listeningMode === "world" && listening.exploreStations.length
       ? listening.exploreStations
       : initialStations;
-  const filtered = useMemo(() => {
-    const candidates = baseStations.filter(
-      (station) =>
-        stationMatches(station, query) &&
-        stationMatchesMood(station, mode === "mood" ? mood : null) &&
-        (mode !== "place" ||
-          !place ||
-          stationLocation(station).toLowerCase() === place.toLowerCase()) &&
-        (!countryFilter || station.country === countryFilter) &&
-        // Known browser-incompatible streams (HTTP on an HTTPS page) never
-        // belong in the leading playable list.
-        !isMixedContentStream(station.streamUrl ?? station.url, pageProtocol)
-    );
-    const withProbes = candidates.map((station) => {
-      const probe = probeResults[station.uuid];
-      return probe ? { ...station, ...probe } : station;
-    });
-    return rankStations(withProbes).slice(0, 120);
-  }, [
-    baseStations,
-    countryFilter,
-    mood,
-    mode,
-    pageProtocol,
-    place,
-    probeResults,
-    query,
-  ]);
+
+  const filtered = useMemo(
+    () =>
+      baseStations
+        .filter(
+          (station) =>
+            stationMatches(station, query) &&
+            stationMatchesSolarHour(station.longitude, hour) &&
+            (!place || stationLocation(station) === place)
+        )
+        .slice(0, 120),
+    [baseStations, hour, place, query]
+  );
+
+  const globeStations = query.trim().length >= 2 ? catalog : initialStations;
+  const stampedKeys = useMemo(
+    () => new Set(stamps.map((stamp) => `${stamp.country}:${stamp.city}`)),
+    [stamps]
+  );
+
   const places = useMemo(() => {
     const map = new Map<string, GlobePlace>();
-    filtered.forEach((station) => {
+    globeStations.forEach((station) => {
       if (
         typeof station.latitude !== "number" ||
         typeof station.longitude !== "number"
       )
         return;
       const location = stationLocation(station);
-      const key = `${station.country}:${location.toLowerCase()}`;
+      const key = `${station.country}:${location}`;
       const old = map.get(key);
+      const lead = !old || (station.clickCount || 0) >= (old.clicks || 0);
       map.set(key, {
         id: key,
-        name: old?.name ?? location,
+        name: location,
+        country: station.country,
+        countryCode: station.countryCode ?? null,
+        region: getContinent(station.countryCode || undefined),
+        stationName: lead ? station.name : old.stationName,
         count: (old?.count || 0) + 1,
         latitude: station.latitude!,
         longitude: station.longitude!,
-        active: Boolean(
-          place && place.toLowerCase() === location.toLowerCase()
-        ),
+        active: place === location,
         playing: nowPlaying
-          ? stationLocation(nowPlaying).toLowerCase() ===
-              location.toLowerCase() &&
+          ? stationLocation(nowPlaying) === location &&
             nowPlaying.country === station.country
           : false,
+        stamped: stampedKeys.has(key),
+        hue: lead ? hueFromId(station.uuid) : old.hue,
+        clicks: lead ? station.clickCount || 0 : old.clicks,
       });
     });
     return [...map.values()].sort((a, b) => b.count - a.count).slice(0, 30);
-  }, [filtered, nowPlaying, place]);
-  const placeChips = useMemo(() => {
-    const seen = new Set<string>();
-    const chips: string[] = [];
-    for (const name of [
-      ...places.map((item) => item.name),
-      ...initialStations.map(stationLocation),
-    ]) {
-      const key = name.toLowerCase();
-      if (seen.has(key)) continue;
-      seen.add(key);
-      chips.push(name);
-      if (chips.length >= 6) break;
-    }
-    return chips;
-  }, [initialStations, places]);
+  }, [globeStations, nowPlaying, place, stampedKeys]);
+
   const selectedPool = filtered.length ? filtered : baseStations.slice(0, 60);
   const play = useCallback(
     (station: Station, pool = selectedPool, label = "Live now") => {
       const queue = createQueueSession({
-        sourceType: query.trim() ? "search" : country ? "country" : "atlas",
-        sourceLabel: country
-          ? `Country: ${country}`
-          : query.trim()
-          ? `Search: ${query.trim()}`
-          : label,
+        sourceType: query.trim()
+          ? "search"
+          : listening.listeningMode === "world"
+          ? "ai_mix"
+          : "atlas",
+        sourceLabel: mixLabel || (query.trim() ? `Search: ${query.trim()}` : label),
         stations: pool,
         context: {
           country: station.country,
           query: query.trim() || null,
-          view: "signal-stamp",
+          view: "elsewhere",
         },
-        seed: `${country || "world"}:${query}:${mood || ""}:${place || ""}`,
+        seed: `${query}:${hour || ""}:${place || ""}`,
       });
       startStation(station, { autoPlay: true, queueSession: queue });
       recordPlayed(station.uuid);
     },
-    [country, mood, place, query, recordPlayed, selectedPool, startStation]
+    [
+      hour,
+      listening.listeningMode,
+      mixLabel,
+      place,
+      query,
+      recordPlayed,
+      selectedPool,
+      startStation,
+    ]
   );
-  const chooseMood = useCallback((item: string | null) => {
-    setMode("mood");
-    setPlace(null);
-    setQuery("");
-    setMood((current) => toggleSelection(current, item));
-  }, []);
-  const choosePlace = useCallback((item: string | null) => {
-    setMode("place");
-    setMood(null);
-    setQuery("");
-    setPlace((current) => toggleSelection(current, item));
-  }, []);
-  const handleQueryChange = useCallback((value: string) => {
-    setQuery(value);
-    if (shouldClearBrowsingFilters(value)) {
-      setMood(null);
-      setPlace(null);
-    }
-  }, []);
-  const clearSearch = useCallback(() => setQuery(""), []);
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const next = nextQueryHref(window.location, query);
-    const current = `${window.location.pathname}${window.location.search}${window.location.hash}`;
-    if (next !== current) {
-      window.history.replaceState(null, "", next);
-    }
-  }, [query]);
-  const shelfStations = useMemo(
-    () => filtered.slice(0, PROBE_SHELF_LIMIT),
-    [filtered]
-  );
-  const shelfProbeKey = shelfStations
-    .filter((station) => !probeResults[station.uuid])
-    .map((station) => station.uuid)
-    .join(",");
-  useEffect(() => {
-    if (!shelfProbeKey) return;
-    const targets = shelfStations.filter(
-      (station) => !probeResults[station.uuid]
-    );
-    if (!targets.length) return;
-    let cancelled = false;
-    fetch("/api/stations/probe", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        stations: targets.map((station) => ({
-          uuid: station.uuid,
-          url: station.url,
-          streamUrl: station.streamUrl,
-        })),
-      }),
-    })
-      .then((response) => (response.ok ? response.json() : Promise.reject()))
-      .then((data: { stations?: Array<ProbeSnapshot & { uuid: string }> }) => {
-        if (cancelled || !Array.isArray(data.stations)) return;
-        setProbeResults((current) => {
-          const next = { ...current };
-          for (const entry of data.stations!) {
-            if (!entry.uuid) continue;
-            next[entry.uuid] = {
-              probeStatus: entry.probeStatus,
-              probeLatencyMs: entry.probeLatencyMs ?? null,
-              probeCheckedAt: entry.probeCheckedAt ?? null,
-            };
-          }
-          return next;
-        });
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [shelfProbeKey]);
+
   const loadCountry = useCallback(
     async (next: string, force = false) => {
       const key = countryCacheKey(next);
@@ -392,6 +319,7 @@ export default function Index() {
     },
     [countryCache]
   );
+
   const chooseCountry = useCallback(
     (next: string) => {
       setCountry(next);
@@ -400,322 +328,351 @@ export default function Index() {
     },
     [loadCountry]
   );
+
   const countryDrilldown = country
     ? countryCache[countryCacheKey(country)] ?? null
     : null;
   const countryStations = countryDrilldown?.stations ?? [];
-  const requestAiWorld = useCallback(async () => {
-    if (aiStatus === "loading") return;
-    setAiStatus("loading");
-    listening.setIsFetchingExplore(true);
-    listening.setExploreError(null);
-    try {
-      const descriptor = await loadWorldDescriptorPreview({
-        currentStationId: nowPlaying?.uuid ?? null,
-        mood: mood ?? undefined,
-        visual: "card_stack",
-        sceneId: "card_stack",
-        country: nowPlaying?.country ?? null,
-        language: nowPlaying?.language ?? null,
-        preferredCountries: nowPlaying?.country ? [nowPlaying.country] : [],
-        preferredLanguages: nowPlaying?.language ? [nowPlaying.language] : [],
-        favoriteStationIds: favorites,
-        recentStationIds: played,
+
+  const requestAiWorld = useCallback(
+    async (prompt?: string) => {
+      if (aiStatus === "loading") return;
+      setAiStatus("loading");
+      listening.setIsFetchingExplore(true);
+      listening.setExploreError(null);
+      try {
+        const descriptor = await loadWorldDescriptorPreview({
+          prompt:
+            prompt ||
+            hour ||
+            "Take me somewhere live at this hour of the world",
+          currentStationId: nowPlaying?.uuid ?? null,
+          mood: hour ?? undefined,
+          visual: "card_stack",
+          sceneId: "card_stack",
+          country: nowPlaying?.country ?? null,
+          language: nowPlaying?.language ?? null,
+          preferredCountries: nowPlaying?.country ? [nowPlaying.country] : [],
+          preferredLanguages: nowPlaying?.language ? [nowPlaying.language] : [],
+          favoriteStationIds: favorites,
+          recentStationIds: played,
+        });
+        applyAiPreviewPool(descriptor, listening.setExploreStations);
+        listening.setListeningMode("world");
+        setMixLabel(descriptor.mood || descriptor.reason || "World mix");
+        setAiStatus("idle");
+        const first = descriptor.stations[0];
+        if (first) {
+          play(first, descriptor.stations, descriptor.mood || "World mix");
+        }
+      } catch (error) {
+        const message =
+          error instanceof Error
+            ? error.message
+            : "We could not curate a world mix. Please try again.";
+        listening.setExploreError(message);
+        setAiStatus("error");
+      } finally {
+        listening.setIsFetchingExplore(false);
+      }
+    },
+    [aiStatus, favorites, hour, listening, nowPlaying, play, played]
+  );
+
+  const submitIntent = useCallback(
+    async (value: string) => {
+      const prompt = value.trim();
+      if (!prompt) return;
+      if (!looksLikeSentence(prompt)) return;
+      try {
+        const response = await fetch("/api/ai/interpret", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            prompt,
+            currentStationId: nowPlaying?.uuid ?? null,
+            country: nowPlaying?.country ?? null,
+            language: nowPlaying?.language ?? null,
+          }),
+        });
+        if (!response.ok) return;
+        const payload = (await response.json()) as InterpretResponse;
+        if (payload.intent.place) setPlace(payload.intent.place);
+        if (payload.intent.query && payload.intent.query !== prompt) {
+          setQuery(payload.intent.query);
+        }
+        if (payload.intent.wantsMix) {
+          void requestAiWorld(prompt);
+        }
+      } catch {
+        // Catalog search already runs from the typed query.
+      }
+    },
+    [nowPlaying, requestAiWorld]
+  );
+
+  const playPlace = useCallback(
+    (id: string) => {
+      const found = places.find((item) => item.id === id);
+      if (!found) return;
+      setPlace(found.name);
+      const pool = globeStations.filter(
+        (station) =>
+          stationLocation(station) === found.name &&
+          station.country === found.country
+      );
+      const next = [...pool].sort(
+        (a, b) => (b.clickCount || 0) - (a.clickCount || 0)
+      )[0];
+      if (next) play(next, pool.length ? pool : selectedPool, found.name);
+    },
+    [globeStations, places, play, selectedPool]
+  );
+
+  useEffect(() => {
+    if (!nowPlaying || !isPlaying) return;
+    const timer = window.setTimeout(() => {
+      const longitude =
+        typeof nowPlaying.longitude === "number" ? nowPlaying.longitude : 0;
+      const local = localDateAtLongitude(longitude);
+      requestDispatch({
+        stationId: nowPlaying.uuid,
+        stationName: nowPlaying.name,
+        city: stationLocation(nowPlaying),
+        country: nowPlaying.country,
+        countryCode: nowPlaying.countryCode ?? null,
+        language: nowPlaying.language,
+        tags: nowPlaying.tagList ?? [],
+        localTimeISO: local.toISOString(),
+        track: metadata.track
+          ? {
+              title: metadata.track.title,
+              artist: metadata.track.artist,
+              raw: metadata.track.raw,
+            }
+          : null,
       });
-      setWorldDescriptor(applyAiPreviewPool(descriptor, listening.setExploreStations));
-      listening.setListeningMode("world");
-      setAiStatus("idle");
-    } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : "We could not curate a world mix. Please try again.";
-      listening.setExploreError(message);
-      setAiStatus("error");
-    } finally {
-      listening.setIsFetchingExplore(false);
-    }
-  }, [aiStatus, favorites, listening, mood, nowPlaying, played]);
-  const vocabularySuggestion =
-    query.trim().length >= 3 ? suggestVocabularyTerm(query) : null;
-  const emptyState = describeEmptyResults({ query, mode, mood, place });
+    }, 1500);
+    return () => window.clearTimeout(timer);
+  }, [
+    isPlaying,
+    metadata.track,
+    nowPlaying,
+    requestDispatch,
+  ]);
+
+  const arrivalCity = nowPlaying
+    ? stationLocation(nowPlaying)
+    : continueStation
+    ? stationLocation(continueStation)
+    : featured
+    ? stationLocation(featured)
+    : "the world";
+  const arrivalStation = nowPlaying || continueStation || featured;
+  const localNow =
+    arrivalStation && typeof arrivalStation.longitude === "number"
+      ? localDateAtLongitude(arrivalStation.longitude)
+      : null;
+  const trackLine = metadata.track
+    ? [metadata.track.artist, metadata.track.title].filter(Boolean).join(" — ")
+    : null;
+  const sameHour = useMemo(() => {
+    if (!localNow) return [];
+    const current = solarHourAtLongitude(
+      arrivalStation && typeof arrivalStation.longitude === "number"
+        ? arrivalStation.longitude
+        : 0
+    );
+    const seen = new Set<string>();
+    return initialStations
+      .filter((station) => {
+        if (typeof station.longitude !== "number") return false;
+        if (station.uuid === arrivalStation?.uuid) return false;
+        if (solarHourAtLongitude(station.longitude) !== current) return false;
+        const key = stationLocation(station);
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      })
+      .slice(0, 4);
+  }, [arrivalStation, initialStations, localNow]);
+
+  const favoriteStations = useMemo(() => {
+    const pool = [...initialStations, ...catalog, ...countryStations];
+    return favorites
+      .map((id) => pool.find((station) => station.uuid === id))
+      .filter((station): station is Station => Boolean(station))
+      .slice(0, 8);
+  }, [catalog, countryStations, favorites, initialStations]);
+
+  const boardLabel = query
+    ? catalogLoading
+      ? "SEARCHING"
+      : "SEARCH"
+    : mixLabel
+    ? "WORLD MIX"
+    : "LIVE NOW";
+
   return (
     <main className="rp-home">
       <header className="rp-home-header">
         <SignalWordmark />
-        <div className="rp-header-search">
-          <span aria-hidden="true">⌕</span>
-          <input
-            value={query}
-            onChange={(event) => handleQueryChange(event.target.value)}
-            placeholder="Where do you want to go? Kerala, jazz, rainy night…"
-            aria-label="Search stations, tags, locations, countries, languages, and moods"
-          />
-          {query.trim() && (
-            <button
-              type="button"
-              onClick={clearSearch}
-              aria-label="Clear search"
-              className="grid h-11 w-11 shrink-0 place-items-center rounded-full text-base text-muted hover:text-coral"
-            >
-              ×
-            </button>
-          )}
-        </div>
+        <IntentBar
+          value={query}
+          onChange={setQuery}
+          onSubmit={submitIntent}
+          onSurprise={() => void requestAiWorld()}
+          loading={catalogLoading}
+          surpriseLoading={aiStatus === "loading"}
+        />
+        <Link to="/about" className="rp-eyebrow hidden text-dust sm:inline" prefetch="intent">
+          Issue
+        </Link>
         <button
           type="button"
           className="rp-passport-button"
           onClick={() => setPassport(true)}
           aria-label={`Open passport, ${stamps.length} places stamped`}
         >
-          <span>◌</span>
-          <span className="hidden sm:inline">Passport</span>
-          <b>{stamps.length}</b>
+          Passport
+          <b>{String(stamps.length).padStart(2, "0")}</b>
         </button>
       </header>
-      <div className="rp-main-grid">
+      <div className="rp-stage">
         <section className="rp-intro">
-          <p className="rp-eyebrow text-coral">LIVE RADIO · REAL PLACES</p>
+          <p className="rp-eyebrow text-foil">{BRAND.eyebrow}</p>
           <h1>
-            The world,
-            <br />
-            on air.
+            {nowPlaying
+              ? `${arrivalCity} is on air.`
+              : continueStation
+              ? `Continue in ${arrivalCity}.`
+              : `${arrivalCity} is on air.`}
           </h1>
-          <p className="rp-lede">
-            Travel by place or by feeling. Every continuous listen inks your
-            passport.
-          </p>
-          <div className="rp-mode">
-            <button
-              type="button"
-              onClick={() => chooseMood(null)}
-              className={mode === "mood" ? "active" : ""}
-            >
-              MOOD
-            </button>
-            <button
-              type="button"
-              onClick={() => choosePlace(null)}
-              className={mode === "place" ? "active" : ""}
-            >
-              PLACE
-            </button>
-          </div>
-          <div className="rp-chip-list">
-            {mode === "mood" ? (
-              <>
-                <button
-                  type="button"
-                  className={`rp-chip ${mood === null ? "active" : ""}`}
-                  aria-pressed={mood === null}
-                  onClick={() => chooseMood(null)}
-                >
-                  All moods
-                </button>
-                {MOODS.map((item) => (
-                  <button
-                    type="button"
-                    className={`rp-chip ${mood === item ? "active" : ""}`}
-                    aria-pressed={mood === item}
-                    onClick={() => chooseMood(item)}
-                    key={item}
-                  >
-                    {item}
-                  </button>
-                ))}
-              </>
-            ) : (
-              <>
-                <button
-                  type="button"
-                  className={`rp-chip ${place === null ? "active" : ""}`}
-                  aria-pressed={place === null}
-                  onClick={() => choosePlace(null)}
-                >
-                  All places
-                </button>
-                {placeChips.map((item) => (
-                  <button
-                    type="button"
-                    className={`rp-chip ${
-                      place?.toLowerCase() === item.toLowerCase() ? "active" : ""
-                    }`}
-                    aria-pressed={place?.toLowerCase() === item.toLowerCase()}
-                    onClick={() => choosePlace(item)}
-                    key={item.toLowerCase()}
-                  >
-                    {item}
-                  </button>
-                ))}
-                <button
-                  type="button"
-                  className="rp-chip rp-chip-dashed"
-                  onClick={() => setAtlas(true)}
-                >
-                  Browse atlas →
-                </button>
-              </>
-            )}
-          </div>
-          {query.trim() && (
-            <div className="rp-quick-places">
-              <span className="rp-eyebrow">PLACES</span>
-              {placeChips
-                .filter((item) =>
-                  item.toLowerCase().includes(query.toLowerCase())
-                )
-                .slice(0, 4)
-                .map((item) => (
-                  <button
-                    type="button"
-                    onClick={() => choosePlace(item)}
-                    key={item}
-                  >
-                    {item}
-                  </button>
-                ))}
-            </div>
+          {localNow ? (
+            <p className="rp-eyebrow text-ether">
+              <i className="rp-live-dot" />
+              {formatLocalLabel(arrivalCity, localNow)} ·{" "}
+              {solarHourAtLongitude(
+                arrivalStation && typeof arrivalStation.longitude === "number"
+                  ? arrivalStation.longitude
+                  : 0
+              ).toUpperCase()}
+            </p>
+          ) : null}
+          {nowPlaying && trackLine ? (
+            <p className="ew-track">{trackLine}</p>
+          ) : nowPlaying ? (
+            <p className="rp-lede">
+              Live from {arrivalCity}. This station sends no track titles.
+            </p>
+          ) : (
+            <p className="rp-lede">{BRAND.promise}</p>
           )}
-          <div className="rp-live-block">
-            <div className="mt-7 flex items-center justify-between">
-              <span className="rp-eyebrow">
-                <i className="rp-live-dot" />{" "}
-                {query
-                  ? catalogLoading
-                    ? "SEARCHING"
-                    : "SEARCH RESULTS"
-                  : "LIVE NOW"}
-              </span>
+          {dispatch?.body ? <p className="ew-caption">{dispatch.body}</p> : null}
+          {!nowPlaying && arrivalStation ? (
+            <button
+              type="button"
+              className="ew-land"
+              onClick={() =>
+                play(
+                  arrivalStation,
+                  selectedPool,
+                  continueStation ? "Continue" : "Land here"
+                )
+              }
+            >
+              {continueStation ? `Continue in ${arrivalCity}` : "Land here"}
+            </button>
+          ) : null}
+          <div className="rp-chip-list">
+            {HOURS.map((item) => (
               <button
                 type="button"
-                className="rp-text-button"
-                onClick={() => void requestAiWorld()}
-                disabled={aiStatus === "loading"}
+                className={`rp-chip ${hour === item ? "active" : ""}`}
+                onClick={() => setHour((value) => (value === item ? null : item))}
+                key={item}
               >
-                {aiStatus === "loading"
-                  ? "Curating world…"
-                  : listening.listeningMode === "world"
-                  ? "Refresh AI mix →"
-                  : "Explore world →"}
+                {item}
               </button>
-            </div>
-            {vocabularySuggestion && (
-              <p className="mt-1 text-xs text-muted">
-                Did you mean{" "}
+            ))}
+            <button
+              type="button"
+              className="rp-chip rp-chip-dashed"
+              onClick={() => setAtlas(true)}
+            >
+              Atlas
+            </button>
+          </div>
+          {sameHour.length > 0 ? (
+            <div className="ew-same-hour">
+              {sameHour.map((station) => (
                 <button
                   type="button"
-                  className="text-coral underline"
-                  onClick={() => handleQueryChange(vocabularySuggestion)}
-                >
-                  {vocabularySuggestion}
-                </button>
-                ?
-              </p>
-            )}
-            {aiStatus === "error" && listening.exploreError && (
-              <p className="mt-2 text-xs text-muted" role="alert">
-                {listening.exploreError}
-              </p>
-            )}
-            {listening.listeningMode === "world" && worldDescriptor && (
-              <WhyTheseChip descriptor={worldDescriptor} className="mt-3" />
-            )}
-            <div className={`rp-station-list ${expanded ? "expanded" : ""}`}>
-              {filtered.slice(0, expanded ? 30 : 3).map((station) => (
-                <StationRow
                   key={station.uuid}
-                  station={station}
-                  active={nowPlaying?.uuid === station.uuid && isPlaying}
-                  favorite={favorites.includes(station.uuid)}
-                  onPlay={() => play(station)}
-                  onFavorite={() => toggleFavorite(station.uuid)}
-                  onDetails={(trigger) => openDetails(station, trigger)}
-                />
+                  onClick={() => play(station, selectedPool, "Same hour")}
+                >
+                  {stationLocation(station)}
+                </button>
               ))}
             </div>
-            {filtered.length === 0 && !catalogLoading && (
-              <div className="py-8 text-sm text-muted" role="status">
-                <p>{emptyState.message}</p>
-                {emptyState.actions.length > 0 && (
-                  <div className="mt-3 flex flex-wrap gap-3">
-                    {emptyState.actions.includes("clear-search") && (
-                      <button
-                        type="button"
-                        className="rp-text-button"
-                        onClick={clearSearch}
-                      >
-                        Clear search
-                      </button>
-                    )}
-                    {emptyState.actions.includes("show-all-moods") && (
-                      <button
-                        type="button"
-                        className="rp-text-button"
-                        onClick={() => chooseMood(null)}
-                      >
-                        Show all moods
-                      </button>
-                    )}
-                    {emptyState.actions.includes("show-all-places") && (
-                      <button
-                        type="button"
-                        className="rp-text-button"
-                        onClick={() => choosePlace(null)}
-                      >
-                        Show all places
-                      </button>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
-            {filtered.length > 3 && (
-              <button
-                type="button"
-                className="rp-text-button mt-3"
-                onClick={() => setExpanded((value) => !value)}
-              >
-                {expanded ? "← Back to live now" : "Explore all →"}
-              </button>
-            )}
+          ) : null}
+          <div className="mt-7 flex items-center justify-between">
+            <span className="rp-eyebrow">
+              <i className="rp-live-dot" /> {boardLabel}
+            </span>
+            {mixLabel ? (
+              <span className="rp-eyebrow text-foil">{mixLabel}</span>
+            ) : null}
           </div>
+          {aiStatus === "error" && listening.exploreError && (
+            <p className="mt-2 text-xs text-dust" role="alert">
+              {listening.exploreError}
+            </p>
+          )}
+          <div className="rp-station-list">
+            {filtered.slice(0, 8).map((station) => (
+              <StationRow
+                key={station.uuid}
+                station={station}
+                active={nowPlaying?.uuid === station.uuid && isPlaying}
+                favorite={favorites.includes(station.uuid)}
+                onPlay={() => play(station)}
+                onFavorite={() => toggleFavorite(station.uuid)}
+              />
+            ))}
+          </div>
+          {filtered.length === 0 && !catalogLoading && (
+            <p className="py-8 text-sm text-dust">
+              No signal for that. Surprise yourself, or open the atlas.
+            </p>
+          )}
         </section>
         <section className="rp-globe-side">
           <div className="rp-globe-wrap">
             <ParticleGlobe
               places={places}
-              onSelect={(id) => {
-                const found = places.find((item) => item.id === id);
-                if (found) choosePlace(found.name);
-              }}
+              focusId={
+                nowPlaying
+                  ? `${nowPlaying.country}:${stationLocation(nowPlaying)}`
+                  : null
+              }
+              onSelect={playPlace}
             />
-            <span>tap a city to tune in</span>
+            <div className="ew-cover">
+              <i className="ew-cover-rule" />
+              <p className="ew-coverline">{arrivalCity}</p>
+              <p className="rp-eyebrow">
+                {arrivalStation
+                  ? `${
+                      arrivalStation.bitrate
+                        ? `${arrivalStation.bitrate} · `
+                        : ""
+                    }${arrivalCity.toUpperCase()} · LIVE`
+                  : "TAP A CITY TO TUNE"}
+                {localNow ? ` · ${formatClock(localNow)}` : ""}
+              </p>
+            </div>
           </div>
-          <button
-            type="button"
-            className="rp-passport-band"
-            onClick={() => setPassport(true)}
-          >
-            <span className="rp-passport-seal">◌</span>
-            <span className="min-w-0 flex-1 text-left">
-              <span className="rp-eyebrow block text-paper">YOUR PASSPORT</span>
-              <span className="mt-1 block text-xs text-muted">
-                <b className="text-coral">
-                  {String(stamps.length).padStart(2, "0")}
-                </b>{" "}
-                / 10 places
-              </span>
-              <i style={{ width: `${Math.min(stamps.length, 10) * 10}%` }} />
-            </span>
-            <span className="hidden min-w-0 gap-2 md:flex">
-              {stamps.slice(0, 3).map((stamp) => (
-                <small className="rp-mini-stamp" key={stamp.id}>
-                  {stamp.city}
-                </small>
-              ))}
-            </span>
-            <span className="text-coral">View passport →</span>
-          </button>
         </section>
       </div>
       {atlas && (
@@ -727,7 +684,7 @@ export default function Index() {
           close={() => setAtlas(false)}
           openCountry={chooseCountry}
         />
-      )}{" "}
+      )}
       {country && (
         <CountryOverlay
           country={country}
@@ -742,21 +699,32 @@ export default function Index() {
           close={() => setCountry(null)}
           onPlay={(station) => {
             play(station, countryStations, `Country: ${country}`);
-            setCountryFilter(country);
             setCountry(null);
           }}
           onFavorite={toggleFavorite}
-          onDetails={(station, trigger) => openDetails(station, trigger)}
         />
-      )}{" "}
+      )}
       {passport && (
         <PassportOverlay
           stamps={stamps}
           playedCount={played.length}
           memberSince={memberSince}
+          travelerNumber={travelerNumber}
+          favorites={favoriteStations}
           close={() => setPassport(false)}
+          onReplay={(stamp) => {
+            const match =
+              initialStations.find((station) => station.uuid === stamp.stationId) ||
+              catalog.find((station) => station.uuid === stamp.stationId);
+            if (match) play(match, selectedPool, stamp.city);
+            setPassport(false);
+          }}
+          onPlayFavorite={(station) => {
+            play(station, selectedPool, "Favorites");
+            setPassport(false);
+          }}
         />
-      )}{" "}
+      )}
     </main>
   );
 }

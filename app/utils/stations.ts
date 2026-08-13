@@ -56,6 +56,22 @@ export function isKnownFailedArtworkUrl(url?: string | null) {
   return normalized ? failedArtworkUrls.has(normalized) : false;
 }
 
+/**
+ * Title-case city/state place names for display grouping.
+ * Only preserves uppercase when the original token was already all-caps length-2 (e.g. "NY").
+ */
+export function titleCasePlaceName(value: string): string {
+  return value
+    .trim()
+    .split(/(\s+|-)/)
+    .map((part) => {
+      if (!part || /^\s+$/.test(part) || part === "-") return part;
+      if (/^[A-Z]{2}$/.test(part)) return part;
+      return part.charAt(0).toUpperCase() + part.slice(1).toLowerCase();
+    })
+    .join("");
+}
+
 export function sanitizeArtworkUrl(url?: string | null): string | null {
   if (typeof url !== "string") return null;
   const trimmed = url.trim();
@@ -69,34 +85,6 @@ export function sanitizeArtworkUrl(url?: string | null): string | null {
     return failedArtworkUrls.has(trimmed) ? null : trimmed;
   }
   return null;
-}
-
-/**
- * Title-case city/state place names for display grouping.
- * Multi-word and hyphenated tokens are capitalized.
- * Only preserves uppercase when the original token was already all-caps length-2 (e.g. "NY").
- * Does not touch country names (used as Radio Browser / cache keys).
- */
-export function titleCasePlaceName(value: string): string {
-  return value
-    .trim()
-    .split(/(\s+|-)/)
-    .map((part) => {
-      if (!part || /^\s+$/.test(part) || part === "-") return part;
-      // Preserve abbreviations that arrived already uppercase (NY), not "la"/"de"/"ny".
-      if (/^[A-Z]{2}$/.test(part)) return part;
-      return part.charAt(0).toUpperCase() + part.slice(1).toLowerCase();
-    })
-    .join("");
-}
-
-function normalizePlaceField(
-  value: string | null | undefined
-): string | null {
-  if (typeof value !== "string") return null;
-  const trimmed = value.trim();
-  if (!trimmed) return null;
-  return titleCasePlaceName(trimmed);
 }
 
 export function normalizeStation(
@@ -208,8 +196,8 @@ export function normalizeStation(
         : typeof raw.iso_3166_1 === "string"
         ? raw.iso_3166_1 || null
         : null,
-    state: normalizePlaceField(raw.state),
-    city: normalizePlaceField(raw.city),
+    state: raw.state && raw.state.trim() ? raw.state : null,
+    city: raw.city && raw.city.trim() ? raw.city.trim() : null,
     latitude:
       Number.isFinite(latitude) && latitude! >= -90 && latitude! <= 90
         ? latitude

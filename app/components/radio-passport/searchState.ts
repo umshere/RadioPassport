@@ -21,7 +21,10 @@ export function shouldClearBrowsingFilters(query: string): boolean {
 
 export type BrowsingMode = "mood" | "place";
 
-export type EmptyStateAction = "clear-search" | "show-all-moods" | "show-all-places";
+export type EmptyStateAction =
+  | "clear-search"
+  | "show-all-moods"
+  | "show-all-places";
 
 export type EmptyStateInfo = {
   message: string;
@@ -61,7 +64,6 @@ export function describeEmptyResults(input: {
   };
 }
 
-/** A small, curated vocabulary of common radio genres/moods for modest typo/prefix recovery. */
 const SEARCH_VOCABULARY = [
   "trance",
   "house",
@@ -96,11 +98,6 @@ const SEARCH_VOCABULARY = [
   "reggaeton",
 ] as const;
 
-/**
- * Modest recovery only: exact-prefix matches, plus a one-character-of-slack
- * prefix match (covers "trans" -> "trance"). Never scores/ranks by distance,
- * so it cannot flood results with unrelated genres.
- */
 export function suggestVocabularyTerm(query: string): string | null {
   const trimmed = query.trim().toLowerCase();
   if (trimmed.length < 3) return null;
@@ -120,13 +117,11 @@ export function suggestVocabularyTerm(query: string): string | null {
   return null;
 }
 
-/** Parses the initial `q` search param for SSR-consistent query hydration. */
 export function parseInitialQuery(url: string | URL): string {
   const parsed = typeof url === "string" ? new URL(url) : url;
   return parsed.searchParams.get("q")?.trim() ?? "";
 }
 
-/** Builds the next `href` for a lightweight, non-navigating URL sync. */
 export function nextQueryHref(
   current: { pathname: string; search: string; hash: string },
   query: string

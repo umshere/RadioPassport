@@ -7,14 +7,12 @@ import {
   Outlet,
   Scripts,
   ScrollRestoration,
-  useLocation,
   useNavigation,
   useRouteError,
 } from "@remix-run/react";
 import { MantineProvider, createTheme } from "@mantine/core";
 import { type ReactNode, useCallback, useEffect, useRef } from "react";
 import { usePlayerStore } from "~/state/playerStore";
-import { rehydratePersistedStores } from "~/utils/zustand-lite";
 import {
   isStationTemporarilyUnavailable,
   useStationAvailabilityStore,
@@ -27,15 +25,11 @@ import {
   withRetryToken,
 } from "~/utils/playbackRecovery";
 import stylesheet from "./tailwind.css?url";
-import AppHeader from "~/components/AppHeader";
 import PlayerDock from "~/components/PlayerDock";
-import MobileSidebarMenu from "~/components/MobileSidebarMenu";
-import { TuningOverlay } from "~/components/TuningOverlay";
 import { usePlayerNoticeStore } from "~/state/playerNoticeStore";
 import type { Station } from "~/types/radio";
 import { sanitizeArtworkUrl } from "~/utils/stations";
 import { JourneyBridge } from "~/components/radio-passport/JourneyBridge";
-import StationInsightsSheet from "~/components/radio-passport/StationInsightsSheet";
 
 export const links: LinksFunction = () => [
   { rel: "stylesheet", href: stylesheet },
@@ -47,13 +41,11 @@ export const links: LinksFunction = () => [
   },
   {
     rel: "stylesheet",
-    href: "https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&display=swap",
+    href: "https://fonts.googleapis.com/css2?family=Azeret+Mono:wght@400;500&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400;1,6..72,500&family=Schibsted+Grotesk:wght@400;500;600&display=swap",
   },
-  {
-    rel: "stylesheet",
-    href: "https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap",
-  },
-  { rel: "icon", type: "image/png", href: "/RPLOGO.png" },
+  { rel: "icon", type: "image/svg+xml", href: "/elsewhere-favicon.svg" },
+  { rel: "icon", type: "image/jpeg", sizes: "512x512", href: "/elsewhere-mark.jpg" },
+  { rel: "apple-touch-icon", href: "/elsewhere-mark.jpg" },
   { rel: "manifest", href: "/manifest.json" },
 ];
 
@@ -72,10 +64,12 @@ function Document({
           name="viewport"
           content="width=device-width, initial-scale=1, viewport-fit=cover"
         />
-        <meta name="theme-color" content="#0b0c10" />
+        <meta name="theme-color" content="#0C0B09" />
+        <link rel="icon" href="/elsewhere-favicon.svg" type="image/svg+xml" />
+        <link rel="apple-touch-icon" href="/elsewhere-mark.jpg" />
         <meta
           name="description"
-          content="Radio Passport: Curated live radio discovery with moods, regional picks, and strong stations worth playing now"
+          content="Elsewhere: live radio from someone else's now. Land in a city, stay long enough to be stamped."
         />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link
@@ -84,11 +78,7 @@ function Document({
           crossOrigin="anonymous"
         />
         <link
-          href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&display=swap"
-          rel="stylesheet"
-        />
-        <link
-          href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Azeret+Mono:wght@400;500&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400;1,6..72,500&family=Schibsted+Grotesk:wght@400;500;600&display=swap"
           rel="stylesheet"
         />
         {title ? <title>{title}</title> : null}
@@ -173,13 +163,13 @@ const theme = createTheme({
   primaryShade: 8,
   defaultRadius: "xl",
   fontFamily:
-    '"Sora", "SF Pro Text", -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif',
+    '"Schibsted Grotesk", "Sora", "SF Pro Text", -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif',
   fontFamilyMonospace:
-    '"IBM Plex Mono", "SF Mono", Monaco, "Cascadia Code", "Courier New", monospace',
+    '"Azeret Mono", "IBM Plex Mono", "SF Mono", Monaco, "Cascadia Code", "Courier New", monospace',
   headings: {
     fontFamily:
-      '"Sora", "SF Pro Text", -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif',
-    fontWeight: "700",
+      '"Newsreader", "Iowan Old Style", "Palatino Linotype", serif',
+    fontWeight: "400",
   },
   shadows: {
     xs: "0 1px 2px rgba(0, 0, 0, 0.04)",
@@ -196,24 +186,15 @@ const theme = createTheme({
 });
 
 export default function App() {
-  const previousTitleRef = useRef("Radio Passport");
+  const previousTitleRef = useRef("Elsewhere");
   const navigation = useNavigation();
-  const location = useLocation();
   const isNavigating = navigation.state !== "idle";
-
-  // Persisted stores (player, station availability) start every render from
-  // their plain defaults so the first client paint matches SSR exactly; the
-  // real localStorage value is only merged in here, once hydration has
-  // already completed, so this never causes a hydration mismatch.
-  useEffect(() => {
-    rehydratePersistedStores();
-  }, []);
 
   useEffect(() => {
     if (typeof document === "undefined") return;
 
-    const DEFAULT_TITLE = "Radio Passport";
-    const AWAY_TITLE = "🌐 Radio Passport — Still Traveling…";
+    const DEFAULT_TITLE = "Elsewhere";
+    const AWAY_TITLE = "Elsewhere — still elsewhere";
     const establishTitle = document.title || DEFAULT_TITLE;
     previousTitleRef.current = establishTitle;
 
@@ -242,23 +223,10 @@ export default function App() {
     <Document>
       <>
         {isNavigating && (
-          <div className="fixed top-0 left-0 right-0 z-[200] h-1 bg-[#0b0c10]">
-            <div
-              className="h-full bg-gradient-to-r from-[#f6c86f] via-[#f1aa45] to-[#e99f2b] animate-[loading_1s_ease-in-out_infinite]"
-              style={{
-                animation: "loading 1s ease-in-out infinite",
-                transformOrigin: "left",
-              }}
-            />
+          <div className="fixed top-0 left-0 right-0 z-[200] h-px bg-ink">
+            <div className="h-full bg-foil" style={{ width: "38%" }} />
           </div>
         )}
-
-        {location.pathname !== "/" ? (
-          <>
-            <MobileSidebarMenu />
-            <AppHeader />
-          </>
-        ) : null}
 
         <div
           className="w-full"
@@ -270,9 +238,7 @@ export default function App() {
         </div>
 
         <PlayerDock />
-        <StationInsightsSheet />
         <JourneyBridge />
-        <TuningOverlay />
         <GlobalAudioBridge />
       </>
     </Document>
@@ -293,7 +259,7 @@ export function ErrorBoundary() {
     statusLabel = "Request error";
     if (error.status === 404) {
       message =
-        "That page is not available anymore, or the route changed during the redesign.";
+        "That room is not on the map.";
     } else if (typeof error.data === "string" && error.data.trim()) {
       message = error.data;
     } else {
@@ -307,47 +273,38 @@ export function ErrorBoundary() {
 
   if (isRouteErrorResponse(error) && error.status === 404) {
     return (
-      <Document title="404 | Radio Passport">
+      <Document title="404 | Elsewhere">
         <NotFoundEasterEgg title={title} message={message} />
       </Document>
     );
   }
 
   return (
-    <Document title={`${title} | Radio Passport`}>
-      <div className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(245,177,45,0.12),transparent_28%),linear-gradient(180deg,#090b10_0%,#11141b_100%)] px-6 py-10 text-[var(--rp-text)]">
-        <div className="mx-auto flex min-h-[calc(100vh-5rem)] max-w-3xl items-center justify-center">
-          <div className="w-full rounded-[2rem] border border-white/10 bg-[rgba(9,11,16,0.84)] p-8 shadow-[0_24px_80px_rgba(0,0,0,0.35)] backdrop-blur-xl sm:p-10">
-            <div className="inline-flex items-center gap-2 rounded-full border border-[rgba(245,177,45,0.28)] bg-[rgba(245,177,45,0.1)] px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.24em] text-[var(--rp-gold)]">
-              {statusLabel}
-            </div>
-            <h1 className="mt-6 text-3xl font-semibold tracking-tight text-white sm:text-4xl">
-              {title}
-            </h1>
-            <p className="mt-4 max-w-2xl text-base leading-7 text-white/72">
-              {message}
-            </p>
+    <Document title={`${title} | Elsewhere`}>
+      <div className="min-h-screen bg-ink px-6 py-10 text-bone">
+        <div className="mx-auto flex min-h-[calc(100vh-5rem)] max-w-3xl items-center">
+          <div className="w-full">
+            <p className="rp-eyebrow text-foil">{statusLabel}</p>
+            <h1 className="ew-coverline mt-6">{title}</h1>
+            <p className="rp-lede mt-4">{message}</p>
             <div className="mt-8 flex flex-wrap gap-3">
-              <Link
-                to="/"
-                className="inline-flex items-center rounded-full border border-[rgba(245,177,45,0.38)] bg-[rgba(245,177,45,0.12)] px-5 py-3 text-sm font-semibold text-[var(--rp-gold)]"
-              >
-                Back Home
+              <Link to="/" className="ew-land" prefetch="intent">
+                Back
               </Link>
               <button
                 type="button"
                 onClick={() => window.location.reload()}
-                className="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-5 py-3 text-sm font-semibold text-white/78"
+                className="rp-chip"
               >
-                Reload Page
+                Reload
               </button>
             </div>
             {details ? (
-              <details className="mt-8 rounded-[1.25rem] border border-white/10 bg-black/20 p-4 text-sm text-white/58">
-                <summary className="cursor-pointer font-semibold text-white/72">
+              <details className="mt-8 border border-[var(--ew-rule)] bg-leather p-4 text-sm text-dust">
+                <summary className="cursor-pointer text-bone">
                   Technical details
                 </summary>
-                <pre className="mt-3 overflow-x-auto whitespace-pre-wrap break-words font-mono text-[12px] leading-6 text-white/55">
+                <pre className="mt-3 overflow-x-auto whitespace-pre-wrap break-words font-mono text-[12px] leading-6">
                   {details}
                 </pre>
               </details>
@@ -367,47 +324,13 @@ function NotFoundEasterEgg({
   message: string;
 }) {
   return (
-    <main className="not-found-easter-egg relative min-h-screen overflow-hidden bg-[#07111d] px-5 py-8 text-[var(--rp-text)] sm:px-8">
-      <div className="not-found-easter-egg__pattern" aria-hidden="true" />
-
-      <section className="relative z-10 mx-auto flex min-h-[calc(100vh-4rem)] w-full max-w-5xl flex-col items-start justify-center">
-        <Link
-          to="/"
-          className="mb-8 inline-flex w-fit items-center gap-2 rounded-full border border-white/12 bg-black/28 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.22em] text-white/70 backdrop-blur-md transition hover:border-[rgba(245,177,45,0.42)] hover:text-[var(--rp-gold)]"
-          prefetch="intent"
-        >
-          Radio Passport
-        </Link>
-
-        <div className="max-w-[42rem]">
-          <p className="font-mono text-sm font-semibold uppercase tracking-[0.34em] text-[var(--rp-gold)]">
-            Signal lost
-          </p>
-          <h1 className="mt-4 max-w-full text-[clamp(3rem,10vw,6rem)] font-black leading-none tracking-tight text-white">
-            {title}
-          </h1>
-          <p className="mt-5 max-w-xl text-base leading-7 text-white/72 sm:text-lg">
-            {message}
-          </p>
-        </div>
-
-        <div className="mt-10 flex flex-wrap gap-3">
-          <Link
-            to="/"
-            className="inline-flex items-center rounded-full border border-[rgba(245,177,45,0.38)] bg-[rgba(245,177,45,0.14)] px-5 py-3 text-sm font-bold text-[var(--rp-gold)] shadow-[0_16px_40px_rgba(0,0,0,0.26)] backdrop-blur-md transition hover:bg-[rgba(245,177,45,0.2)]"
-            prefetch="intent"
-          >
-            Back Home
-          </Link>
-          <button
-            type="button"
-            onClick={() => window.location.reload()}
-            className="inline-flex items-center rounded-full border border-white/12 bg-white/8 px-5 py-3 text-sm font-bold text-white/76 backdrop-blur-md transition hover:bg-white/12 hover:text-white"
-          >
-            Retry Route
-          </button>
-        </div>
-      </section>
+    <main className="ew-theater">
+      <p className="rp-eyebrow text-foil">Lost</p>
+      <h1 className="ew-coverline mt-4">{title}</h1>
+      <p className="rp-lede mt-4">{message}</p>
+      <Link to="/" className="ew-land mt-8" prefetch="intent">
+        Back
+      </Link>
     </main>
   );
 }
@@ -562,8 +485,8 @@ function GlobalAudioBridge() {
         message: `${label} failed (${reason.replace(
           /_/g,
           " "
-        )}). Switching to “${candidate.name}”…`,
-        durationMs: 6000,
+        )}). Skipping to the next station…`,
+        durationMs: 4500,
       });
 
       state.startStation(candidate, { preserveQueue: true, autoPlay: true });
@@ -756,9 +679,9 @@ function GlobalAudioBridge() {
       : [];
 
     mediaSession.metadata = new MediaMetadata({
-      title: nowPlaying.name ?? "Radio Passport",
-      artist: nowPlaying.country ?? "Curated Live Radio",
-      album: "Radio Passport",
+      title: nowPlaying.name ?? "Elsewhere",
+      artist: nowPlaying.country ?? "Live radio",
+      album: "Elsewhere",
       artwork,
     });
 

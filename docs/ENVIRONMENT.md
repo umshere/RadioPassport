@@ -4,7 +4,11 @@ Configure the AI layer and playback helpers through the following environment va
 
 | Variable             | Description                                                                                                      |
 | -------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| `AI_PROVIDER`        | One of `openai`, `gemini`, `openrouter`, or `ollama`. Selects the backing model.                                 |
+| `AI_PROVIDER`        | One of `heuristics`, `openai`, `gemini`, `openrouter`, or `ollama`. Selects the backing model.                   |
+| `HEURISTICS_BASE_URL` | LiteLLM gateway origin (defaults to `http://localhost:4000`).                                                   |
+| `HEURISTICS_API_KEY` | Gateway master key. Required for `AI_PROVIDER=heuristics`.                                                       |
+| `HEURISTICS_MODEL`   | Locked to `deepseek-v4-flash` in code to keep AI cost down.                                                      |
+| `HEURISTICS_FALLBACK_MODEL` | Unused. Flash is the only model.                                                                          |
 | `USE_MOCK`           | `true` or `false`. When `true`, the API returns the bundled mock descriptor.                                     |
 | `OPENAI_API_KEY`     | Required when `AI_PROVIDER=openai`.                                                                              |
 | `OPENAI_MODEL`       | Optional OpenAI model name (defaults to `gpt-4o-mini`).                                                          |

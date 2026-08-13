@@ -1,26 +1,25 @@
 import type { Station } from "~/types/radio";
-import { displayCountryName } from "~/utils/countryNames";
+
+function tidyPlace(value: string) {
+  return value
+    .replace(/[\s,\u00a0]+[A-Za-z]{2}$/u, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
 
 export function stationLocation(station: Station) {
-  return station.city || station.state || station.country || "Unknown location";
-}
-
-/**
- * Display label for a station place: "Kochi, India" or "France" (never "France, France").
- * Country segment uses common display names only — stored country keys are unchanged.
- */
-export function stationLocationLabel(station: Station) {
-  const location = stationLocation(station);
+  const city = (station.city || "").trim();
+  const state = (station.state || "").trim();
   const country = (station.country || "").trim();
-  if (!country) return location;
-  const countryDisplay = displayCountryName(country, station.countryCode);
-  if (location.toLowerCase() === country.toLowerCase()) return countryDisplay;
-  if (location.toLowerCase() === countryDisplay.toLowerCase()) {
-    return countryDisplay;
+  if (city) {
+    const withoutState =
+      state && city.toLowerCase().endsWith(` ${state.toLowerCase()}`)
+        ? city.slice(0, city.length - state.length).trim()
+        : tidyPlace(city);
+    return withoutState || city;
   }
-  return `${location}, ${countryDisplay}`;
+  return tidyPlace(state) || country || "Unknown location";
 }
-
 export function stationTelemetry(station: Station) {
   return station.bitrate
     ? `${station.bitrate}K ${station.codec?.toUpperCase() ?? "AUDIO"}`
@@ -41,16 +40,14 @@ export function StationRow({
   favorite,
   onPlay,
   onFavorite,
-  onDetails,
 }: {
   station: Station;
   active: boolean;
   favorite: boolean;
   onPlay: () => void;
   onFavorite: () => void;
-  onDetails?: (trigger: HTMLElement) => void;
 }) {
-  const locationLabel = stationLocationLabel(station);
+  const location = stationLocation(station);
   return (
     <div className={`rp-station ${active ? "is-active" : ""}`}>
       <button
@@ -61,7 +58,7 @@ export function StationRow({
         style={{
           background: `radial-gradient(circle at 26% 20%, hsl(${hue(
             station.uuid
-          )} 45% 42%), #14120F 72%)`,
+          )} 32% 28%), #0C0B09 72%)`,
         }}
       >
         {active ? (
@@ -77,34 +74,24 @@ export function StationRow({
       <button
         type="button"
         onClick={onPlay}
-        className="rp-station-title-action min-w-0 flex-1 text-left"
-        aria-label={`Play ${station.name} from ${locationLabel}`}
+        className="min-w-0 flex-1 text-left"
+        aria-label={`Play ${station.name} from ${location}`}
       >
-        <strong className="block truncate text-[13px] font-bold text-paper">
+        <strong className="block truncate text-[15px] font-medium text-bone">
           {station.name}
         </strong>
-        <span className="block truncate text-[11px] text-muted">
-          {station.tagList?.slice(0, 2).join(" · ") || locationLabel}
+        <span className="block truncate text-[12px] text-dust">
+          {`${location}, ${station.country}`}
         </span>
       </button>
       <span className="rp-telemetry hidden shrink-0 sm:block">
         {stationTelemetry(station)}
       </span>
-      {onDetails && (
-        <button
-          type="button"
-          onClick={(event) => onDetails(event.currentTarget)}
-          className="rp-details-action"
-          aria-label={`Open details for ${station.name}`}
-        >
-          <span aria-hidden="true">i</span>
-        </button>
-      )}
       <button
         type="button"
         onClick={onFavorite}
         className={`grid h-11 w-11 shrink-0 place-items-center rounded-full text-lg ${
-          favorite ? "text-coral" : "text-muted"
+          favorite ? "text-foil" : "text-dust"
         }`}
         aria-label={`${favorite ? "Remove" : "Add"} ${station.name} ${
           favorite ? "from" : "to"

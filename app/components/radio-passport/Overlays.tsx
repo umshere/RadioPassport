@@ -1,18 +1,10 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Country, Station } from "~/types/radio";
 import { getContinent } from "~/utils/geography";
 import type { PassportStamp } from "~/state/journeyStore";
-import { aggregateCountryStationContext, type CountryDrilldownState } from "./countryData";
+import type { CountryDrilldownState } from "./countryData";
 import { SignalWordmark } from "./SignalMark";
 import { StationRow, stationLocation } from "./StationRow";
-import { shouldOverlayHandleEscape } from "./stationInsights";
-import { canRestoreFocusToTrigger } from "./stationInsights";
-import { useStationInsightsStore } from "~/state/stationInsightsStore";
-import {
-  formatLanguageList,
-  normalizeLanguages,
-} from "~/utils/languages";
-import { displayCountryName } from "~/utils/countryNames";
 
 function Overlay({
   children,
@@ -26,10 +18,7 @@ function Overlay({
   const dialogRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLElement | null>(null);
   const closeRef = useRef(close);
-  const insightsOpen = useStationInsightsStore((state) => Boolean(state.station));
-  const insightsOpenRef = useRef(insightsOpen);
   closeRef.current = close;
-  insightsOpenRef.current = insightsOpen;
   if (!triggerRef.current && typeof document !== "undefined") {
     triggerRef.current =
       document.activeElement instanceof HTMLElement
@@ -48,14 +37,13 @@ function Overlay({
       (first ?? dialog)?.focus();
     }, 0);
     const key = (event: KeyboardEvent) => {
-      if (event.key === "Escape" && shouldOverlayHandleEscape(insightsOpenRef.current)) closeRef.current();
+      if (event.key === "Escape") closeRef.current();
     };
     window.addEventListener("keydown", key);
     return () => {
       window.clearTimeout(focusTimer);
       window.removeEventListener("keydown", key);
-      const focusTrigger = triggerRef.current;
-      if (canRestoreFocusToTrigger(focusTrigger)) focusTrigger.focus();
+      triggerRef.current?.focus();
     };
   }, []);
   const trapFocus = (event: React.KeyboardEvent<HTMLDivElement>) => {
@@ -86,8 +74,6 @@ function Overlay({
       role="dialog"
       aria-modal="true"
       aria-label={label}
-      aria-hidden={insightsOpen || undefined}
-      {...(insightsOpen ? { inert: "" } : {})}
     >
       <div
         ref={dialogRef}
@@ -125,26 +111,24 @@ export function AtlasOverlay({
   openCountry: (country: string) => void;
 }) {
   const normalized = query.toLowerCase().trim();
-  const languagesByCountry = new Map<string, string[]>();
+  const languagesByCountry = new Map<string, string>();
   stations.forEach((station) => {
-    if (!station.country || !station.language) return;
-    const prior = languagesByCountry.get(station.country) ?? [];
-    const next = [...prior];
-    for (const lang of normalizeLanguages(station.language)) {
-      if (!next.some((entry) => entry.toLowerCase() === lang.toLowerCase())) {
-        next.push(lang);
-      }
-    }
-    languagesByCountry.set(station.country, next);
+    if (
+      station.country &&
+      !languagesByCountry.has(station.country) &&
+      station.language
+    )
+      languagesByCountry.set(station.country, station.language);
   });
-  const visible = countries.filter((country) => {
-    if (!normalized) return true;
-    const displayName = displayCountryName(country.name, country.iso_3166_1);
-    const languages = languagesByCountry.get(country.name)?.join(" ") ?? "";
-    const haystack =
-      `${country.name} ${displayName} ${country.iso_3166_1} ${languages}`.toLowerCase();
-    return haystack.includes(normalized);
-  });
+  const visible = countries.filter(
+    (country) =>
+      !normalized ||
+      `${country.name} ${country.iso_3166_1} ${
+        languagesByCountry.get(country.name) ?? ""
+      }`
+        .toLowerCase()
+        .includes(normalized)
+  );
   const regions = Array.from(
     new Set(
       visible.map((country) => getContinent(country.iso_3166_1) || "Other")
@@ -170,7 +154,7 @@ export function AtlasOverlay({
       <div className="space-y-9">
         {regions.map((region) => (
           <section key={region}>
-            <p className="rp-eyebrow text-coral">{region}</p>
+            <p className="rp-eyebrow text-foil">{region}</p>
             <div className="rp-country-grid">
               {visible
                 .filter(
@@ -191,22 +175,11 @@ export function AtlasOverlay({
                       {country.iso_3166_1 || "--"}
                     </span>
                     <span className="min-w-0 flex-1 text-left">
-                      <strong className="block truncate">
-                        {displayCountryName(
-                          country.name,
-                          country.iso_3166_1
-                        )}
-                      </strong>
-                      {(() => {
-                        const langs = formatLanguageList(
-                          languagesByCountry.get(country.name) ?? []
-                        );
-                        return langs ? (
-                          <small className="block truncate text-muted">
-                            {langs}
-                          </small>
-                        ) : null;
-                      })()}
+                      <strong className="block truncate">{country.name}</strong>
+                      <small className="block truncate text-muted">
+                        {languagesByCountry.get(country.name) ||
+                          "Language unavailable"}
+                      </small>
                     </span>
                     <span className="rp-telemetry">
                       {country.stationcount.toLocaleString()}
@@ -229,7 +202,6 @@ export function CountryOverlay({
   close,
   onPlay,
   onFavorite,
-  onDetails,
   drilldown,
   onRetry,
 }: {
@@ -240,34 +212,20 @@ export function CountryOverlay({
   close: () => void;
   onPlay: (station: Station) => void;
   onFavorite: (id: string) => void;
-  onDetails?: (station: Station, trigger: HTMLElement) => void;
   drilldown: CountryDrilldownState | null;
   onRetry: () => void;
 }) {
   const [languageFilter, setLanguageFilter] = useState<string | null>(null);
-  const languageChips = useMemo(() => {
-    const labels: string[] = [];
-    const seen = new Set<string>();
-    for (const station of stations) {
-      for (const lang of normalizeLanguages(station.language)) {
-        const key = lang.toLowerCase();
-        if (seen.has(key)) continue;
-        seen.add(key);
-        labels.push(lang);
-      }
-    }
-    return labels.slice(0, 8);
-  }, [stations]);
+  const languages = Array.from(
+    new Set(
+      stations
+        .map((station) => station.language)
+        .filter((value): value is string => Boolean(value))
+    )
+  ).slice(0, 8);
   const visibleStations = languageFilter
-    ? stations.filter((station) =>
-        normalizeLanguages(station.language).some(
-          (lang) => lang.toLowerCase() === languageFilter.toLowerCase()
-        )
-      )
+    ? stations.filter((station) => station.language === languageFilter)
     : stations;
-  const context = aggregateCountryStationContext(stations);
-  const languageEyebrow = formatLanguageList(languageChips);
-  const contextLanguageLine = formatLanguageList(context.languages, 4);
   const grouped = new Map<string, Station[]>();
   visibleStations.slice(0, 80).forEach((station) => {
     const key = stationLocation(station);
@@ -283,25 +241,9 @@ export function CountryOverlay({
         <p className="rp-eyebrow">
           {drilldown?.status === "loading"
             ? "LOADING LIVE STATIONS"
-            : `${context.playableCount.toLocaleString()} PLAYABLE STATIONS`}
-          {languageEyebrow ? ` · ${languageEyebrow}` : ""}
+            : `${visibleStations.length.toLocaleString()} STATIONS`}{" "}
+          · {languages.join(" · ") || "LANGUAGE UNAVAILABLE"}
         </p>
-        {drilldown?.status === "ready" &&
-          (languageFilter || contextLanguageLine || context.tags.length > 0) && (
-          <p className="mt-2 text-xs text-muted">
-            {languageFilter
-              ? `${visibleStations.length.toLocaleString()} matching filter`
-              : ""}
-            {languageFilter && (contextLanguageLine || context.tags.length)
-              ? " · "
-              : ""}
-            {!languageFilter ? contextLanguageLine : ""}
-            {!languageFilter && contextLanguageLine && context.tags.length
-              ? " · "
-              : ""}
-            {context.tags.length ? context.tags.join(" · ") : ""}
-          </p>
-        )}
       </header>
       {drilldown?.status === "loading" ? (
         <p className="mt-8 text-sm text-muted" role="status">
@@ -324,22 +266,18 @@ export function CountryOverlay({
         </p>
       ) : (
         <>
-          {languageChips.length > 1 && (
+          {languages.length > 1 && (
             <div className="mt-6 flex flex-wrap gap-2">
               <span className="rp-eyebrow self-center">LANGUAGE</span>
-              {languageChips.map((language) => (
+              {languages.map((language) => (
                 <button
                   type="button"
                   className={`rp-chip ${
-                    languageFilter?.toLowerCase() === language.toLowerCase()
-                      ? "active"
-                      : ""
+                    languageFilter === language ? "active" : ""
                   }`}
                   onClick={() =>
                     setLanguageFilter((current) =>
-                      current?.toLowerCase() === language.toLowerCase()
-                        ? null
-                        : language
+                      current === language ? null : language
                     )
                   }
                   key={language}
@@ -354,7 +292,7 @@ export function CountryOverlay({
               .slice(0, 7)
               .map(([city, list], index) => (
                 <section key={city}>
-                  <p className="rp-eyebrow text-coral">
+                  <p className="rp-eyebrow text-foil">
                     {index === 0 && visibleStations.length > 24
                       ? "TOP PICKS · "
                       : ""}
@@ -369,7 +307,6 @@ export function CountryOverlay({
                         favorite={favorites.includes(station.uuid)}
                         onPlay={() => onPlay(station)}
                         onFavorite={() => onFavorite(station.uuid)}
-                        onDetails={onDetails ? (trigger) => onDetails(station, trigger) : undefined}
                       />
                     ))}
                   </div>
@@ -386,12 +323,20 @@ export function PassportOverlay({
   stamps,
   playedCount,
   memberSince,
+  travelerNumber,
+  favorites = [],
   close,
+  onReplay,
+  onPlayFavorite,
 }: {
   stamps: PassportStamp[];
   playedCount: number;
   memberSince: number;
+  travelerNumber?: string;
+  favorites?: Station[];
   close: () => void;
+  onReplay?: (stamp: PassportStamp) => void;
+  onPlayFavorite?: (station: Station) => void;
 }) {
   const countries = new Set(stamps.map((stamp) => stamp.country));
   const languages = new Set(
@@ -404,7 +349,7 @@ export function PassportOverlay({
         <div>
           <h2>Your Passport</h2>
           <p className="rp-eyebrow">
-            TRAVELER Nº 000 001 · MEMBER SINCE{" "}
+            TRAVELER Nº {travelerNumber || "000 001"} · MEMBER SINCE{" "}
             {new Date(memberSince)
               .toLocaleDateString(undefined, {
                 month: "short",
@@ -414,56 +359,73 @@ export function PassportOverlay({
           </p>
         </div>
       </header>
-      <div className="rp-stats">
-        <Stat value={stamps.length} label="PLACES STAMPED" coral />
-        <Stat value={countries.size} label="COUNTRIES" />
-        <Stat value={playedCount} label="SIGNALS PLAYED" />
-        <Stat value={languages.size} label="LANGUAGES HEARD" />
-      </div>
-      <p className="rp-eyebrow text-coral">STAMPS</p>
-      <div className="rp-stamp-grid">
-        {stamps.map((stamp, index) => (
-          <article
-            className="rp-stamp"
-            style={{ transform: `rotate(${index % 2 ? 2.2 : -2.2}deg)` }}
-            key={stamp.id}
-          >
-            <p className="rp-eyebrow text-coral">
-              {stamp.countryCode || "--"} · {stamp.country}
-            </p>
-            <h3>{stamp.city}</h3>
-            <p>
-              {stamp.stationName} · {stamp.telemetry}
-            </p>
-            <small>{new Date(stamp.stampedAt).toLocaleDateString()}</small>
-          </article>
-        ))}
-        {Array.from({ length: Math.max(0, 6 - stamps.length) }).map(
-          (_, index) => (
-            <div className="rp-stamp rp-stamp-empty" key={`empty-${index}`}>
-              {String(stamps.length + index + 1).padStart(2, "0")}
+      <div className="ew-book">
+        <div>
+          <div className="rp-stats">
+            <Stat value={stamps.length} label="PLACES STAMPED" />
+            <Stat value={countries.size} label="COUNTRIES" />
+            <Stat value={playedCount} label="SIGNALS PLAYED" />
+            <Stat value={languages.size} label="LANGUAGES HEARD" />
+          </div>
+          {favorites.length > 0 ? (
+            <div className="mt-6">
+              <p className="rp-eyebrow text-foil">KEPT SIGNALS</p>
+              <div className="mt-3 space-y-1">
+                {favorites.map((station) => (
+                  <StationRow
+                    key={station.uuid}
+                    station={station}
+                    active={false}
+                    favorite
+                    onPlay={() => onPlayFavorite?.(station)}
+                    onFavorite={() => undefined}
+                  />
+                ))}
+              </div>
             </div>
-          )
-        )}
+          ) : null}
+        </div>
+        <div>
+          <p className="rp-eyebrow text-foil">STAMPS</p>
+          <div className="rp-stamp-grid">
+            {stamps.map((stamp, index) => (
+              <button
+                type="button"
+                className="rp-stamp text-left"
+                style={{ transform: `rotate(${index % 2 ? 1.5 : -1.5}deg)` }}
+                key={stamp.id}
+                onClick={() => onReplay?.(stamp)}
+              >
+                <p className="rp-eyebrow text-foil">
+                  {stamp.countryCode || "--"} · {stamp.country}
+                </p>
+                <h3>{stamp.city}</h3>
+                <p>
+                  {stamp.stationName} · {stamp.telemetry}
+                </p>
+                <small>{new Date(stamp.stampedAt).toLocaleDateString()}</small>
+              </button>
+            ))}
+            {Array.from({ length: Math.max(0, 6 - stamps.length) }).map(
+              (_, index) => (
+                <div className="rp-stamp rp-stamp-empty" key={`empty-${index}`}>
+                  {String(stamps.length + index + 1).padStart(2, "0")}
+                </div>
+              )
+            )}
+          </div>
+        </div>
       </div>
-      <p className="mt-6 rp-telemetry text-muted">
-        Stay with a station for 60 seconds to ink a new stamp.
+      <p className="mt-6 rp-telemetry text-dust">
+        Stay with a station for 60 seconds to ink the first page.
       </p>
     </Overlay>
   );
 }
-function Stat({
-  value,
-  label,
-  coral,
-}: {
-  value: number;
-  label: string;
-  coral?: boolean;
-}) {
+function Stat({ value, label }: { value: number; label: string }) {
   return (
     <div className="rp-stat">
-      <strong className={coral ? "text-coral" : ""}>{value}</strong>
+      <strong>{value}</strong>
       <span className="rp-eyebrow">{label}</span>
     </div>
   );

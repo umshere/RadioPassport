@@ -1,6 +1,17 @@
 # Changelog
 
-All notable changes in this iteration (Oct 2025).
+## 2026-08-13 — Elsewhere
+
+The product face is **Elsewhere**. Radio Passport remains the repo / heritage name.
+
+- Editorial home: coverline, night-earth globe, Land here, solar hours, same-hour cities
+- Globe intelligence: HTML tooltip (city / region / station / count), rotate-to-face, play lead station
+- Intent + voice + Surprise mix; interpret + dispatch APIs
+- Heuristics gateway, model locked to `deepseek-v4-flash`
+- `/listen` theater, honest ICY empty state, 60s passport stamps
+- Brand mark, SVG favicon, Issue 01 about; Tuning overlay and old header unmounted
+- Mobile dock / cover / theater
+- Roadmap (launch + Correspondent): `docs/ROADMAP.md`
 
 ## 2025-12-08 — Visual Redesign & Player Improvements
 

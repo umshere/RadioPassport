@@ -1,18 +1,18 @@
 {
-    "name": "Radio Passport",
-    "short_name": "Radio Passport",
-    "description": "Tune Into the World - A cozy web audio app for global radio exploration",
-    "start_url": "/",
-    "display": "standalone",
-    "background_color": "#e0e5ec",
-    "theme_color": "#e0e5ec",
-    "orientation": "portrait-primary",
-    "icons": [
-        {
-            "src": "/RPLOGO.png",
-            "sizes": "any",
-            "type": "image/png",
-            "purpose": "any"
-        }
-    ]
+  "name": "Elsewhere",
+  "short_name": "Elsewhere",
+  "description": "Live radio from someone else's now.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0C0B09",
+  "theme_color": "#0C0B09",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/elsewhere-favicon.svg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "any"
+    }
+  ]
 }
