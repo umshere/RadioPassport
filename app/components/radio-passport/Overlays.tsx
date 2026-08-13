@@ -3,9 +3,17 @@ import type { Country, Station } from "~/types/radio";
 import { getContinent } from "~/utils/geography";
 import type { PassportStamp } from "~/state/journeyStore";
 import type { CountryDrilldownState } from "./countryData";
+import {
+  fetchStationsByCountryLanguage,
+  languageChipsFromStations,
+  mergeStationLists,
+  stationSpeaksLanguage,
+} from "./countryData";
 import { SignalWordmark } from "./SignalMark";
 import { StationRow, stationLocation } from "./StationRow";
 import { describeAtlasEmpty } from "./productFlow";
+import { useShelfProbe } from "~/hooks/useShelfProbe";
+import { applyLiveCatalog } from "~/utils/stationMeta";
 
 function Overlay({
   children,
@@ -232,20 +240,63 @@ export function CountryOverlay({
   onRetry: () => void;
 }) {
   const [languageFilter, setLanguageFilter] = useState<string | null>(null);
-  const languages = Array.from(
-    new Set(
-      stations
-        .map((station) => station.language)
-        .filter((value): value is string => Boolean(value))
-    )
-  ).slice(0, 8);
+  const [languageStations, setLanguageStations] = useState<Station[] | null>(
+    null
+  );
+  const [languageStatus, setLanguageStatus] = useState<
+    "idle" | "loading" | "ready"
+  >("idle");
+  const languages = languageChipsFromStations(stations);
+  useEffect(() => {
+    setLanguageFilter(null);
+    setLanguageStations(null);
+    setLanguageStatus("idle");
+  }, [country]);
+  useEffect(() => {
+    if (!languageFilter) {
+      setLanguageStations(null);
+      setLanguageStatus("idle");
+      return;
+    }
+    const local = stations.filter((station) =>
+      stationSpeaksLanguage(station, languageFilter)
+    );
+    let cancelled = false;
+    setLanguageStatus("loading");
+    void fetchStationsByCountryLanguage(country, languageFilter)
+      .then((found) => {
+        if (cancelled) return;
+        setLanguageStations(mergeStationLists(found, local));
+        setLanguageStatus("ready");
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setLanguageStations(local);
+        setLanguageStatus("ready");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [country, languageFilter, stations]);
   const visibleStations = languageFilter
-    ? stations.filter((station) => station.language === languageFilter)
+    ? languageStations ??
+      stations.filter((station) =>
+        stationSpeaksLanguage(station, languageFilter)
+      )
     : stations;
+  const catalogLive = applyLiveCatalog(visibleStations);
+  const liveStations = useShelfProbe(
+    catalogLive,
+    `${country}:${languageFilter ?? "all"}`
+  );
   const grouped = new Map<string, Station[]>();
-  visibleStations.slice(0, 80).forEach((station) => {
+  const maxGroups = languageFilter ? Number.POSITIVE_INFINITY : 16;
+  const maxPerGroup = languageFilter ? Number.POSITIVE_INFINITY : 8;
+  liveStations.forEach((station) => {
     const key = stationLocation(station);
-    grouped.set(key, [...(grouped.get(key) || []), station]);
+    const current = grouped.get(key) || [];
+    if (current.length >= maxPerGroup) return;
+    grouped.set(key, [...current, station]);
   });
   return (
     <Overlay close={close} label={`${country} stations`}>
@@ -255,15 +306,16 @@ export function CountryOverlay({
       <header className="mt-6">
         <h2>{country}</h2>
         <p className="rp-eyebrow">
-          {drilldown?.status === "loading"
+          {drilldown?.status === "loading" || languageStatus === "loading"
             ? "LOADING LIVE STATIONS"
-            : `${visibleStations.length.toLocaleString()} STATIONS`}{" "}
+            : `${liveStations.length.toLocaleString()} LIVE`}
+          {languageFilter ? ` · ${languageFilter.toUpperCase()}` : ""}{" "}
           · {languages.join(" · ") || "LANGUAGE UNAVAILABLE"}
         </p>
       </header>
       {drilldown?.status === "loading" ? (
         <p className="mt-8 text-sm text-muted" role="status">
-          Loading a bounded live catalog for {country}…
+          Loading the live catalog for {country}…
         </p>
       ) : drilldown?.status === "error" ? (
         <div className="mt-8" role="alert">
@@ -305,17 +357,19 @@ export function CountryOverlay({
           )}
           <div className="mt-8 space-y-7">
             {Array.from(grouped.entries())
-              .slice(0, 7)
+              .slice(0, maxGroups)
               .map(([city, list], index) => (
                 <section key={city}>
                   <p className="rp-eyebrow text-foil">
-                    {index === 0 && visibleStations.length > 24
+                    {index === 0 &&
+                    !languageFilter &&
+                    liveStations.length > 24
                       ? "TOP PICKS · "
                       : ""}
                     {city.toUpperCase()}
                   </p>
                   <div className="mt-2 space-y-2">
-                    {list.slice(0, 6).map((station) => (
+                    {list.map((station) => (
                       <StationRow
                         key={station.uuid}
                         station={station}

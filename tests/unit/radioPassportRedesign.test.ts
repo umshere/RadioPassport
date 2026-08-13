@@ -148,7 +148,7 @@ describe("Signal & Stamp journey contracts", () => {
       "country-b",
     ]);
     expect(vi.mocked(rbFetchJson)).toHaveBeenCalledWith(
-      expect.stringContaining("/json/stations/bycountry/India?limit=140"),
+      expect.stringContaining("/json/stations/bycountry/India?limit=1000"),
       undefined,
       expect.objectContaining({ softFail: true })
     );

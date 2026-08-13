@@ -1,6 +1,8 @@
 # Current AI Pipeline
 
-Elsewhere uses the Heuristics LiteLLM gateway first. **Model is locked to `deepseek-v4-flash`** in `app/services/ai/gateway.ts` (cost). Pro is not used.
+Elsewhere uses the Heuristics LiteLLM gateway first when a key is present. **That model is locked to `deepseek-v4-flash`** in `app/services/ai/gateway.ts`.
+
+Vercel production currently has **no Heuristics URL**. There we use **Gemini 2.5 Flash** (free tier, better writing than Flash-Lite). Pro is paid-only and is not the default.
 
 ## Calls
 
@@ -9,7 +11,7 @@ Elsewhere uses the Heuristics LiteLLM gateway first. **Model is locked to `deeps
 | `POST /api/ai/interpret` | User submits a sentence | `extractPromptIntent`, `fallback: true` |
 | `POST /api/ai/dispatch` | 1.5s after play, and on track change | Template caption, cached 30 min |
 | `/api/ai/recommend` | Surprise / mix | Next configured provider (OpenRouter → OpenAI → Ollama → Gemini) |
-| `/api/now-playing-trivia` | Theater, when a track exists | Empty; UI hides chrome |
+| `/api/now-playing-trivia` | Cover + theater, only when ICY sent a title | Empty; UI hides the dossier |
 
 ## Provider order
 

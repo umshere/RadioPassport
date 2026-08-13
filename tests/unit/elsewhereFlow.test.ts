@@ -16,9 +16,15 @@ import {
   passportRequested,
   resolveStampReplay,
   searchKeepsPlayback,
+  seekingBoardLabel,
+  seekingStatus,
+  theaterIntelligence,
   theaterWithoutStation,
 } from "~/components/radio-passport/productFlow";
-import { catalogRequestState } from "~/components/radio-passport/searchState";
+import {
+  catalogRequestState,
+  shouldClearBrowsingFilters,
+} from "~/components/radio-passport/searchState";
 import { isStampReady, stationStampId } from "~/state/journeyStore";
 import { stampForContinuousSession } from "~/components/radio-passport/JourneyBridge";
 
@@ -92,7 +98,7 @@ describe("Cover empty states always offer a next step", () => {
       place: null,
     });
     expect(empty.kind).toBe("search");
-    expect(empty.message).toMatch(/no signal/i);
+    expect(empty.message).toMatch(/no live signal for “zzzznotreal”/i);
     expect(empty.actions.map((action) => action.id)).toEqual([
       "surprise",
       "atlas",
@@ -143,6 +149,27 @@ describe("Intent is a step, not a dead field", () => {
     expect(intentPath("Lisbon at dusk")).toBe("interpret");
     expect(intentPath("surprise me")).toBe("interpret");
     expect(looksLikeIntentSentence("rainy night jazz")).toBe(true);
+  });
+
+  it("names the search in the bar and on the board below", () => {
+    expect(seekingStatus({ query: "", loading: false, count: 0 })).toEqual({
+      tone: "idle",
+      label: "",
+      spoken: "",
+    });
+    expect(
+      seekingStatus({ query: "malayalam", loading: true, count: 0 })
+    ).toMatchObject({ tone: "searching", label: "Searching" });
+    expect(
+      seekingStatus({ query: "malayalam", loading: false, count: 88 })
+    ).toMatchObject({ tone: "ready", label: "88 live" });
+    expect(seekingBoardLabel("malayalam", true, 0)).toBe(
+      "SEARCHING · MALAYALAM"
+    );
+    expect(seekingBoardLabel("malayalam", false, 88)).toBe(
+      "88 LIVE · MALAYALAM"
+    );
+    expect(shouldClearBrowsingFilters("malayalam")).toBe(true);
   });
 
   it("does not fetch the catalog for a one-letter tap", () => {
@@ -270,5 +297,37 @@ describe("A stamp is a next city, not a souvenir", () => {
     expect(stationStampId("other", "Kochi", "India")).toBe(
       stationStampId("abc", "Kochi", "India")
     );
+  });
+
+  it("shows the filed track dossier only when ICY sent a title", () => {
+    expect(
+      theaterIntelligence({
+        hasTrack: false,
+        dispatchBody: "Club FM is on the air from Kochi.",
+        summary: "Should stay hidden",
+        facts: [{ label: "Year", value: "1977" }],
+      })
+    ).toEqual({
+      dispatchBody: "Club FM is on the air from Kochi.",
+      summary: null,
+      facts: [],
+    });
+    const rich = theaterIntelligence({
+      hasTrack: true,
+      dispatchBody: "Antena 1 is carrying Evening Star through Lisbon.",
+      summary: "Fripp and Eno recorded it in 1975.",
+      facts: [
+        { label: "Year", value: "1975" },
+        { label: "Album", value: "Evening Star" },
+        { label: "Origin", value: "London" },
+        { label: "Extra", value: "drop" },
+      ],
+    });
+    expect(rich.summary).toMatch(/Fripp/);
+    expect(rich.facts.map((fact) => fact.label)).toEqual([
+      "Year",
+      "Album",
+      "Origin",
+    ]);
   });
 });

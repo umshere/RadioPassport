@@ -10,11 +10,11 @@ import type { Station } from "~/types/radio";
 import { rbFetchJson } from "~/utils/radioBrowser";
 import { normalizeStations } from "~/utils/stations";
 
-const DEFAULT_GEMINI_MODEL = "gemini-2.5-flash-lite";
+const DEFAULT_GEMINI_MODEL = "gemini-2.5-flash";
 
 const PREFERRED_MODEL_ORDER = [
   DEFAULT_GEMINI_MODEL,
-  "gemini-2.5-flash",
+  "gemini-2.5-flash-lite",
   "gemini-2.5-pro",
   "gemini-2.0-flash-exp",
   "gemini-flash-latest",
@@ -25,9 +25,16 @@ const DEFAULT_GEMINI_API_VERSION = "v1beta";
 const PREFERRED_API_VERSIONS = ["v1beta", "v1"];
 
 function getFallbackModels(): string[] {
-  const configuredModel = process.env.GEMINI_MODEL ?? DEFAULT_GEMINI_MODEL;
+  const configuredModel = (process.env.GEMINI_MODEL ?? "")
+    .replace(/\\n/g, "")
+    .replace(/\r?\n/g, "")
+    .trim();
   return Array.from(
-    new Set([configuredModel, ...PREFERRED_MODEL_ORDER].filter(Boolean))
+    new Set(
+      [configuredModel || DEFAULT_GEMINI_MODEL, ...PREFERRED_MODEL_ORDER].filter(
+        Boolean
+      )
+    )
   );
 }
 

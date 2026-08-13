@@ -35,7 +35,7 @@ One tier: **$6 / month or $60 / year**. Never named Premium.
 | Any public stream, globe, atlas, land, ICY, local clock | Same |
 | 3 AI mixes / day, then keyword search | Unlimited mix + interpret |
 | Template dispatch | Track-aware dispatch |
-| One trivia fact | Theater dossier |
+| One cover fact | Theater dossier (summary + facts) |
 | Stamps in `localStorage` | Cloud book + inked caption |
 | Hear dead streams (retry then skip) | Probe-ahead silent skip |
 
@@ -44,7 +44,7 @@ Kill experiment if ≥200 qualified users and checkout start < 1.5%, or AI COGS 
 
 ### 3. Reliability
 
-- Wire `server/stations/probe.ts` into the paid (then free) play path
+- Probe already runs on the visible Atlas / search shelf (first 36). Next: probe-ahead skip on play
 - Prefer HTTPS / non-mixed-content stations in Land here
 - Keep auto-skip; do not fake a working catalog
 

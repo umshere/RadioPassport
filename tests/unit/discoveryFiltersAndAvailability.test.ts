@@ -15,9 +15,12 @@ import {
   toggleSelection,
 } from "~/components/radio-passport/searchState";
 import {
+  applyLiveCatalog,
   deriveStationAvailability,
   deriveStationHealth,
+  isCatalogLikelyStreaming,
   isEvidenceFresh,
+  isSecureStreamUrl,
   rankStations,
   scoreStation,
 } from "~/utils/stationMeta";
@@ -107,6 +110,44 @@ describe("discovery filter state transitions", () => {
     expect(suggestVocabularyTerm("malayalam")).toBeNull();
     expect(suggestVocabularyTerm("ja")).toBeNull();
     expect(suggestVocabularyTerm("zzqxnotaword")).toBeNull();
+  });
+});
+
+describe("likely-streaming catalog filter", () => {
+  it("keeps https streams and drops http, ssl errors, and confirmed-down probes", () => {
+    expect(isSecureStreamUrl("https://stream.example/live")).toBe(true);
+    expect(isSecureStreamUrl("http://stream.example/live")).toBe(false);
+
+    const live = station({ streamUrl: "https://stream.example/live" });
+    const plaintext = station({
+      uuid: "http",
+      streamUrl: "http://stream.example/live",
+      url: "http://stream.example/live",
+    });
+    const down = station({ uuid: "down", probeStatus: "down" });
+    const ssl = station({ uuid: "ssl", sslError: true });
+    const freshFail = station({
+      uuid: "fail",
+      lastCheckOk: false,
+      lastCheckOkTime: new Date().toISOString(),
+    });
+    const staleFail = station({
+      uuid: "stale-fail",
+      lastCheckOk: false,
+      lastCheckOkTime: new Date(
+        Date.now() - 200 * 24 * 60 * 60 * 1000
+      ).toISOString(),
+    });
+
+    expect(isCatalogLikelyStreaming(live)).toBe(true);
+    expect(isCatalogLikelyStreaming(plaintext)).toBe(false);
+    expect(isCatalogLikelyStreaming(down)).toBe(false);
+    expect(isCatalogLikelyStreaming(ssl)).toBe(false);
+    expect(isCatalogLikelyStreaming(freshFail)).toBe(false);
+    expect(isCatalogLikelyStreaming(staleFail)).toBe(true);
+
+    const ranked = applyLiveCatalog([down, plaintext, live, ssl]);
+    expect(ranked.map((entry) => entry.uuid)).toEqual(["signal-1"]);
   });
 });
 

@@ -185,7 +185,7 @@ describe("POST /api/ai/recommend", () => {
       "/v1beta/models/non-existent-model"
     );
     expect(fetchMock.mock.calls[1]?.[0]?.toString()).toContain(
-      "/v1beta/models/gemini-2.5-flash-lite"
+      "/v1beta/models/gemini-2.5-flash"
     );
   });
 });

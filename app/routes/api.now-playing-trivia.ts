@@ -3,19 +3,25 @@ import type { TrackTriviaResponse, TrackTrivia } from "~/types/trivia";
 import { resolveTrackImage } from "~/utils/imageSearch";
 import { getOpenRouterTriviaModelRotation } from "~/services/ai/providers/openRouterModels";
 import { parseJsonObjectFromText } from "~/services/ai/providers/providerUtils";
+import {
+  completeGeminiJson,
+  getGeminiModel,
+  hasGeminiKey,
+  trimEnv,
+} from "~/services/ai/completeFallback";
+import { completeJson, isGatewayConfigured } from "~/services/ai/gateway";
 
 const MUSICBRAINZ_BASE = "https://musicbrainz.org/ws/2";
 const USER_AGENT =
   "radio-passport/1.0 (https://github.com/umshere/RadioPassport)";
 const CACHE_TTL_MS = 6 * 60 * 60 * 1000;
 const AI_CACHE_TTL_MS = 60 * 60 * 1000;
-const AI_PROVIDER = (process.env.AI_PROVIDER ?? "openai").trim().toLowerCase();
+const AI_PROVIDER = trimEnv(process.env.AI_PROVIDER).toLowerCase() || "openai";
 
-const OPENAI_MODEL = process.env.OPENAI_MODEL ?? "gpt-4o-mini";
-const GEMINI_MODEL = process.env.GEMINI_MODEL ?? "gemini-2.5-flash-lite";
-const GEMINI_API_VERSION = process.env.GEMINI_API_VERSION ?? "v1beta";
-const OLLAMA_MODEL = process.env.OLLAMA_MODEL ?? "radio-passport";
-const OLLAMA_URL = process.env.OLLAMA_URL ?? "";
+const OPENAI_MODEL = trimEnv(process.env.OPENAI_MODEL) || "gpt-4o-mini";
+const GEMINI_MODEL = getGeminiModel();
+const OLLAMA_MODEL = trimEnv(process.env.OLLAMA_MODEL) || "radio-passport";
+const OLLAMA_URL = trimEnv(process.env.OLLAMA_URL);
 
 const AI_SYSTEM_PROMPT = `You are a music trivia assistant.
 Return JSON only with:
@@ -207,39 +213,46 @@ async function fetchOpenRouterTrivia(prompt: string): Promise<AiTriviaResult> {
   return { trivia: null, error: lastError };
 }
 
-async function fetchGeminiTrivia(prompt: string): Promise<AiTriviaResult> {
-  const apiKey = process.env.GEMINI_API_KEY ?? "";
-  if (!apiKey) return { trivia: null, error: "Missing GEMINI_API_KEY." };
-  const apiVersion = GEMINI_API_VERSION || "v1beta";
-  const url = `https://generativelanguage.googleapis.com/${apiVersion}/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`;
-  const generationConfig: Record<string, unknown> = { temperature: 0.4 };
-  if (apiVersion === "v1beta") {
-    generationConfig.responseMimeType = "application/json";
+async function fetchHeuristicsTrivia(prompt: string): Promise<AiTriviaResult> {
+  if (!isGatewayConfigured()) {
+    return { trivia: null, error: "Heuristics gateway is not configured." };
   }
-  const response = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      systemInstruction: { parts: [{ text: AI_SYSTEM_PROMPT }] },
-      contents: [{ role: "user", parts: [{ text: prompt }] }],
-      generationConfig,
-    }),
-  });
-  if (!response.ok) {
+  try {
+    const parsed = await completeJson<unknown>({
+      system: AI_SYSTEM_PROMPT,
+      user: prompt,
+      timeoutMs: 8_000,
+    });
+    return { trivia: normalizeTriviaPayload(parsed, "ai") };
+  } catch (error) {
     return {
       trivia: null,
-      error: `Gemini request failed (${response.status}).`,
+      error:
+        error instanceof Error
+          ? error.message
+          : "Heuristics trivia request failed.",
     };
   }
-  const payload = await response.json();
-  const text =
-    payload?.candidates?.[0]?.content?.parts?.[0]?.text ??
-    payload?.candidates?.[0]?.content?.parts?.[0];
-  if (!text || typeof text !== "string") {
-    return { trivia: null, error: "Gemini response was empty." };
+}
+
+async function fetchGeminiTrivia(prompt: string): Promise<AiTriviaResult> {
+  if (!hasGeminiKey()) return { trivia: null, error: "Missing GEMINI_API_KEY." };
+  try {
+    const parsed = await completeGeminiJson<unknown>({
+      system: AI_SYSTEM_PROMPT,
+      user: prompt,
+      timeoutMs: 8_000,
+    });
+    return { trivia: normalizeTriviaPayload(parsed, "ai") };
+  } catch (error) {
+    return {
+      trivia: null,
+      error:
+        error instanceof Error
+          ? error.message
+          : `Gemini ${GEMINI_MODEL} request failed.`,
+    };
   }
-  const parsed = parseJsonFromText(text);
-  return { trivia: normalizeTriviaPayload(parsed, "ai") };
 }
 
 async function fetchOllamaTrivia(prompt: string): Promise<AiTriviaResult> {
@@ -288,10 +301,11 @@ async function fetchAiTrivia(
   const chain: ProviderFn[] = [];
   const queuedProviders = new Set<string>();
 
-  const hasOpenRouter = Boolean((process.env.OPENROUTER_API_KEY ?? "").trim());
-  const hasOpenAI = Boolean((process.env.OPENAI_API_KEY ?? "").trim());
-  const hasGemini = Boolean((process.env.GEMINI_API_KEY ?? "").trim());
-  const hasOllama = Boolean((process.env.OLLAMA_URL ?? "").trim());
+  const hasOpenRouter = Boolean(trimEnv(process.env.OPENROUTER_API_KEY));
+  const hasOpenAI = Boolean(trimEnv(process.env.OPENAI_API_KEY));
+  const hasGemini = hasGeminiKey();
+  const hasOllama = Boolean(OLLAMA_URL);
+  const hasHeuristics = isGatewayConfigured();
 
   const pushIf = (name: string, cond: boolean, fn: ProviderFn) => {
     if (!cond || queuedProviders.has(name)) return;
@@ -299,10 +313,12 @@ async function fetchAiTrivia(
     chain.push(fn);
   };
 
-  // Helper to enqueue by name
   const enqueueByName = (name: string) => {
     const n = name.trim().toLowerCase();
-    if (n === "gemini") pushIf(n, hasGemini, () => fetchGeminiTrivia(prompt));
+    if (n === "heuristics")
+      pushIf(n, hasHeuristics, () => fetchHeuristicsTrivia(prompt));
+    else if (n === "gemini")
+      pushIf(n, hasGemini, () => fetchGeminiTrivia(prompt));
     else if (n === "openrouter")
       pushIf(n, hasOpenRouter, () => fetchOpenRouterTrivia(prompt));
     else if (n === "openai")
@@ -311,10 +327,10 @@ async function fetchAiTrivia(
       pushIf(n, hasOllama, () => fetchOllamaTrivia(prompt));
   };
 
-  // Prefer the configured provider unless it is Gemini, then keep Gemini last
-  // because it can incur paid API usage.
-  if (AI_PROVIDER !== "gemini") enqueueByName(AI_PROVIDER);
-  ["openrouter", "openai", "ollama", "gemini"].forEach(enqueueByName);
+  // Flash locally when the gateway is up. Gemini 2.5 Flash next (free, better than Lite).
+  enqueueByName("heuristics");
+  enqueueByName(AI_PROVIDER);
+  ["gemini", "openrouter", "openai", "ollama"].forEach(enqueueByName);
 
   // Ensure at least one option (even if keys are missing, we'll get an error which we surface)
   if (chain.length === 0) {

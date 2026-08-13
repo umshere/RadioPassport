@@ -415,6 +415,49 @@ export type CoverEmptyState = {
   actions: CoverEmptyAction[];
 };
 
+export function seekingStatus(input: {
+  query: string;
+  loading: boolean;
+  count: number;
+}) {
+  const query = input.query.trim();
+  if (!query) {
+    return { tone: "idle" as const, label: "", spoken: "" };
+  }
+  if (input.loading) {
+    return {
+      tone: "searching" as const,
+      label: "Searching",
+      spoken: `Searching for ${query}`,
+    };
+  }
+  if (input.count === 0) {
+    return {
+      tone: "empty" as const,
+      label: "No signal",
+      spoken: `No live stations for ${query}`,
+    };
+  }
+  return {
+    tone: "ready" as const,
+    label: `${input.count} live`,
+    spoken: `${input.count} live for ${query}`,
+  };
+}
+
+export function seekingBoardLabel(
+  query: string,
+  loading: boolean,
+  count: number
+) {
+  const trimmed = query.trim();
+  if (!trimmed) return null;
+  const name = trimmed.toUpperCase();
+  if (loading) return `SEARCHING · ${name}`;
+  if (count === 0) return `NO SIGNAL · ${name}`;
+  return `${count} LIVE · ${name}`;
+}
+
 export function describeCoverEmpty(input: {
   query: string;
   hour: string | null;
@@ -424,7 +467,7 @@ export function describeCoverEmpty(input: {
   if (query) {
     return {
       kind: "search",
-      message: "No signal for that.",
+      message: `No live signal for “${query}”.`,
       actions: [
         { id: "surprise", label: "Surprise" },
         { id: "atlas", label: "Atlas" },
@@ -506,6 +549,32 @@ export function theaterWithoutStation() {
     route: "/",
     label: "Back to Elsewhere",
     message: "Land somewhere first. Then come back.",
+  };
+}
+
+export type TheaterFact = { label: string; value: string };
+
+export function theaterIntelligence(input: {
+  hasTrack: boolean;
+  dispatchBody?: string | null;
+  summary?: string | null;
+  facts?: TheaterFact[];
+}) {
+  const dispatchBody = input.dispatchBody?.trim() || null;
+  if (!input.hasTrack) {
+    return { dispatchBody, summary: null, facts: [] as TheaterFact[] };
+  }
+  const summary = input.summary?.trim() || null;
+  const same =
+    summary &&
+    dispatchBody &&
+    summary.toLowerCase() === dispatchBody.toLowerCase();
+  return {
+    dispatchBody,
+    summary: same ? null : summary,
+    facts: (input.facts ?? [])
+      .filter((fact) => fact.label.trim() && fact.value.trim())
+      .slice(0, 3),
   };
 }
 

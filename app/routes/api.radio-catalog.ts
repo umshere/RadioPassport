@@ -3,6 +3,7 @@ import type { LoaderFunctionArgs } from "@remix-run/node";
 import { fetchRadioBrowserCatalogSnapshot } from "~/services/radioBrowser/catalogSnapshot";
 import { rbFetchJson } from "~/utils/radioBrowser";
 import { normalizeStations } from "~/utils/stations";
+import { applyLiveCatalog } from "~/utils/stationMeta";
 import type { Station } from "~/types/radio";
 
 function dedupeStations(stations: Station[]) {
@@ -16,7 +17,7 @@ function dedupeStations(stations: Station[]) {
 
 async function searchStationsByQuery(query: string, limit: number) {
   const encoded = encodeURIComponent(query);
-  const searchLimit = Math.min(Math.max(limit, 24), 120);
+  const searchLimit = Math.min(Math.max(limit, 24), 250);
   const paths = [
     `/json/stations/search?name=${encoded}&limit=${searchLimit}&hidebroken=true&order=clickcount&reverse=true`,
     `/json/stations/bytag/${encoded}?limit=${searchLimit}&hidebroken=true&order=clickcount&reverse=true`,
@@ -34,7 +35,7 @@ async function searchStationsByQuery(query: string, limit: number) {
     return normalizeStations(result.value);
   });
 
-  return dedupeStations(merged).slice(0, searchLimit);
+  return applyLiveCatalog(dedupeStations(merged)).slice(0, searchLimit);
 }
 
 export async function loader({ request }: LoaderFunctionArgs) {
@@ -57,7 +58,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
     });
   }
 
-  const searchedStations = await searchStationsByQuery(query, 72);
+  const searchedStations = await searchStationsByQuery(query, 200);
 
   // A focused query already returns bounded, relevant candidates — do not
   // re-attach the full multi-thousand-station snapshot to the response.

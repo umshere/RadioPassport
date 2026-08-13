@@ -8,7 +8,10 @@ import { useDispatchStore } from "~/state/dispatchStore";
 import { BRAND } from "~/constants/brand";
 import { stationLocation, stationTelemetry } from "~/components/radio-passport/StationRow";
 import { formatLocalLabel, localDateAtLongitude } from "~/utils/localTime";
-import { theaterWithoutStation } from "~/components/radio-passport/productFlow";
+import {
+  theaterIntelligence,
+  theaterWithoutStation,
+} from "~/components/radio-passport/productFlow";
 
 export const meta = () => [
   { title: `Theater · ${BRAND.name}` },
@@ -46,7 +49,12 @@ export default function ListeningPage() {
   const trackLine = metadata.track
     ? [metadata.track.artist, metadata.track.title].filter(Boolean).join(" — ")
     : null;
-  const fact = trivia.trivia?.facts?.[0] ?? null;
+  const intelligence = theaterIntelligence({
+    hasTrack: Boolean(trackLine),
+    dispatchBody: dispatch?.body,
+    summary: trivia.trivia?.summary,
+    facts: trivia.trivia?.facts,
+  });
   const neighbors = useMemo(() => {
     if (!nowPlaying || queue.length < 2) return { prev: null, next: null };
     return {
@@ -92,14 +100,21 @@ export default function ListeningPage() {
         <p className="ew-track mt-6">
           {trackLine || "This station sends no track titles."}
         </p>
-        {dispatch?.body ? <p className="ew-caption">{dispatch.body}</p> : null}
-        {fact ? (
-          <p className="mt-6 max-w-xl text-sm text-dust">
-            <span className="rp-eyebrow mr-2 text-foil">{fact.label}</span>
-            {fact.value}
-          </p>
-        ) : trivia.trivia?.summary ? (
-          <p className="ew-caption">{trivia.trivia.summary}</p>
+        {intelligence.dispatchBody ? (
+          <p className="ew-caption">{intelligence.dispatchBody}</p>
+        ) : null}
+        {intelligence.summary ? (
+          <p className="ew-caption">{intelligence.summary}</p>
+        ) : null}
+        {intelligence.facts.length > 0 ? (
+          <div className="ew-dossier">
+            {intelligence.facts.map((item) => (
+              <dl key={`${item.label}:${item.value}`}>
+                <dt>{item.label}</dt>
+                <dd>{item.value}</dd>
+              </dl>
+            ))}
+          </div>
         ) : null}
         <div className="ew-theater-controls mt-10 flex flex-wrap items-center gap-4">
           <button

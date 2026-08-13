@@ -91,7 +91,12 @@ export function SearchVoice({
       }}
       aria-label={status === "listening" ? "Stop listening" : "Speak a destination"}
     >
-      {status === "listening" ? "●" : "🎙️"}
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+        <rect x="9" y="3.5" width="6" height="10" rx="3" />
+        <path d="M7 11.5a5 5 0 0 0 10 0" />
+        <path d="M12 16.5V20" />
+        <path d="M9.5 20.5h5" />
+      </svg>
     </button>
   );
 }

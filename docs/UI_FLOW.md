@@ -17,7 +17,7 @@ Elsewhere is one loop: **land → intent → tune → inhabit → stamp → next
 | Land here | Plays the featured (or last) station. Globe turns to face it. |
 | Hover / tap a globe dot | Card: city, region, country code, lead station, live count. |
 | Click a globe dot | Globe rotates to that longitude, then plays the strongest station there. |
-| Intent (short query) | Catalog search. Playback continues. |
+| Intent (short query) | Catalog search. The bar says Searching, then N live. The list below is titled with the query. |
 | Intent (sentence) | `POST /api/ai/interpret`. May fire a mix. |
 | Surprise | AI mix, then autotune the first station. |
 | Solar hour chip | Filters by the city's local hour. Does not stop audio. |
@@ -29,7 +29,7 @@ Search, chips, and overlays never call `stop()`.
 
 ## `/listen`
 
-Coverline + local clock + track-or-honest-live + optional dispatch / one trivia fact. On a phone the transport is the dock only.
+Coverline + local clock + track-or-honest-live + dispatch. When ICY sent a title, the room also files the AI dossier (summary + up to three facts). No track → no dossier. On a phone the transport is the dock only.
 
 ## Empty / error
 
@@ -41,7 +41,7 @@ Every empty or failed surface names the next move. Copy without a button is a de
 | Empty search | “No signal for that.” Buttons: Surprise, Atlas, Clear search. |
 | Quiet solar hour / city | Clear the filter, or open Atlas. |
 | Empty atlas search | Clear search. |
-| Dead stream | Notice + retry + skip. Globe follows the next station. |
+| Dead stream | Notice + retry + skip. Globe follows the next station. Lists hide confirmed-down and HTTP-only streams. |
 | Empty passport | Ghost slots open **Find a city**. Stay-60s line stays. |
 | Stamp with no live station | Open that country, or Atlas. |
 | Failed mix / country catalog | Retry. |

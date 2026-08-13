@@ -8,6 +8,11 @@ The product face is **Elsewhere**. Radio Passport remains the repo / heritage na
 - Globe intelligence: HTML tooltip (city / region / station / count), rotate-to-face, play lead station
 - Intent + voice + Surprise mix; interpret + dispatch APIs
 - Heuristics gateway, model locked to `deepseek-v4-flash`
+- Intent mic is a thin line-art mark (no emoji)
+- Prod Gemini default is `gemini-2.5-flash`; dispatch/trivia use Flash then Gemini, not templates-only
+- Theater dossier (summary + facts) only when a station sends a track title
+- Country / language catalogs fetch the real set, then keep likely-live streams
+- Search names itself in the bar (`Searching` → `N live`) and on the list
 - `/listen` theater, honest ICY empty state, 60s passport stamps
 - Brand mark, SVG favicon, Issue 01 about; Tuning overlay and old header unmounted
 - Mobile dock / cover / theater

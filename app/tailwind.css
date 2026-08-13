@@ -106,6 +106,32 @@
     padding: 11px 0;
   }
   .rp-intent input::placeholder { color: var(--ew-dust); }
+  .rp-intent-status {
+    flex: none;
+    max-width: 7.5rem;
+    overflow: hidden;
+    color: var(--ew-foil);
+    font: 500 9px/1 "Azeret Mono", monospace;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .rp-intent-status.is-idle { display: none; }
+  .rp-intent-status.is-searching { color: var(--ew-ether); }
+  .rp-intent-status.is-empty { color: var(--ew-dust); }
+  .rp-intent.is-searching { border-color: rgba(122, 168, 168, 0.55); }
+  .rp-station.is-pending {
+    min-height: 56px;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(232, 223, 208, 0.05) 50%,
+      transparent 100%
+    );
+    background-size: 200% 100%;
+    animation: rp-pulse 1.6s ease-in-out infinite;
+  }
   .rp-intent-action, .rp-mic {
     display: grid;
     width: 36px;
@@ -116,7 +142,16 @@
     background: transparent;
     color: var(--ew-dust);
   }
+  .rp-mic svg {
+    display: block;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.25;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
   .rp-intent-action.is-live, .rp-mic.is-live { color: var(--ew-lacquer); }
+  .rp-mic.is-live svg { stroke-width: 1.5; }
   .rp-surprise {
     flex: none;
     min-height: 36px;
@@ -219,6 +254,7 @@
     background: var(--ew-ether);
     animation: rp-pulse 2.4s ease-in-out infinite;
   }
+  #live-board { scroll-margin-top: 72px; }
   .rp-station-list {
     margin-top: 14px;
     max-height: min(520px, 48vh);
@@ -277,6 +313,25 @@
     color: var(--ew-bone);
     font-size: 15px;
     font-weight: 500;
+  }
+  .ew-dossier {
+    display: grid;
+    gap: 12px;
+    margin: 22px 0 0;
+    max-width: 36ch;
+  }
+  .ew-dossier dl { margin: 0; }
+  .ew-dossier dt {
+    color: var(--ew-foil);
+    font: 500 10px/1 "Azeret Mono", monospace;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+  .ew-dossier dd {
+    margin: 5px 0 0;
+    color: var(--ew-dust);
+    font-size: 14px;
+    line-height: 1.4;
   }
   .ew-same-hour {
     display: flex;
@@ -591,6 +646,13 @@
       width: 100%;
       height: min(58vw, 280px);
       min-height: 220px;
+    }
+    .rp-home.is-seeking .rp-globe-wrap {
+      height: 128px;
+      min-height: 128px;
+    }
+    .rp-home.is-seeking #live-board {
+      scroll-margin-top: 118px;
     }
     .ew-cover { left: 16px; right: 16px; bottom: 12px; }
     .ew-cover .ew-coverline { font-size: clamp(28px, 9vw, 36px); }

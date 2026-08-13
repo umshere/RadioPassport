@@ -1,5 +1,5 @@
 import { json, type ActionFunctionArgs } from "@remix-run/node";
-import { completeJson, isGatewayConfigured } from "~/services/ai/gateway";
+import { completeJsonPreferringGateway } from "~/services/ai/completeFallback";
 import type {
   DispatchRequest,
   DispatchResponse,
@@ -96,14 +96,10 @@ export async function writePlaceDispatch(
     return { dispatch: cached, cached: true, fallback: false };
   }
 
-  if (!isGatewayConfigured()) {
-    const dispatch = templateDispatch(request);
-    rememberDispatch(key, dispatch);
-    return { dispatch, cached: false, fallback: true };
-  }
-
   try {
-    const raw = await completeJson<Partial<PlaceDispatch>>({
+    const { value: raw } = await completeJsonPreferringGateway<
+      Partial<PlaceDispatch>
+    >({
       system: `You write one live radio caption for Elsewhere.
 Return ONLY JSON:
 { "headline": "≤10 words", "body": "2 sentences, place + local hour + what is on", "mood": "one word", "localLabel": "HH:MM in City" }

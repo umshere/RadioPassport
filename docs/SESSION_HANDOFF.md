@@ -32,11 +32,10 @@ Saved so this conversation can be compacted. Next turn: read this file + `docs/R
 
 ## AI (cost lock)
 
-- `AI_PROVIDER=heuristics`
-- Gateway: `HEURISTICS_BASE_URL` default `http://localhost:4000`
-- **Model is hardcoded to `deepseek-v4-flash`** in `app/services/ai/gateway.ts`. Ignore Pro even if `.env` asks.
-- Endpoints: `POST /api/ai/interpret`, `POST /api/ai/dispatch`, existing `/api/ai/recommend`
-- Dispatch: 1.5s after play; 30 min cache; template if gateway down
+- Local: Heuristics gateway, model hardcoded to `deepseek-v4-flash`
+- Vercel prod (as of this session): `AI_PROVIDER=gemini`, `GEMINI_MODEL=gemini-2.5-flash` (free tier; better writing than Flash-Lite). No Heuristics URL. Needs a **redeploy** after the env fix.
+- Dispatch and trivia try Flash first, then Gemini 2.5 Flash, then template / hide
+- Theater files the dossier (summary + up to 3 facts) only when ICY sent a title
 - Never put AI on the audio path
 - Never `AbortController.abort()` Remix fetch (it can kill the process). Use `Promise.race`
 

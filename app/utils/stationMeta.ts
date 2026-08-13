@@ -75,6 +75,41 @@ export function deriveStationHealth(station: Station): StationHealthMeta | null 
   return null;
 }
 
+export function streamUrlOf(station: Station) {
+  return (station.streamUrl || station.url || "").trim();
+}
+
+/** HTTPS page cannot play plaintext HTTP radio. */
+export function isSecureStreamUrl(url: string) {
+  if (!url) return false;
+  if (url.startsWith("//")) return true;
+  if (url.startsWith("/")) return true;
+  return /^https:\/\//i.test(url);
+}
+
+/**
+ * Catalog-level "likely streaming" — never a live guarantee.
+ * Confirmed-down probes and fresh Radio Browser failures drop out.
+ * Unprobed stations stay until a live check says otherwise.
+ */
+export function isCatalogLikelyStreaming(station: Station, now = Date.now()) {
+  if (!isSecureStreamUrl(streamUrlOf(station))) return false;
+  if (station.probeStatus === "down") return false;
+  if (station.healthStatus === "error") return false;
+  if (station.sslError) return false;
+  if (
+    station.lastCheckOk === false &&
+    isEvidenceFresh(station.lastCheckOkTime, now)
+  ) {
+    return false;
+  }
+  return true;
+}
+
+export function applyLiveCatalog(stations: Station[]) {
+  return rankStations(stations.filter((station) => isCatalogLikelyStreaming(station)));
+}
+
 export function deriveStationAvailability(
   station: Station,
   isUnavailable = false

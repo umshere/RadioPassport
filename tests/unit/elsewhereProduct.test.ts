@@ -18,6 +18,10 @@ import {
   templateDispatch,
 } from "~/api/ai/dispatch";
 import { stationLocation } from "~/components/radio-passport/StationRow";
+import {
+  languageChipsFromStations,
+  stationSpeaksLanguage,
+} from "~/components/radio-passport/countryData";
 import type { Station } from "~/types/radio";
 import {
   facingRotation,
@@ -25,6 +29,7 @@ import {
   shortestAngle,
 } from "~/components/radio-passport/ParticleGlobe";
 import { getGatewayConfig } from "~/services/ai/gateway";
+import { getGeminiModel, trimEnv } from "~/services/ai/completeFallback";
 import { getProvider, resetProviderCache } from "~/services/ai/providers";
 import { HeuristicsProvider } from "~/services/ai/providers/HeuristicsProvider";
 import { FallbackProvider } from "~/services/ai/providers/FallbackProvider";
@@ -49,6 +54,23 @@ describe("Elsewhere local time", () => {
   it("labels a city clock in UTC solar time", () => {
     const date = localDateAtLongitude(0, new Date("2026-08-13T12:00:00Z"));
     expect(formatLocalLabel("Lisbon", date)).toBe("12:00 in Lisbon");
+  });
+});
+
+describe("Country language catalog", () => {
+  it("matches a language inside a combined Radio Browser field", () => {
+    const mixed = {
+      language: "english,hindi",
+    } as Station;
+    expect(stationSpeaksLanguage(mixed, "Hindi")).toBe(true);
+    expect(stationSpeaksLanguage(mixed, "Malayalam")).toBe(false);
+    expect(
+      languageChipsFromStations([
+        { language: "malayalam" } as Station,
+        { language: "english,hindi" } as Station,
+        { language: "hindi" } as Station,
+      ])
+    ).toEqual(["Hindi", "English", "Malayalam"]);
   });
 });
 
@@ -148,6 +170,17 @@ describe("Heuristics cost lock", () => {
     process.env.HEURISTICS_MODEL = "deepseek-v4-pro";
     process.env.HEURISTICS_FALLBACK_MODEL = "kimi-k3";
     expect(getGatewayConfig().models).toEqual(["deepseek-v4-flash"]);
+  });
+});
+
+describe("Gemini free-tier model", () => {
+  it("prefers 2.5 Flash and strips Vercel newlines", () => {
+    const previous = process.env.GEMINI_MODEL;
+    delete process.env.GEMINI_MODEL;
+    expect(getGeminiModel({} as NodeJS.ProcessEnv)).toBe("gemini-2.5-flash");
+    expect(trimEnv("gemini-2.5-flash-lite\\n")).toBe("gemini-2.5-flash-lite");
+    expect(trimEnv("gemini\n")).toBe("gemini");
+    process.env.GEMINI_MODEL = previous;
   });
 });
 

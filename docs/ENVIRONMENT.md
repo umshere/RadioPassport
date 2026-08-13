@@ -13,7 +13,7 @@ Configure the AI layer and playback helpers through the following environment va
 | `OPENAI_API_KEY`     | Required when `AI_PROVIDER=openai`.                                                                              |
 | `OPENAI_MODEL`       | Optional OpenAI model name (defaults to `gpt-4o-mini`).                                                          |
 | `GEMINI_API_KEY`     | Required when `AI_PROVIDER=gemini`.                                                                              |
-| `GEMINI_MODEL`       | Optional Gemini model name (defaults to `gemini-2.0-flash`).                                                     |
+| `GEMINI_MODEL`       | Optional Gemini model name (defaults to `gemini-2.5-flash`). Flash-Lite is a fallback, not the default.          |
 | `GEMINI_API_VERSION` | Optional Gemini API version (defaults to `v1beta`, falls back to `v1`). Note: `v1` does NOT support JSON output. |
 | `OPENROUTER_API_KEY` | Required when `AI_PROVIDER=openrouter`. Get your key from https://openrouter.ai/keys                             |
 | `OPENROUTER_MODEL`   | Optional OpenRouter model name (defaults to `openrouter/free`, OpenRouter's free-model router).                  |

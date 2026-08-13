@@ -7,6 +7,9 @@ export function IntentBar({
   onSurprise,
   loading,
   surpriseLoading,
+  statusLabel,
+  statusSpoken,
+  statusTone = "idle",
 }: {
   value: string;
   onChange: (value: string) => void;
@@ -14,10 +17,14 @@ export function IntentBar({
   onSurprise: () => void;
   loading?: boolean;
   surpriseLoading?: boolean;
+  statusLabel?: string;
+  statusSpoken?: string;
+  statusTone?: "idle" | "searching" | "ready" | "empty";
 }) {
   return (
     <form
-      className="rp-intent"
+      className={`rp-intent ${statusTone !== "idle" ? `is-${statusTone}` : ""}`}
+      aria-busy={loading || undefined}
       onSubmit={(event) => {
         event.preventDefault();
         onSubmit(value);
@@ -28,7 +35,17 @@ export function IntentBar({
         onChange={(event) => onChange(event.target.value)}
         placeholder="Lisbon at dusk, Malayalam night…"
         aria-label="Ask for a place, language, mood, or station"
+        aria-describedby="intent-status"
       />
+      <span
+        id="intent-status"
+        className={`rp-intent-status is-${statusTone}`}
+        role="status"
+        aria-live="polite"
+      >
+        {statusLabel || ""}
+        <span className="sr-only">{statusSpoken}</span>
+      </span>
       <SearchVoice
         disabled={loading}
         onTranscript={(transcript) => {

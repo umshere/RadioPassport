@@ -3,6 +3,8 @@ import { Link, useLoaderData, useSearchParams } from "@remix-run/react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { rbFetchJson } from "~/utils/radioBrowser";
 import { normalizeStations } from "~/utils/stations";
+import { applyLiveCatalog } from "~/utils/stationMeta";
+import { useShelfProbe } from "~/hooks/useShelfProbe";
 import { createQueueSession } from "~/utils/playerQueue";
 import type { Country, Station } from "~/types/radio";
 import type { InterpretResponse } from "~/types/ai";
@@ -10,6 +12,7 @@ import { usePlayerStore } from "~/state/playerStore";
 import { useJourneyStore } from "~/state/journeyStore";
 import { useListeningMode } from "~/hooks/useListeningMode";
 import { useNowPlayingMetadata } from "~/hooks/useNowPlayingMetadata";
+import { useTrackTrivia } from "~/hooks/useTrackTrivia";
 import { useDispatchStore } from "~/state/dispatchStore";
 import { loadWorldDescriptorPreview } from "~/services/aiOrchestrator";
 import {
@@ -33,7 +36,10 @@ import {
   type CountryDrilldownState,
 } from "~/components/radio-passport/countryData";
 import { applyAiPreviewPool } from "~/components/radio-passport/aiPreview";
-import { catalogRequestState } from "~/components/radio-passport/searchState";
+import {
+  catalogRequestState,
+  shouldClearBrowsingFilters,
+} from "~/components/radio-passport/searchState";
 import { getContinent } from "~/utils/geography";
 import { IntentBar } from "~/components/radio-passport/IntentBar";
 import {
@@ -42,6 +48,9 @@ import {
   passportRequested,
   resolveStampReplay,
   looksLikeIntentSentence,
+  seekingBoardLabel,
+  seekingStatus,
+  theaterIntelligence,
 } from "~/components/radio-passport/productFlow";
 import { BRAND } from "~/constants/brand";
 import {
@@ -65,8 +74,8 @@ export async function loader(_: LoaderFunctionArgs) {
     ]);
     return json({
       countries: Array.isArray(countriesRaw) ? countriesRaw : [],
-      stations: normalizeStations(
-        Array.isArray(stationsRaw) ? stationsRaw : []
+      stations: applyLiveCatalog(
+        normalizeStations(Array.isArray(stationsRaw) ? stationsRaw : [])
       ),
     });
   } catch {
@@ -121,6 +130,11 @@ export default function Index() {
   const recordPlayed = useJourneyStore((state) => state.recordPlayed);
   const listening = useListeningMode();
   const metadata = useNowPlayingMetadata(nowPlaying, isPlaying);
+  const trivia = useTrackTrivia({
+    track: metadata.track,
+    source: "ai",
+    enabled: Boolean(nowPlaying && metadata.track),
+  });
   const dispatch = useDispatchStore((state) => state.dispatch);
   const requestDispatch = useDispatchStore((state) => state.requestDispatch);
   const [hour, setHour] = useState<SolarHour | null>(null);
@@ -159,7 +173,7 @@ export default function Index() {
               setCatalog(
                 normalizeStations(data.stations || [])
                   .filter((station) => stationMatches(station, query))
-                  .slice(0, 72)
+                  .slice(0, 200)
               );
           })
           .catch(() => !cancelled && setCatalog([]))
@@ -205,15 +219,21 @@ export default function Index() {
 
   const filtered = useMemo(
     () =>
-      baseStations
-        .filter(
-          (station) =>
-            stationMatches(station, query) &&
+      applyLiveCatalog(
+        baseStations.filter((station) => {
+          if (!stationMatches(station, query)) return false;
+          if (shouldClearBrowsingFilters(query)) return true;
+          return (
             stationMatchesSolarHour(station.longitude, hour) &&
             (!place || stationLocation(station) === place)
-        )
-        .slice(0, 120),
+          );
+        })
+      ).slice(0, 120),
     [baseStations, hour, place, query]
+  );
+  const liveFiltered = useShelfProbe(
+    filtered,
+    `${query}|${hour ?? ""}|${place ?? ""}|${listening.listeningMode}`
   );
 
   const globeStations = query.trim().length >= 2 ? catalog : initialStations;
@@ -257,7 +277,9 @@ export default function Index() {
     return [...map.values()].sort((a, b) => b.count - a.count).slice(0, 30);
   }, [globeStations, nowPlaying, place, stampedKeys]);
 
-  const selectedPool = filtered.length ? filtered : baseStations.slice(0, 60);
+  const selectedPool = liveFiltered.length
+    ? liveFiltered
+    : applyLiveCatalog(baseStations).slice(0, 60);
   const play = useCallback(
     (station: Station, pool = selectedPool, label = "Live now") => {
       const queue = createQueueSession({
@@ -486,6 +508,12 @@ export default function Index() {
   const trackLine = metadata.track
     ? [metadata.track.artist, metadata.track.title].filter(Boolean).join(" — ")
     : null;
+  const coverIntel = theaterIntelligence({
+    hasTrack: Boolean(trackLine),
+    dispatchBody: dispatch?.body,
+    summary: trivia.trivia?.summary,
+    facts: trivia.trivia?.facts,
+  });
   const sameHour = useMemo(() => {
     if (!localNow) return [];
     const current = solarHourAtLongitude(
@@ -515,17 +543,33 @@ export default function Index() {
       .slice(0, 8);
   }, [catalog, countryStations, favorites, initialStations]);
 
-  const boardLabel = query
-    ? catalogLoading
-      ? "SEARCHING"
-      : "SEARCH"
-    : mixLabel
-    ? "WORLD MIX"
-    : "LIVE NOW";
+  const seek = seekingStatus({
+    query,
+    loading: catalogLoading,
+    count: liveFiltered.length,
+  });
+  const boardLabel =
+    seekingBoardLabel(query, catalogLoading, liveFiltered.length) ??
+    (mixLabel ? "WORLD MIX" : "LIVE NOW");
   const coverEmpty = describeCoverEmpty({ query, hour, place });
+  const isSeeking = query.trim().length >= 2;
+
+  useEffect(() => {
+    if (!isSeeking || catalogLoading) return;
+    const board = document.getElementById("live-board");
+    if (!board) return;
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const top = board.getBoundingClientRect().top;
+    if (top < 72 || top > window.innerHeight * 0.58) {
+      board.scrollIntoView({
+        behavior: reduce ? "auto" : "smooth",
+        block: "start",
+      });
+    }
+  }, [catalogLoading, isSeeking, liveFiltered.length]);
 
   return (
-    <main className="rp-home">
+    <main className={`rp-home ${isSeeking ? "is-seeking" : ""}`}>
       <header className="rp-home-header">
         <SignalWordmark />
         <IntentBar
@@ -535,6 +579,9 @@ export default function Index() {
           onSurprise={() => void requestAiWorld()}
           loading={catalogLoading}
           surpriseLoading={aiStatus === "loading"}
+          statusLabel={seek.label}
+          statusSpoken={seek.spoken}
+          statusTone={seek.tone}
         />
         <Link to="/about" className="rp-eyebrow text-dust" prefetch="intent">
           Issue
@@ -579,7 +626,19 @@ export default function Index() {
           ) : (
             <p className="rp-lede">{BRAND.promise}</p>
           )}
-          {dispatch?.body ? <p className="ew-caption">{dispatch.body}</p> : null}
+          {coverIntel.dispatchBody ? (
+            <p className="ew-caption">{coverIntel.dispatchBody}</p>
+          ) : null}
+          {coverIntel.facts[0] ? (
+            <p className="mt-3 max-w-[36ch] text-sm text-dust">
+              <span className="rp-eyebrow mr-2 text-foil">
+                {coverIntel.facts[0].label}
+              </span>
+              {coverIntel.facts[0].value}
+            </p>
+          ) : coverIntel.summary ? (
+            <p className="ew-caption">{coverIntel.summary}</p>
+          ) : null}
           {!nowPlaying && arrivalStation ? (
             <button
               type="button"
@@ -627,8 +686,15 @@ export default function Index() {
               ))}
             </div>
           ) : null}
-          <div className="mt-7 flex items-center justify-between">
-            <span className="rp-eyebrow">
+          <div
+            className="mt-7 flex items-center justify-between"
+            id="live-board"
+          >
+            <span
+              className={`rp-eyebrow ${isSeeking ? "text-ether" : ""}`}
+              role="status"
+              aria-live="polite"
+            >
               <i className="rp-live-dot" /> {boardLabel}
             </span>
             {mixLabel ? (
@@ -647,19 +713,29 @@ export default function Index() {
               </button>
             </div>
           )}
-          <div className="rp-station-list">
-            {filtered.slice(0, 8).map((station) => (
-              <StationRow
-                key={station.uuid}
-                station={station}
-                active={nowPlaying?.uuid === station.uuid && isPlaying}
-                favorite={favorites.includes(station.uuid)}
-                onPlay={() => play(station)}
-                onFavorite={() => toggleFavorite(station.uuid)}
-              />
-            ))}
+          <div className="rp-station-list" aria-busy={catalogLoading}>
+            {catalogLoading && isSeeking
+              ? [0, 1, 2].map((slot) => (
+                  <div
+                    key={`pending-${slot}`}
+                    className="rp-station is-pending"
+                    aria-hidden="true"
+                  />
+                ))
+              : liveFiltered
+                  .slice(0, isSeeking ? 32 : 8)
+                  .map((station) => (
+                    <StationRow
+                      key={station.uuid}
+                      station={station}
+                      active={nowPlaying?.uuid === station.uuid && isPlaying}
+                      favorite={favorites.includes(station.uuid)}
+                      onPlay={() => play(station)}
+                      onFavorite={() => toggleFavorite(station.uuid)}
+                    />
+                  ))}
           </div>
-          {filtered.length === 0 && !catalogLoading && (
+          {liveFiltered.length === 0 && !catalogLoading && (
             <div className="py-8" role="status">
               <p className="text-sm text-dust">{coverEmpty.message}</p>
               <div className="mt-3 flex flex-wrap gap-2">

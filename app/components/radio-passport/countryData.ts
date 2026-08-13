@@ -1,8 +1,11 @@
-import { rankStations } from "~/utils/stationMeta";
+import { applyLiveCatalog } from "~/utils/stationMeta";
 import { rbFetchJson } from "~/utils/radioBrowser";
 import { normalizeStations } from "~/utils/stations";
 import { normalizeLanguages } from "~/utils/languages";
 import type { Station } from "~/types/radio";
+
+export const COUNTRY_CATALOG_LIMIT = 1000;
+export const COUNTRY_LANGUAGE_LIMIT = 400;
 
 export type CountryDrilldownState =
   | { status: "loading"; stations: Station[] }
@@ -19,14 +22,70 @@ export async function fetchCountryDrilldown(
   const raw = await rbFetchJson<unknown>(
     `/json/stations/bycountry/${encodeURIComponent(
       country
-    )}?limit=140&hidebroken=true&order=clickcount&reverse=true`,
+    )}?limit=${COUNTRY_CATALOG_LIMIT}&hidebroken=true&order=clickcount&reverse=true`,
     undefined,
     { softFail: true }
   );
   if (!Array.isArray(raw)) {
     throw new Error("Radio Browser did not return a country catalog.");
   }
-  return rankStations(normalizeStations(raw)).slice(0, 140);
+  return applyLiveCatalog(normalizeStations(raw)).slice(
+    0,
+    COUNTRY_CATALOG_LIMIT
+  );
+}
+
+export function stationSpeaksLanguage(station: Station, language: string) {
+  const wanted = language.trim().toLowerCase();
+  if (!wanted) return true;
+  return normalizeLanguages(station.language).some(
+    (item) => item.toLowerCase() === wanted
+  );
+}
+
+export function languageChipsFromStations(stations: Station[], limit = 12) {
+  return rankedValues(
+    stations.flatMap((station) => normalizeLanguages(station.language))
+  ).slice(0, limit);
+}
+
+export function mergeStationLists(...lists: Station[][]) {
+  const seen = new Set<string>();
+  const merged: Station[] = [];
+  for (const list of lists) {
+    for (const station of list) {
+      if (!station?.uuid || seen.has(station.uuid)) continue;
+      seen.add(station.uuid);
+      merged.push(station);
+    }
+  }
+  return applyLiveCatalog(merged);
+}
+
+export async function fetchStationsByCountryLanguage(
+  country: string,
+  language: string
+): Promise<Station[]> {
+  const params = new URLSearchParams({
+    country,
+    language: language.trim().toLowerCase(),
+    hidebroken: "true",
+    order: "clickcount",
+    reverse: "true",
+    limit: String(COUNTRY_LANGUAGE_LIMIT),
+  });
+  const raw = await rbFetchJson<unknown>(
+    `/json/stations/search?${params.toString()}`,
+    undefined,
+    { softFail: true }
+  );
+  if (!Array.isArray(raw)) {
+    throw new Error("Radio Browser did not return a language catalog.");
+  }
+  return applyLiveCatalog(normalizeStations(raw)).slice(
+    0,
+    COUNTRY_LANGUAGE_LIMIT
+  );
 }
 
 export function countryCacheWith(
