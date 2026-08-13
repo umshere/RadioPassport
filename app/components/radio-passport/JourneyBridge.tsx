@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useLocation, useNavigate } from "@remix-run/react";
 import { usePlayerStore } from "~/state/playerStore";
 import {
   isStampReady,
@@ -7,6 +8,7 @@ import {
   useJourneyStore,
 } from "~/state/journeyStore";
 import { stationLocation, stationTelemetry } from "./StationRow";
+import { homeWithPassportHref, openPassportNow } from "./productFlow";
 
 export function stampForContinuousSession(
   station: NonNullable<
@@ -32,6 +34,8 @@ export function stampForContinuousSession(
 }
 
 export function JourneyBridge() {
+  const location = useLocation();
+  const navigate = useNavigate();
   const nowPlaying = usePlayerStore((state) => state.nowPlaying);
   const isPlaying = usePlayerStore((state) => state.isPlaying);
   const hydrated = useJourneyStore((state) => state.hydrated);
@@ -86,7 +90,17 @@ export function JourneyBridge() {
 
   if (!toast) return null;
   return (
-    <div className="rp-toast" role="status" aria-live="polite">
+    <button
+      type="button"
+      className="rp-toast text-left"
+      role="status"
+      aria-live="polite"
+      onClick={() =>
+        openPassportNow(location.pathname, () =>
+          navigate(homeWithPassportHref())
+        )
+      }
+    >
       <span className="rp-eyebrow text-foil">INKED</span>
       <strong>
         {toast.city}
@@ -94,6 +108,6 @@ export function JourneyBridge() {
       <small>
         {toast.stationName} · {toast.country}
       </small>
-    </div>
+    </button>
   );
 }

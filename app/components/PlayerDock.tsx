@@ -1,5 +1,9 @@
 import { useEffect, useRef } from "react";
-import { Link } from "@remix-run/react";
+import { Link, useLocation, useNavigate } from "@remix-run/react";
+import {
+  homeWithPassportHref,
+  openPassportNow,
+} from "~/components/radio-passport/productFlow";
 import { useHydrated } from "~/hooks/useHydrated";
 import { usePlayerStore } from "~/state/playerStore";
 import { canMutateJourney, useJourneyStore } from "~/state/journeyStore";
@@ -23,6 +27,8 @@ function hue(id: string) {
 }
 
 export default function PlayerDock() {
+  const location = useLocation();
+  const navigate = useNavigate();
   const mounted = useHydrated();
   const nowPlaying = usePlayerStore((state) => state.nowPlaying);
   const isPlaying = usePlayerStore((state) => state.isPlaying);
@@ -136,15 +142,23 @@ export default function PlayerDock() {
             `Live from ${city}. No track title from this station.`}
         </span>
       </div>
-      <span
+      <button
+        type="button"
         className="ew-stamp-ring"
-        aria-hidden="true"
+        onClick={() =>
+          openPassportNow(location.pathname, () =>
+            navigate(homeWithPassportHref())
+          )
+        }
+        aria-label={
+          stamped ? "Open passport — this city is stamped" : "Open passport"
+        }
+        title={stamped ? "Stamped" : "Stay 60 seconds to ink this city"}
         style={{
           borderRadius: "50%",
           border: `1px solid ${stamped ? "#C6A56A" : "rgba(232,223,208,.2)"}`,
           background: stamped ? "rgba(198,165,106,.25)" : "transparent",
         }}
-        title={stamped ? "Stamped" : "Stay 60 seconds to ink this city"}
       />
       <button
         type="button"

@@ -1,36 +1,53 @@
-# UI Testing Guide
+# Testing Guide
 
-Use this checklist to validate the current Home / Atlas UI flows.
+Elsewhere is one loop: **land → intent → tune → inhabit → stamp → next**.  
+A control that does not take the listener to the next step is a dead icon.
 
-## Quick start
+Contract: `app/components/radio-passport/productFlow.ts`  
+Tests: `tests/unit/elsewhereFlow.test.ts` plus the existing Elsewhere / journey suites.
 
-- Run `npm run dev` and use the host/port shown in the terminal.
+```bash
+npm test
+npm run typecheck
+```
 
-## Global shell
+## Product loop
 
-- AppHeader stays sticky.
-- Search button focuses `#hero-search-input` when on Home / Atlas.
-- PlayerDock appears after a station starts playing and updates track metadata.
-- Mobile sidebar menu opens and closes reliably.
+| Step | What must happen |
+|---|---|
+| Land | Globe is live. **Land here** / **Continue** starts audio. A globe dot rotates, then plays. |
+| Intent | Type, speak, or Surprise. Short query = catalog. Sentence = interpret, maybe a mix. Playback does not stop. |
+| Tune | Solar hour, same-hour cities, Atlas → country, station row. Filters never call `stop()`. |
+| Inhabit | Dock appears. Artwork / **Theater** opens `/listen`. Local clock + honest ICY. |
+| Stamp | 60 continuous seconds inks the city. Heart keeps a signal. Stamp ring / Passport / INKED toast open the book. |
+| Next | Prev/next, stamp replay (id → city → that country), empty states offer a button. |
 
-## Home / Atlas (/)
+## Empty / error (must have a step)
 
-### Landing and atlas
+| State | Next step |
+|---|---|
+| Empty search | Surprise, Atlas, Clear search |
+| Quiet solar hour | Clear hour, Atlas, Surprise |
+| Filtered city with no rows | Show every city, Atlas |
+| Empty atlas search | Clear search |
+| Empty passport | Ghost slots + **Find a city** |
+| Dead stamp replay | Open that country, or Atlas |
+| Failed mix | **Try the mix again** |
+| Failed country catalog | **Retry live catalog** |
+| `/listen` with no station | Back to Elsewhere |
+| 404 / error | Back |
 
-- Hero banner renders, tagline cycles, and CTA buttons respond.
-- Stats bar shows countries/stations/continents counts.
-- Atlas filters update the grid.
-- Search (`q`) switches to catalog results and shows a clear action.
+## Connections to click
 
-### Country view
+- Header: wordmark → `/`, Issue → `/about`, Passport → book, intent, mic (hidden if unsupported), Surprise
+- Cover: Land here, hour chips, Atlas, same-hour cities, station play + heart
+- Globe: hover tip, click lands
+- Dock: art → theater, stamp ring → book, heart, prev / play / next, Theater
+- Overlays: Escape / × close, country ← Atlas, stamp tap retunes
+- Theater: ← Elsewhere, prev / play / next
 
-- Selecting a country updates URL with `?country=<name>`.
-- CountryOverview renders dial navigation and play/pause controls.
-- Filter panel/drawer updates results without layout breakage.
-- StationGrid plays stations and updates PlayerDock.
+Search, chips, and overlays never call `stop()`.
 
-## Mobile checks
+## What not to treat as a feature
 
-- Station list uses `CompactStationList`.
-- Filter drawer opens from the filter icon.
-- PlayerDock remains usable with safe-area padding.
+Unmounted leftovers (`AppHeader`, `Premium*`, `RetroTuner`, Tuning overlay) are not in this loop. Do not add tests that require them.

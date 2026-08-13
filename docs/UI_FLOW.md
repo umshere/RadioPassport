@@ -33,10 +33,16 @@ Coverline + local clock + track-or-honest-live + optional dispatch / one trivia 
 
 ## Empty / error
 
+Every empty or failed surface names the next move. Copy without a button is a dead end.
+
 | State | UI |
 |---|---|
 | No ICY | Place identity stays. Honest live line. |
-| Empty search | “No signal for that.” Surprise or Atlas. |
+| Empty search | “No signal for that.” Buttons: Surprise, Atlas, Clear search. |
+| Quiet solar hour / city | Clear the filter, or open Atlas. |
+| Empty atlas search | Clear search. |
 | Dead stream | Notice + retry + skip. Globe follows the next station. |
-| Empty passport | Ghost slots + “Stay 60 seconds.” |
+| Empty passport | Ghost slots open **Find a city**. Stay-60s line stays. |
+| Stamp with no live station | Open that country, or Atlas. |
+| Failed mix / country catalog | Retry. |
 | `/listen` with no station | Bounce home. |

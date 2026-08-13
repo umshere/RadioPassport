@@ -5,6 +5,7 @@ import type { PassportStamp } from "~/state/journeyStore";
 import type { CountryDrilldownState } from "./countryData";
 import { SignalWordmark } from "./SignalMark";
 import { StationRow, stationLocation } from "./StationRow";
+import { describeAtlasEmpty } from "./productFlow";
 
 function Overlay({
   children,
@@ -152,6 +153,21 @@ export function AtlasOverlay({
         />
       </header>
       <div className="space-y-9">
+        {visible.length === 0 ? (
+          <div className="mt-8" role="status">
+            <p className="text-sm text-dust">{describeAtlasEmpty(query).message}</p>
+            {describeAtlasEmpty(query).actions.map((action) => (
+              <button
+                type="button"
+                key={action.id}
+                className="rp-text-button mt-3"
+                onClick={() => setQuery("")}
+              >
+                {action.label} →
+              </button>
+            ))}
+          </div>
+        ) : null}
         {regions.map((region) => (
           <section key={region}>
             <p className="rp-eyebrow text-foil">{region}</p>
@@ -328,6 +344,7 @@ export function PassportOverlay({
   close,
   onReplay,
   onPlayFavorite,
+  onFindCity,
 }: {
   stamps: PassportStamp[];
   playedCount: number;
@@ -337,6 +354,7 @@ export function PassportOverlay({
   close: () => void;
   onReplay?: (stamp: PassportStamp) => void;
   onPlayFavorite?: (station: Station) => void;
+  onFindCity?: () => void;
 }) {
   const countries = new Set(stamps.map((stamp) => stamp.country));
   const languages = new Set(
@@ -378,7 +396,6 @@ export function PassportOverlay({
                     active={false}
                     favorite
                     onPlay={() => onPlayFavorite?.(station)}
-                    onFavorite={() => undefined}
                   />
                 ))}
               </div>
@@ -407,11 +424,22 @@ export function PassportOverlay({
               </button>
             ))}
             {Array.from({ length: Math.max(0, 6 - stamps.length) }).map(
-              (_, index) => (
-                <div className="rp-stamp rp-stamp-empty" key={`empty-${index}`}>
-                  {String(stamps.length + index + 1).padStart(2, "0")}
-                </div>
-              )
+              (_, index) =>
+                onFindCity ? (
+                  <button
+                    type="button"
+                    className="rp-stamp rp-stamp-empty"
+                    key={`empty-${index}`}
+                    onClick={onFindCity}
+                    aria-label="Find a city to stamp"
+                  >
+                    {String(stamps.length + index + 1).padStart(2, "0")}
+                  </button>
+                ) : (
+                  <div className="rp-stamp rp-stamp-empty" key={`empty-${index}`}>
+                    {String(stamps.length + index + 1).padStart(2, "0")}
+                  </div>
+                )
             )}
           </div>
         </div>
@@ -419,6 +447,15 @@ export function PassportOverlay({
       <p className="mt-6 rp-telemetry text-dust">
         Stay with a station for 60 seconds to ink the first page.
       </p>
+      {stamps.length === 0 && onFindCity ? (
+        <button
+          type="button"
+          className="rp-text-button mt-3"
+          onClick={onFindCity}
+        >
+          Find a city →
+        </button>
+      ) : null}
     </Overlay>
   );
 }

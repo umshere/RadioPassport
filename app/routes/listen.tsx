@@ -8,6 +8,7 @@ import { useDispatchStore } from "~/state/dispatchStore";
 import { BRAND } from "~/constants/brand";
 import { stationLocation, stationTelemetry } from "~/components/radio-passport/StationRow";
 import { formatLocalLabel, localDateAtLongitude } from "~/utils/localTime";
+import { theaterWithoutStation } from "~/components/radio-passport/productFlow";
 
 export const meta = () => [
   { title: `Theater · ${BRAND.name}` },
@@ -55,13 +56,14 @@ export default function ListeningPage() {
   }, [index, nowPlaying, queue]);
 
   if (!nowPlaying) {
+    const empty = theaterWithoutStation();
     return (
       <main className="ew-theater flex min-h-screen flex-col items-start justify-center">
         <p className="rp-eyebrow text-foil">{BRAND.eyebrow}</p>
         <h1 className="ew-coverline mt-4">The room is empty.</h1>
-        <p className="rp-lede mt-4">Land somewhere first. Then come back.</p>
-        <Link to="/" className="ew-land mt-8" prefetch="intent">
-          Back to {BRAND.name}
+        <p className="rp-lede mt-4">{empty.message}</p>
+        <Link to={empty.route} className="ew-land mt-8" prefetch="intent">
+          {empty.label}
         </Link>
       </main>
     );

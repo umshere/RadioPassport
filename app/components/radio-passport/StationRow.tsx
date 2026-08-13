@@ -45,7 +45,7 @@ export function StationRow({
   active: boolean;
   favorite: boolean;
   onPlay: () => void;
-  onFavorite: () => void;
+  onFavorite?: () => void;
 }) {
   const location = stationLocation(station);
   return (
@@ -87,18 +87,20 @@ export function StationRow({
       <span className="rp-telemetry hidden shrink-0 sm:block">
         {stationTelemetry(station)}
       </span>
-      <button
-        type="button"
-        onClick={onFavorite}
-        className={`grid h-11 w-11 shrink-0 place-items-center rounded-full text-lg ${
-          favorite ? "text-foil" : "text-dust"
-        }`}
-        aria-label={`${favorite ? "Remove" : "Add"} ${station.name} ${
-          favorite ? "from" : "to"
-        } favorites`}
-      >
-        {favorite ? "♥" : "♡"}
-      </button>
+      {onFavorite ? (
+        <button
+          type="button"
+          onClick={onFavorite}
+          className={`grid h-11 w-11 shrink-0 place-items-center rounded-full text-lg ${
+            favorite ? "text-foil" : "text-dust"
+          }`}
+          aria-label={`${favorite ? "Remove" : "Add"} ${station.name} ${
+            favorite ? "from" : "to"
+          } favorites`}
+        >
+          {favorite ? "♥" : "♡"}
+        </button>
+      ) : null}
     </div>
   );
 }

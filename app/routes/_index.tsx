@@ -1,5 +1,5 @@
 import { json, type LoaderFunctionArgs } from "@remix-run/node";
-import { Link, useLoaderData } from "@remix-run/react";
+import { Link, useLoaderData, useSearchParams } from "@remix-run/react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { rbFetchJson } from "~/utils/radioBrowser";
 import { normalizeStations } from "~/utils/stations";
@@ -36,6 +36,13 @@ import { applyAiPreviewPool } from "~/components/radio-passport/aiPreview";
 import { catalogRequestState } from "~/components/radio-passport/searchState";
 import { getContinent } from "~/utils/geography";
 import { IntentBar } from "~/components/radio-passport/IntentBar";
+import {
+  describeCoverEmpty,
+  OPEN_PASSPORT_EVENT,
+  passportRequested,
+  resolveStampReplay,
+  looksLikeIntentSentence,
+} from "~/components/radio-passport/productFlow";
 import { BRAND } from "~/constants/brand";
 import {
   formatClock,
@@ -97,19 +104,10 @@ function hueFromId(id: string) {
   );
 }
 
-function looksLikeSentence(value: string) {
-  const words = value.trim().split(/\s+/).filter(Boolean);
-  return (
-    words.length >= 3 ||
-    /\b(mix|surprise|take me|anywhere|night|rainy|dusk|dawn|somewhere)\b/i.test(
-      value
-    )
-  );
-}
-
 export default function Index() {
   const { countries, stations: initialStations } =
     useLoaderData<typeof loader>();
+  const [searchParams] = useSearchParams();
   const nowPlaying = usePlayerStore((state) => state.nowPlaying);
   const isPlaying = usePlayerStore((state) => state.isPlaying);
   const startStation = usePlayerStore((state) => state.startStation);
@@ -383,7 +381,7 @@ export default function Index() {
     async (value: string) => {
       const prompt = value.trim();
       if (!prompt) return;
-      if (!looksLikeSentence(prompt)) return;
+      if (!looksLikeIntentSentence(prompt)) return;
       try {
         const response = await fetch("/api/ai/interpret", {
           method: "POST",
@@ -461,6 +459,18 @@ export default function Index() {
     requestDispatch,
   ]);
 
+  useEffect(() => {
+    if (passportRequested(searchParams.toString())) {
+      setPassport(true);
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
+    const open = () => setPassport(true);
+    window.addEventListener(OPEN_PASSPORT_EVENT, open);
+    return () => window.removeEventListener(OPEN_PASSPORT_EVENT, open);
+  }, []);
+
   const arrivalCity = nowPlaying
     ? stationLocation(nowPlaying)
     : continueStation
@@ -512,6 +522,7 @@ export default function Index() {
     : mixLabel
     ? "WORLD MIX"
     : "LIVE NOW";
+  const coverEmpty = describeCoverEmpty({ query, hour, place });
 
   return (
     <main className="rp-home">
@@ -525,7 +536,7 @@ export default function Index() {
           loading={catalogLoading}
           surpriseLoading={aiStatus === "loading"}
         />
-        <Link to="/about" className="rp-eyebrow hidden text-dust sm:inline" prefetch="intent">
+        <Link to="/about" className="rp-eyebrow text-dust" prefetch="intent">
           Issue
         </Link>
         <button
@@ -625,9 +636,16 @@ export default function Index() {
             ) : null}
           </div>
           {aiStatus === "error" && listening.exploreError && (
-            <p className="mt-2 text-xs text-dust" role="alert">
-              {listening.exploreError}
-            </p>
+            <div className="mt-2" role="alert">
+              <p className="text-xs text-dust">{listening.exploreError}</p>
+              <button
+                type="button"
+                className="rp-text-button mt-2"
+                onClick={() => void requestAiWorld()}
+              >
+                Try the mix again →
+              </button>
+            </div>
           )}
           <div className="rp-station-list">
             {filtered.slice(0, 8).map((station) => (
@@ -642,9 +660,27 @@ export default function Index() {
             ))}
           </div>
           {filtered.length === 0 && !catalogLoading && (
-            <p className="py-8 text-sm text-dust">
-              No signal for that. Surprise yourself, or open the atlas.
-            </p>
+            <div className="py-8" role="status">
+              <p className="text-sm text-dust">{coverEmpty.message}</p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {coverEmpty.actions.map((action) => (
+                  <button
+                    type="button"
+                    key={action.id}
+                    className="rp-chip"
+                    onClick={() => {
+                      if (action.id === "surprise") void requestAiWorld();
+                      if (action.id === "atlas") setAtlas(true);
+                      if (action.id === "clear-search") setQuery("");
+                      if (action.id === "clear-hour") setHour(null);
+                      if (action.id === "clear-place") setPlace(null);
+                    }}
+                  >
+                    {action.label}
+                  </button>
+                ))}
+              </div>
+            </div>
           )}
         </section>
         <section className="rp-globe-side">
@@ -712,12 +748,24 @@ export default function Index() {
           travelerNumber={travelerNumber}
           favorites={favoriteStations}
           close={() => setPassport(false)}
+          onFindCity={() => setPassport(false)}
           onReplay={(stamp) => {
-            const match =
-              initialStations.find((station) => station.uuid === stamp.stationId) ||
-              catalog.find((station) => station.uuid === stamp.stationId);
-            if (match) play(match, selectedPool, stamp.city);
+            const resolved = resolveStampReplay(stamp, [
+              ...initialStations,
+              ...catalog,
+              ...countryStations,
+            ]);
+            if (resolved.station) {
+              play(resolved.station, selectedPool, stamp.city);
+              setPassport(false);
+              return;
+            }
             setPassport(false);
+            if (resolved.fallback === "country" && stamp.country) {
+              chooseCountry(stamp.country);
+              return;
+            }
+            setAtlas(true);
           }}
           onPlayFavorite={(station) => {
             play(station, selectedPool, "Favorites");
