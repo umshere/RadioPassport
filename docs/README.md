@@ -6,6 +6,7 @@ Elsewhere (repo heritage: Radio Passport). Remix + Tailwind. Live radio as a cov
 
 - Product + run: [../readme.md](../readme.md)
 - **Roadmap (shipped / next / paid):** [ROADMAP.md](./ROADMAP.md)
+- **After compact / next session:** [SESSION_HANDOFF.md](./SESSION_HANDOFF.md)
 - Architecture: [ARCHITECTURE.md](./ARCHITECTURE.md)
 - User journey: [UI_FLOW.md](./UI_FLOW.md)
 - Design tokens + mark: [DESIGN_SPECS.md](./DESIGN_SPECS.md)
