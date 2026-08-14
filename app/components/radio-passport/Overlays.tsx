@@ -235,7 +235,7 @@ export function CountryOverlay({
   onBack: () => void;
   close: () => void;
   onPlay: (station: Station) => void;
-  onFavorite: (id: string) => void;
+  onFavorite: (id: string, station?: Station) => void;
   drilldown: CountryDrilldownState | null;
   onRetry: () => void;
 }) {
@@ -376,7 +376,7 @@ export function CountryOverlay({
                         active={false}
                         favorite={favorites.includes(station.uuid)}
                         onPlay={() => onPlay(station)}
-                        onFavorite={() => onFavorite(station.uuid)}
+                        onFavorite={() => onFavorite(station.uuid, station)}
                       />
                     ))}
                   </div>
@@ -398,6 +398,7 @@ export function PassportOverlay({
   close,
   onReplay,
   onPlayFavorite,
+  onFavorite,
   onFindCity,
 }: {
   stamps: PassportStamp[];
@@ -408,6 +409,7 @@ export function PassportOverlay({
   close: () => void;
   onReplay?: (stamp: PassportStamp) => void;
   onPlayFavorite?: (station: Station) => void;
+  onFavorite?: (station: Station) => void;
   onFindCity?: () => void;
 }) {
   const countries = new Set(stamps.map((stamp) => stamp.country));
@@ -450,6 +452,9 @@ export function PassportOverlay({
                     active={false}
                     favorite
                     onPlay={() => onPlayFavorite?.(station)}
+                    onFavorite={
+                      onFavorite ? () => onFavorite(station) : undefined
+                    }
                   />
                 ))}
               </div>

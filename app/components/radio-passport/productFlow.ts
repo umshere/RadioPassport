@@ -112,7 +112,7 @@ export const SURFACE_CONNECTIONS: SurfaceConnection[] = [
   {
     id: "issue",
     surface: "header",
-    label: "Issue",
+    label: "Room",
     step: "next",
     action: "issue",
     keepsPlayback: true,
@@ -353,7 +353,7 @@ export const SURFACE_CONNECTIONS: SurfaceConnection[] = [
   {
     id: "about-land",
     surface: "about",
-    label: "Land from Issue 01",
+    label: "Land from the room",
     step: "land",
     action: "home",
     keepsPlayback: true,
@@ -385,7 +385,7 @@ export function looksLikeIntentSentence(value: string) {
   const words = value.trim().split(/\s+/).filter(Boolean);
   return (
     words.length >= 3 ||
-    /\b(mix|surprise|take me|anywhere|night|rainy|dusk|dawn|somewhere)\b/i.test(
+    /\b(mix|surprise|take me|anywhere|night|tonight|rainy|dusk|dawn|somewhere|wander|random)\b/i.test(
       value
     )
   );
@@ -454,6 +454,18 @@ export function seekingBoardLabel(
   if (!trimmed) return null;
   const name = trimmed.toUpperCase();
   if (loading) return `SEARCHING · ${name}`;
+  if (count === 0) return `NO SIGNAL · ${name}`;
+  return `${count} LIVE · ${name}`;
+}
+
+export function hourBoardLabel(
+  hour: string | null,
+  loading: boolean,
+  count: number
+) {
+  if (!hour) return null;
+  const name = hour.toUpperCase();
+  if (loading) return `SEEKING · ${name}`;
   if (count === 0) return `NO SIGNAL · ${name}`;
   return `${count} LIVE · ${name}`;
 }
@@ -582,6 +594,131 @@ export function overlayBackFromCountry(): Extract<FlowAction, "atlas"> {
   return "atlas";
 }
 
+/** Close the book and open Atlas so an empty stamp slot has a next land. */
+export function findCityFromPassport() {
+  return { passport: false, atlas: true };
+}
+
 export function searchKeepsPlayback() {
   return true;
+}
+
+export type CoverArrival = {
+  headline: string;
+  cta: string;
+  ctaKind: "none" | "land" | "continue";
+  live: boolean;
+};
+
+/** Same-hour foil pills play immediately; they do not set hour or place. */
+export function sameHourPillLabel(city: string): {
+  label: string;
+  spoken: string;
+} {
+  const name = city.trim() || "this city";
+  return { label: name, spoken: `Land in ${name}` };
+}
+
+/** On air / LIVE only while audio is actually playing. */
+export function coverArrival(input: {
+  isPlaying: boolean;
+  hasNowPlaying: boolean;
+  hasContinue: boolean;
+  city: string;
+}): CoverArrival {
+  const city = input.city.trim() || "the world";
+  if (input.isPlaying) {
+    return {
+      headline: `${city} is on air.`,
+      cta: "",
+      ctaKind: "none",
+      live: true,
+    };
+  }
+  if (input.hasNowPlaying || input.hasContinue) {
+    return {
+      headline: `Continue in ${city}.`,
+      cta: `Continue in ${city}`,
+      ctaKind: "continue",
+      live: false,
+    };
+  }
+  return {
+    headline: `Land in ${city}.`,
+    cta: "Land here",
+    ctaKind: "land",
+    live: false,
+  };
+}
+
+/**
+ * Seeking names the search, not the leftover featured city.
+ * "{query} is live" would be a lie while nothing is playing.
+ */
+export function coverWhileSeeking(input: {
+  query: string;
+  count: number;
+  loading: boolean;
+}): CoverArrival {
+  const query = input.query.trim();
+  const status = seekingStatus({
+    query,
+    loading: input.loading,
+    count: input.count,
+  });
+  if (status.tone === "searching") {
+    return {
+      headline: `Searching ${query}.`,
+      cta: "",
+      ctaKind: "none",
+      live: false,
+    };
+  }
+  if (status.tone === "empty") {
+    return {
+      headline: `No signal for ${query}.`,
+      cta: "",
+      ctaKind: "none",
+      live: false,
+    };
+  }
+  return {
+    headline: `${input.count} live for ${query}.`,
+    cta: "",
+    ctaKind: "none",
+    live: false,
+  };
+}
+
+/** Playing keeps the inhabited city. Seeking only owns the cover when idle. */
+export function resolveCoverArrival(input: {
+  isPlaying: boolean;
+  hasNowPlaying: boolean;
+  hasContinue: boolean;
+  city: string;
+  query: string;
+  count: number;
+  loading: boolean;
+}): CoverArrival {
+  if (input.isPlaying) {
+    return coverArrival({
+      isPlaying: true,
+      hasNowPlaying: input.hasNowPlaying,
+      hasContinue: input.hasContinue,
+      city: input.city,
+    });
+  }
+  if (input.query.trim().length >= 2) {
+    return coverWhileSeeking({
+      query: input.query,
+      count: input.count,
+      loading: input.loading,
+    });
+  }
+  return coverArrival({
+    isPlaying: false,
+    hasNowPlaying: input.hasNowPlaying,
+    hasContinue: input.hasContinue,
+    city: input.city,
+  });
 }

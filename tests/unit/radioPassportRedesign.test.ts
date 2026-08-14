@@ -9,6 +9,14 @@ import {
   useJourneyStore,
 } from "~/state/journeyStore";
 import {
+  FAVORITE_SNAPSHOT_CAP,
+  dropFavoriteSnapshot,
+  parseFavoriteSnapshots,
+  resolveKeptSignals,
+  toSlimStation,
+  upsertFavoriteSnapshot,
+} from "~/state/favoriteSnapshot";
+import {
   nextGlobePlaceIndex,
   shouldAnimateGlobe,
 } from "~/components/radio-passport/ParticleGlobe";
@@ -51,6 +59,7 @@ describe("Signal & Stamp journey contracts", () => {
       stamps: [],
       playedStationIds: [],
       favoriteStationIds: [],
+      favoriteStations: [],
     });
   });
   it("keeps a selected station in a wrapped filtered queue", () => {
@@ -120,6 +129,7 @@ describe("Signal & Stamp journey contracts", () => {
       hydrated: false,
       stamps: [],
       favoriteStationIds: [],
+      favoriteStations: [],
     });
     useJourneyStore.getState().hydrate();
     expect(useJourneyStore.getState().favoriteStationIds).toEqual([
@@ -220,5 +230,96 @@ describe("Signal & Stamp journey contracts", () => {
       stations: [],
     });
     expect(retried[countryCacheKey("Japan")]?.status).toBe("loading");
+  });
+});
+
+describe("Kept-signal snapshots survive a gone search catalog", () => {
+  it("persists a slim snapshot that can play without the live pool", () => {
+    const searchOnly = station("search-only");
+    const slim = toSlimStation(searchOnly);
+    expect(slim).toMatchObject({
+      uuid: "search-only",
+      name: "Signal search-only",
+      streamUrl: searchOnly.streamUrl,
+      city: "Kochi",
+      country: "India",
+      countryCode: "IN",
+      longitude: 76.26,
+      latitude: 9.93,
+    });
+    const resolved = resolveKeptSignals(["search-only"], [slim!], []);
+    expect(resolved).toHaveLength(1);
+    expect(resolved[0]?.uuid).toBe("search-only");
+    expect(resolved[0]?.streamUrl).toBe(searchOnly.streamUrl);
+  });
+
+  it("reads snapshots first, then fills remaining hearts from the live pool", () => {
+    const live = station("live");
+    const gone = station("gone");
+    const slim = toSlimStation(gone)!;
+    const resolved = resolveKeptSignals(
+      ["gone", "live", "missing"],
+      [slim],
+      [live]
+    );
+    expect(resolved.map((entry) => entry.uuid)).toEqual(["gone", "live"]);
+    expect(resolved[0]?.name).toBe(gone.name);
+  });
+
+  it("caps snapshots and drops one when the heart is removed", () => {
+    const first = toSlimStation(station("keep"))!;
+    let list = upsertFavoriteSnapshot([], first);
+    for (let i = 0; i < FAVORITE_SNAPSHOT_CAP; i++) {
+      list = upsertFavoriteSnapshot(list, toSlimStation(station(`s${i}`))!);
+    }
+    expect(list).toHaveLength(FAVORITE_SNAPSHOT_CAP);
+    expect(list.some((entry) => entry.uuid === "keep")).toBe(false);
+    expect(dropFavoriteSnapshot(list, "s0").some((entry) => entry.uuid === "s0")).toBe(
+      false
+    );
+  });
+
+  it("hydrates old favorite ids without snapshots, and new hearts write both", () => {
+    const values = new Map<string, string>([
+      [
+        "radio-passport-journey",
+        JSON.stringify({
+          travelerNumber: "000 001",
+          memberSince: 1,
+          favoriteStationIds: ["legacy-id"],
+        }),
+      ],
+    ]);
+    const previous = Object.getOwnPropertyDescriptor(globalThis, "window");
+    Object.defineProperty(globalThis, "window", {
+      configurable: true,
+      value: {
+        localStorage: {
+          getItem: (key: string) => values.get(key) ?? null,
+          setItem: (key: string, value: string) => values.set(key, value),
+        },
+      },
+    });
+    useJourneyStore.setState({
+      hydrated: false,
+      favoriteStationIds: [],
+      favoriteStations: [],
+    });
+    useJourneyStore.getState().hydrate();
+    expect(useJourneyStore.getState().favoriteStationIds).toEqual(["legacy-id"]);
+    expect(useJourneyStore.getState().favoriteStations).toEqual([]);
+    expect(parseFavoriteSnapshots(undefined)).toEqual([]);
+
+    useJourneyStore.getState().toggleFavorite("search-heart", station("search-heart"));
+    expect(useJourneyStore.getState().favoriteStationIds).toContain("search-heart");
+    expect(
+      useJourneyStore.getState().favoriteStations.some((entry) => entry.uuid === "search-heart")
+    ).toBe(true);
+    useJourneyStore.getState().toggleFavorite("search-heart");
+    expect(
+      useJourneyStore.getState().favoriteStations.some((entry) => entry.uuid === "search-heart")
+    ).toBe(false);
+    if (previous) Object.defineProperty(globalThis, "window", previous);
+    else Reflect.deleteProperty(globalThis, "window");
   });
 });

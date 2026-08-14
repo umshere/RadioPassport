@@ -1,3 +1,4 @@
+import type { SolarHour } from "~/utils/localTime";
 import { GENERATED_INTENT_VOCAB } from "./generatedVocabulary";
 
 const FALLBACK_COUNTRY_KEYWORDS: Record<string, string[]> = {
@@ -105,6 +106,96 @@ export type PromptIntent = {
   tags: string[];
   confidence: "none" | "low" | "medium" | "high";
 };
+
+export type TypedIntent = {
+  query: string;
+  hour: SolarHour | null;
+  wantsMix: boolean;
+};
+
+/** True mix only. Hours (night, dusk, dawn, tonight) are not mix words. */
+const MIX_PATTERN = /\b(mix|surprise|take me|anywhere|wander|random)\b/i;
+
+const HOUR_WORD_PATTERN =
+  /\b(tonight|night|dusk|sunset|evening|dawn|sunrise|morning|midday|noon|afternoon)\b/gi;
+
+const HOUR_STRIP_PATTERN =
+  /\b(?:at\s+)?(tonight|night|dusk|sunset|evening|dawn|sunrise|morning|midday|noon|afternoon)\b/gi;
+
+const HOUR_BY_WORD: Record<string, SolarHour> = {
+  tonight: "Night",
+  night: "Night",
+  dusk: "Dusk",
+  sunset: "Dusk",
+  evening: "Dusk",
+  dawn: "Dawn",
+  sunrise: "Dawn",
+  morning: "Dawn",
+  midday: "Midday",
+  noon: "Midday",
+  afternoon: "Midday",
+};
+
+export function wantsMixFromPrompt(prompt: string) {
+  return MIX_PATTERN.test(prompt);
+}
+
+export function solarHourFromWord(
+  value: string | null | undefined
+): SolarHour | null {
+  if (!value) return null;
+  const key = value.trim().toLowerCase();
+  return HOUR_BY_WORD[key] ?? null;
+}
+
+export function solarHourFromPrompt(prompt: string): SolarHour | null {
+  let hour: SolarHour | null = null;
+  for (const match of prompt.matchAll(HOUR_WORD_PATTERN)) {
+    const mapped = solarHourFromWord(match[1]);
+    if (mapped) hour = mapped;
+  }
+  return hour;
+}
+
+function catalogQueryFromPrompt(
+  prompt: string,
+  extracted: PromptIntent
+): string {
+  if (extracted.languages[0]) {
+    return extracted.languages[0].toLowerCase();
+  }
+  const remainder = prompt
+    .replace(HOUR_STRIP_PATTERN, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/^(?:in|at|the|to)\s+/i, "")
+    .replace(/\s+(?:in|at|the|to)$/i, "")
+    .trim();
+  if (remainder) return remainder;
+  if (extracted.countries[0]) return extracted.countries[0];
+  return "";
+}
+
+/**
+ * Local destination for a typed intent. Place or language + hour is
+ * catalog search, not a world mix. Mix only when the prompt asks for one.
+ */
+export function resolveTypedIntent(
+  prompt: string | null | undefined
+): TypedIntent {
+  const trimmed = (prompt ?? "").trim();
+  if (!trimmed) {
+    return { query: "", hour: null, wantsMix: false };
+  }
+  const extracted = extractPromptIntent(trimmed);
+  const hour = solarHourFromPrompt(trimmed);
+  const catalogQuery = catalogQueryFromPrompt(trimmed, extracted);
+  return {
+    query: catalogQuery || (hour ? "" : trimmed),
+    hour,
+    wantsMix: wantsMixFromPrompt(trimmed),
+  };
+}
 
 function normalize(text: string | null | undefined) {
   return (text ?? "").toLowerCase();

@@ -3,7 +3,7 @@ import { BRAND } from "~/constants/brand";
 import { SignalWordmark } from "~/components/radio-passport/SignalMark";
 
 export const meta = () => [
-  { title: `About · ${BRAND.name}` },
+  { title: `The room · ${BRAND.name}` },
   {
     name: "description",
     content: "Elsewhere is live radio from someone else's now.",
@@ -20,7 +20,7 @@ export default function About() {
         </Link>
       </header>
       <article className="mx-auto max-w-3xl px-5 py-16 sm:px-8">
-        <p className="rp-eyebrow text-foil">{BRAND.eyebrow}</p>
+        <p className="rp-eyebrow text-foil">The room</p>
         <h1 className="ew-coverline mt-4">You are not here.</h1>
         <p className="rp-lede mt-6 max-w-[36ch]">
           {BRAND.name} is a listening room for live radio. A city, an hour, a
@@ -33,7 +33,7 @@ export default function About() {
         />
         <section className="mt-14 space-y-10">
           <div>
-            <p className="rp-eyebrow text-foil">The room</p>
+            <p className="rp-eyebrow text-foil">The cover</p>
             <p className="mt-3 max-w-[42ch] text-[15px] leading-7 text-dust">
               Type a place or a feeling. Land in a city. The globe is a locator,
               not the product. The cover is the product: local time, the live
@@ -57,7 +57,7 @@ export default function About() {
           </div>
         </section>
         <p className="mt-16 rp-telemetry text-dust">
-          Issue 01 · {BRAND.name}
+          {BRAND.name}
         </p>
       </article>
     </main>

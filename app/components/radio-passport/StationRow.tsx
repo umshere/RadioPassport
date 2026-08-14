@@ -20,6 +20,14 @@ export function stationLocation(station: Station) {
   }
   return tidyPlace(state) || country || "Unknown location";
 }
+
+/** Row subtitle: skip "India, India" when the location fallback is the country. */
+export function stationPlaceLine(station: Station) {
+  const location = stationLocation(station);
+  const country = (station.country || "").trim();
+  if (!country || location === country) return location;
+  return `${location}, ${country}`;
+}
 export function stationTelemetry(station: Station) {
   return station.bitrate
     ? `${station.bitrate}K ${station.codec?.toUpperCase() ?? "AUDIO"}`
@@ -81,7 +89,7 @@ export function StationRow({
           {station.name}
         </strong>
         <span className="block truncate text-[12px] text-dust">
-          {`${location}, ${station.country}`}
+          {stationPlaceLine(station)}
         </span>
       </button>
       <span className="rp-telemetry hidden shrink-0 sm:block">

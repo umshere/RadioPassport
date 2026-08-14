@@ -39,7 +39,7 @@ npm run typecheck
 
 ## Connections to click
 
-- Header: wordmark → `/`, Issue → `/about`, Passport → book, intent, mic (hidden if unsupported), Surprise
+- Header: wordmark → `/`, Room → `/about`, Passport → book, intent, mic (hidden if unsupported), Surprise
 - Cover: Land here, hour chips, Atlas, same-hour cities, station play + heart
 - Globe: hover tip, click lands
 - Dock: art → theater, stamp ring → book, heart, prev / play / next, Theater

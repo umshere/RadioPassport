@@ -1,4 +1,14 @@
 import { create } from "~/utils/zustand-lite";
+import {
+  dropFavoriteSnapshot,
+  parseFavoriteSnapshots,
+  toSlimStation,
+  upsertFavoriteSnapshot,
+  type SlimStation,
+  type SlimStationSource,
+} from "./favoriteSnapshot";
+
+export type { SlimStation } from "./favoriteSnapshot";
 
 export type PassportStamp = {
   id: string;
@@ -17,10 +27,11 @@ type JourneyState = {
   travelerNumber: string;
   memberSince: number;
   favoriteStationIds: string[];
+  favoriteStations: SlimStation[];
   playedStationIds: string[];
   stamps: PassportStamp[];
   hydrate: () => void;
-  toggleFavorite: (stationId: string) => void;
+  toggleFavorite: (stationId: string, snapshot?: SlimStationSource | null) => void;
   recordPlayed: (stationId: string) => void;
   addStamp: (stamp: PassportStamp) => void;
 };
@@ -44,6 +55,7 @@ function persistJourney(state: JourneyState) {
       travelerNumber: state.travelerNumber,
       memberSince: state.memberSince,
       favoriteStationIds: state.favoriteStationIds,
+      favoriteStations: state.favoriteStations,
       playedStationIds: state.playedStationIds,
       stamps: state.stamps,
     })
@@ -75,6 +87,7 @@ export const useJourneyStore = create<JourneyState>((set, get) => ({
   travelerNumber: "000 001",
   memberSince: Date.now(),
   favoriteStationIds: [],
+  favoriteStations: [],
   playedStationIds: [],
   stamps: [],
   hydrate: () => {
@@ -128,6 +141,7 @@ export const useJourneyStore = create<JourneyState>((set, get) => ({
       memberSince:
         typeof saved?.memberSince === "number" ? saved.memberSince : Date.now(),
       favoriteStationIds,
+      favoriteStations: parseFavoriteSnapshots(saved?.favoriteStations),
       playedStationIds: Array.isArray(saved?.playedStationIds)
         ? saved.playedStationIds.filter(
             (id): id is string => typeof id === "string"
@@ -139,14 +153,21 @@ export const useJourneyStore = create<JourneyState>((set, get) => ({
     });
     persistJourney(get());
   },
-  toggleFavorite: (stationId) =>
+  toggleFavorite: (stationId, snapshot) =>
     set((state) => {
-      const favoriteStationIds = state.favoriteStationIds.includes(stationId)
+      const removing = state.favoriteStationIds.includes(stationId);
+      const favoriteStationIds = removing
         ? state.favoriteStationIds.filter((id) => id !== stationId)
         : [...state.favoriteStationIds, stationId];
-      const next = { favoriteStationIds };
+      let favoriteStations = removing
+        ? dropFavoriteSnapshot(state.favoriteStations, stationId)
+        : state.favoriteStations;
+      if (!removing) {
+        const slim = snapshot ? toSlimStation(snapshot) : null;
+        if (slim) favoriteStations = upsertFavoriteSnapshot(favoriteStations, slim);
+      }
       queueMicrotask(() => persistJourney(get()));
-      return next;
+      return { favoriteStationIds, favoriteStations };
     }),
   recordPlayed: (stationId) =>
     set((state) => {

@@ -17,7 +17,10 @@ import {
   rememberDispatch,
   templateDispatch,
 } from "~/api/ai/dispatch";
-import { stationLocation } from "~/components/radio-passport/StationRow";
+import {
+  stationLocation,
+  stationPlaceLine,
+} from "~/components/radio-passport/StationRow";
 import {
   languageChipsFromStations,
   stationSpeaksLanguage,
@@ -83,6 +86,23 @@ describe("Elsewhere place names", () => {
     } as Station;
     expect(stationLocation(station)).toBe("New York");
   });
+
+  it("prints the country once when the location fallback is the country", () => {
+    expect(
+      stationPlaceLine({
+        city: "",
+        state: "",
+        country: "India",
+      } as Station)
+    ).toBe("India");
+    expect(
+      stationPlaceLine({
+        city: "Kochi",
+        state: "Kerala",
+        country: "India",
+      } as Station)
+    ).toBe("Kochi, India");
+  });
 });
 
 describe("Elsewhere globe intelligence", () => {
@@ -140,6 +160,15 @@ describe("Elsewhere interpret fallback", () => {
     const intent = intentFromExtractor("rainy night jazz in kerala");
     expect(intent.country).toBe("India");
     expect(intent.query).toContain("kerala");
+    expect(intent.wantsMix).toBe(false);
+  });
+
+  it("does not treat dusk, night, or tonight as a mix", () => {
+    expect(wantsMixFromPrompt("Lisbon at dusk")).toBe(false);
+    expect(wantsMixFromPrompt("Malayalam night")).toBe(false);
+    expect(wantsMixFromPrompt("tonight")).toBe(false);
+    expect(intentFromExtractor("Lisbon at dusk").wantsMix).toBe(false);
+    expect(intentFromExtractor("three unknown words").wantsMix).toBe(false);
   });
 });
 

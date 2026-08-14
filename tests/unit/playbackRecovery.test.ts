@@ -6,6 +6,7 @@ import {
   MAX_PLAYBACK_RECOVERY_ATTEMPTS,
   withRetryToken,
 } from "~/utils/playbackRecovery";
+import { playbackNoticeCopy } from "~/utils/playbackNoticeCopy";
 
 describe("playbackRecovery", () => {
   it("retries only recoverable reasons", () => {
@@ -28,5 +29,37 @@ describe("playbackRecovery", () => {
     expect(withRetryToken("https://example.com/stream", "abc")).toBe(
       "https://example.com/stream?rp_retry=abc"
     );
+  });
+});
+
+describe("playbackNoticeCopy", () => {
+  it("names retry, skip, empty line, and pause without saying filters", () => {
+    expect(
+      playbackNoticeCopy("retrying", {
+        attempt: 1,
+        maxAttempts: MAX_PLAYBACK_RECOVERY_ATTEMPTS,
+      })
+    ).toBe("Signal unstable. Retrying (1/2).");
+    expect(
+      playbackNoticeCopy("retrying", {
+        attempt: 2,
+        maxAttempts: MAX_PLAYBACK_RECOVERY_ATTEMPTS,
+      })
+    ).toBe("Signal unstable. Retrying (2/2).");
+    expect(playbackNoticeCopy("skip")).toBe("This signal failed. Next station.");
+    expect(playbackNoticeCopy("queue-empty")).toBe(
+      "No other live signal in this line."
+    );
+    expect(playbackNoticeCopy("too-many-failures")).toBe(
+      "Playback paused. Try another station."
+    );
+    for (const kind of [
+      "retrying",
+      "skip",
+      "queue-empty",
+      "too-many-failures",
+    ] as const) {
+      expect(playbackNoticeCopy(kind)).not.toMatch(/filter/i);
+    }
   });
 });

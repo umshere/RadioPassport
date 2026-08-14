@@ -24,6 +24,7 @@ import {
   MAX_PLAYBACK_RECOVERY_ATTEMPTS,
   withRetryToken,
 } from "~/utils/playbackRecovery";
+import { playbackNoticeCopy } from "~/utils/playbackNoticeCopy";
 import stylesheet from "./tailwind.css?url";
 import PlayerDock from "~/components/PlayerDock";
 import { usePlayerNoticeStore } from "~/state/playerNoticeStore";
@@ -407,7 +408,7 @@ function GlobalAudioBridge() {
   const autoSkipToNext = useCallback(
     (
       failedStation: Station | null,
-      reason: Parameters<typeof markFailed>[1]
+      _reason: Parameters<typeof markFailed>[1]
     ) => {
       const now = Date.now();
       const guard = autoSkipRef.current;
@@ -422,8 +423,7 @@ function GlobalAudioBridge() {
       if (guard.recentFailures.length >= 4) {
         setNotice({
           kind: "error",
-          message:
-            "Playback paused: too many stations failed in a row. Try toggling filters or switching countries.",
+          message: playbackNoticeCopy("too-many-failures"),
           durationMs: 6000,
         });
         return;
@@ -438,7 +438,7 @@ function GlobalAudioBridge() {
         state.setIsPlaying(false);
         setNotice({
           kind: "warning",
-          message: "This station failed to play. Try another station.",
+          message: playbackNoticeCopy("queue-empty"),
         });
         return;
       }
@@ -467,25 +467,18 @@ function GlobalAudioBridge() {
         state.setIsPlaying(false);
         setNotice({
           kind: "warning",
-          message:
-            "Couldn’t find another playable station in this queue. Try changing filters.",
+          message: playbackNoticeCopy("queue-empty"),
           durationMs: 5000,
         });
         return;
       }
 
-      const label = failedStation?.name
-        ? `“${failedStation.name}”`
-        : "That station";
       if (failedStation?.uuid) {
         recordSkippedStation(failedStation.uuid);
       }
       setNotice({
         kind: "warning",
-        message: `${label} failed (${reason.replace(
-          /_/g,
-          " "
-        )}). Skipping to the next station…`,
+        message: playbackNoticeCopy("skip"),
         durationMs: 4500,
       });
 
@@ -520,7 +513,10 @@ function GlobalAudioBridge() {
 
       setNotice({
         kind: "info",
-        message: `Signal unstable for “${station.name}”. Retrying (${retryAttempt}/${MAX_PLAYBACK_RECOVERY_ATTEMPTS})…`,
+        message: playbackNoticeCopy("retrying", {
+          attempt: retryAttempt,
+          maxAttempts: MAX_PLAYBACK_RECOVERY_ATTEMPTS,
+        }),
         durationMs: Math.max(2500, delay + 1200),
       });
 

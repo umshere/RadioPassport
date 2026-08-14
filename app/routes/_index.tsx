@@ -10,6 +10,7 @@ import type { Country, Station } from "~/types/radio";
 import type { InterpretResponse } from "~/types/ai";
 import { usePlayerStore } from "~/state/playerStore";
 import { useJourneyStore } from "~/state/journeyStore";
+import { resolveKeptSignals } from "~/state/favoriteSnapshot";
 import { useListeningMode } from "~/hooks/useListeningMode";
 import { useNowPlayingMetadata } from "~/hooks/useNowPlayingMetadata";
 import { useTrackTrivia } from "~/hooks/useTrackTrivia";
@@ -38,20 +39,30 @@ import {
 import { applyAiPreviewPool } from "~/components/radio-passport/aiPreview";
 import {
   catalogRequestState,
+  hourTapNextState,
+  parseInitialQuery,
+  playFromAtlasNextState,
   shouldClearBrowsingFilters,
+  surpriseTapNextState,
+  wordmarkHomeNextState,
 } from "~/components/radio-passport/searchState";
 import { getContinent } from "~/utils/geography";
 import { IntentBar } from "~/components/radio-passport/IntentBar";
 import {
+  resolveCoverArrival,
   describeCoverEmpty,
+  findCityFromPassport,
+  sameHourPillLabel,
   OPEN_PASSPORT_EVENT,
   passportRequested,
   resolveStampReplay,
   looksLikeIntentSentence,
+  hourBoardLabel,
   seekingBoardLabel,
   seekingStatus,
   theaterIntelligence,
 } from "~/components/radio-passport/productFlow";
+import { resolveTypedIntent, solarHourFromWord } from "~/services/ai/intent/promptIntent";
 import { BRAND } from "~/constants/brand";
 import {
   formatClock,
@@ -121,6 +132,7 @@ export default function Index() {
   const isPlaying = usePlayerStore((state) => state.isPlaying);
   const startStation = usePlayerStore((state) => state.startStation);
   const favorites = useJourneyStore((state) => state.favoriteStationIds);
+  const favoriteSnapshots = useJourneyStore((state) => state.favoriteStations);
   const stamps = useJourneyStore((state) => state.stamps);
   const played = useJourneyStore((state) => state.playedStationIds);
   const memberSince = useJourneyStore((state) => state.memberSince);
@@ -139,7 +151,9 @@ export default function Index() {
   const requestDispatch = useDispatchStore((state) => state.requestDispatch);
   const [hour, setHour] = useState<SolarHour | null>(null);
   const [place, setPlace] = useState<string | null>(null);
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(() =>
+    parseInitialQuery(`https://radio.example/?${searchParams.toString()}`)
+  );
   const [catalog, setCatalog] = useState<Station[]>([]);
   const [catalogLoading, setCatalogLoading] = useState(false);
   const [atlas, setAtlas] = useState(false);
@@ -281,21 +295,38 @@ export default function Index() {
     ? liveFiltered
     : applyLiveCatalog(baseStations).slice(0, 60);
   const play = useCallback(
-    (station: Station, pool = selectedPool, label = "Live now") => {
+    (
+      station: Station,
+      pool = selectedPool,
+      label = "Live now",
+      home?: ReturnType<typeof playFromAtlasNextState>
+    ) => {
+      if (home) {
+        setQuery(home.query);
+        setHour(home.hour);
+        setPlace(home.place);
+        setMixLabel(home.mixLabel);
+      }
+      const q = home ? home.query : query;
+      const h = home ? home.hour : hour;
+      const p = home ? home.place : place;
+      const mix = home ? home.mixLabel : mixLabel;
       const queue = createQueueSession({
-        sourceType: query.trim()
+        sourceType: home
+          ? "atlas"
+          : q.trim()
           ? "search"
           : listening.listeningMode === "world"
           ? "ai_mix"
           : "atlas",
-        sourceLabel: mixLabel || (query.trim() ? `Search: ${query.trim()}` : label),
+        sourceLabel: mix || (q.trim() ? `Search: ${q.trim()}` : label),
         stations: pool,
         context: {
           country: station.country,
-          query: query.trim() || null,
+          query: q.trim() || null,
           view: "elsewhere",
         },
-        seed: `${query}:${hour || ""}:${place || ""}`,
+        seed: `${q}:${h || ""}:${p || ""}`,
       });
       startStation(station, { autoPlay: true, queueSession: queue });
       recordPlayed(station.uuid);
@@ -357,17 +388,18 @@ export default function Index() {
   const requestAiWorld = useCallback(
     async (prompt?: string) => {
       if (aiStatus === "loading") return;
+      const next = surpriseTapNextState();
+      setQuery(next.query);
+      setHour(next.hour);
+      setPlace(next.place);
       setAiStatus("loading");
       listening.setIsFetchingExplore(true);
       listening.setExploreError(null);
       try {
         const descriptor = await loadWorldDescriptorPreview({
           prompt:
-            prompt ||
-            hour ||
-            "Take me somewhere live at this hour of the world",
+            prompt || "Take me somewhere live at this hour of the world",
           currentStationId: nowPlaying?.uuid ?? null,
-          mood: hour ?? undefined,
           visual: "card_stack",
           sceneId: "card_stack",
           country: nowPlaying?.country ?? null,
@@ -396,14 +428,25 @@ export default function Index() {
         listening.setIsFetchingExplore(false);
       }
     },
-    [aiStatus, favorites, hour, listening, nowPlaying, play, played]
+    [aiStatus, favorites, listening, nowPlaying, play, played]
   );
 
   const submitIntent = useCallback(
     async (value: string) => {
       const prompt = value.trim();
       if (!prompt) return;
-      if (!looksLikeIntentSentence(prompt)) return;
+      const resolved = resolveTypedIntent(prompt);
+      if (resolved.wantsMix) {
+        void requestAiWorld(prompt);
+        return;
+      }
+      setQuery(resolved.query);
+      setHour(resolved.hour);
+      const tightened =
+        resolved.query.trim().toLowerCase() !== prompt.toLowerCase();
+      if (resolved.hour || tightened || !looksLikeIntentSentence(prompt)) {
+        return;
+      }
       try {
         const response = await fetch("/api/ai/interpret", {
           method: "POST",
@@ -418,12 +461,15 @@ export default function Index() {
         if (!response.ok) return;
         const payload = (await response.json()) as InterpretResponse;
         if (payload.intent.place) setPlace(payload.intent.place);
-        if (payload.intent.query && payload.intent.query !== prompt) {
+        if (payload.intent.language) {
+          setQuery(payload.intent.language);
+        } else if (payload.intent.query && payload.intent.query !== prompt) {
           setQuery(payload.intent.query);
         }
-        if (payload.intent.wantsMix) {
-          void requestAiWorld(prompt);
-        }
+        const hour =
+          solarHourFromWord(payload.intent.mood) ??
+          solarHourFromWord(payload.intent.query);
+        if (hour) setHour(hour);
       } catch {
         // Catalog search already runs from the typed query.
       }
@@ -436,6 +482,7 @@ export default function Index() {
       const found = places.find((item) => item.id === id);
       if (!found) return;
       setPlace(found.name);
+      setHour(null);
       const pool = globeStations.filter(
         (station) =>
           stationLocation(station) === found.name &&
@@ -501,6 +548,18 @@ export default function Index() {
     ? stationLocation(featured)
     : "the world";
   const arrivalStation = nowPlaying || continueStation || featured;
+  const isSeeking = query.trim().length >= 2;
+  const locatorShrunk = isSeeking || Boolean(hour);
+  const seekingCover = isSeeking && !isPlaying;
+  const arrival = resolveCoverArrival({
+    isPlaying,
+    hasNowPlaying: Boolean(nowPlaying),
+    hasContinue: Boolean(continueStation),
+    city: arrivalCity,
+    query,
+    count: liveFiltered.length,
+    loading: catalogLoading,
+  });
   const localNow =
     arrivalStation && typeof arrivalStation.longitude === "number"
       ? localDateAtLongitude(arrivalStation.longitude)
@@ -515,12 +574,12 @@ export default function Index() {
     facts: trivia.trivia?.facts,
   });
   const sameHour = useMemo(() => {
-    if (!localNow) return [];
-    const current = solarHourAtLongitude(
-      arrivalStation && typeof arrivalStation.longitude === "number"
-        ? arrivalStation.longitude
-        : 0
-    );
+    const current =
+      hour ||
+      (arrivalStation && typeof arrivalStation.longitude === "number"
+        ? solarHourAtLongitude(arrivalStation.longitude)
+        : null);
+    if (!current) return [];
     const seen = new Set<string>();
     return initialStations
       .filter((station) => {
@@ -533,15 +592,12 @@ export default function Index() {
         return true;
       })
       .slice(0, 4);
-  }, [arrivalStation, initialStations, localNow]);
+  }, [arrivalStation, hour, initialStations]);
 
   const favoriteStations = useMemo(() => {
     const pool = [...initialStations, ...catalog, ...countryStations];
-    return favorites
-      .map((id) => pool.find((station) => station.uuid === id))
-      .filter((station): station is Station => Boolean(station))
-      .slice(0, 8);
-  }, [catalog, countryStations, favorites, initialStations]);
+    return resolveKeptSignals(favorites, favoriteSnapshots, pool).slice(0, 8);
+  }, [catalog, countryStations, favoriteSnapshots, favorites, initialStations]);
 
   const seek = seekingStatus({
     query,
@@ -550,9 +606,9 @@ export default function Index() {
   });
   const boardLabel =
     seekingBoardLabel(query, catalogLoading, liveFiltered.length) ??
+    hourBoardLabel(hour, catalogLoading, liveFiltered.length) ??
     (mixLabel ? "WORLD MIX" : "LIVE NOW");
   const coverEmpty = describeCoverEmpty({ query, hour, place });
-  const isSeeking = query.trim().length >= 2;
 
   useEffect(() => {
     if (!isSeeking || catalogLoading) return;
@@ -569,12 +625,28 @@ export default function Index() {
   }, [catalogLoading, isSeeking, liveFiltered.length]);
 
   return (
-    <main className={`rp-home ${isSeeking ? "is-seeking" : ""}`}>
+    <main className={`rp-home ${locatorShrunk ? "is-seeking" : ""}`}>
       <header className="rp-home-header">
-        <SignalWordmark />
+        <SignalWordmark
+          onHome={() => {
+            const next = wordmarkHomeNextState();
+            setQuery(next.query);
+            setHour(next.hour);
+            setPlace(next.place);
+            setMixLabel(next.mixLabel);
+            setAtlas(next.atlas);
+            setPassport(next.passport);
+          }}
+        />
         <IntentBar
           value={query}
-          onChange={setQuery}
+          onChange={(value) => {
+            setQuery(value);
+            if (shouldClearBrowsingFilters(value)) {
+              setHour(null);
+              setPlace(null);
+            }
+          }}
           onSubmit={submitIntent}
           onSurprise={() => void requestAiWorld()}
           loading={catalogLoading}
@@ -584,7 +656,7 @@ export default function Index() {
           statusTone={seek.tone}
         />
         <Link to="/about" className="rp-eyebrow text-dust" prefetch="intent">
-          Issue
+          Room
         </Link>
         <button
           type="button"
@@ -599,14 +671,8 @@ export default function Index() {
       <div className="rp-stage">
         <section className="rp-intro">
           <p className="rp-eyebrow text-foil">{BRAND.eyebrow}</p>
-          <h1>
-            {nowPlaying
-              ? `${arrivalCity} is on air.`
-              : continueStation
-              ? `Continue in ${arrivalCity}.`
-              : `${arrivalCity} is on air.`}
-          </h1>
-          {localNow ? (
+          <h1>{arrival.headline}</h1>
+          {localNow && !seekingCover ? (
             <p className="rp-eyebrow text-ether">
               <i className="rp-live-dot" />
               {formatLocalLabel(arrivalCity, localNow)} ·{" "}
@@ -617,41 +683,41 @@ export default function Index() {
               ).toUpperCase()}
             </p>
           ) : null}
-          {nowPlaying && trackLine ? (
+          {nowPlaying && trackLine && !seekingCover ? (
             <p className="ew-track">{trackLine}</p>
-          ) : nowPlaying ? (
+          ) : nowPlaying && !seekingCover ? (
             <p className="rp-lede">
               Live from {arrivalCity}. This station sends no track titles.
             </p>
           ) : (
             <p className="rp-lede">{BRAND.promise}</p>
           )}
-          {coverIntel.dispatchBody ? (
+          {!seekingCover && coverIntel.dispatchBody ? (
             <p className="ew-caption">{coverIntel.dispatchBody}</p>
           ) : null}
-          {coverIntel.facts[0] ? (
+          {!seekingCover && coverIntel.facts[0] ? (
             <p className="mt-3 max-w-[36ch] text-sm text-dust">
               <span className="rp-eyebrow mr-2 text-foil">
                 {coverIntel.facts[0].label}
               </span>
               {coverIntel.facts[0].value}
             </p>
-          ) : coverIntel.summary ? (
+          ) : !seekingCover && coverIntel.summary ? (
             <p className="ew-caption">{coverIntel.summary}</p>
           ) : null}
-          {!nowPlaying && arrivalStation ? (
+          {!isPlaying && arrivalStation && arrival.ctaKind !== "none" ? (
             <button
               type="button"
               className="ew-land"
               onClick={() =>
                 play(
-                  arrivalStation,
+                  nowPlaying || continueStation || arrivalStation,
                   selectedPool,
-                  continueStation ? "Continue" : "Land here"
+                  arrival.ctaKind === "continue" ? "Continue" : "Land here"
                 )
               }
             >
-              {continueStation ? `Continue in ${arrivalCity}` : "Land here"}
+              {arrival.cta}
             </button>
           ) : null}
           <div className="rp-chip-list">
@@ -659,7 +725,14 @@ export default function Index() {
               <button
                 type="button"
                 className={`rp-chip ${hour === item ? "active" : ""}`}
-                onClick={() => setHour((value) => (value === item ? null : item))}
+                aria-pressed={hour === item}
+                title={`Cities where it is ${item.toLowerCase()} now`}
+                onClick={() => {
+                  const next = hourTapNextState(hour, item, query);
+                  setHour(next.hour as SolarHour | null);
+                  setPlace(next.place);
+                  if (next.query !== query) setQuery(next.query);
+                }}
                 key={item}
               >
                 {item}
@@ -673,17 +746,29 @@ export default function Index() {
               Atlas
             </button>
           </div>
-          {sameHour.length > 0 ? (
+          {hour ? (
+            <p className="mt-3 rp-eyebrow text-dust">
+              Live where it is {hour.toLowerCase()}
+            </p>
+          ) : sameHour.length > 0 && !isSeeking ? (
+            <p className="mt-3 rp-eyebrow text-dust">Also at this hour</p>
+          ) : null}
+          {sameHour.length > 0 && !isSeeking ? (
             <div className="ew-same-hour">
-              {sameHour.map((station) => (
-                <button
-                  type="button"
-                  key={station.uuid}
-                  onClick={() => play(station, selectedPool, "Same hour")}
-                >
-                  {stationLocation(station)}
-                </button>
-              ))}
+              {sameHour.map((station) => {
+                const pill = sameHourPillLabel(stationLocation(station));
+                return (
+                  <button
+                    type="button"
+                    key={station.uuid}
+                    title={pill.spoken}
+                    aria-label={pill.spoken}
+                    onClick={() => play(station, selectedPool, "Same hour")}
+                  >
+                    {pill.label}
+                  </button>
+                );
+              })}
             </div>
           ) : null}
           <div
@@ -731,7 +816,7 @@ export default function Index() {
                       active={nowPlaying?.uuid === station.uuid && isPlaying}
                       favorite={favorites.includes(station.uuid)}
                       onPlay={() => play(station)}
-                      onFavorite={() => toggleFavorite(station.uuid)}
+                      onFavorite={() => toggleFavorite(station.uuid, station)}
                     />
                   ))}
           </div>
@@ -772,16 +857,26 @@ export default function Index() {
             />
             <div className="ew-cover">
               <i className="ew-cover-rule" />
-              <p className="ew-coverline">{arrivalCity}</p>
+              <p className="ew-coverline">
+                {seekingCover ? query.trim() : arrivalCity}
+              </p>
               <p className="rp-eyebrow">
-                {arrivalStation
-                  ? `${
-                      arrivalStation.bitrate
-                        ? `${arrivalStation.bitrate} · `
-                        : ""
-                    }${arrivalCity.toUpperCase()} · LIVE`
-                  : "TAP A CITY TO TUNE"}
-                {localNow ? ` · ${formatClock(localNow)}` : ""}
+                {seekingCover
+                  ? seekingBoardLabel(
+                      query,
+                      catalogLoading,
+                      liveFiltered.length
+                    ) ?? ""
+                  : arrivalStation
+                    ? `${
+                        arrivalStation.bitrate
+                          ? `${arrivalStation.bitrate} · `
+                          : ""
+                      }${arrivalCity.toUpperCase()} · ${
+                        arrival.live ? "LIVE" : "LAND"
+                      }`
+                    : "TAP A CITY TO TUNE"}
+                {!seekingCover && localNow ? ` · ${formatClock(localNow)}` : ""}
               </p>
             </div>
           </div>
@@ -810,7 +905,12 @@ export default function Index() {
           }}
           close={() => setCountry(null)}
           onPlay={(station) => {
-            play(station, countryStations, `Country: ${country}`);
+            play(
+              station,
+              countryStations,
+              `Country: ${country}`,
+              playFromAtlasNextState()
+            );
             setCountry(null);
           }}
           onFavorite={toggleFavorite}
@@ -824,7 +924,11 @@ export default function Index() {
           travelerNumber={travelerNumber}
           favorites={favoriteStations}
           close={() => setPassport(false)}
-          onFindCity={() => setPassport(false)}
+          onFindCity={() => {
+            const next = findCityFromPassport();
+            setPassport(next.passport);
+            setAtlas(next.atlas);
+          }}
           onReplay={(stamp) => {
             const resolved = resolveStampReplay(stamp, [
               ...initialStations,
@@ -847,6 +951,7 @@ export default function Index() {
             play(station, selectedPool, "Favorites");
             setPassport(false);
           }}
+          onFavorite={(station) => toggleFavorite(station.uuid, station)}
         />
       )}
     </main>

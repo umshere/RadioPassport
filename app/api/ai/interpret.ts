@@ -1,34 +1,34 @@
 import { json, type ActionFunctionArgs } from "@remix-run/node";
-import { extractPromptIntent } from "~/services/ai/intent/promptIntent";
 import { completeJson, isGatewayConfigured } from "~/services/ai/gateway";
+import {
+  extractPromptIntent,
+  resolveTypedIntent,
+  wantsMixFromPrompt,
+} from "~/services/ai/intent/promptIntent";
 import type {
   InterpretRequest,
   InterpretResponse,
   InterpretedIntent,
 } from "~/types/ai";
 
-const MIX_PATTERN =
-  /\b(mix|surprise|take me|anywhere|itinerary|world|elsewhere|dj|wander|random|tonight)\b/i;
-
-export function wantsMixFromPrompt(prompt: string) {
-  return MIX_PATTERN.test(prompt);
-}
+export { wantsMixFromPrompt };
 
 export function intentFromExtractor(
   prompt: string,
   fallbackWantsMix = wantsMixFromPrompt(prompt)
 ): InterpretedIntent {
   const extracted = extractPromptIntent(prompt);
+  const resolved = resolveTypedIntent(prompt);
   const confidence =
     extracted.confidence === "none" ? "low" : extracted.confidence;
   return {
-    query: prompt.trim(),
-    mood: extracted.tags[0] ?? null,
+    query: resolved.query || prompt.trim(),
+    mood: extracted.tags[0] ?? resolved.hour,
     place: null,
     country: extracted.countries[0] ?? null,
     language: extracted.languages[0] ?? null,
     tags: extracted.tags,
-    wantsMix: fallbackWantsMix || extracted.confidence === "none",
+    wantsMix: fallbackWantsMix,
     confidence,
   };
 }
@@ -56,8 +56,7 @@ function normalizeIntent(
     tags: Array.isArray(raw?.tags)
       ? raw.tags.filter((tag): tag is string => typeof tag === "string")
       : fallback.tags,
-    wantsMix:
-      typeof raw?.wantsMix === "boolean" ? raw.wantsMix : fallback.wantsMix,
+    wantsMix: resolveTypedIntent(prompt).wantsMix,
     confidence,
   };
 }
@@ -91,7 +90,7 @@ Return ONLY JSON:
   "wantsMix": true,
   "confidence": "high" | "medium" | "low"
 }
-wantsMix is true when the user wants a curated itinerary, surprise, world mix, or a vibe sentence rather than one station.
+wantsMix is true only for surprise, take me, anywhere, mix, random, or wander. Place or language plus an hour (dusk, dawn, night, tonight) is catalog search, not a mix.
 Keep query useful for Radio Browser search.`,
       user: JSON.stringify({
         prompt,

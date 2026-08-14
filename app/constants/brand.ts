@@ -1,7 +1,7 @@
 export const BRAND = Object.freeze({
   name: "Elsewhere",
   heritage: "Radio Passport",
-  eyebrow: "LIVE RADIO · ISSUE 01",
+  eyebrow: "LIVE RADIO",
   tagline: "You are not here.",
   promise: "Stay long enough to be stamped.",
   headline: "Elsewhere, tonight.",

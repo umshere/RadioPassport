@@ -4,7 +4,7 @@ Elsewhere (heritage: Radio Passport). Remix radio cover of a live city.
 
 ## What it does
 
-- `/` is the departure hall. `/listen` is the theater. `/about` is Issue 01.
+- `/` is the departure hall. `/listen` is the theater. `/about` is the room.
 - Radio Browser catalog. `playerStore` + `GlobalAudioBridge` own audio. Do not stop playback on filter/search.
 - AI: Heuristics gateway, **Flash only** (`app/services/ai/gateway.ts`). Interpret, dispatch, recommend.
 

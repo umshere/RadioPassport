@@ -5,8 +5,12 @@ import {
   SURFACE_CONNECTIONS,
   connectionById,
   connectionsForStep,
+  coverArrival,
+  coverWhileSeeking,
+  resolveCoverArrival,
   describeAtlasEmpty,
   describeCoverEmpty,
+  findCityFromPassport,
   homeWithPassportHref,
   openPassportNow,
   intentPath,
@@ -16,15 +20,26 @@ import {
   passportRequested,
   resolveStampReplay,
   searchKeepsPlayback,
+  hourBoardLabel,
   seekingBoardLabel,
   seekingStatus,
   theaterIntelligence,
   theaterWithoutStation,
+  sameHourPillLabel,
 } from "~/components/radio-passport/productFlow";
+import { resolveTypedIntent } from "~/services/ai/intent/promptIntent";
 import {
   catalogRequestState,
+  hourTapNextState,
   shouldClearBrowsingFilters,
+  surpriseTapNextState,
+  playFromAtlasNextState,
+  wordmarkHomeNextState,
 } from "~/components/radio-passport/searchState";
+import {
+  persistListeningMode,
+  restoreListeningMode,
+} from "~/hooks/useListeningMode";
 import { isStampReady, stationStampId } from "~/state/journeyStore";
 import { stampForContinuousSession } from "~/components/radio-passport/JourneyBridge";
 
@@ -151,6 +166,53 @@ describe("Intent is a step, not a dead field", () => {
     expect(looksLikeIntentSentence("rainy night jazz")).toBe(true);
   });
 
+  it("keeps place or language plus an hour on the catalog, not a world mix", () => {
+    const lisbon = resolveTypedIntent("Lisbon at dusk");
+    expect(lisbon.query).toMatch(/lisbon/i);
+    expect(lisbon.hour).toBe("Dusk");
+    expect(lisbon.wantsMix).toBe(false);
+
+    const dawn = resolveTypedIntent("Lisbon at dawn");
+    expect(dawn.query).toMatch(/lisbon/i);
+    expect(dawn.hour).toBe("Dawn");
+    expect(dawn.wantsMix).toBe(false);
+
+    const malayalam = resolveTypedIntent("Malayalam night");
+    expect(malayalam.query).toMatch(/malayalam/i);
+    expect(malayalam.hour).toBe("Night");
+    expect(malayalam.wantsMix).toBe(false);
+
+    const tamil = resolveTypedIntent("Tamil dusk");
+    expect(tamil.query).toMatch(/tamil/i);
+    expect(tamil.hour).toBe("Dusk");
+    expect(tamil.wantsMix).toBe(false);
+  });
+
+  it("fires a mix only when the prompt asks for one", () => {
+    expect(resolveTypedIntent("surprise me").wantsMix).toBe(true);
+    expect(resolveTypedIntent("take me anywhere").wantsMix).toBe(true);
+    expect(resolveTypedIntent("mix").wantsMix).toBe(true);
+    expect(resolveTypedIntent("random").wantsMix).toBe(true);
+    expect(resolveTypedIntent("wander").wantsMix).toBe(true);
+  });
+
+  it("keeps a typed name on the catalog", () => {
+    expect(resolveTypedIntent("Rahman")).toEqual({
+      query: "Rahman",
+      hour: null,
+      wantsMix: false,
+    });
+  });
+
+  it("reads tonight in a place phrase as Night, not a mix", () => {
+    const tonight = resolveTypedIntent("Lisbon tonight");
+    expect(tonight.query).toMatch(/lisbon/i);
+    expect(tonight.hour).toBe("Night");
+    expect(tonight.wantsMix).toBe(false);
+    expect(resolveTypedIntent("tonight").wantsMix).toBe(false);
+    expect(resolveTypedIntent("tonight").hour).toBe("Night");
+  });
+
   it("names the search in the bar and on the board below", () => {
     expect(seekingStatus({ query: "", loading: false, count: 0 })).toEqual({
       tone: "idle",
@@ -170,6 +232,81 @@ describe("Intent is a step, not a dead field", () => {
       "88 LIVE · MALAYALAM"
     );
     expect(shouldClearBrowsingFilters("malayalam")).toBe(true);
+    expect(hourTapNextState(null, "Dawn", "Rahman")).toEqual({
+      hour: "Dawn",
+      query: "",
+      place: null,
+    });
+    expect(hourTapNextState("Dusk", "Dawn", "Rahman")).toEqual({
+      hour: "Dawn",
+      query: "",
+      place: null,
+    });
+    expect(hourTapNextState("Dawn", "Dawn", "")).toEqual({
+      hour: null,
+      query: "",
+      place: null,
+    });
+    expect(hourTapNextState(null, "Dusk", "")).toEqual({
+      hour: "Dusk",
+      query: "",
+      place: null,
+    });
+    expect(hourBoardLabel("Dawn", false, 12)).toBe("12 LIVE · DAWN");
+    expect(hourBoardLabel("Dusk", false, 0)).toBe("NO SIGNAL · DUSK");
+    expect(hourBoardLabel(null, false, 8)).toBeNull();
+  });
+
+  it("makes same-hour city pills a land, not a silent filter", () => {
+    expect(sameHourPillLabel("Accra")).toEqual({
+      label: "Accra",
+      spoken: "Land in Accra",
+    });
+    expect(sameHourPillLabel("  Lisbon  ")).toEqual({
+      label: "Lisbon",
+      spoken: "Land in Lisbon",
+    });
+  });
+
+  it("makes Surprise leave a typed search so the board is the mix", () => {
+    expect(surpriseTapNextState()).toEqual({
+      query: "",
+      hour: null,
+      place: null,
+    });
+    const next = surpriseTapNextState();
+    expect(seekingBoardLabel(next.query, false, 8)).toBeNull();
+    expect(hourBoardLabel(next.hour, false, 8)).toBeNull();
+  });
+
+  it("makes Atlas/country play leave leftover search, hour, place, and mix", () => {
+    expect(playFromAtlasNextState()).toEqual({
+      query: "",
+      hour: null,
+      place: null,
+      mixLabel: null,
+    });
+    const next = playFromAtlasNextState();
+    expect(seekingBoardLabel(next.query, false, 8)).toBeNull();
+    expect(hourBoardLabel(next.hour, false, 8)).toBeNull();
+    expect(next.mixLabel).toBeNull();
+  });
+
+  it("makes the home wordmark leave leftover intent and close atlas/passport", () => {
+    expect(wordmarkHomeNextState()).toEqual({
+      query: "",
+      hour: null,
+      place: null,
+      mixLabel: null,
+      atlas: false,
+      passport: false,
+    });
+    const next = wordmarkHomeNextState();
+    expect(seekingBoardLabel(next.query, false, 8)).toBeNull();
+    expect(hourBoardLabel(next.hour, false, 8)).toBeNull();
+    expect(next.mixLabel).toBeNull();
+    expect(next.atlas).toBe(false);
+    expect(next.passport).toBe(false);
   });
 
   it("does not fetch the catalog for a one-letter tap", () => {
@@ -180,6 +317,158 @@ describe("Intent is a step, not a dead field", () => {
     expect(catalogRequestState("ja")).toEqual({
       shouldFetch: true,
       isLoading: true,
+    });
+  });
+});
+
+describe("World mix dies with the session", () => {
+  it("ignores a stored world leftover on a fresh land", () => {
+    expect(restoreListeningMode("world")).toBe("local");
+    expect(restoreListeningMode("local")).toBe("local");
+    expect(restoreListeningMode(null)).toBe("local");
+    expect(restoreListeningMode("nope")).toBe("local");
+    expect(persistListeningMode("world")).toBeNull();
+    expect(persistListeningMode("local")).toBe("local");
+  });
+});
+
+describe("Cover only claims on air while audio is playing", () => {
+  it("lands first-time visitors instead of claiming live", () => {
+    expect(
+      coverArrival({
+        isPlaying: false,
+        hasNowPlaying: false,
+        hasContinue: false,
+        city: "Lisbon",
+      })
+    ).toEqual({
+      headline: "Land in Lisbon.",
+      cta: "Land here",
+      ctaKind: "land",
+      live: false,
+    });
+  });
+
+  it("continues a paused returner in the last city", () => {
+    expect(
+      coverArrival({
+        isPlaying: false,
+        hasNowPlaying: true,
+        hasContinue: false,
+        city: "Kochi",
+      })
+    ).toEqual({
+      headline: "Continue in Kochi.",
+      cta: "Continue in Kochi",
+      ctaKind: "continue",
+      live: false,
+    });
+    expect(
+      coverArrival({
+        isPlaying: false,
+        hasNowPlaying: false,
+        hasContinue: true,
+        city: "Accra",
+      })
+    ).toMatchObject({
+      headline: "Continue in Accra.",
+      ctaKind: "continue",
+      live: false,
+    });
+  });
+
+  it("says on air and LIVE only while playing", () => {
+    expect(
+      coverArrival({
+        isPlaying: true,
+        hasNowPlaying: true,
+        hasContinue: true,
+        city: "Lisbon",
+      })
+    ).toEqual({
+      headline: "Lisbon is on air.",
+      cta: "",
+      ctaKind: "none",
+      live: true,
+    });
+  });
+});
+
+describe("Cover does not name a leftover city while seeking", () => {
+  it("names the search while the catalog is still arriving", () => {
+    expect(
+      coverWhileSeeking({ query: "Rahman", count: 0, loading: true })
+    ).toEqual({
+      headline: "Searching Rahman.",
+      cta: "",
+      ctaKind: "none",
+      live: false,
+    });
+  });
+
+  it("names how many are live for the search, not a featured city", () => {
+    expect(
+      coverWhileSeeking({ query: "Malayalam", count: 88, loading: false })
+    ).toEqual({
+      headline: "88 live for Malayalam.",
+      cta: "",
+      ctaKind: "none",
+      live: false,
+    });
+  });
+
+  it("says no signal for the search instead of landing the leftover city", () => {
+    expect(
+      coverWhileSeeking({ query: "Lisbon", count: 0, loading: false })
+    ).toEqual({
+      headline: "No signal for Lisbon.",
+      cta: "",
+      ctaKind: "none",
+      live: false,
+    });
+  });
+
+  it("lets inhabit win when audio is already playing", () => {
+    expect(
+      resolveCoverArrival({
+        isPlaying: true,
+        hasNowPlaying: true,
+        hasContinue: true,
+        city: "Tamil Nadu",
+        query: "Rahman",
+        count: 12,
+        loading: false,
+      })
+    ).toEqual({
+      headline: "Tamil Nadu is on air.",
+      cta: "",
+      ctaKind: "none",
+      live: true,
+    });
+    expect(
+      resolveCoverArrival({
+        isPlaying: false,
+        hasNowPlaying: false,
+        hasContinue: false,
+        city: "Tamil Nadu",
+        query: "Rahman",
+        count: 12,
+        loading: false,
+      }).headline
+    ).toBe("12 live for Rahman.");
+    expect(
+      resolveCoverArrival({
+        isPlaying: false,
+        hasNowPlaying: true,
+        hasContinue: false,
+        city: "Tamil Nadu",
+        query: "",
+        count: 8,
+        loading: false,
+      })
+    ).toMatchObject({
+      headline: "Continue in Tamil Nadu.",
+      ctaKind: "continue",
     });
   });
 });
@@ -195,6 +484,7 @@ describe("Icons that look live must land somewhere", () => {
     expect(connectionById("dock-stamp")?.action).toBe("passport");
     expect(connectionById("passport")?.action).toBe("passport");
     expect(connectionById("passport-empty")?.action).toBe("find-city");
+    expect(findCityFromPassport()).toEqual({ passport: false, atlas: true });
     expect(passportRequested("?passport=1")).toBe(true);
     expect(passportRequested("passport=1")).toBe(true);
     expect(passportRequested("")).toBe(false);
@@ -209,7 +499,7 @@ describe("Icons that look live must land somewhere", () => {
     expect(routed).toBe(true);
   });
 
-  it("makes Issue and the wordmark real routes home or to Issue 01", () => {
+  it("makes Room and the wordmark real routes home or to the room", () => {
     expect(connectionById("issue")?.action).toBe("issue");
     expect(connectionById("wordmark")?.action).toBe("home");
     expect(connectionById("about-land")?.action).toBe("home");

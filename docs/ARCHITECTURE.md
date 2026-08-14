@@ -8,7 +8,7 @@ Elsewhere is a Remix 2 + React 18 + Tailwind app. The product face is one discov
 |---|---|
 | `/` | Departure hall: coverline, globe, intent, live board, overlays |
 | `/listen` | Theater. No discovery chrome. |
-| `/about` | Issue 01 |
+| `/about` | The room |
 | `/api/ai/recommend` | World mix `SceneDescriptor` |
 | `/api/ai/interpret` | Natural language → place / tags / `wantsMix` |
 | `/api/ai/dispatch` | Place caption from station + ICY + local hour |

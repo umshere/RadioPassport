@@ -10,7 +10,11 @@ import {
   describeEmptyResults,
   nextQueryHref,
   parseInitialQuery,
+  hourTapNextState,
   shouldClearBrowsingFilters,
+  surpriseTapNextState,
+  playFromAtlasNextState,
+  wordmarkHomeNextState,
   suggestVocabularyTerm,
   toggleSelection,
 } from "~/components/radio-passport/searchState";
@@ -59,6 +63,47 @@ describe("discovery filter state transitions", () => {
     expect(shouldClearBrowsingFilters("")).toBe(false);
     expect(shouldClearBrowsingFilters("   ")).toBe(false);
     expect(shouldClearBrowsingFilters("malayalam")).toBe(true);
+  });
+
+  it("makes an hour tap leave a typed search and leftover globe city", () => {
+    expect(hourTapNextState(null, "Dawn", "Rahman")).toEqual({
+      hour: "Dawn",
+      query: "",
+      place: null,
+    });
+    expect(hourTapNextState("Dusk", "Dusk", "")).toEqual({
+      hour: null,
+      query: "",
+      place: null,
+    });
+  });
+
+  it("makes Surprise leave a typed name and leftover hour/place", () => {
+    expect(surpriseTapNextState()).toEqual({
+      query: "",
+      hour: null,
+      place: null,
+    });
+  });
+
+  it("makes Atlas/country play leave leftover home search, hour, place, and mix", () => {
+    expect(playFromAtlasNextState()).toEqual({
+      query: "",
+      hour: null,
+      place: null,
+      mixLabel: null,
+    });
+  });
+
+  it("makes the home wordmark clear leftover intent and close atlas/passport", () => {
+    expect(wordmarkHomeNextState()).toEqual({
+      query: "",
+      hour: null,
+      place: null,
+      mixLabel: null,
+      atlas: false,
+      passport: false,
+    });
   });
 
   it("names the active constraint behind an empty result set and offers one-click resets", () => {

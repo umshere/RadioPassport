@@ -644,8 +644,8 @@
     .rp-globe-wrap {
       position: relative;
       width: 100%;
-      height: min(58vw, 280px);
-      min-height: 220px;
+      height: 128px;
+      min-height: 128px;
     }
     .rp-home.is-seeking .rp-globe-wrap {
       height: 128px;
@@ -667,12 +667,10 @@
     }
     .rp-intro .ew-land { width: 100%; margin-top: 4px; }
     .rp-chip-list {
-      flex-wrap: nowrap;
-      overflow: auto;
+      flex-wrap: wrap;
       width: calc(100% + 32px);
       margin-left: -16px;
       padding: 0 16px 4px;
-      -webkit-overflow-scrolling: touch;
     }
     .rp-chip, .ew-same-hour button { flex: none; min-height: 44px; }
     .rp-station-list { max-height: none; }
@@ -691,10 +689,10 @@
     }
     .rp-dock-art { width: 44px; height: 44px; }
     .rp-dock strong { font-size: 13px; }
-    .rp-dock .ew-dock-sub,
-    .rp-dock .ew-stamp-ring { display: none; }
+    .rp-dock .ew-dock-sub { display: none; }
+    .rp-dock .ew-stamp-ring { display: block; width: 16px; height: 16px; } /* Phone reaches the book through the dock ring. */
     .rp-dock-play { width: 44px; height: 44px; }
-    .rp-theater-link { display: inline !important; font-size: 9px; }
+    .rp-theater-link { display: inline !important; font-size: 8px; letter-spacing: .1em; }
     .rp-toast { right: 14px; left: 14px; bottom: calc(88px + env(safe-area-inset-bottom, 0px)); min-width: 0; }
     .rp-player-notice { width: calc(100vw - 20px); font-size: 10px; }
     .ew-theater { padding: 20px 16px calc(120px + env(safe-area-inset-bottom, 0px)); }

@@ -14,9 +14,57 @@ export function toggleSelection(
   return current === item ? null : item;
 }
 
-/** Non-empty free text always takes precedence over browsing filters. */
+/** Non-empty free text always takes precedence over leftover browsing filters. */
 export function shouldClearBrowsingFilters(query: string): boolean {
   return query.trim().length > 0;
+}
+
+/**
+ * Hour chips are a destination, not a filter on the typed search.
+ * Typing a name leaves the hour behind. Tapping Dawn leaves the search
+ * and any leftover globe city — Dawn is worldwide, not dawn-in-Lisbon.
+ */
+export function hourTapNextState(
+  currentHour: string | null,
+  tapped: string,
+  query: string
+): { hour: string | null; query: string; place: null } {
+  const hour = currentHour === tapped ? null : tapped;
+  if (hour && query.trim()) {
+    return { hour, query: "", place: null };
+  }
+  return { hour, query, place: null };
+}
+
+/** Surprise is a new trip: it leaves the typed search and leftover hour/place. */
+export function surpriseTapNextState(): {
+  query: string;
+  hour: null;
+  place: null;
+} {
+  return { query: "", hour: null, place: null };
+}
+
+/** Play from Atlas/country leaves leftover home search, hour, place, and mix. */
+export function playFromAtlasNextState(): {
+  query: string;
+  hour: null;
+  place: null;
+  mixLabel: null;
+} {
+  return { ...surpriseTapNextState(), mixLabel: null };
+}
+
+/** Wordmark on `/` clears leftover intent; playback stays. */
+export function wordmarkHomeNextState(): {
+  query: string;
+  hour: null;
+  place: null;
+  mixLabel: null;
+  atlas: false;
+  passport: false;
+} {
+  return { ...playFromAtlasNextState(), atlas: false, passport: false };
 }
 
 export type BrowsingMode = "mood" | "place";

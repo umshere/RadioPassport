@@ -163,7 +163,8 @@ export default function PlayerDock() {
       <button
         type="button"
         onClick={() =>
-          canMutateJourney(hydrated) && toggleFavorite(nowPlaying.uuid)
+          canMutateJourney(hydrated) &&
+          toggleFavorite(nowPlaying.uuid, nowPlaying)
         }
         disabled={!canMutateJourney(hydrated)}
         className={`grid h-11 w-11 place-items-center rounded-full text-lg ${

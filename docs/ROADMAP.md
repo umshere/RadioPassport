@@ -14,7 +14,7 @@ Rule: **never charge to hear the radio.** Public streams stay public.
 - `/listen` theater, ICY metadata, honest empty-track copy
 - Atlas + country drill-down, 60s passport stamps, favorites (this browser)
 - `/api/ai/interpret` and `/api/ai/dispatch` via Heuristics gateway
-- Brand mark (lacquer seal), SVG favicon, about as Issue 01
+- Brand mark (lacquer seal), SVG favicon, about as the room
 - Mobile dock / cover / theater
 
 ## Next
