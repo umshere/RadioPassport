@@ -467,6 +467,8 @@ describe("live stylesheet", () => {
     expect(css).not.toMatch(/travel-stack|app-header__inner|hero-morph/);
     expect(css).toContain(".rp-home");
     expect(css).toContain("not-found-easter-egg");
+    expect(css).toContain("minmax(min(258px, 100%), 1fr)");
+    expect(css).toContain("grid-template-columns: minmax(0, 1fr)");
     expect(css).toContain('[data-atmosphere="day"]');
     expect(css).toContain(".ew-atmosphere");
     expect(css).toContain(".ew-atmosphere-icon");

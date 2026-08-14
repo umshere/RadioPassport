@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-08-14 — Atlas fits the phone
+
+Country rows were sizing to their text (~555px) and sliding off a 390px screen. The atlas grid is now `minmax(0, 1fr)` on small viewports; overlay titles wrap.
+
 ## 2026-08-14 — Day / Night room
 
 Night stays the default Elsewhere room. Day is a morning-edition paper palette (warm stock, iron-gall type, same lacquer seal). The pin sits with the solar-hour chips and is labeled Night / Day, never Light / Dark.
