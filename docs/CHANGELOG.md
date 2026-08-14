@@ -1,5 +1,25 @@
 # Changelog
 
+## 2026-08-14 — Globe stays lit on every search
+
+Language and tag searches (tamil, malayalam, jazz, a city name) were filling the list and emptying the globe. Radio Browser usually omits `geo_lat` / `geo_long` on those rows. The homepage globe used a geo-only feed; the search globe required real coordinates and went blank.
+
+- Any query of two or more letters keeps the world globe up until the catalog lands
+- Stations without coordinates plot on their country center (ISO code, not a Tamil-only list)
+- Globe turns to the densest matching country
+- Country centers are locator-only — they are never written back onto `Station`
+- Contract: `app/components/radio-passport/globePlaces.ts`
+- Tests: `tests/unit/elsewhereProduct.test.ts`
+
+Also in this stretch, already on `main`:
+
+- Every on-screen control belongs to the land → intent → tune → inhabit → stamp → next loop (`productFlow.ts`)
+- Empty search / atlas / passport / mix surfaces offer a button, not copy-only
+- Stamp ring and INKED toast open the passport from `/`, `/listen`, and `/about`
+- Globe holds still under the pointer so a city can be landed
+- `public/FTS.jpeg` is the 404 wallpaper
+- Hour / search / mix / passport no longer leave a leftover intent on the wrong surface
+
 ## 2026-08-13 — Elsewhere
 
 The product face is **Elsewhere**. Radio Passport remains the repo / heritage name.

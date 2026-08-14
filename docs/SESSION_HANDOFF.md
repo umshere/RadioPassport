@@ -15,6 +15,7 @@ Saved so this conversation can be compacted. Next turn: read this file + `docs/R
 
 - Branch: `main`
 - Remote: `https://github.com/umshere/RadioPassport.git`
+- Head at last product push: `77828ce` (globe stays lit on search). Docs follow in the next commit.
 - Do not commit `.env`
 - `public/FTS.jpeg` is the 404 wallpaper. Ship it with the app.
 
@@ -22,6 +23,7 @@ Saved so this conversation can be compacted. Next turn: read this file + `docs/R
 
 - Home `/`: coverline, night-earth globe, Land here / Continue, solar hours, same-hour cities
 - Globe is **not a mock**: real Radio Browser cities. HTML tooltip = city, region, country code, lead station, live count. Click rotates the earth to face that longitude, then plays the strongest station there.
+- Search (any language, tag, city — not Tamil-only) keeps the globe live. Missing Radio Browser geo falls back to the country center. Globe faces the densest match. Contract: `app/components/radio-passport/globePlaces.ts`.
 - Intent bar + voice + Surprise mix
 - `/listen` theater (honest ICY: if no track title, say so)
 - Atlas + country drill-down overlays
@@ -63,7 +65,7 @@ land · dusk · hour · stamp · live · cover · elsewhere · now
 
 - Campaign: *Someone else's now*
 - Viral frame is `/listen`, not the globe
-- Need a **clean public domain** (not a Heuristics Vercel slug)
+- Public domain in progress: `elsewheremusic.com` (Cloudflare registrar) is attached to the Vercel `radio-passport` project. Apex 308s to `www.elsewheremusic.com`. DNS records still need to be added in Cloudflare (DNS only, not proxied) before it goes live. Keep `www.radiopassport.art` until that resolves.
 - 14-day sequence is in the prior conversation / `docs/ROADMAP.md`
 - Do not turn on billing during launch week
 - Animated favicon: **overkill**. Still seal only.
@@ -78,7 +80,7 @@ land · dusk · hour · stamp · live · cover · elsewhere · now
 ## Key files
 
 - `app/routes/_index.tsx` — home
-- `app/components/radio-passport/*` — globe, overlays, intent, stamps
+- `app/components/radio-passport/*` — globe, `globePlaces.ts`, overlays, intent, stamps
 - `app/components/PlayerDock.tsx`
 - `app/routes/listen.tsx`
 - `app/constants/brand.ts` + `app/tailwind.css`
@@ -87,4 +89,4 @@ land · dusk · hour · stamp · live · cover · elsewhere · now
 
 ## Tests
 
-`npm test` — 83 passing after rebase onto origin honesty/filter helpers. Keep those exports (`titleCasePlaceName`, `toggleSelection`, `shouldAnimateDock`, `aggregateCountryStationContext`, `applyAiPreviewPool` returns the descriptor).
+`npm test` — 148 passing (`elsewhereFlow` + `elsewhereProduct` cover the loop and globe search). Keep those exports (`titleCasePlaceName`, `toggleSelection`, `shouldAnimateDock`, `aggregateCountryStationContext`, `applyAiPreviewPool` returns the descriptor).

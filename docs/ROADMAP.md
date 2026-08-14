@@ -11,6 +11,7 @@ Rule: **never charge to hear the radio.** Public streams stay public.
 - Land here / Continue, solar hours, same-hour cities
 - Intent bar + voice + Surprise mix (DeepSeek V4 **Flash only**)
 - Globe: real cities, HTML tooltip (city / region / station / count), rotate-to-face, play lead station
+- Search keeps the globe lit: country-center fallback when Radio Browser omitted geo; faces the densest match
 - `/listen` theater, ICY metadata, honest empty-track copy
 - Atlas + country drill-down, 60s passport stamps, favorites (this browser)
 - `/api/ai/interpret` and `/api/ai/dispatch` via Heuristics gateway
