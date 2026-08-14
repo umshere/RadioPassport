@@ -469,6 +469,7 @@ describe("live stylesheet", () => {
     expect(css).toContain("not-found-easter-egg");
     expect(css).toContain('[data-atmosphere="day"]');
     expect(css).toContain(".ew-atmosphere");
+    expect(css).toContain(".ew-atmosphere-icon");
     expect(css).toContain(".ew-atlas");
     expect(config).toContain("./app/components/radio-passport/**/*.{ts,tsx}");
     expect(config).not.toContain("./app/**/*.{ts,tsx,jsx,js}");

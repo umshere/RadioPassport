@@ -18,7 +18,7 @@ Night is the default room. Day is a morning edition of the same system — not a
 | foil | `#C6A56A` | `#8A6E3A` | wordmark, meridian, focus |
 | ether | `#7EB8B4` | `#3F7A76` | on-air only |
 
-Control: **Night / Day** pin in the header (not Light / Dark). Distinct from the Night hour chip. Default Night. Persist `elsewhere-atmosphere`. Do not follow `prefers-color-scheme`. 404 stays night (`FTS.jpeg`). Station art discs stay night windows.
+Control: **Night / Day** pin in the header (not Light / Dark). On a phone it collapses to a 44px meridian (disc high = day, low = night) so the header stays one line. Distinct from the Night hour chip. Default Night. Persist `elsewhere-atmosphere`. Do not follow `prefers-color-scheme`. 404 stays night (`FTS.jpeg`). Station art discs stay night windows.
 
 Type: **Newsreader** italic (display), **Schibsted Grotesk** (UI), **Azeret Mono** (telemetry).
 

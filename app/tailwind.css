@@ -322,9 +322,11 @@
     display: inline-flex;
     align-items: center;
     min-height: 44px;
+    flex: none;
     border: 1px solid var(--ew-rule);
     padding: 0 4px;
   }
+  .ew-atmosphere-icon { display: none; }
   .ew-atmosphere button {
     min-height: 36px;
     border: 0;
@@ -733,6 +735,37 @@
       padding: calc(10px + env(safe-area-inset-top, 0px)) 14px 10px;
     }
     .rp-intent { order: 3; width: 100%; }
+    .ew-atmosphere--split { display: none; }
+    .ew-atmosphere-icon {
+      display: grid;
+      width: 44px;
+      height: 44px;
+      flex: none;
+      place-items: center;
+      border: 1px solid var(--ew-rule);
+      background: transparent;
+      padding: 0;
+      color: var(--ew-foil);
+    }
+    .ew-atmosphere-icon__track {
+      position: relative;
+      display: block;
+      width: 1px;
+      height: 18px;
+      background: currentColor;
+    }
+    .ew-atmosphere-icon__track i {
+      position: absolute;
+      left: 50%;
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: currentColor;
+      transform: translateX(-50%);
+    }
+    .ew-atmosphere-icon.is-night .ew-atmosphere-icon__track i { bottom: -1px; }
+    .ew-atmosphere-icon.is-day .ew-atmosphere-icon__track i { top: -1px; }
+    .rp-passport-button { margin-left: auto; padding: 0 10px; }
     .rp-surprise { padding: 0 8px; letter-spacing: .1em; }
     .rp-stage { display: flex; flex-direction: column; min-height: 0; }
     .rp-globe-side {
