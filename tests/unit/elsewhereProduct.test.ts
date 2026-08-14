@@ -38,6 +38,13 @@ import {
   shouldSpinGlobe,
   turnProgress,
 } from "~/components/radio-passport/ParticleGlobe";
+import {
+  buildGlobePlaces,
+  countryCentroid,
+  globeFocusId,
+  globeStationPool,
+  stationGlobeCoords,
+} from "~/components/radio-passport/globePlaces";
 import { getGatewayConfig } from "~/services/ai/gateway";
 import { getGeminiModel, trimEnv } from "~/services/ai/completeFallback";
 import { getProvider, resetProviderCache } from "~/services/ai/providers";
@@ -180,7 +187,178 @@ describe("Elsewhere globe intelligence", () => {
     const halfway = rotationAtTurn(0, Math.PI / 2, 0.5);
     expect(halfway).toBeCloseTo(Math.PI / 4);
   });
+
+  it("keeps a station's own coordinates when Radio Browser sent them", () => {
+    const point = stationGlobeCoords({
+      latitude: 13.08,
+      longitude: 80.27,
+      countryCode: "IN",
+      country: "India",
+    });
+    expect(point).toEqual({
+      latitude: 13.08,
+      longitude: 80.27,
+      sourced: "station",
+    });
+  });
+
+  it("falls back to the country center when a search row has no geo", () => {
+    const india = countryCentroid("IN", "India");
+    expect(india).toEqual({ latitude: 20.59, longitude: 78.96 });
+    expect(
+      stationGlobeCoords({
+        latitude: null,
+        longitude: null,
+        countryCode: "IN",
+        country: "India",
+      })
+    ).toEqual({ latitude: 20.59, longitude: 78.96, sourced: "country" });
+  });
+
+  it("still locates a country by name when the ISO code is missing", () => {
+    expect(
+      stationGlobeCoords({
+        latitude: null,
+        longitude: null,
+        countryCode: null,
+        country: "Sri Lanka",
+      })?.sourced
+    ).toBe("country");
+  });
+
+  it("plots a Tamil catalog that Radio Browser returned without coordinates", () => {
+    const tamil = [
+      {
+        uuid: "in-1",
+        name: "90s-tamil-melodies",
+        country: "India",
+        countryCode: "IN",
+        city: null,
+        state: null,
+        latitude: null,
+        longitude: null,
+        clickCount: 40,
+      },
+      {
+        uuid: "in-2",
+        name: "Radio Paramankurichi Tamil",
+        country: "India",
+        countryCode: "IN",
+        city: null,
+        state: null,
+        latitude: null,
+        longitude: null,
+        clickCount: 12,
+      },
+      {
+        uuid: "my-1",
+        name: "Jei FM Klang Tamil",
+        country: "Malaysia",
+        countryCode: "MY",
+        city: null,
+        state: "Selangor",
+        latitude: null,
+        longitude: null,
+        clickCount: 8,
+      },
+      {
+        uuid: "lk-1",
+        name: "Sooriyan FM",
+        country: "Sri Lanka",
+        countryCode: "LK",
+        city: null,
+        state: null,
+        latitude: null,
+        longitude: null,
+        clickCount: 20,
+      },
+    ].map(
+      (row) =>
+        ({
+          url: "",
+          streamUrl: null,
+          favicon: "",
+          language: "Tamil",
+          tags: "tamil",
+          bitrate: 128,
+          codec: "MP3",
+          ...row,
+        }) as Station
+    );
+    const places = buildGlobePlaces(tamil, {
+      nowPlaying: null,
+      place: null,
+      stampedKeys: new Set(),
+    });
+    expect(places.map((place) => place.country).sort()).toEqual([
+      "India",
+      "Malaysia",
+      "Sri Lanka",
+    ]);
+    const india = places.find((place) => place.country === "India");
+    expect(india?.count).toBe(2);
+    expect(india?.latitude).toBeCloseTo(20.59);
+    expect(india?.longitude).toBeCloseTo(78.96);
+    expect(places[0]?.country).toBe("India");
+  });
+
+  it("keeps the world globe while a typed search catalog is still empty", () => {
+    const world = [
+      {
+        uuid: "lisbon",
+        name: "Antena 1",
+        country: "Portugal",
+        countryCode: "PT",
+        latitude: 38.72,
+        longitude: -9.14,
+        url: "",
+        streamUrl: null,
+        favicon: "",
+        state: null,
+        language: null,
+        tags: null,
+        bitrate: 0,
+        codec: null,
+      } as Station,
+    ];
+    expect(globeStationPool("tamil", [], world)).toBe(world);
+    expect(globeStationPool("tamil", tamilCatalogStub(), world)).toHaveLength(1);
+    expect(globeStationPool("", [], world)).toBe(world);
+  });
+
+  it("turns the globe toward the densest search country once the catalog lands", () => {
+    const places = buildGlobePlaces(tamilCatalogStub(), {
+      nowPlaying: null,
+      place: null,
+      stampedKeys: new Set(),
+    });
+    expect(
+      globeFocusId(null, null, "tamil", true, places)
+    ).toBe("India:India");
+    expect(globeFocusId(null, null, "tamil", false, places)).toBeNull();
+  });
 });
+
+function tamilCatalogStub(): Station[] {
+  return [
+    {
+      uuid: "in-1",
+      name: "Big FM Tamil",
+      url: "",
+      streamUrl: null,
+      favicon: "",
+      country: "India",
+      countryCode: "IN",
+      state: null,
+      latitude: null,
+      longitude: null,
+      language: "Tamil",
+      tags: "tamil",
+      bitrate: 128,
+      codec: "MP3",
+    } as Station,
+  ];
+}
 
 describe("Elsewhere interpret fallback", () => {
   it("detects mix intent and extracts country from a sentence", () => {

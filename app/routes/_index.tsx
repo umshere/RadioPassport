@@ -16,10 +16,12 @@ import { useNowPlayingMetadata } from "~/hooks/useNowPlayingMetadata";
 import { useTrackTrivia } from "~/hooks/useTrackTrivia";
 import { useDispatchStore } from "~/state/dispatchStore";
 import { loadWorldDescriptorPreview } from "~/services/aiOrchestrator";
+import { ParticleGlobe } from "~/components/radio-passport/ParticleGlobe";
 import {
-  ParticleGlobe,
-  type GlobePlace,
-} from "~/components/radio-passport/ParticleGlobe";
+  buildGlobePlaces,
+  globeFocusId,
+  globeStationPool,
+} from "~/components/radio-passport/globePlaces";
 import { SignalWordmark } from "~/components/radio-passport/SignalMark";
 import {
   StationRow,
@@ -46,7 +48,6 @@ import {
   surpriseTapNextState,
   wordmarkHomeNextState,
 } from "~/components/radio-passport/searchState";
-import { getContinent } from "~/utils/geography";
 import { IntentBar } from "~/components/radio-passport/IntentBar";
 import {
   resolveCoverArrival,
@@ -115,13 +116,6 @@ function stationMatches(station: Station, query: string) {
     .map(tokens)
     .join(" ");
   return queryTokens.every((token) => haystack.includes(token));
-}
-
-function hueFromId(id: string) {
-  return [...id].reduce(
-    (total, char) => (total * 31 + char.charCodeAt(0)) % 360,
-    0
-  );
 }
 
 export default function Index() {
@@ -250,46 +244,21 @@ export default function Index() {
     `${query}|${hour ?? ""}|${place ?? ""}|${listening.listeningMode}`
   );
 
-  const globeStations = query.trim().length >= 2 ? catalog : initialStations;
+  const globeStations = globeStationPool(query, catalog, initialStations);
   const stampedKeys = useMemo(
     () => new Set(stamps.map((stamp) => `${stamp.country}:${stamp.city}`)),
     [stamps]
   );
 
-  const places = useMemo(() => {
-    const map = new Map<string, GlobePlace>();
-    globeStations.forEach((station) => {
-      if (
-        typeof station.latitude !== "number" ||
-        typeof station.longitude !== "number"
-      )
-        return;
-      const location = stationLocation(station);
-      const key = `${station.country}:${location}`;
-      const old = map.get(key);
-      const lead = !old || (station.clickCount || 0) >= (old.clicks || 0);
-      map.set(key, {
-        id: key,
-        name: location,
-        country: station.country,
-        countryCode: station.countryCode ?? null,
-        region: getContinent(station.countryCode || undefined),
-        stationName: lead ? station.name : old.stationName,
-        count: (old?.count || 0) + 1,
-        latitude: station.latitude!,
-        longitude: station.longitude!,
-        active: place === location,
-        playing: nowPlaying
-          ? stationLocation(nowPlaying) === location &&
-            nowPlaying.country === station.country
-          : false,
-        stamped: stampedKeys.has(key),
-        hue: lead ? hueFromId(station.uuid) : old.hue,
-        clicks: lead ? station.clickCount || 0 : old.clicks,
-      });
-    });
-    return [...map.values()].sort((a, b) => b.count - a.count).slice(0, 30);
-  }, [globeStations, nowPlaying, place, stampedKeys]);
+  const places = useMemo(
+    () =>
+      buildGlobePlaces(globeStations, {
+        nowPlaying,
+        place,
+        stampedKeys,
+      }),
+    [globeStations, nowPlaying, place, stampedKeys]
+  );
 
   const selectedPool = liveFiltered.length
     ? liveFiltered
@@ -848,11 +817,13 @@ export default function Index() {
           <div className="rp-globe-wrap">
             <ParticleGlobe
               places={places}
-              focusId={
-                nowPlaying
-                  ? `${nowPlaying.country}:${stationLocation(nowPlaying)}`
-                  : null
-              }
+              focusId={globeFocusId(
+                nowPlaying,
+                nowPlaying ? stationLocation(nowPlaying) : null,
+                query,
+                catalog.length > 0,
+                places
+              )}
               onSelect={playPlace}
             />
             <div className="ew-cover">
