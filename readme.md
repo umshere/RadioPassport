@@ -4,7 +4,7 @@
 
 A Remix app that treats open radio as a fashion cover: a city, a local hour, a station that is actually on the air. Stay sixty seconds and the city inks your passport.
 
-> Docs: [docs/README.md](docs/README.md) · Roadmap: [docs/ROADMAP.md](docs/ROADMAP.md) · Assistant brief: [LLM.md](LLM.md)
+> Live: [elsewheremusic.com](https://elsewheremusic.com) · Agents: [AGENTS.md](AGENTS.md) · Docs: [docs/README.md](docs/README.md) · Deploy: [docs/DEPLOY.md](docs/DEPLOY.md)
 
 ## Run
 

@@ -24,3 +24,5 @@ Configure the AI layer and playback helpers through the following environment va
 | `OLLAMA_MODEL`       | Optional Ollama model identifier (defaults to `radio-passport`).                                                 |
 
 Place these variables in `.env` or your deployment platform's secrets manager. Do not commit real keys to the repository.
+
+Production (Vercel `radio-passport`): `AI_PROVIDER=gemini`, `GEMINI_MODEL=gemini-2.5-flash`. Env edits need a redeploy. Live host and ship steps: [DOMAINS.md](./DOMAINS.md), [DEPLOY.md](./DEPLOY.md).

@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-08-14 — elsewheremusic.com is the live host
+
+- Apex `elsewheremusic.com` serves the app (Cloudflare DNS-only → Vercel)
+- `www.elsewheremusic.com` also serves
+- `radiopassport.art` and `www` 308 to the apex
+- Tailscale MagicDNS can hide the new name locally; public DNS is fine
+- Agent runbooks: `AGENTS.md`, `docs/DOMAINS.md`, `docs/DEPLOY.md`, `docs/TROUBLESHOOTING.md`
+- Skills: `/elsewhere-deploy`, `/elsewhere-troubleshoot` (Grok + Claude)
+
 ## 2026-08-14 — Globe stays lit on every search
 
 Language and tag searches (tamil, malayalam, jazz, a city name) were filling the list and emptying the globe. Radio Browser usually omits `geo_lat` / `geo_long` on those rows. The homepage globe used a geo-only feed; the search globe required real coordinates and went blank.

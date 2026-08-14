@@ -15,7 +15,7 @@ npm run typecheck
 
 | Step | What must happen |
 |---|---|
-| Land | Globe is live. **Land here** / **Continue** starts audio. A globe dot rotates, then plays. |
+| Land | Globe is live. **Land here** / **Continue** starts audio. Hover freezes spin; click plays, then eases to face. |
 | Intent | Type, speak, or Surprise. Short query = catalog. Sentence = interpret, maybe a mix. Playback does not stop. A language search must still light the globe (country center if the row has no geo). |
 | Tune | Solar hour, same-hour cities, Atlas → country, station row. Filters never call `stop()`. |
 | Inhabit | Dock appears. Artwork / **Theater** opens `/listen`. Local clock + honest ICY. |

@@ -5,8 +5,12 @@ Elsewhere (repo heritage: Radio Passport). Remix + Tailwind. Live radio as a cov
 ## Start here
 
 - Product + run: [../readme.md](../readme.md)
+- **Agents (Grok / Claude / Codex):** [../AGENTS.md](../AGENTS.md)
 - **Roadmap (shipped / next / paid):** [ROADMAP.md](./ROADMAP.md)
 - **After compact / next session:** [SESSION_HANDOFF.md](./SESSION_HANDOFF.md)
+- Domains: [DOMAINS.md](./DOMAINS.md)
+- Deploy: [DEPLOY.md](./DEPLOY.md)
+- Troubleshooting: [TROUBLESHOOTING.md](./TROUBLESHOOTING.md)
 - Architecture: [ARCHITECTURE.md](./ARCHITECTURE.md)
 - User journey: [UI_FLOW.md](./UI_FLOW.md)
 - Design tokens + mark: [DESIGN_SPECS.md](./DESIGN_SPECS.md)

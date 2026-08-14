@@ -34,4 +34,8 @@ See `docs/ENVIRONMENT.md`. Model env vars do not override Flash.
 
 ## Docs
 
-`docs/README.md` · `docs/ROADMAP.md` · `docs/ARCHITECTURE.md` · `docs/UI_FLOW.md`
+`AGENTS.md` · `docs/README.md` · `docs/ROADMAP.md` · `docs/DOMAINS.md` · `docs/DEPLOY.md` · `docs/TROUBLESHOOTING.md`
+
+## Live
+
+https://elsewheremusic.com — Radio Passport 308s here.

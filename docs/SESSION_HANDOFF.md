@@ -15,9 +15,10 @@ Saved so this conversation can be compacted. Next turn: read this file + `docs/R
 
 - Branch: `main`
 - Remote: `https://github.com/umshere/RadioPassport.git`
-- Head at last product push: `77828ce` (globe stays lit on search). Docs follow in the next commit.
+- Head at last product push: `77828ce` (globe stays lit on search). Domain + agent docs follow.
 - Do not commit `.env`
 - `public/FTS.jpeg` is the 404 wallpaper. Ship it with the app.
+- Live host: **https://elsewheremusic.com**. Radio Passport 308s there. Facts: `docs/DOMAINS.md`. Ship: `docs/DEPLOY.md`. Breaks: `docs/TROUBLESHOOTING.md`. Agents: `AGENTS.md`.
 
 ## What shipped (live product)
 
@@ -65,14 +66,15 @@ land · dusk · hour · stamp · live · cover · elsewhere · now
 
 - Campaign: *Someone else's now*
 - Viral frame is `/listen`, not the globe
-- Public domain in progress: `elsewheremusic.com` (Cloudflare registrar) is attached to the Vercel `radio-passport` project. Apex 308s to `www.elsewheremusic.com`. DNS records still need to be added in Cloudflare (DNS only, not proxied) before it goes live. Keep `www.radiopassport.art` until that resolves.
-- 14-day sequence is in the prior conversation / `docs/ROADMAP.md`
+- Public domain **live**: `elsewheremusic.com` (Cloudflare DNS-only → Vercel). Apex serves. `www` serves. `radiopassport.art` + `www` 308 to the apex. See `docs/DOMAINS.md`.
+- Tailscale MagicDNS can hide the new name on this laptop. Public DNS is fine. See `docs/TROUBLESHOOTING.md`.
+- 14-day sequence is in `docs/ROADMAP.md`
 - Do not turn on billing during launch week
 - Animated favicon: **overkill**. Still seal only.
 
 ## Next work (in order)
 
-1. Clean domain + OG still from `/listen`
+1. OG still from `/listen` on the new host
 2. Run the 14-day launch
 3. Correspondent (magic link + Stripe + quotas + probe-ahead)
 4. Optionally delete unused legacy files later (`RetroTuner`, `Premium*`, `TuningOverlay`, `AppHeader`)

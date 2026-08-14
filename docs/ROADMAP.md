@@ -22,7 +22,7 @@ Rule: **never charge to hear the radio.** Public streams stay public.
 
 ### 1. Domain + launch (week of push)
 
-- Clean public URL (not a Heuristics Vercel slug)
+- **Domain shipped:** https://elsewheremusic.com (Cloudflare → Vercel). Radio Passport 308s there. `docs/DOMAINS.md`
 - OG still = `/listen` coverline
 - Campaign *Someone else's now* — 14 days (X still, Are.na, one Reel, station DMs)
 - Do **not** turn on billing in this window
@@ -60,6 +60,10 @@ Kill experiment if ≥200 qualified users and checkout start < 1.5%, or AI COGS 
 ## Docs map
 
 - Product + run: [../readme.md](../readme.md)
+- Agents: [../AGENTS.md](../AGENTS.md)
+- Domains: [DOMAINS.md](./DOMAINS.md)
+- Deploy: [DEPLOY.md](./DEPLOY.md)
+- Breaks: [TROUBLESHOOTING.md](./TROUBLESHOOTING.md)
 - Architecture: [ARCHITECTURE.md](./ARCHITECTURE.md)
 - Journey: [UI_FLOW.md](./UI_FLOW.md)
 - Design: [DESIGN_SPECS.md](./DESIGN_SPECS.md)
