@@ -31,7 +31,7 @@ No animated favicon.
 - Home: sticky header, left editorial column, right globe as the page. Mobile: globe + coverline first, Land here full width, compact dock.
 - Globe tooltip is HTML (not canvas-only). Click rotates, then plays.
 - Dock is full-width, not a floating pill. Theater is a link + artwork.
-- Passport is a book (foil rims), not dashed stickers.
+- Passport is a book (foil rims), not dashed stickers. Stamps are type: `IN · India` in foil mono, city in italic Newsreader. No full-color flags — those belong to unmounted leftovers (`CountryFlag`, AtlasGrid, StationInfo). A flag on a stamp is only allowed as a 12–14px customs mark beside the ISO code: no shadow, no glass radius, foil-tinted or faded, omitted when there is no ISO (never the old cyan/violet broadcast fallback).
 - Tuning overlay, Mantine about deck, and Radio Passport header are unmounted.
 
 ## Motion
