@@ -49,5 +49,6 @@ Search catalogs often omit `geo_lat` / `geo_long`. `buildGlobePlaces` keeps thos
 - Globe / board / overlays: `app/components/radio-passport/*`
 - Dock: `app/components/PlayerDock.tsx`
 - Tokens: `app/tailwind.css`, `app/constants/brand.ts`
+- The live shell does not load Mantine. Tailwind content is the mounted routes + `radio-passport/*`.
 
 Legacy files (`RetroTuner`, `AppHeader`, `Premium*`, `TuningOverlay`) are unmounted. Do not import them into the live shell.

@@ -15,7 +15,7 @@ Saved so this conversation can be compacted. Next turn: read this file + `docs/R
 
 - Branch: `main`
 - Remote: `https://github.com/umshere/RadioPassport.git`
-- Head at last product push: `77828ce` (globe stays lit on search). Domain + agent docs follow.
+- Head at last product push: first-load peel (no Mantine on the live shell). Passport stamp rule is in `docs/DESIGN_SPECS.md`. Domain + agent docs follow.
 - Do not commit `.env`
 - `public/FTS.jpeg` is the 404 wallpaper. Ship it with the app.
 - Live host: **https://elsewheremusic.com**. Radio Passport 308s there. Facts: `docs/DOMAINS.md`. Ship: `docs/DEPLOY.md`. Breaks: `docs/TROUBLESHOOTING.md`. Agents: `AGENTS.md`.
@@ -32,6 +32,7 @@ Saved so this conversation can be compacted. Next turn: read this file + `docs/R
 - Mobile: globe first, full-width Land here, compact dock, theater via art / Theater link
 - Brand: lacquer seal + foil ring. Favicon `/elsewhere-favicon.svg`. Wordmark `/elsewhere-mark.jpg`. About colophon `/elsewhere-colophon.jpg`
 - Tuning overlay, old Radio Passport header/sidebar, Mantine about deck: **unmounted** (files may still exist — do not import them)
+- Live stylesheet does not import Mantine or leftover travel CSS. Tailwind scans mounted files only.
 
 ## AI (cost lock)
 

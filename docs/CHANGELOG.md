@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-08-14 — First load drops Mantine
+
+The live shell no longer wraps every page in `MantineProvider`, and `app/tailwind.css` no longer imports Mantine or leftover travel-stack / hero CSS. Tailwind only scans the mounted product files.
+
+- Passport stamps stay type (`IN · India`), not flags — see `docs/DESIGN_SPECS.md`
+- Leftover screens (`CountryFlag`, AtlasGrid, RetroTuner) stay on disk, unmounted
+- Contract: `tests/unit/elsewhereProduct.test.ts` → live stylesheet
+
 ## 2026-08-14 — elsewheremusic.com is the live host
 
 - Apex `elsewheremusic.com` serves the app (Cloudflare DNS-only → Vercel)

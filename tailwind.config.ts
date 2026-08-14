@@ -1,7 +1,14 @@
 import type { Config } from "tailwindcss";
 
 export default {
-  content: ["./app/**/*.{ts,tsx,jsx,js}"],
+  content: [
+    "./app/root.tsx",
+    "./app/routes/_index.tsx",
+    "./app/routes/about.tsx",
+    "./app/routes/listen.tsx",
+    "./app/components/PlayerDock.tsx",
+    "./app/components/radio-passport/**/*.{ts,tsx}",
+  ],
   theme: {
     extend: {
       colors: {

@@ -10,7 +10,6 @@ import {
   useNavigation,
   useRouteError,
 } from "@remix-run/react";
-import { MantineProvider, createTheme } from "@mantine/core";
 import { type ReactNode, useCallback, useEffect, useRef } from "react";
 import { usePlayerStore } from "~/state/playerStore";
 import {
@@ -91,100 +90,13 @@ function Document({
         style={{ background: "var(--rp-bg)" }}
         suppressHydrationWarning
       >
-        <MantineProvider theme={theme} defaultColorScheme="light">
-          {children}
-        </MantineProvider>
+        {children}
         <ScrollRestoration />
         <Scripts />
       </body>
     </html>
   );
 }
-
-const ocean = [
-  "#e1f0ff",
-  "#c3dcf3",
-  "#9cc1e5",
-  "#74a5d6",
-  "#4d8ac7",
-  "#296faf",
-  "#15598f",
-  "#0a4875",
-  "#04345b",
-  "#013a63",
-] as const;
-
-const passport = [
-  "#fffaf4",
-  "#fdf2e6",
-  "#f9e6d2",
-  "#f3d7b9",
-  "#edc8a0",
-  "#d8b084",
-  "#ba9063",
-  "#987249",
-  "#755532",
-  "#4a3721",
-] as const;
-
-const stamp = [
-  "#ffe7eb",
-  "#ffcdd5",
-  "#fda3b5",
-  "#fa7a95",
-  "#f55478",
-  "#e63a60",
-  "#d1495b",
-  "#a93250",
-  "#7d2340",
-  "#4f162a",
-] as const;
-
-const horizon = [
-  "#e7f6f9",
-  "#d1eef2",
-  "#a9dee4",
-  "#80cdd5",
-  "#57bcc7",
-  "#3ca0ac",
-  "#2c7f8a",
-  "#21626b",
-  "#16444c",
-  "#0b262d",
-] as const;
-
-const theme = createTheme({
-  colors: {
-    ocean,
-    passport,
-    stamp,
-    horizon,
-  },
-  primaryColor: "ocean",
-  primaryShade: 8,
-  defaultRadius: "xl",
-  fontFamily:
-    '"Schibsted Grotesk", "Sora", "SF Pro Text", -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif',
-  fontFamilyMonospace:
-    '"Azeret Mono", "IBM Plex Mono", "SF Mono", Monaco, "Cascadia Code", "Courier New", monospace',
-  headings: {
-    fontFamily:
-      '"Newsreader", "Iowan Old Style", "Palatino Linotype", serif',
-    fontWeight: "400",
-  },
-  shadows: {
-    xs: "0 1px 2px rgba(0, 0, 0, 0.04)",
-    sm: "0 2px 8px rgba(0, 0, 0, 0.06)",
-    md: "0 4px 12px rgba(0, 0, 0, 0.08)",
-    lg: "0 8px 24px rgba(0, 0, 0, 0.12)",
-    xl: "0 16px 48px rgba(0, 0, 0, 0.16)",
-  },
-  defaultGradient: {
-    from: "#f8fafc",
-    to: "#e2e8f0",
-    deg: 135,
-  },
-});
 
 export default function App() {
   const previousTitleRef = useRef("Elsewhere");

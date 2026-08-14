@@ -33,6 +33,7 @@ No animated favicon.
 - Dock is full-width, not a floating pill. Theater is a link + artwork.
 - Passport is a book (foil rims), not dashed stickers. Stamps are type: `IN · India` in foil mono, city in italic Newsreader. No full-color flags — those belong to unmounted leftovers (`CountryFlag`, AtlasGrid, StationInfo). A flag on a stamp is only allowed as a 12–14px customs mark beside the ISO code: no shadow, no glass radius, foil-tinted or faded, omitted when there is no ISO (never the old cyan/violet broadcast fallback).
 - Tuning overlay, Mantine about deck, and Radio Passport header are unmounted.
+- Live CSS is `app/tailwind.css` only: no Mantine imports, no leftover travel-stack / hero rules. Tailwind scans the mounted routes and `radio-passport/*`, not the unmounted leftovers.
 
 ## Motion
 

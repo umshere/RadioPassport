@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { beforeEach, describe, expect, it } from "vitest";
 import {
   formatLocalLabel,
@@ -449,5 +450,24 @@ describe("Heuristics provider wiring", () => {
       .providers;
     expect(providers[0]).toBeInstanceOf(HeuristicsProvider);
     expect(providers[1]).toBeInstanceOf(OpenRouterProvider);
+  });
+});
+
+describe("live stylesheet", () => {
+  it("does not ship Mantine or leftover travel CSS on the product face", () => {
+    const css = readFileSync(
+      new URL("../../app/tailwind.css", import.meta.url),
+      "utf8"
+    );
+    const config = readFileSync(
+      new URL("../../tailwind.config.ts", import.meta.url),
+      "utf8"
+    );
+    expect(css).not.toMatch(/@mantine\/(core|carousel)/);
+    expect(css).not.toMatch(/travel-stack|app-header__inner|hero-morph/);
+    expect(css).toContain(".rp-home");
+    expect(css).toContain("not-found-easter-egg");
+    expect(config).toContain("./app/components/radio-passport/**/*.{ts,tsx}");
+    expect(config).not.toContain("./app/**/*.{ts,tsx,jsx,js}");
   });
 });
