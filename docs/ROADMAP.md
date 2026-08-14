@@ -17,6 +17,7 @@ Rule: **never charge to hear the radio.** Public streams stay public.
 - `/api/ai/interpret` and `/api/ai/dispatch` via Heuristics gateway
 - Brand mark (lacquer seal), SVG favicon, about as the room
 - Mobile dock / cover / theater
+- Day / Night room (paper morning edition; default still Night)
 
 ## Next
 

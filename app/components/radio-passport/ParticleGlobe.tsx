@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from "react";
+import { useAtmosphereStore } from "~/state/atmosphereStore";
+import { globeAtmospherePaint } from "~/utils/atmosphere";
 
 export type GlobePlace = {
   id: string;
@@ -156,10 +158,13 @@ export function ParticleGlobe({
   const [reduced, setReduced] = useState(false);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [tip, setTip] = useState<Tip | null>(null);
+  const atmosphere = useAtmosphereStore((state) => state.atmosphere);
+  const atmosphereRef = useRef(atmosphere);
 
   placesRef.current = places;
   onSelectRef.current = onSelect;
   hoveredIdRef.current = hoveredId;
+  atmosphereRef.current = atmosphere;
 
   useEffect(() => {
     const media = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -236,6 +241,7 @@ export function ParticleGlobe({
       }
       const playing = livePlaces.find((place) => place.playing);
       const hoverId = hoveredIdRef.current;
+      const paint = globeAtmospherePaint(atmosphereRef.current);
       if (playing && typeof playing.hue === "number") {
         const wash = ctx.createRadialGradient(
           cx,
@@ -245,15 +251,20 @@ export function ParticleGlobe({
           cy,
           r * 1.15
         );
-        wash.addColorStop(0, `hsla(${playing.hue}, 28%, 16%, 0.55)`);
-        wash.addColorStop(1, "rgba(12,11,9,0)");
+        wash.addColorStop(
+          0,
+          `hsla(${playing.hue}, ${paint.washSaturation}%, ${paint.washLightness}%, ${paint.washAlpha})`
+        );
+        wash.addColorStop(1, paint.washFade);
         ctx.fillStyle = wash;
         ctx.fillRect(0, 0, rect.width, rect.height);
       }
-      ctx.strokeStyle = "rgba(232,223,208,.12)";
-      ctx.lineWidth = 1;
       ctx.beginPath();
       ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.fillStyle = paint.sphereFill;
+      ctx.fill();
+      ctx.strokeStyle = paint.outline;
+      ctx.lineWidth = 1;
       ctx.stroke();
       for (let i = 0; i < 300; i++) {
         const y = 1 - (i / 299) * 2,
@@ -262,13 +273,13 @@ export function ParticleGlobe({
         const x = Math.cos(theta) * radius,
           z = Math.sin(theta) * radius;
         if (z < -0.2) continue;
-        ctx.fillStyle = `rgba(232,223,208,${0.08 + (z + 1) * 0.18})`;
-        ctx.fillRect(cx + x * r, cy - y * r, 1.1, 1.1);
+        ctx.fillStyle = paint.particle(z);
+        ctx.fillRect(cx + x * r, cy - y * r, paint.particleSize, paint.particleSize);
       }
       if (playing) {
         const point = projectPlace(playing, rotation, cx, cy, r);
         if (point.visible) {
-          ctx.strokeStyle = "rgba(198,165,106,.85)";
+          ctx.strokeStyle = paint.meridian;
           ctx.lineWidth = 1;
           ctx.beginPath();
           ctx.moveTo(point.x, 18);
@@ -281,28 +292,28 @@ export function ParticleGlobe({
         if (!point.visible) return;
         const aimed = hoverId === p.id;
         ctx.fillStyle = p.playing
-          ? "#7EB8B4"
+          ? paint.cityPlaying
           : p.stamped
-          ? "#C6A56A"
-          : "#C73A3A";
+          ? paint.cityStamped
+          : paint.cityLive;
         ctx.beginPath();
         ctx.arc(
           point.x,
           point.y,
-          p.active || p.playing || p.stamped || aimed ? 5 : 3.2,
+          p.active || p.playing || p.stamped || aimed ? 5.4 : paint.cityRadius,
           0,
           Math.PI * 2
         );
         ctx.fill();
         if (aimed && !p.playing) {
-          ctx.strokeStyle = "rgba(198,165,106,.85)";
+          ctx.strokeStyle = paint.aim;
           ctx.lineWidth = 1.2;
           ctx.beginPath();
           ctx.arc(point.x, point.y, 9, 0, Math.PI * 2);
           ctx.stroke();
         }
         if (p.playing) {
-          ctx.strokeStyle = "rgba(126,184,180,.7)";
+          ctx.strokeStyle = paint.playingRing;
           ctx.beginPath();
           ctx.arc(
             point.x,
@@ -324,7 +335,7 @@ export function ParticleGlobe({
       cancelAnimationFrame(raf);
       document.removeEventListener("visibilitychange", onVisibility);
     };
-  }, [reduced]);
+  }, [atmosphere, reduced]);
 
   const clearLeaveTimer = () => {
     if (leaveTimerRef.current === null) return;

@@ -23,6 +23,7 @@ import {
   globeStationPool,
 } from "~/components/radio-passport/globePlaces";
 import { SignalWordmark } from "~/components/radio-passport/SignalMark";
+import { AtmospherePin } from "~/components/radio-passport/AtmospherePin";
 import {
   StationRow,
   stationLocation,
@@ -627,6 +628,7 @@ export default function Index() {
         <Link to="/about" className="rp-eyebrow text-dust" prefetch="intent">
           Room
         </Link>
+        <AtmospherePin />
         <button
           type="button"
           className="rp-passport-button"
@@ -709,10 +711,11 @@ export default function Index() {
             ))}
             <button
               type="button"
-              className="rp-chip rp-chip-dashed"
+              className="ew-atlas"
               onClick={() => setAtlas(true)}
             >
               Atlas
+              <span aria-hidden="true">→</span>
             </button>
           </div>
           {hour ? (
@@ -797,7 +800,7 @@ export default function Index() {
                   <button
                     type="button"
                     key={action.id}
-                    className="rp-chip"
+                    className={action.id === "atlas" ? "ew-atlas" : "rp-chip"}
                     onClick={() => {
                       if (action.id === "surprise") void requestAiWorld();
                       if (action.id === "atlas") setAtlas(true);

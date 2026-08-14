@@ -467,6 +467,9 @@ describe("live stylesheet", () => {
     expect(css).not.toMatch(/travel-stack|app-header__inner|hero-morph/);
     expect(css).toContain(".rp-home");
     expect(css).toContain("not-found-easter-egg");
+    expect(css).toContain('[data-atmosphere="day"]');
+    expect(css).toContain(".ew-atmosphere");
+    expect(css).toContain(".ew-atlas");
     expect(config).toContain("./app/components/radio-passport/**/*.{ts,tsx}");
     expect(config).not.toContain("./app/**/*.{ts,tsx,jsx,js}");
   });

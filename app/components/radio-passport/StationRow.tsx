@@ -76,7 +76,7 @@ export function StationRow({
             <i />
           </span>
         ) : (
-          <span className="text-[13px] text-paper">▶</span>
+          <span className="text-[13px]">▶</span>
         )}
       </button>
       <button

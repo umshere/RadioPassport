@@ -21,6 +21,7 @@ Elsewhere is one loop: **land → intent → tune → inhabit → stamp → next
 | Intent (sentence) | `POST /api/ai/interpret`. May fire a mix. |
 | Surprise | AI mix, then autotune the first station. |
 | Solar hour chip | Filters by the city's local hour. Does not stop audio. |
+| Night / Day | Header pin. Changes the room (night earth vs morning edition). Does not stop audio. Does not follow the OS clock. Distinct from the Night hour chip. |
 | Atlas | Overlay. Country → city groups. Play replaces the queue. |
 | Passport | Stamps + favorites. Stamp tap retunes that city. |
 | Dock art / Theater | `/listen` |

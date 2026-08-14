@@ -95,7 +95,7 @@ describe("Elsewhere living loop", () => {
 
   it("keeps search, chips, and overlays from calling stop", () => {
     const keepers = SURFACE_CONNECTIONS.filter((item) =>
-      ["intent", "solar-hour", "atlas", "passport", "favorite", "issue"].includes(
+      ["intent", "solar-hour", "atmosphere", "atlas", "passport", "favorite", "issue"].includes(
         item.action
       )
     );
@@ -502,6 +502,8 @@ describe("Icons that look live must land somewhere", () => {
   it("makes Room and the wordmark real routes home or to the room", () => {
     expect(connectionById("issue")?.action).toBe("issue");
     expect(connectionById("wordmark")?.action).toBe("home");
+    expect(connectionById("atmosphere")?.action).toBe("atmosphere");
+    expect(connectionById("atmosphere")?.keepsPlayback).toBe(true);
     expect(connectionById("about-land")?.action).toBe("home");
     expect(connectionById("issue")?.optional).toBeFalsy();
   });

@@ -31,6 +31,7 @@ Saved so this conversation can be compacted. Next turn: read this file + `docs/R
 - Passport stamps after **60s continuous** listen; favorites; localStorage only
 - Mobile: globe first, full-width Land here, compact dock, theater via art / Theater link
 - Brand: lacquer seal + foil ring. Favicon `/elsewhere-favicon.svg`. Wordmark `/elsewhere-mark.jpg`. About colophon `/elsewhere-colophon.jpg`
+- Day / Night pin on the cover chips. Default Night. Persist `elsewhere-atmosphere`. Day is paper, not a white invert. 404 stays night.
 - Tuning overlay, old Radio Passport header/sidebar, Mantine about deck: **unmounted** (files may still exist — do not import them)
 - Live stylesheet does not import Mantine or leftover travel CSS. Tailwind scans mounted files only.
 

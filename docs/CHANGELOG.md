@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-08-14 — Day / Night room
+
+Night stays the default Elsewhere room. Day is a morning-edition paper palette (warm stock, iron-gall type, same lacquer seal). The pin sits with the solar-hour chips and is labeled Night / Day, never Light / Dark.
+
+- Tokens flip on `data-atmosphere="day"`; Tailwind colors read the CSS vars
+- Globe becomes a lithograph plate in Day; lacquer cities stay
+- Stored in `elsewhere-atmosphere`; boot script prevents a night flash
+- 404 wallpaper stays night. Station art discs stay night windows
+
 ## 2026-08-14 — First load drops Mantine
 
 The live shell no longer wraps every page in `MantineProvider`, and `app/tailwind.css` no longer imports Mantine or leftover travel-stack / hero CSS. Tailwind only scans the mounted product files.

@@ -156,8 +156,10 @@ export default function PlayerDock() {
         title={stamped ? "Stamped" : "Stay 60 seconds to ink this city"}
         style={{
           borderRadius: "50%",
-          border: `1px solid ${stamped ? "#C6A56A" : "rgba(232,223,208,.2)"}`,
-          background: stamped ? "rgba(198,165,106,.25)" : "transparent",
+          border: `1px solid ${
+            stamped ? "var(--ew-foil)" : "var(--ew-ghost)"
+          }`,
+          background: stamped ? "var(--ew-foil-wash-strong)" : "transparent",
         }}
       />
       <button

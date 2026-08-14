@@ -30,6 +30,8 @@ import { usePlayerNoticeStore } from "~/state/playerNoticeStore";
 import type { Station } from "~/types/radio";
 import { sanitizeArtworkUrl } from "~/utils/stations";
 import { JourneyBridge } from "~/components/radio-passport/JourneyBridge";
+import { useAtmosphereStore } from "~/state/atmosphereStore";
+import { ATMOSPHERE_BOOT_SCRIPT, ATMOSPHERE_THEME_COLOR } from "~/utils/atmosphere";
 
 export const links: LinksFunction = () => [
   { rel: "stylesheet", href: stylesheet },
@@ -64,7 +66,10 @@ function Document({
           name="viewport"
           content="width=device-width, initial-scale=1, viewport-fit=cover"
         />
-        <meta name="theme-color" content="#0C0B09" />
+        <meta name="theme-color" content={ATMOSPHERE_THEME_COLOR.night} />
+        <script
+          dangerouslySetInnerHTML={{ __html: ATMOSPHERE_BOOT_SCRIPT }}
+        />
         <link rel="icon" href="/elsewhere-favicon.svg" type="image/svg+xml" />
         <link rel="apple-touch-icon" href="/elsewhere-mark.jpg" />
         <meta
@@ -152,6 +157,7 @@ export default function App() {
 
         <PlayerDock />
         <JourneyBridge />
+        <AtmosphereBridge />
         <GlobalAudioBridge />
       </>
     </Document>
@@ -249,6 +255,16 @@ function NotFoundEasterEgg({
       </section>
     </main>
   );
+}
+
+function AtmosphereBridge() {
+  const hydrate = useAtmosphereStore((state) => state.hydrate);
+
+  useEffect(() => {
+    hydrate();
+  }, [hydrate]);
+
+  return null;
 }
 
 function GlobalAudioBridge() {

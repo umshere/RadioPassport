@@ -24,6 +24,7 @@ export type FlowAction =
   | "surprise"
   | "voice"
   | "solar-hour"
+  | "atmosphere"
   | "same-hour"
   | "atlas"
   | "country"
@@ -172,6 +173,14 @@ export const SURFACE_CONNECTIONS: SurfaceConnection[] = [
     label: "Solar hour chip",
     step: "tune",
     action: "solar-hour",
+    keepsPlayback: true,
+  },
+  {
+    id: "atmosphere",
+    surface: "cover",
+    label: "Day or night",
+    step: "inhabit",
+    action: "atmosphere",
     keepsPlayback: true,
   },
   {
