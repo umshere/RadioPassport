@@ -14,9 +14,9 @@ Saved so this conversation can be compacted. Next turn: read this file + `docs/R
 ## Git
 
 - Branch: `main`
-- Shipped commit: `a005840` — `feat: ship Elsewhere as the product face`
 - Remote: `https://github.com/umshere/RadioPassport.git`
-- Do not commit `.env` or `public/FTS.jpeg`
+- Do not commit `.env`
+- `public/FTS.jpeg` is the 404 wallpaper. Ship it with the app.
 
 ## What shipped (live product)
 

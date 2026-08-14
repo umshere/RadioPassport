@@ -325,13 +325,16 @@ function NotFoundEasterEgg({
   message: string;
 }) {
   return (
-    <main className="ew-theater">
-      <p className="rp-eyebrow text-foil">Lost</p>
-      <h1 className="ew-coverline mt-4">{title}</h1>
-      <p className="rp-lede mt-4">{message}</p>
-      <Link to="/" className="ew-land mt-8" prefetch="intent">
-        Back
-      </Link>
+    <main className="not-found-easter-egg relative min-h-screen overflow-hidden px-6 py-10 text-bone">
+      <div className="not-found-easter-egg__pattern" aria-hidden="true" />
+      <section className="relative z-10 mx-auto flex min-h-[calc(100vh-5rem)] w-full max-w-3xl flex-col items-start justify-center">
+        <p className="rp-eyebrow text-foil">Lost</p>
+        <h1 className="ew-coverline mt-4">{title}</h1>
+        <p className="rp-lede mt-4 max-w-xl">{message}</p>
+        <Link to="/" className="ew-land mt-8" prefetch="intent">
+          Back
+        </Link>
+      </section>
     </main>
   );
 }

@@ -19,6 +19,7 @@ import {
 import {
   nextGlobePlaceIndex,
   shouldAnimateGlobe,
+  shouldSpinGlobe,
 } from "~/components/radio-passport/ParticleGlobe";
 import type { Station } from "~/types/radio";
 import { rbFetchJson } from "~/utils/radioBrowser";
@@ -144,6 +145,7 @@ describe("Signal & Stamp journey contracts", () => {
     expect(shouldAnimateGlobe(false, false)).toBe(true);
     expect(shouldAnimateGlobe(true, false)).toBe(false);
     expect(shouldAnimateGlobe(false, true)).toBe(false);
+    expect(shouldSpinGlobe(false, false, true)).toBe(false);
     expect(nextGlobePlaceIndex(0, 3, -1)).toBe(2);
     expect(nextGlobePlaceIndex(2, 3, 1)).toBe(0);
   });

@@ -28,8 +28,15 @@ import {
 import type { Station } from "~/types/radio";
 import {
   facingRotation,
+  globeHitDistance,
+  GLOBE_HIT_ACQUIRE,
+  GLOBE_HIT_HOLD,
+  GLOBE_HIT_TOUCH,
   nearestVisiblePlace,
+  rotationAtTurn,
   shortestAngle,
+  shouldSpinGlobe,
+  turnProgress,
 } from "~/components/radio-passport/ParticleGlobe";
 import { getGatewayConfig } from "~/services/ai/gateway";
 import { getGeminiModel, trimEnv } from "~/services/ai/completeFallback";
@@ -151,6 +158,27 @@ describe("Elsewhere globe intelligence", () => {
       400
     );
     expect(hit?.place.name).toBe("Lisbon");
+  });
+
+  it("holds the globe still while the pointer is over it", () => {
+    expect(shouldSpinGlobe(false, false, false)).toBe(true);
+    expect(shouldSpinGlobe(false, false, true)).toBe(false);
+    expect(shouldSpinGlobe(true, false, false)).toBe(false);
+    expect(shouldSpinGlobe(false, true, false)).toBe(false);
+  });
+
+  it("widens the city hit once a place is already aimed", () => {
+    expect(globeHitDistance("mouse", false)).toBe(GLOBE_HIT_ACQUIRE);
+    expect(globeHitDistance("mouse", true)).toBe(GLOBE_HIT_HOLD);
+    expect(globeHitDistance("touch", false)).toBe(GLOBE_HIT_TOUCH);
+  });
+
+  it("eases the facing turn instead of snapping", () => {
+    expect(turnProgress(0)).toBe(0);
+    expect(turnProgress(520)).toBe(1);
+    expect(turnProgress(260)).toBeGreaterThan(0.8);
+    const halfway = rotationAtTurn(0, Math.PI / 2, 0.5);
+    expect(halfway).toBeCloseTo(Math.PI / 4);
   });
 });
 

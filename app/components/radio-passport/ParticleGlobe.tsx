@@ -17,8 +17,39 @@ export type GlobePlace = {
   clicks?: number;
 };
 
+export const GLOBE_HIT_ACQUIRE = 32;
+export const GLOBE_HIT_HOLD = 52;
+export const GLOBE_HIT_TOUCH = 48;
+export const GLOBE_TURN_MS = 520;
+export const GLOBE_SPIN_RAD_PER_SEC = 0.055;
+
 export function shouldAnimateGlobe(hidden: boolean, reducedMotion: boolean) {
   return !hidden && !reducedMotion;
+}
+
+export function shouldSpinGlobe(
+  hidden: boolean,
+  reducedMotion: boolean,
+  pointerOver: boolean
+) {
+  return shouldAnimateGlobe(hidden, reducedMotion) && !pointerOver;
+}
+
+export function globeHitDistance(
+  pointerType?: string | null,
+  alreadyHovered = false
+) {
+  if (pointerType === "touch") return GLOBE_HIT_TOUCH;
+  return alreadyHovered ? GLOBE_HIT_HOLD : GLOBE_HIT_ACQUIRE;
+}
+
+export function turnProgress(elapsedMs: number, durationMs = GLOBE_TURN_MS) {
+  const t = Math.min(1, Math.max(0, elapsedMs / durationMs));
+  return 1 - (1 - t) ** 3;
+}
+
+export function rotationAtTurn(from: number, to: number, progress: number) {
+  return from + shortestAngle(from, to) * progress;
 }
 
 export function nextGlobePlaceIndex(
@@ -88,6 +119,12 @@ export function nearestVisiblePlace(
   return { place: nearest, distance };
 }
 
+type GlobeTurn = {
+  from: number;
+  to: number;
+  startedAt: number;
+};
+
 type Tip = {
   id: string;
   x: number;
@@ -110,11 +147,19 @@ export function ParticleGlobe({
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rotationRef = useRef(0.45);
-  const targetRef = useRef<number | null>(null);
-  const pendingRef = useRef<string | null>(null);
+  const turnRef = useRef<GlobeTurn | null>(null);
+  const pointerOverRef = useRef(false);
+  const hoveredIdRef = useRef<string | null>(null);
+  const placesRef = useRef(places);
+  const onSelectRef = useRef(onSelect);
+  const leaveTimerRef = useRef<number | null>(null);
   const [reduced, setReduced] = useState(false);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [tip, setTip] = useState<Tip | null>(null);
+
+  placesRef.current = places;
+  onSelectRef.current = onSelect;
+  hoveredIdRef.current = hoveredId;
 
   useEffect(() => {
     const media = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -128,7 +173,20 @@ export function ParticleGlobe({
     if (!focusId) return;
     const place = places.find((item) => item.id === focusId);
     if (!place) return;
-    targetRef.current = facingRotation(place.longitude);
+    const target = facingRotation(place.longitude);
+    const currentTurn = turnRef.current;
+    if (
+      currentTurn &&
+      Math.abs(shortestAngle(currentTurn.to, target)) < 0.04
+    ) {
+      return;
+    }
+    if (Math.abs(shortestAngle(rotationRef.current, target)) < 0.04) return;
+    turnRef.current = {
+      from: rotationRef.current,
+      to: target,
+      startedAt: performance.now(),
+    };
   }, [focusId, places]);
 
   useEffect(() => {
@@ -139,13 +197,20 @@ export function ParticleGlobe({
     let frame = 0,
       raf = 0,
       hidden = document.hidden,
-      rotation = rotationRef.current;
+      rotation = rotationRef.current,
+      lastNow = performance.now();
     const onVisibility = () => {
       hidden = document.hidden;
-      if (!hidden) draw();
+      if (!hidden) {
+        lastNow = performance.now();
+        draw(lastNow);
+      }
     };
     document.addEventListener("visibilitychange", onVisibility);
-    const draw = () => {
+    const draw = (now: number) => {
+      const dt = Math.min(0.05, Math.max(0, (now - lastNow) / 1000));
+      lastNow = now;
+      const livePlaces = placesRef.current;
       const rect = canvas.getBoundingClientRect(),
         dpr = Math.min(window.devicePixelRatio || 1, 2),
         size = Math.min(rect.width, rect.height);
@@ -156,7 +221,21 @@ export function ParticleGlobe({
       const cx = rect.width / 2,
         cy = rect.height / 2,
         r = size * 0.405;
-      const playing = places.find((place) => place.playing);
+      const turn = turnRef.current;
+      if (turn && !reduced) {
+        const progress = turnProgress(now - turn.startedAt);
+        rotation = rotationAtTurn(turn.from, turn.to, progress);
+        if (progress >= 1) {
+          rotation = turn.to;
+          turnRef.current = null;
+        }
+        rotationRef.current = rotation;
+      } else if (shouldSpinGlobe(hidden, reduced, pointerOverRef.current)) {
+        rotation += GLOBE_SPIN_RAD_PER_SEC * dt;
+        rotationRef.current = rotation;
+      }
+      const playing = livePlaces.find((place) => place.playing);
+      const hoverId = hoveredIdRef.current;
       if (playing && typeof playing.hue === "number") {
         const wash = ctx.createRadialGradient(
           cx,
@@ -197,9 +276,10 @@ export function ParticleGlobe({
           ctx.stroke();
         }
       }
-      places.slice(0, 36).forEach((p) => {
+      livePlaces.slice(0, 36).forEach((p) => {
         const point = projectPlace(p, rotation, cx, cy, r);
         if (!point.visible) return;
+        const aimed = hoverId === p.id;
         ctx.fillStyle = p.playing
           ? "#7EB8B4"
           : p.stamped
@@ -209,11 +289,18 @@ export function ParticleGlobe({
         ctx.arc(
           point.x,
           point.y,
-          p.active || p.playing || p.stamped ? 5 : 3.2,
+          p.active || p.playing || p.stamped || aimed ? 5 : 3.2,
           0,
           Math.PI * 2
         );
         ctx.fill();
+        if (aimed && !p.playing) {
+          ctx.strokeStyle = "rgba(198,165,106,.85)";
+          ctx.lineWidth = 1.2;
+          ctx.beginPath();
+          ctx.arc(point.x, point.y, 9, 0, Math.PI * 2);
+          ctx.stroke();
+        }
         if (p.playing) {
           ctx.strokeStyle = "rgba(126,184,180,.7)";
           ctx.beginPath();
@@ -227,37 +314,43 @@ export function ParticleGlobe({
           ctx.stroke();
         }
       });
-      const target = targetRef.current;
-      if (target !== null && !reduced) {
-        const delta = shortestAngle(rotation, target);
-        rotation += delta * 0.14;
-        if (Math.abs(delta) < 0.012) {
-          rotation = target;
-          targetRef.current = null;
-          const pending = pendingRef.current;
-          pendingRef.current = null;
-          if (pending) onSelect(pending);
-        }
-        rotationRef.current = rotation;
-        frame++;
-        raf = requestAnimationFrame(draw);
-        return;
-      }
-      if (shouldAnimateGlobe(hidden, reduced) && !hoveredId) {
-        rotation += 0.0012;
-        rotationRef.current = rotation;
-        frame++;
+      frame++;
+      if (!hidden && (!reduced || turnRef.current)) {
         raf = requestAnimationFrame(draw);
       }
     };
-    draw();
+    draw(lastNow);
     return () => {
       cancelAnimationFrame(raf);
       document.removeEventListener("visibilitychange", onVisibility);
     };
-  }, [hoveredId, onSelect, places, reduced]);
+  }, [reduced]);
 
-  const locate = (event: { clientX: number; clientY: number }) => {
+  const clearLeaveTimer = () => {
+    if (leaveTimerRef.current === null) return;
+    window.clearTimeout(leaveTimerRef.current);
+    leaveTimerRef.current = null;
+  };
+
+  const holdGlobe = () => {
+    clearLeaveTimer();
+    pointerOverRef.current = true;
+  };
+
+  const releaseGlobe = () => {
+    clearLeaveTimer();
+    leaveTimerRef.current = window.setTimeout(() => {
+      pointerOverRef.current = false;
+      hoveredIdRef.current = null;
+      setHoveredId(null);
+      setTip(null);
+      leaveTimerRef.current = null;
+    }, 240);
+  };
+
+  const locate = (
+    event: { clientX: number; clientY: number; pointerType?: string }
+  ) => {
     const canvas = canvasRef.current;
     if (!canvas) return null;
     const rect = canvas.getBoundingClientRect();
@@ -267,11 +360,12 @@ export function ParticleGlobe({
       event.clientX - rect.left,
       event.clientY - rect.top,
       rect.width,
-      rect.height
+      rect.height,
+      globeHitDistance(event.pointerType, Boolean(hoveredIdRef.current))
     );
   };
 
-  const showTip = (place: GlobePlace, event: { clientX: number; clientY: number }) => {
+  const showTip = (place: GlobePlace) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const rect = canvas.getBoundingClientRect();
@@ -282,6 +376,7 @@ export function ParticleGlobe({
       rect.height / 2,
       Math.min(rect.width, rect.height) * 0.405
     );
+    hoveredIdRef.current = place.id;
     setHoveredId(place.id);
     setTip({
       id: place.id,
@@ -293,45 +388,61 @@ export function ParticleGlobe({
       stationName: place.stationName,
       count: place.count,
     });
-    void event;
   };
 
   const landOn = (place: GlobePlace) => {
-    setHoveredId(place.id);
-    showTip(place, { clientX: 0, clientY: 0 });
+    holdGlobe();
+    showTip(place);
+    onSelect(place.id);
     const target = facingRotation(place.longitude);
-    const alreadyFacing =
-      Math.abs(shortestAngle(rotationRef.current, target)) < 0.08;
-    if (alreadyFacing || reduced) {
-      onSelect(place.id);
+    if (
+      reduced ||
+      Math.abs(shortestAngle(rotationRef.current, target)) < 0.04
+    ) {
       return;
     }
-    pendingRef.current = place.id;
-    targetRef.current = target;
-    setHoveredId(null);
+    turnRef.current = {
+      from: rotationRef.current,
+      to: target,
+      startedAt: performance.now(),
+    };
   };
 
+  useEffect(
+    () => () => {
+      clearLeaveTimer();
+    },
+    []
+  );
+
   return (
-    <div className="rp-globe-hit">
-      <canvas
-        ref={canvasRef}
-        onClick={(event) => {
-          const hit = locate(event);
-          if (hit) landOn(hit.place);
-        }}
-        onMouseMove={(event) => {
-          const hit = locate(event);
-          if (!hit) {
-            setHoveredId(null);
-            setTip(null);
-            return;
-          }
-          showTip(hit.place, event);
-        }}
-        onMouseLeave={() => {
+    <div
+      className="rp-globe-hit"
+      onPointerEnter={holdGlobe}
+      onPointerLeave={releaseGlobe}
+      onPointerDown={(event) => {
+        holdGlobe();
+        const hit = locate(event);
+        if (hit) showTip(hit.place);
+      }}
+      onPointerMove={(event) => {
+        holdGlobe();
+        const hit = locate(event);
+        if (!hit) {
+          hoveredIdRef.current = null;
           setHoveredId(null);
           setTip(null);
-        }}
+          return;
+        }
+        showTip(hit.place);
+      }}
+      onClick={(event) => {
+        const hit = locate(event);
+        if (hit) landOn(hit.place);
+      }}
+    >
+      <canvas
+        ref={canvasRef}
         onKeyDown={(event) => {
           const current = Math.max(
             0,
@@ -341,18 +452,24 @@ export function ParticleGlobe({
             event.preventDefault();
             const next =
               places[nextGlobePlaceIndex(current, places.length, -1)];
-            if (next) setHoveredId(next.id);
+            if (next) {
+              holdGlobe();
+              showTip(next);
+            }
           } else if (["ArrowRight", "ArrowDown"].includes(event.key)) {
             event.preventDefault();
             const next = places[nextGlobePlaceIndex(current, places.length, 1)];
-            if (next) setHoveredId(next.id);
+            if (next) {
+              holdGlobe();
+              showTip(next);
+            }
           } else if (event.key === "Enter" || event.key === " ") {
             event.preventDefault();
             const place = places[current];
             if (place) landOn(place);
           }
         }}
-        className="rp-globe"
+        className={`rp-globe${hoveredId ? " is-aimed" : ""}`}
         aria-label={`Interactive globe with ${places.length} live cities. Hover or tap a dot to read the place, then click to land.`}
         role="application"
         tabIndex={0}
