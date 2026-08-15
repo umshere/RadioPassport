@@ -46,3 +46,5 @@ No animated favicon.
 ## Motion
 
 Globe 0.0012 rad/frame; focus ease ~0.14 toward facing longitude. Theater field blooms only when a real field arrives, not on a fake star count. The lacquer mark travels the real edges; it does not bounce. Reduced-motion: snap, still mesh, mark rests on the first star.
+
+**Passage.** Every room arrives the same way: the page rises out of dusk (`.ew-page`, 14px, 560ms), the foil rule draws itself (`.ew-cover-rule`), and the name lands last (`.ew-arrive` + `-2/-3/-4` stagger, 70ms steps). One ease for everything: `--ew-settle` (`cubic-bezier(.22,1,.36,1)`) — a settle, never a bounce. The station name re-lands whenever the station changes (elements keyed by station uuid), not just on navigation; a new ICY title settles the track line the same way. Overlays (Atlas / Country / Passport) are the same gesture behind a veil (`ew-veil` fade + inner rise). While a route loads, a foil meridian sweeps the top hairline (`.ew-passage-bar`). Transform/opacity only; all of it is off under `prefers-reduced-motion`.

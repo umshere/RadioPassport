@@ -132,10 +132,16 @@ export default function ListeningPage() {
     const empty = theaterWithoutStation();
     return (
       <main className="ew-theater flex min-h-screen flex-col items-start justify-center">
-        <p className="rp-eyebrow text-foil">{BRAND.eyebrow}</p>
-        <h1 className="ew-coverline mt-4">The room is empty.</h1>
-        <p className="rp-lede mt-4">{empty.message}</p>
-        <Link to={empty.route} className="ew-land mt-8" prefetch="intent">
+        <p className="rp-eyebrow text-foil ew-arrive">{BRAND.eyebrow}</p>
+        <h1 className="ew-coverline mt-4 ew-arrive ew-arrive-2">
+          The room is empty.
+        </h1>
+        <p className="rp-lede mt-4 ew-arrive ew-arrive-3">{empty.message}</p>
+        <Link
+          to={empty.route}
+          className="ew-land mt-8 ew-arrive ew-arrive-4"
+          prefetch="intent"
+        >
           {empty.label}
         </Link>
       </main>
@@ -157,18 +163,20 @@ export default function ListeningPage() {
       >
         ← {BRAND.name}
       </Link>
-      <div className="ew-theater-stage">
-        <p className="rp-eyebrow text-ether">
+      <div className="ew-theater-stage" key={nowPlaying.uuid}>
+        <p className="rp-eyebrow text-ether ew-arrive">
           <i className="rp-live-dot" />
           {local ? formatLocalLabel(city, local) : "LIVE"} ·{" "}
           {stationTelemetry(nowPlaying)}
         </p>
-        <h1 className="ew-coverline mt-3">{city}</h1>
-        <p className="rp-lede mt-2">
+        <h1 className="ew-coverline mt-3 ew-arrive ew-arrive-2">{city}</h1>
+        <p className="rp-lede mt-2 ew-arrive ew-arrive-3">
           {nowPlaying.name} · {nowPlaying.country}
           {nowPlaying.language ? ` · ${nowPlaying.language}` : ""}
         </p>
-        <p className="ew-track">{trackLine}</p>
+        <p className="ew-track ew-arrive ew-arrive-4" key={trackLine ?? "quiet"}>
+          {trackLine}
+        </p>
         <TheaterWell
           phase={phase}
           dispatchBody={intelligence.dispatchBody}

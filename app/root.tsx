@@ -7,6 +7,7 @@ import {
   Outlet,
   Scripts,
   ScrollRestoration,
+  useLocation,
   useNavigation,
   useRouteError,
 } from "@remix-run/react";
@@ -106,6 +107,7 @@ function Document({
 export default function App() {
   const previousTitleRef = useRef("Elsewhere");
   const navigation = useNavigation();
+  const location = useLocation();
   const isNavigating = navigation.state !== "idle";
 
   useEffect(() => {
@@ -141,13 +143,14 @@ export default function App() {
     <Document>
       <>
         {isNavigating && (
-          <div className="fixed top-0 left-0 right-0 z-[200] h-px bg-ink">
-            <div className="h-full bg-foil" style={{ width: "38%" }} />
+          <div className="ew-passage-bar" aria-hidden="true">
+            <i />
           </div>
         )}
 
         <div
-          className="w-full"
+          key={location.pathname}
+          className="ew-page w-full"
           style={{
             paddingBottom: "calc(var(--player-dock-clearance, 0px) + 1.5rem)",
           }}

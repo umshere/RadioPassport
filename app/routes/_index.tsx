@@ -651,7 +651,9 @@ export default function Index() {
       <div className="rp-stage">
         <section className="rp-intro">
           <p className="rp-eyebrow text-foil">{BRAND.eyebrow}</p>
-          <h1>{arrival.headline}</h1>
+          <h1 className="ew-arrive" key={nowPlaying?.uuid ?? "cover"}>
+            {arrival.headline}
+          </h1>
           {localNow && !seekingCover ? (
             <p className="rp-eyebrow text-ether">
               <i className="rp-live-dot" />
@@ -664,7 +666,9 @@ export default function Index() {
             </p>
           ) : null}
           {nowPlaying && trackLine && !seekingCover ? (
-            <p className="ew-track">{trackLine}</p>
+            <p className="ew-track ew-arrive" key={trackLine}>
+              {trackLine}
+            </p>
           ) : nowPlaying && !seekingCover ? (
             <p className="rp-lede">
               Live from {arrivalCity}. This station sends no track titles.
@@ -839,12 +843,15 @@ export default function Index() {
               onSelect={playPlace}
             />
           </div>
-          <div className="ew-cover">
+          <div
+            className="ew-cover"
+            key={seekingCover ? "seeking" : arrivalStation?.uuid ?? arrivalCity}
+          >
             <i className="ew-cover-rule" />
-            <p className="ew-coverline">
+            <p className="ew-coverline ew-arrive">
               {seekingCover ? query.trim() : arrivalCity}
             </p>
-            <p className="rp-eyebrow">
+            <p className="rp-eyebrow ew-arrive ew-arrive-2">
               {seekingCover
                 ? seekingBoardLabel(
                     query,

@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-08-14 — Passage
+
+Every room arrives the same way: the page rises out of dusk, the foil rule draws itself, and the name lands last. One settle ease (`--ew-settle`). The station name re-lands when the station changes, not just on navigation; a new ICY title settles the track line the same way. Overlays rise behind a dusk veil. The loading hairline is a foil meridian sweep. Transform and opacity only; reduced motion turns it all off.
+
 ## 2026-08-14 — Phone globe is a tap strip
 
 On a phone the city name no longer sits on the globe. The ball is a 180px strip; the coverline and telemetry sit under it, then Land here. The hover tip does not show — tap lands. Desktop is unchanged: the cover still lives in the corner of the page globe.
