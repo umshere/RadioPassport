@@ -330,6 +330,93 @@
     border-color: var(--ew-foil);
     color: var(--ew-foil);
   }
+  /* The horizon: the four hours are stops on one foil line, and the sun's height
+     tells the time — above the line at midday, on it at dawn and dusk, below it
+     at night. Same grammar as the header's Day/Night pin. */
+  .ew-horizon {
+    display: flex;
+    align-items: flex-end;
+    gap: 20px;
+    margin-top: 26px;
+  }
+  .ew-hours {
+    position: relative;
+    display: flex;
+    flex: 1 1 auto;
+    min-width: 0;
+    max-width: 26rem;
+  }
+  .ew-horizon-line {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 21px;
+    height: 1px;
+    background: var(--ew-foil-line);
+  }
+  .ew-hour {
+    position: relative;
+    flex: 1;
+    min-width: 0;
+    height: 64px;
+    border: 0;
+    background: transparent;
+    padding: 0 0 34px;
+    font: 500 10px/1 "Azeret Mono", monospace;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    color: var(--ew-dust);
+    transition: color .3s;
+  }
+  .ew-hour i {
+    position: absolute;
+    left: 50%;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    border: 1px solid var(--ew-foil-line);
+    background: transparent;
+    transform: translateX(-50%);
+    transition: background .3s, border-color .3s;
+  }
+  .ew-hour[data-hour="dawn"] i,
+  .ew-hour[data-hour="dusk"] i { bottom: 18px; }
+  .ew-hour[data-hour="midday"] i { bottom: 38px; }
+  .ew-hour[data-hour="night"] i { bottom: 2px; }
+  .ew-hour:hover, .ew-hour.on { color: var(--ew-bone); }
+  .ew-hour.on i {
+    border-color: var(--ew-foil);
+    background: var(--ew-foil);
+  }
+  .ew-hour:focus-visible {
+    outline: 1px solid var(--ew-foil);
+    outline-offset: 2px;
+  }
+  /* Atlas is not a fifth hour: the globe glyph denotes the doorway. */
+  .ew-atlas-globe {
+    position: relative;
+    width: 14px;
+    height: 14px;
+    flex: none;
+    border: 1px solid currentColor;
+    border-radius: 50%;
+  }
+  .ew-atlas-globe::before {
+    content: "";
+    position: absolute;
+    inset: -1px 3px;
+    border: 1px solid currentColor;
+    border-radius: 50%;
+  }
+  .ew-atlas-globe::after {
+    content: "";
+    position: absolute;
+    left: -1px;
+    right: -1px;
+    top: 50%;
+    height: 1px;
+    background: currentColor;
+  }
   .ew-atlas {
     position: relative;
     display: inline-flex;
@@ -1022,6 +1109,9 @@
       padding: 0 16px 4px;
     }
     .rp-chip, .ew-atlas, .ew-same-hour button { flex: none; min-height: 44px; }
+    .ew-horizon { gap: 12px; }
+    .ew-hours { max-width: none; }
+    .ew-atlas { margin-left: 0; padding-left: 10px; }
     .rp-station-list { max-height: none; }
     .rp-station { min-height: 64px; }
     .rp-overlay {
@@ -1057,6 +1147,7 @@
     .rp-chip, .rp-station, .rp-dock-play { transition: none; }
     .rp-dock-play::before { animation: none; }
     .ew-land, .ew-atlas::after, .ew-theater-back::after { transition: none; }
+    .ew-hour, .ew-hour i { transition: none; }
     body, .rp-home, .rp-globe-side, .rp-dock, .ew-theater { transition: none; }
   }
 }

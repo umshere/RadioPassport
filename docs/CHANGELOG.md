@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-08-14 — Hours sit on a horizon
+
+Boxed hour chips are gone. The four hours are stops on one foil hairline; each point's height tells the time — midday above the line, dawn and dusk on it, night below. The chosen hour fills its point in foil. Same grammar as the header Day/Night pin. Atlas stays on that row at every width, marked as a doorway by a 14px CSS globe (ring, meridian, equator) before `ATLAS →`. It is never a fifth stop and never takes its own line. Filter logic is unchanged.
+
 ## 2026-08-14 — Land is a stamp
 
 The land control is a customs stamp inked in lacquer: bone hairline frame, mono kicker (`EW · ARRIVAL` / `RE-ENTRY` / `DEPARTURE` / `RETURN`), city in italic Newsreader. Press stamps — a 2px drop. The dock play disc has a foil rim; a needle mark tours it while live. The Theater stage no longer carries a second transport. Atlas and `← Elsewhere` draw a foil meridian on approach.

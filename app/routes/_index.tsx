@@ -707,29 +707,35 @@ export default function Index() {
               <span className="ew-land-city">{arrival.cta}</span>
             </button>
           ) : null}
-          <div className="rp-chip-list">
-            {HOURS.map((item) => (
-              <button
-                type="button"
-                className={`rp-chip ${hour === item ? "active" : ""}`}
-                aria-pressed={hour === item}
-                title={`Cities where it is ${item.toLowerCase()} now`}
-                onClick={() => {
-                  const next = hourTapNextState(hour, item, query);
-                  setHour(next.hour as SolarHour | null);
-                  setPlace(next.place);
-                  if (next.query !== query) setQuery(next.query);
-                }}
-                key={item}
-              >
-                {item}
-              </button>
-            ))}
+          <div className="ew-horizon">
+            <div className="ew-hours">
+              <i className="ew-horizon-line" aria-hidden="true" />
+              {HOURS.map((item) => (
+                <button
+                  type="button"
+                  className={`ew-hour${hour === item ? " on" : ""}`}
+                  data-hour={item.toLowerCase()}
+                  aria-pressed={hour === item}
+                  title={`Cities where it is ${item.toLowerCase()} now`}
+                  onClick={() => {
+                    const next = hourTapNextState(hour, item, query);
+                    setHour(next.hour as SolarHour | null);
+                    setPlace(next.place);
+                    if (next.query !== query) setQuery(next.query);
+                  }}
+                  key={item}
+                >
+                  {item}
+                  <i aria-hidden="true" />
+                </button>
+              ))}
+            </div>
             <button
               type="button"
               className="ew-atlas"
               onClick={() => setAtlas(true)}
             >
+              <i className="ew-atlas-globe" aria-hidden="true" />
               Atlas
               <span aria-hidden="true">→</span>
             </button>
