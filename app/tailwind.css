@@ -870,24 +870,32 @@
     .rp-globe-wrap {
       position: relative;
       width: 100%;
-      height: 128px;
-      min-height: 128px;
+      height: 180px;
+      min-height: 180px;
     }
     .rp-home.is-seeking .rp-globe-wrap {
-      height: 128px;
-      min-height: 128px;
+      height: 180px;
+      min-height: 180px;
     }
     .rp-home.is-seeking #live-board {
       scroll-margin-top: 118px;
     }
-    .ew-cover { left: 16px; right: 16px; bottom: 12px; }
+    .ew-cover {
+      position: relative;
+      left: auto;
+      right: auto;
+      bottom: auto;
+      padding: 4px 16px 0;
+    }
     .ew-cover .ew-coverline { font-size: clamp(28px, 9vw, 36px); }
+    .ew-globe-tip { display: none; }
     .rp-intro {
       display: flex;
       border-right: 0;
-      padding: 16px 16px 28px;
+      padding: 10px 16px 28px;
     }
     .rp-intro > .rp-eyebrow:first-of-type,
+    .rp-intro > .rp-eyebrow.text-ether,
     .rp-intro > h1 {
       display: none;
     }

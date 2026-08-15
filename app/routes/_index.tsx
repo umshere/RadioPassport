@@ -838,30 +838,30 @@ export default function Index() {
               )}
               onSelect={playPlace}
             />
-            <div className="ew-cover">
-              <i className="ew-cover-rule" />
-              <p className="ew-coverline">
-                {seekingCover ? query.trim() : arrivalCity}
-              </p>
-              <p className="rp-eyebrow">
-                {seekingCover
-                  ? seekingBoardLabel(
-                      query,
-                      catalogLoading,
-                      liveFiltered.length
-                    ) ?? ""
-                  : arrivalStation
-                    ? `${
-                        arrivalStation.bitrate
-                          ? `${arrivalStation.bitrate} · `
-                          : ""
-                      }${arrivalCity.toUpperCase()} · ${
-                        arrival.live ? "LIVE" : "LAND"
-                      }`
-                    : "TAP A CITY TO TUNE"}
-                {!seekingCover && localNow ? ` · ${formatClock(localNow)}` : ""}
-              </p>
-            </div>
+          </div>
+          <div className="ew-cover">
+            <i className="ew-cover-rule" />
+            <p className="ew-coverline">
+              {seekingCover ? query.trim() : arrivalCity}
+            </p>
+            <p className="rp-eyebrow">
+              {seekingCover
+                ? seekingBoardLabel(
+                    query,
+                    catalogLoading,
+                    liveFiltered.length
+                  ) ?? ""
+                : arrivalStation
+                  ? `${
+                      arrivalStation.bitrate
+                        ? `${arrivalStation.bitrate} · `
+                        : ""
+                    }${arrivalCity.toUpperCase()} · ${
+                      arrival.live ? "LIVE" : "LAND"
+                    }`
+                  : "TAP A CITY TO TUNE"}
+              {!seekingCover && localNow ? ` · ${formatClock(localNow)}` : ""}
+            </p>
           </div>
         </section>
       </div>
