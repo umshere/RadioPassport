@@ -192,7 +192,7 @@ export default function PlayerDock() {
       </button>
       <button
         type="button"
-        className="rp-dock-play"
+        className={`rp-dock-play${isPlaying ? " is-live" : ""}`}
         onClick={togglePlay}
         aria-label={isPlaying ? "Pause" : "Play"}
       >

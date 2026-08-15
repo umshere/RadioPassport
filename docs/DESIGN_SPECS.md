@@ -35,6 +35,9 @@ No animated favicon.
 
 - Home: sticky header, left editorial column, right globe as the page. Mobile: globe first, coverline under it (not on it), Land here full width, compact dock. The phone globe is a short tap strip; the hover tip does not show.
 - Hour chips are boxed filters. Atlas is a folio link (`ATLAS →` with a foil meridian), not a fifth chip.
+- The land control (`.ew-land`) is a customs stamp inked in lacquer: solid lacquer field (the punch stays red — lacquer is the land color), bone inner hairline frame, mono kicker (`EW · ARRIVAL` / `EW · RE-ENTRY` / `EW · DEPARTURE` / `EW · RETURN`), city in italic Newsreader. Pressing it stamps — a 2px drop into the page. Landing is what inks the passport; the control is the stamp.
+- The play control (`.rp-dock-play`) is a lacquer disc with a foil rim; a foil needle mark tours the rim while live (`.is-live`). Spinning means live. Press is a settle-in (`scale(.96)`), never a grow. The dock is the only transport — the Theater stage carries no second set of controls; one disc spins per screen.
+- Wayfinding links (Atlas folio, `← Elsewhere`) draw a foil meridian under themselves on hover/focus — same settle ease, no dot, no bounce.
 - Day globe is a lithograph plate (ink continents, no starfield). Night globe is the current bone starfield.
 - Globe tooltip is HTML (not canvas-only). Click rotates, then plays. On a phone there is no tip — tap lands.
 - Dock is full-width, not a floating pill. Theater is a link + artwork.

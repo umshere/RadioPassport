@@ -701,7 +701,10 @@ export default function Index() {
                 )
               }
             >
-              {arrival.cta}
+              <span className="ew-land-kicker">
+                {arrival.ctaKind === "continue" ? "EW · Re-entry" : "EW · Arrival"}
+              </span>
+              <span className="ew-land-city">{arrival.cta}</span>
             </button>
           ) : null}
           <div className="rp-chip-list">

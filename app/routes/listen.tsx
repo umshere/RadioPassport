@@ -38,14 +38,8 @@ export default function ListeningPage() {
   const hydrated = useHydrated();
   const storedNowPlaying = usePlayerStore((state) => state.nowPlaying);
   const storedIsPlaying = usePlayerStore((state) => state.isPlaying);
-  const storedQueue = usePlayerStore((state) => state.queue);
-  const storedIndex = usePlayerStore((state) => state.currentStationIndex);
-  const togglePlay = usePlayerStore((state) => state.togglePlay);
-  const startStation = usePlayerStore((state) => state.startStation);
   const nowPlaying = hydrated ? storedNowPlaying : null;
   const isPlaying = hydrated ? storedIsPlaying : false;
-  const queue = hydrated ? storedQueue : [];
-  const index = hydrated ? storedIndex : 0;
   const sharedMetadata = useNowPlayingMetadataStore((state) => state.state);
   const sourceKey = sourceKeyForNowPlaying(nowPlaying);
   const metadata =
@@ -120,13 +114,6 @@ export default function ListeningPage() {
     ],
   );
   const seed = lockSeed([nowPlaying?.uuid, city]);
-  const neighbors = useMemo(() => {
-    if (!nowPlaying || queue.length < 2) return { prev: null, next: null };
-    return {
-      prev: queue[(index - 1 + queue.length) % queue.length] ?? null,
-      next: queue[(index + 1) % queue.length] ?? null,
-    };
-  }, [index, nowPlaying, queue]);
 
   if (!nowPlaying) {
     const empty = theaterWithoutStation();
@@ -142,7 +129,8 @@ export default function ListeningPage() {
           className="ew-land mt-8 ew-arrive ew-arrive-4"
           prefetch="intent"
         >
-          {empty.label}
+          <span className="ew-land-kicker">EW · Departure</span>
+          <span className="ew-land-city">{empty.label}</span>
         </Link>
       </main>
     );
@@ -183,46 +171,6 @@ export default function ListeningPage() {
           summary={intelligence.summary}
           facts={intelligence.facts}
         />
-        <div className="ew-theater-controls">
-          <button
-            type="button"
-            className="rp-dock-control"
-            onClick={() =>
-              neighbors.prev &&
-              startStation(neighbors.prev, {
-                preserveQueue: true,
-                autoPlay: true,
-              })
-            }
-            disabled={!neighbors.prev}
-            aria-label="Previous station"
-          >
-            ‹
-          </button>
-          <button
-            type="button"
-            className="rp-dock-play"
-            onClick={togglePlay}
-            aria-label={isPlaying ? "Pause" : "Play"}
-          >
-            {isPlaying ? "Ⅱ" : "▶"}
-          </button>
-          <button
-            type="button"
-            className="rp-dock-control"
-            onClick={() =>
-              neighbors.next &&
-              startStation(neighbors.next, {
-                preserveQueue: true,
-                autoPlay: true,
-              })
-            }
-            disabled={!neighbors.next}
-            aria-label="Next station"
-          >
-            ›
-          </button>
-        </div>
       </div>
     </main>
   );

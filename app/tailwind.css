@@ -270,18 +270,45 @@
     font-size: 15px;
     line-height: 1.55;
   }
+  /* The customs stamp, inked in lacquer: landing is what inks the passport,
+     so the control is the stamp — and lacquer is the land color. */
   .ew-land {
+    position: relative;
     margin-top: 22px;
     display: inline-flex;
     min-height: 48px;
-    align-items: center;
+    flex-direction: column;
+    align-items: flex-start;
     justify-content: center;
+    gap: 6px;
     border: 0;
     background: var(--ew-lacquer);
-    padding: 0 22px;
+    padding: 13px 20px;
+    text-align: left;
     color: var(--ew-on-lacquer);
-    font: 500 13px/1 "Schibsted Grotesk", sans-serif;
+    font: italic 400 16px/1.2 "Newsreader", serif;
+    transition: transform .18s var(--ew-settle);
   }
+  .ew-land::after {
+    content: "";
+    position: absolute;
+    inset: 4px;
+    border: 1px solid rgba(232, 223, 208, .35);
+    pointer-events: none;
+    transition: border-color .18s ease;
+  }
+  .ew-land-kicker {
+    font: 500 10px/1 "Azeret Mono", monospace;
+    letter-spacing: .22em;
+    text-transform: uppercase;
+    color: rgba(232, 223, 208, .8);
+  }
+  .ew-land-city {
+    font: italic 400 17px/1.2 "Newsreader", serif;
+    color: var(--ew-on-lacquer);
+  }
+  .ew-land:hover::after { border-color: rgba(232, 223, 208, .6); }
+  .ew-land:active { transform: translateY(2px); }
   .ew-land:disabled { opacity: .45; }
   .rp-chip-list {
     display: flex;
@@ -304,6 +331,7 @@
     color: var(--ew-foil);
   }
   .ew-atlas {
+    position: relative;
     display: inline-flex;
     align-items: center;
     gap: 8px;
@@ -319,6 +347,27 @@
     text-transform: uppercase;
   }
   .ew-atlas:hover { color: var(--ew-bone); }
+  /* Wayfinding links carry the meridian: a foil rule that draws itself on approach. */
+  .ew-atlas::after,
+  .ew-theater-back::after {
+    content: "";
+    position: absolute;
+    bottom: 8px;
+    height: 1px;
+    background: var(--ew-foil);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform .5s var(--ew-settle);
+    pointer-events: none;
+  }
+  .ew-atlas::after { left: 14px; right: 2px; }
+  .ew-theater-back::after { left: 0; width: 100%; bottom: 4px; }
+  .ew-atlas:hover::after,
+  .ew-atlas:focus-visible::after,
+  .ew-theater-back:hover::after,
+  .ew-theater-back:focus-visible::after {
+    transform: scaleX(1);
+  }
   .ew-atmosphere {
     display: inline-flex;
     align-items: center;
@@ -681,8 +730,31 @@
     color: var(--ew-bone);
     font-size: 22px;
   }
-  .rp-dock-play { width: 48px; height: 48px; background: var(--ew-lacquer); color: var(--ew-on-lacquer); font-size: 15px; }
-  .rp-dock-play:active { transform: scale(1.04); }
+  /* The play control is a lacquer disc; the foil needle mark tours the rim while live. */
+  .rp-dock-play {
+    position: relative;
+    width: 48px;
+    height: 48px;
+    border: 1.5px solid var(--ew-foil);
+    background: var(--ew-lacquer);
+    color: var(--ew-on-lacquer);
+    font-size: 13px;
+    transition: transform .18s var(--ew-settle);
+  }
+  .rp-dock-play::before {
+    content: "";
+    position: absolute;
+    inset: 1px;
+    border-radius: 50%;
+    background: linear-gradient(var(--ew-on-lacquer), var(--ew-on-lacquer)) no-repeat 50% 2px / 2px 7px;
+    opacity: .85;
+    pointer-events: none;
+  }
+  .rp-dock-play.is-live::before { animation: ew-disc-spin 4s linear infinite; }
+  .rp-dock-play:active { transform: scale(.96); }
+  @keyframes ew-disc-spin {
+    to { transform: rotate(1turn); }
+  }
   .ew-stamp-ring {
     width: 18px;
     height: 18px;
@@ -797,13 +869,6 @@
     overflow: hidden;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 3;
-  }
-  .ew-theater-controls {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 16px;
-    margin-top: 2.5rem;
   }
   @keyframes ew-file {
     from { opacity: 0; }
@@ -984,13 +1049,14 @@
     .ew-theater { padding: 20px 16px calc(120px + env(safe-area-inset-bottom, 0px)); }
     .ew-theater .ew-coverline { font-size: clamp(36px, 12vw, 52px); }
     .ew-theater-well { min-height: 16rem; }
-    .ew-theater-controls { display: none; }
   }
 
   @media (prefers-reduced-motion: reduce) {
     .rp-live-dot, .rp-eq i, .rp-toast, .ew-theater-well.is-filed .ew-caption, .ew-theater-well.is-filed .ew-dossier dl { animation: none; }
     .ew-page, .ew-arrive, .ew-cover-rule, .rp-overlay, .rp-overlay-inner, .ew-passage-bar i { animation: none; }
     .rp-chip, .rp-station, .rp-dock-play { transition: none; }
+    .rp-dock-play::before { animation: none; }
+    .ew-land, .ew-atlas::after, .ew-theater-back::after { transition: none; }
     body, .rp-home, .rp-globe-side, .rp-dock, .ew-theater { transition: none; }
   }
 }

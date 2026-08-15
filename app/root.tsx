@@ -211,7 +211,8 @@ export function ErrorBoundary() {
             <p className="rp-lede mt-4">{message}</p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link to="/" className="ew-land" prefetch="intent">
-                Back
+                <span className="ew-land-kicker">EW · Return</span>
+                <span className="ew-land-city">Back to Elsewhere</span>
               </Link>
               <button
                 type="button"
@@ -253,7 +254,8 @@ function NotFoundEasterEgg({
         <h1 className="ew-coverline mt-4">{title}</h1>
         <p className="rp-lede mt-4 max-w-xl">{message}</p>
         <Link to="/" className="ew-land mt-8" prefetch="intent">
-          Back
+          <span className="ew-land-kicker">EW · Return</span>
+          <span className="ew-land-city">Back to Elsewhere</span>
         </Link>
       </section>
     </main>

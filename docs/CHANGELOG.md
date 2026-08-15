@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-08-14 — Land is a stamp
+
+The land control is a customs stamp inked in lacquer: bone hairline frame, mono kicker (`EW · ARRIVAL` / `RE-ENTRY` / `DEPARTURE` / `RETURN`), city in italic Newsreader. Press stamps — a 2px drop. The dock play disc has a foil rim; a needle mark tours it while live. The Theater stage no longer carries a second transport. Atlas and `← Elsewhere` draw a foil meridian on approach.
+
 ## 2026-08-14 — Passage
 
 Every room arrives the same way: the page rises out of dusk, the foil rule draws itself, and the name lands last. One settle ease (`--ew-settle`). The station name re-lands when the station changes, not just on navigation; a new ICY title settles the track line the same way. Overlays rise behind a dusk veil. The loading hairline is a foil meridian sweep. Transform and opacity only; reduced motion turns it all off.
