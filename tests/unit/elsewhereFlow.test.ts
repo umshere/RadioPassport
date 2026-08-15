@@ -23,6 +23,8 @@ import {
   hourBoardLabel,
   seekingBoardLabel,
   seekingStatus,
+  meridianKind,
+  theaterDossierFacts,
   theaterIntelligence,
   theaterWithoutStation,
   sameHourPillLabel,
@@ -598,11 +600,15 @@ describe("A stamp is a next city, not a souvenir", () => {
         dispatchBody: "Club FM is on the air from Kochi.",
         summary: "Should stay hidden",
         facts: [{ label: "Year", value: "1977" }],
+        imageUrl: "https://coverart.example/hidden.jpg",
+        links: [{ label: "Wiki", url: "https://en.wikipedia.org/wiki/Hidden" }],
       })
     ).toEqual({
       dispatchBody: "Club FM is on the air from Kochi.",
       summary: null,
       facts: [],
+      imageUrl: null,
+      links: [],
     });
     const rich = theaterIntelligence({
       hasTrack: true,
@@ -612,14 +618,47 @@ describe("A stamp is a next city, not a souvenir", () => {
         { label: "Year", value: "1975" },
         { label: "Album", value: "Evening Star" },
         { label: "Origin", value: "London" },
+        { label: "Length", value: "7:42" },
         { label: "Extra", value: "drop" },
+      ],
+      imageUrl: "https://coverartarchive.org/release/abc/front-250",
+      links: [
+        { label: "Wiki", url: "https://en.wikipedia.org/wiki/Evening_Star" },
+        { label: "YouTube", url: "https://www.youtube.com/results?search_query=evening+star" },
+        { label: "Track", url: "https://musicbrainz.org/recording/1" },
+        { label: "Drop", url: "https://example.com/drop" },
       ],
     });
     expect(rich.summary).toMatch(/Fripp/);
+    expect(rich.imageUrl).toMatch(/coverartarchive/);
     expect(rich.facts.map((fact) => fact.label)).toEqual([
       "Year",
       "Album",
       "Origin",
+      "Length",
     ]);
+    expect(rich.links.map((link) => link.label)).toEqual([
+      "YouTube",
+      "Wiki",
+      "Track",
+    ]);
+    expect(
+      theaterDossierFacts(
+        [
+          { label: "Artist", value: "Fripp" },
+          { label: "Title", value: "Evening Star" },
+          { label: "Collaboration", value: "Yes" },
+          { label: "Year", value: "1975" },
+          { label: "Origin", value: "London" },
+        ],
+        "Fripp and Eno — Evening Star",
+      ).map((fact) => fact.label),
+    ).toEqual(["Year", "Origin"]);
+    expect(meridianKind("https://www.youtube.com/results?search_query=x", "YouTube")).toBe(
+      "youtube",
+    );
+    expect(meridianKind("https://en.wikipedia.org/wiki/Evening_Star", "Wiki")).toBe(
+      "wiki",
+    );
   });
 });

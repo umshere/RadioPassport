@@ -8,13 +8,9 @@ import { useHydrated } from "~/hooks/useHydrated";
 import { usePlayerStore } from "~/state/playerStore";
 import { canMutateJourney, useJourneyStore } from "~/state/journeyStore";
 import { usePlayerNoticeStore } from "~/state/playerNoticeStore";
-import { useNowPlayingMetadata } from "~/hooks/useNowPlayingMetadata";
-import { useDispatchStore } from "~/state/dispatchStore";
-import { useNowPlayingMetadataStore } from "~/state/nowPlayingMetadataStore";
-import {
-  stationLocation,
-  stationTelemetry,
-} from "~/components/radio-passport/StationRow";
+import { useRoom } from "~/hooks/useRoom";
+import { roomForStation, useRoomStore } from "~/state/roomStore";
+import { stationLocation } from "~/components/radio-passport/StationRow";
 
 export function shouldAnimateDock(isPlaying: boolean, reducedMotion: boolean) {
   return isPlaying && !reducedMotion;
@@ -42,14 +38,10 @@ export default function PlayerDock() {
   const toggleFavorite = useJourneyStore((state) => state.toggleFavorite);
   const stamps = useJourneyStore((state) => state.stamps);
   const notice = usePlayerNoticeStore((state) => state.notice);
-  const metadata = useNowPlayingMetadata(nowPlaying, isPlaying);
-  const setMetadata = useNowPlayingMetadataStore((state) => state.setMetadata);
-  const dispatch = useDispatchStore((state) => state.dispatch);
+  useRoom(nowPlaying, isPlaying);
+  const storedRoom = useRoomStore((state) => state.room);
+  const room = roomForStation(storedRoom, nowPlaying?.uuid);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-
-  useEffect(() => {
-    setMetadata(metadata);
-  }, [metadata, setMetadata]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -127,8 +119,9 @@ export default function PlayerDock() {
       stamp.city.toLowerCase() === city.toLowerCase() &&
       stamp.country.toLowerCase() === (nowPlaying.country || "").toLowerCase()
   );
-  const trackLine = metadata.track
-    ? [metadata.track.artist, metadata.track.title].filter(Boolean).join(" — ")
+  const track = room.signal.track;
+  const trackLine = track
+    ? [track.artist, track.title].filter(Boolean).join(" — ")
     : null;
 
   return (
@@ -144,7 +137,7 @@ export default function PlayerDock() {
         </span>
         <span className="ew-dock-sub mt-0.5 block truncate text-[12px] text-dust">
           {trackLine ||
-            dispatch?.localLabel ||
+            room.caption?.localLabel ||
             `Live from ${city}. No track title from this station.`}
         </span>
       </div>
@@ -184,7 +177,7 @@ export default function PlayerDock() {
       </button>
       <button
         type="button"
-        className="rp-dock-control hidden sm:grid"
+        className="rp-dock-control"
         onClick={() => go(-1)}
         aria-label="Previous station"
       >

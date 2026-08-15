@@ -10,6 +10,7 @@ import {
   trimEnv,
 } from "~/services/ai/completeFallback";
 import { completeJson, isGatewayConfigured } from "~/services/ai/gateway";
+import { theaterDossierFacts } from "~/components/radio-passport/productFlow";
 
 const MUSICBRAINZ_BASE = "https://musicbrainz.org/ws/2";
 const USER_AGENT =
@@ -23,14 +24,13 @@ const GEMINI_MODEL = getGeminiModel();
 const OLLAMA_MODEL = trimEnv(process.env.OLLAMA_MODEL) || "radio-passport";
 const OLLAMA_URL = trimEnv(process.env.OLLAMA_URL);
 
-const AI_SYSTEM_PROMPT = `You are a music trivia assistant.
+const AI_SYSTEM_PROMPT = `You file a short journey for a live radio cover.
 Return JSON only with:
-- summary: 1 or 2 short sentences (max 34 words total), high-confidence, factual, written to sound engaging.
-- facts: 4 items, each { label, value } (short, factual).
+- summary: 2 sentences, max 42 words. Sentence one says what the track is. Sentence two is one specific, checkable thing (who wrote it, where it was cut, a year, a scene). No filler like "two artists known for their contributions" or "a captivating track".
+- facts: 3 or 4 stops, each { label, value }. Labels are short (YEAR, ORIGIN, CUT, WRITER, ALBUM). Values are specific nouns or dates. Never Yes/No. Never repeat the artist name or title we already have.
 - cleanTitle: cleaned song title for search (no extra tags like "lyrics", "HQ", "live").
 - cleanArtist: cleaned artist name for search (no extra tags).
-Prioritize: release year, album, genre/style, artist origin, notable chart info, writers/producers, or awards.
-If unsure, leave the field empty rather than guessing.`;
+Do not invent. An empty field is better than Collaboration: Yes.`;
 
 type CacheEntry = {
   expiresAt: number;
@@ -99,7 +99,7 @@ function normalizeTriviaPayload(
 
   return {
     summary,
-    facts: facts.slice(0, 4),
+    facts: theaterDossierFacts(facts),
     links: options?.links,
     imageUrl: options?.imageUrl ?? null,
     cleanTitle,

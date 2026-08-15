@@ -43,8 +43,9 @@ Ship: `docs/DEPLOY.md` (`git push origin main` then `npx vercel --prod --yes`).
 | `app/components/radio-passport/` | Globe, intent, overlays, stamps |
 | `app/components/radio-passport/ParticleGlobe.tsx` | Globe hit / spin / face |
 | `app/components/radio-passport/searchState.ts` | Leftover-intent contracts |
-| `app/components/PlayerDock.tsx` | Dock |
-| `app/routes/listen.tsx` | Theater |
+| `app/components/PlayerDock.tsx` | Dock — only Room writer |
+| `app/state/roomStore.ts` | Current land (ICY, caption, plate, dossier) |
+| `app/routes/listen.tsx` | Theater — reads the Room |
 | `app/root.tsx` | Audio bridge, 404 |
 | `app/services/ai/` | Interpret / dispatch / recommend |
 

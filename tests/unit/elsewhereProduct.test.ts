@@ -19,6 +19,10 @@ import {
   templateDispatch,
 } from "~/api/ai/dispatch";
 import {
+  dispatchAfterStationChange,
+  liveDispatch,
+} from "~/state/dispatchStore";
+import {
   stationLocation,
   stationPlaceLine,
 } from "~/components/radio-passport/StationRow";
@@ -379,6 +383,32 @@ describe("Elsewhere interpret fallback", () => {
   });
 });
 
+describe("Elsewhere live dispatch", () => {
+  it("never shows a previous station's caption", () => {
+    const vinyl = {
+      id: "vinyl|none|2026-08-15T17",
+      headline: "Live from New York",
+      body: "Classic Vinyl HD is on the air from New York. This station is not sending track titles.",
+      mood: "jazz",
+      localLabel: "17:08 in New York",
+    };
+    expect(liveDispatch(vinyl, "adroit", "vinyl")).toBeNull();
+    expect(liveDispatch(vinyl, "vinyl", "vinyl")?.body).toMatch(/Classic Vinyl/);
+    expect(liveDispatch(vinyl, "adroit")).toBeNull();
+    expect(
+      dispatchAfterStationChange("vinyl", "adroit", vinyl)
+    ).toEqual({
+      stationId: "adroit",
+      dispatch: null,
+      status: "idle",
+    });
+    expect(
+      dispatchAfterStationChange("adroit", "adroit", vinyl).dispatch
+    ).toBe(vinyl);
+    expect(dispatchAfterStationChange("adroit", null, vinyl).dispatch).toBeNull();
+  });
+});
+
 describe("Elsewhere dispatch templates", () => {
   beforeEach(() => clearDispatchCache());
 
@@ -475,10 +505,22 @@ describe("live stylesheet", () => {
     expect(css).toContain(".ew-atlas");
     expect(css).toContain(".ew-theater-back");
     expect(css).toContain(".ew-theater-field");
+    expect(css).toContain(".ew-theater-sky");
+    expect(css).toContain(".ew-theater-folio");
     expect(css).toContain(".ew-theater-well");
     expect(css).toMatch(/\.ew-theater-well[^{]*\{[^}]*min-height:\s*16\.75rem/);
     expect(css).toMatch(/\.ew-theater-well \{ min-height: 16rem; \}/);
+    expect(css).toMatch(/grid-template-areas:\s*"sky" "folio"/);
+    expect(css).toContain(".rp-art-mark");
+    expect(css).toContain(".rp-art img");
     expect(config).toContain("./app/components/radio-passport/**/*.{ts,tsx}");
     expect(config).not.toContain("./app/**/*.{ts,tsx,jsx,js}");
+    const stationRow = readFileSync(
+      new URL("../../app/components/radio-passport/StationRow.tsx", import.meta.url),
+      "utf8",
+    );
+    expect(stationRow).toContain("sanitizeArtworkUrl");
+    expect(stationRow).toContain("rp-art-mark");
+    expect(stationRow).not.toContain("▶");
   });
 });

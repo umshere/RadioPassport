@@ -1,20 +1,34 @@
-import { useEffect, useMemo, useRef } from "react";
-import type { TheaterFact } from "./productFlow";
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  meridianKind,
+  type MeridianKind,
+  type TheaterFact,
+  type TheaterLink,
+} from "./productFlow";
+import { safeExternalUrl } from "./stationInsights";
+import {
+  markArtworkUrlFailed,
+  sanitizeArtworkUrl,
+} from "~/utils/stations";
 import {
   advanceFieldTraveler,
   fieldDensity,
   fieldNodesFromReleases,
   fieldPoint,
   fieldSemanticEdges,
+  fieldSpanEdges,
+  fieldTravelerInTransit,
   fieldTravelerVisiting,
+  fieldStandingLabel,
   fieldVisitLabel,
   fieldWalk,
   fieldTriangles,
   hexRgb,
   startFieldTraveler,
-  theaterLockLive,
+  theaterSkyLive,
   theaterWellAria,
   type FieldNode,
+  type FieldPoint,
   type FieldRelease,
   type TheaterPhase,
 } from "./theaterLock";
@@ -45,6 +59,87 @@ function paletteOf(element: HTMLElement) {
 
 function rgba(rgb: [number, number, number], alpha: number) {
   return `rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, ${alpha})`;
+}
+
+function paintSkyLabel(
+  context: CanvasRenderingContext2D,
+  name: string,
+  px: number,
+  py: number,
+  width: number,
+  height: number,
+  color: [number, number, number],
+  alpha: number,
+  placed: Array<{ x: number; y: number; w: number }>,
+) {
+  const text = name.toUpperCase();
+  const textW = context.measureText(text).width;
+  let x = px + 10;
+  let y = py - 10;
+  if (x + textW > width - 8) x = Math.max(8, px - 10 - textW);
+  if (y < 14) y = py + 16;
+  if (y > height - 6) y = py - 10;
+  const hits = placed.some(
+    (spot) =>
+      x < spot.x + spot.w + 10 &&
+      x + textW + 10 > spot.x &&
+      Math.abs(spot.y - y) < 13,
+  );
+  if (hits) return;
+  context.fillStyle = rgba(color, alpha);
+  context.fillText(text, x, y);
+  placed.push({ x, y, w: textW });
+}
+
+function drawSkyLabels(
+  context: CanvasRenderingContext2D,
+  active: Array<{ node: FieldNode; point: FieldPoint; weight: number }>,
+  visitingKey: string | null,
+  compact: boolean,
+  width: number,
+  height: number,
+  foil: [number, number, number],
+  glow: number,
+) {
+  context.font = '500 10px "Azeret Mono", ui-monospace, monospace';
+  context.letterSpacing = "0.12em";
+  const placed: Array<{ x: number; y: number; w: number }> = [];
+  const guest = visitingKey
+    ? active.find((entry) => entry.node.key === visitingKey)
+    : null;
+  if (guest) {
+    const name = fieldVisitLabel(guest.node.family, guest.node.label);
+    if (name) {
+      paintSkyLabel(
+        context,
+        name,
+        guest.point.x * width,
+        guest.point.y * height,
+        width,
+        height,
+        foil,
+        0.94,
+        placed,
+      );
+    }
+  }
+  active.forEach((entry) => {
+    if (entry.node.key === visitingKey) return;
+    if (compact && entry.node.family !== "place") return;
+    const name = fieldStandingLabel(entry.node.family, entry.node.label);
+    if (!name) return;
+    paintSkyLabel(
+      context,
+      name,
+      entry.point.x * width,
+      entry.point.y * height,
+      width,
+      height,
+      foil,
+      Math.max(0.42, glow * 0.62) * entry.weight,
+      placed,
+    );
+  });
 }
 
 function kindRgb(
@@ -139,9 +234,9 @@ export function TheaterField({
       });
       const time = now / 1000;
       const palette = paletteOf(parent);
-      const typeWidth = Math.min(420, width * 0.42);
       const aspect = height / Math.max(width, 1);
       const compact = width < 720;
+      const mark = compact ? 1.22 : 1.08;
 
       context.clearRect(0, 0, width, height);
 
@@ -156,7 +251,11 @@ export function TheaterField({
       const activePoints = active.map((entry) => entry.point);
       const activeNodes = active.map((entry) => entry.node);
       const triangles = fieldTriangles(activePoints, reach, aspect);
-      const edges = fieldSemanticEdges(activeNodes, activePoints, reach, aspect);
+      const local = fieldSemanticEdges(activeNodes, activePoints, reach, aspect);
+      const edges = [
+        ...local,
+        ...fieldSpanEdges(activeNodes, activePoints, local, aspect),
+      ];
 
       triangles.forEach((triangle) => {
         const a = active[triangle.i]!;
@@ -182,7 +281,7 @@ export function TheaterField({
         active.map((entry) => entry.node),
         pairs,
       );
-      if (!theaterLockLive(phase)) {
+      if (!theaterSkyLive(phase)) {
         travelerRef.current = null;
       } else if (walk.length && !reduced.current) {
         travelerRef.current = travelerRef.current
@@ -201,15 +300,7 @@ export function TheaterField({
           traveler &&
           ((traveler.from === a.node.key && traveler.to === b.node.key) ||
             (traveler.from === b.node.key && traveler.to === a.node.key));
-        const veil = compact
-          ? 0.88
-          : 0.4 +
-            0.6 *
-              Math.min(
-                1,
-                Math.max(a.point.x * width, b.point.x * width) / Math.max(typeWidth, 1),
-              );
-        const alpha = edge.strength * glow * 0.55 * Math.min(a.weight, b.weight) * veil;
+        const alpha = edge.strength * glow * 0.62 * Math.min(a.weight, b.weight);
         if (alpha < 0.02 && !onPath) return;
         context.beginPath();
         context.moveTo(a.point.x * width, a.point.y * height);
@@ -219,17 +310,27 @@ export function TheaterField({
         context.stroke();
       });
 
+      if (traveler && fieldTravelerInTransit(traveler)) {
+        const origin = byKey.get(traveler.from);
+        const dest = byKey.get(traveler.to);
+        if (origin && dest) {
+          context.beginPath();
+          context.moveTo(origin.point.x * width, origin.point.y * height);
+          context.lineTo(dest.point.x * width, dest.point.y * height);
+          context.strokeStyle = rgba(palette.foil, 0.78);
+          context.lineWidth = 1.6;
+          context.stroke();
+        }
+      }
+
       active.forEach((entry) => {
         const body = entry.node;
         const px = entry.point.x * width;
         const py = entry.point.y * height;
-        const veil = compact
-          ? 0.9
-          : 0.32 + 0.68 * Math.min(1, px / Math.max(typeWidth, 1));
-        const alpha = glow * entry.weight * veil;
+        const alpha = glow * entry.weight;
         if (alpha < 0.03) return;
         const rgb = kindRgb(body.kind, palette);
-        const radius = (body.kind === "ether" ? 1.8 : 1.25) * body.size;
+        const radius = (body.kind === "ether" ? 1.8 : 1.25) * body.size * mark;
         const halo = context.createRadialGradient(px, py, 0, px, py, radius * 3.4);
         halo.addColorStop(0, rgba(rgb, alpha * 0.42));
         halo.addColorStop(1, rgba(rgb, 0));
@@ -262,21 +363,18 @@ export function TheaterField({
           context.arc(px, py, 3.4, 0, Math.PI * 2);
           context.fillStyle = rgba(palette.lacquer, 0.96);
           context.fill();
-          const visiting = fieldTravelerVisiting(traveler);
-          const guest = visiting ? byKey.get(visiting) : null;
-          const name = guest
-            ? fieldVisitLabel(guest.node.family, guest.node.label)
-            : null;
-          if (name) {
-            const labelX = guest!.point.x * width + 10;
-            const labelY = guest!.point.y * height - 10;
-            context.font = '500 10px "Azeret Mono", ui-monospace, monospace';
-            context.letterSpacing = "0.12em";
-            context.fillStyle = rgba(palette.foil, 0.92);
-            context.fillText(name.toUpperCase(), labelX, labelY);
-          }
         }
       }
+      drawSkyLabels(
+        context,
+        active,
+        traveler ? fieldTravelerVisiting(traveler) : null,
+        compact,
+        width,
+        height,
+        palette.foil,
+        glow,
+      );
 
       const missing = nodes.some((node) => (opacity.get(node.key) ?? 0) < 0.96);
       const settled =
@@ -284,7 +382,7 @@ export function TheaterField({
         Math.abs(target.glow - glow) < 0.012 &&
         Math.abs(target.reach - reach) < 0.003;
       const still =
-        reduced.current || (!theaterLockLive(phase) && drift < 0.02 && settled);
+        reduced.current || (!theaterSkyLive(phase) && drift < 0.02 && settled);
       if (!still) frame = window.requestAnimationFrame(draw);
     };
 
@@ -309,18 +407,83 @@ export function TheaterField({
   );
 }
 
+function MeridianIcon({ kind }: { kind: MeridianKind }) {
+  if (kind === "youtube") {
+    return (
+      <svg viewBox="0 0 16 16" aria-hidden="true">
+        <rect
+          x="1.25"
+          y="3.25"
+          width="13.5"
+          height="9.5"
+          rx="2.2"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.2"
+        />
+        <path d="M6.6 6.15v3.7L10.4 8z" fill="currentColor" />
+      </svg>
+    );
+  }
+  if (kind === "wiki") {
+    return (
+      <svg viewBox="0 0 16 16" aria-hidden="true">
+        <path
+          d="M2.2 4.2 5 12.1h.1L8 5.4l2.9 6.7h.1L13.8 4.2"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.2"
+          strokeLinejoin="round"
+        />
+      </svg>
+    );
+  }
+  return (
+    <svg viewBox="0 0 16 16" aria-hidden="true">
+      <circle cx="8" cy="8" r="5.1" fill="none" stroke="currentColor" strokeWidth="1.2" />
+      <circle cx="8" cy="8" r="1.15" fill="currentColor" />
+    </svg>
+  );
+}
+
 export function TheaterWell({
   phase,
   dispatchBody,
   summary,
   facts,
+  imageUrl,
+  links,
+  track,
 }: {
   phase: TheaterPhase;
   dispatchBody: string | null;
   summary: string | null;
   facts: TheaterFact[];
+  imageUrl?: string | null;
+  links?: TheaterLink[];
+  track?: string | null;
 }) {
   const aria = theaterWellAria(phase);
+  const plate = sanitizeArtworkUrl(imageUrl);
+  const [plateFailed, setPlateFailed] = useState(false);
+  useEffect(() => {
+    setPlateFailed(false);
+  }, [plate]);
+  const meridians = (links ?? [])
+    .map((link) => {
+      const url = safeExternalUrl(link.url);
+      if (!url) return null;
+      const label = link.label.trim();
+      return { label, url, kind: meridianKind(url, label) };
+    })
+    .filter(
+      (link): link is { label: string; url: string; kind: MeridianKind } =>
+        Boolean(link),
+    );
+  const coverTitle = track?.trim() || null;
+  const showPlate = Boolean(plate && !plateFailed);
+  const showCover =
+    phase === "filed" && Boolean(showPlate || summary || coverTitle);
   return (
     <div
       className={`ew-theater-well${phase === "filed" ? " is-filed" : ""}`}
@@ -329,19 +492,55 @@ export function TheaterWell({
       aria-live={aria ? "polite" : undefined}
       aria-label={aria}
     >
+      <i className="ew-cover-rule" />
       {dispatchBody ? <p className="ew-caption">{dispatchBody}</p> : null}
       {phase === "filed" ? (
         <>
-          {summary ? <p className="ew-caption">{summary}</p> : null}
-          {facts.length > 0 ? (
-            <div className="ew-dossier">
-              {facts.map((item) => (
-                <dl key={`${item.label}:${item.value}`}>
-                  <dt>{item.label}</dt>
-                  <dd>{item.value}</dd>
-                </dl>
-              ))}
+          {showCover ? (
+            <div className={`ew-cover-row${showPlate ? "" : " is-bare"}`}>
+              {showPlate ? (
+                <figure className="ew-plate">
+                  <img
+                    src={plate!}
+                    alt=""
+                    onError={() => {
+                      markArtworkUrlFailed(plate!);
+                      setPlateFailed(true);
+                    }}
+                  />
+                </figure>
+              ) : null}
+              <div>
+                {coverTitle ? <p className="ew-cover-title">{coverTitle}</p> : null}
+                {summary ? <p className="ew-caption">{summary}</p> : null}
+              </div>
             </div>
+          ) : null}
+          {facts.length > 0 ? (
+            <ol className="ew-journey">
+              {facts.map((item) => (
+                <li key={`${item.label}:${item.value}`}>
+                  <i className="ew-journey-star" />
+                  <span className="ew-journey-value">{item.value}</span>
+                  <span className="ew-journey-label">{item.label}</span>
+                </li>
+              ))}
+            </ol>
+          ) : null}
+          {meridians.length > 0 ? (
+            <p className="ew-meridians">
+              {meridians.map((link) => (
+                <a
+                  key={`${link.label}:${link.url}`}
+                  href={link.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <MeridianIcon kind={link.kind} />
+                  {link.label}
+                </a>
+              ))}
+            </p>
           ) : null}
         </>
       ) : null}

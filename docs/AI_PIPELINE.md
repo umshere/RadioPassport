@@ -9,9 +9,9 @@ Vercel production currently has **no Heuristics URL**. There we use **Gemini 2.5
 | Endpoint | When | On failure |
 |---|---|---|
 | `POST /api/ai/interpret` | User submits a sentence | `extractPromptIntent`, `fallback: true` |
-| `POST /api/ai/dispatch` | 1.5s after play, and on track change | Template caption, cached 30 min |
+| `POST /api/ai/dispatch` | 1.5s after play, and on track change. Room already shows the template. | Template stays |
 | `/api/ai/recommend` | Surprise / mix | Next configured provider (OpenRouter → OpenAI → Ollama → Gemini) |
-| `/api/now-playing-trivia` | Cover + theater, only when ICY sent a title | Empty; UI hides the dossier |
+| `/api/now-playing-trivia` | Dock only, after ICY title. `source=free` first, then `source=ai` grounded on those facts. AI files a journey (specific stops, never Yes/No or artist/title echoes). | Well hides the plate |
 
 ## Provider order
 

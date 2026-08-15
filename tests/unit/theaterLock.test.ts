@@ -9,8 +9,11 @@ import {
   fieldPoint,
   advanceFieldTraveler,
   fieldSemanticEdges,
+  fieldSpanEdges,
   fieldTourRank,
+  fieldTravelerInTransit,
   fieldTravelerAt,
+  fieldStandingLabel,
   fieldVisitLabel,
   fieldWalk,
   fieldTriangles,
@@ -23,6 +26,7 @@ import {
   theaterLockLineAt,
   theaterLockLines,
   theaterLockLive,
+  theaterSkyLive,
   theaterPhase,
   theaterReleases,
   theaterTrackCopy,
@@ -188,6 +192,8 @@ describe("theater lock", () => {
     expect(fieldFamiliesConnect("tag", "fact")).toBe(true);
     expect(fieldFamiliesConnect("place", "fact")).toBe(false);
     expect(fieldDensity("filed").glow).toBeLessThan(fieldDensity("locking").glow);
+    expect(fieldDensity("filed").glow).toBeGreaterThan(fieldDensity("reading").glow);
+    expect(fieldDensity("filed").drift).toBeGreaterThan(0.2);
     const cluster = [
       { x: 0.2, y: 0.2 },
       { x: 0.22, y: 0.21 },
@@ -199,6 +205,37 @@ describe("theater lock", () => {
     expect(
       fieldSemanticEdges(west, west.map((node) => ({ x: node.x, y: node.y })), 0.4).length,
     ).toBeGreaterThan(0);
+    const split = [
+      { family: "language" as const, x: 0.12, y: 0.4 },
+      { family: "track" as const, x: 0.88, y: 0.28 },
+      { family: "place" as const, x: 0.84, y: 0.18 },
+    ];
+    const splitPoints = split.map((node) => ({ x: node.x, y: node.y }));
+    const splitLocal = fieldSemanticEdges(
+      split.map((node, index) => ({
+        key: `${node.family}:${index}`,
+        family: node.family,
+        label: node.family,
+        x: node.x,
+        y: node.y,
+        ampX: 0,
+        ampY: 0,
+        freq: 0,
+        phase: 0,
+        kind: "foil" as const,
+        size: 1,
+      })),
+      splitPoints,
+      0.24,
+    );
+    const spans = fieldSpanEdges(split, splitPoints, splitLocal);
+    expect(spans.length).toBeGreaterThan(0);
+    expect(fieldTravelerInTransit({ from: "a", to: "b", progress: 0.4, dwelling: 0 })).toBe(
+      true,
+    );
+    expect(fieldTravelerInTransit({ from: "a", to: "a", progress: 0, dwelling: 0.4 })).toBe(
+      false,
+    );
     expect(hexRgb("#C6A56A")).toEqual([198, 165, 106]);
   });
 
@@ -225,6 +262,11 @@ describe("theater lock", () => {
     expect(fieldVisitLabel("tag", "fado")).toBe("fado");
     expect(fieldVisitLabel("cover", "cover")).toBeNull();
     expect(fieldVisitLabel("dispatch", "dispatch")).toBeNull();
+    expect(fieldVisitLabel("fact", "This is a lofi cover of a Malayalam song")).toBeNull();
+    expect(fieldVisitLabel("fact", "1958")).toBe("1958");
+    expect(fieldStandingLabel("place", "Kerala")).toBe("Kerala");
+    expect(fieldStandingLabel("track", "K.J. Yesudas")).toBe("K.J. Yesudas");
+    expect(fieldStandingLabel("tag", "kollywood")).toBeNull();
     const moving = advanceFieldTraveler(
       { from: "tag:fado", to: "tag:folk", progress: 0.2, dwelling: 0 },
       walk,
@@ -265,6 +307,8 @@ describe("theater lock", () => {
     expect(theaterLockLineAt(locking, 1800)).toBe(locking[1]);
     expect(theaterLockLive("locking")).toBe(true);
     expect(theaterLockLive("filed")).toBe(false);
+    expect(theaterSkyLive("filed")).toBe(true);
+    expect(theaterSkyLive("quiet")).toBe(false);
     expect(theaterWellAria("locking")).toMatch(/filing/i);
     expect(theaterWellAria("filed")).toBeUndefined();
     expect(formatBearing(0)).toBe("0°");
@@ -281,17 +325,29 @@ describe("theater lock", () => {
       "utf8",
     );
     expect(listen).toContain("ew-theater-back");
+    expect(listen).toContain("ew-theater-sky");
+    expect(listen).toContain("ew-theater-folio");
     expect(listen).toContain("TheaterField");
     expect(listen).toContain("theaterReleases");
+    const well = readFileSync(
+      new URL("../../app/components/radio-passport/TheaterWell.tsx", import.meta.url),
+      "utf8",
+    );
+    expect(well).toContain("theaterSkyLive");
+    expect(well).toContain("fieldStandingLabel");
+    expect(well).toContain("fieldSpanEdges");
+    expect(well).toContain("fieldTravelerInTransit");
     expect(listen).toContain('from "~/components/radio-passport/TheaterWell"');
     expect(listen).not.toContain("useNowPlayingMetadata(");
-    expect(listen).toContain("useNowPlayingMetadataStore");
-    expect(dock).toContain("setMetadata(metadata)");
+    expect(listen).toContain("useRoomStore");
+    expect(listen).not.toContain("useTrackTrivia(");
+    expect(dock).toContain("useRoom(");
     const home = readFileSync(
       new URL("../../app/routes/_index.tsx", import.meta.url),
       "utf8",
     );
     expect(home).not.toContain("useNowPlayingMetadata(");
-    expect(home).toContain("useNowPlayingMetadataStore");
+    expect(home).toContain("useRoomStore");
+    expect(home).not.toContain("useTrackTrivia(");
   });
 });

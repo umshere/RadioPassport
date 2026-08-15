@@ -26,7 +26,7 @@ Saved so this conversation can be compacted. Next turn: read this file + `docs/R
 - Globe is **not a mock**: real Radio Browser cities. HTML tooltip = city, region, country code, lead station, live count. Click rotates the earth to face that longitude, then plays the strongest station there.
 - Search (any language, tag, city — not Tamil-only) keeps the globe live. Missing Radio Browser geo falls back to the country center. Globe faces the densest match. Contract: `app/components/radio-passport/globePlaces.ts`.
 - Intent bar + voice + Surprise mix
-- `/listen` theater (honest ICY: if no track title, say so)
+- `/listen` theater: constellation is a sky (right column / phone-first sticky strip). Type is a letter. Honest ICY. Filing keeps the sky inhabited (disc + place/track names). Home station rows use the station plate or the Elsewhere mark — never a clipart play.
 - Atlas + country drill-down overlays
 - Passport stamps after **60s continuous** listen; favorites; localStorage only
 - Mobile: globe first, full-width Land here, compact dock, theater via art / Theater link
@@ -40,7 +40,7 @@ Saved so this conversation can be compacted. Next turn: read this file + `docs/R
 - Local: Heuristics gateway, model hardcoded to `deepseek-v4-flash`
 - Vercel prod (as of this session): `AI_PROVIDER=gemini`, `GEMINI_MODEL=gemini-2.5-flash` (free tier; better writing than Flash-Lite). No Heuristics URL. Needs a **redeploy** after the env fix.
 - Dispatch and trivia try Flash first, then Gemini 2.5 Flash, then template / hide
-- Theater files the dossier (summary + up to 3 facts) only when ICY sent a title
+- The Room owns the current land. Theater files free trivia (plate + facts) first, then AI cover, only when ICY sent a title
 - Never put AI on the audio path
 - Never `AbortController.abort()` Remix fetch (it can kill the process). Use `Promise.race`
 
@@ -86,6 +86,8 @@ land · dusk · hour · stamp · live · cover · elsewhere · now
 - `app/routes/_index.tsx` — home
 - `app/components/radio-passport/*` — globe, `globePlaces.ts`, overlays, intent, stamps
 - `app/components/PlayerDock.tsx`
+- `app/state/roomStore.ts` — current land
+- `app/hooks/useRoom.ts` — dock writer
 - `app/routes/listen.tsx`
 - `app/constants/brand.ts` + `app/tailwind.css`
 - `app/services/ai/gateway.ts`

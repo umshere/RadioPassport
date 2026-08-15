@@ -575,15 +575,117 @@ export function theaterWithoutStation() {
 
 export type TheaterFact = { label: string; value: string };
 
+export type TheaterLink = { label: string; url: string };
+
+export type MeridianKind = "youtube" | "wiki" | "disc" | "link";
+
+const HOLLOW_FACT = /^(yes|no|true|false|n\/?a|none|unknown|tbd|n\.?a\.?)$/i;
+const ECHO_FACT = /^(artist|title)$/i;
+const MERIDIAN_RANK: Record<MeridianKind, number> = {
+  youtube: 0,
+  wiki: 1,
+  disc: 2,
+  link: 3,
+};
+
+export function meridianKind(url: string, label = ""): MeridianKind {
+  const href = url.toLowerCase();
+  const name = label.toLowerCase();
+  if (
+    href.includes("youtube.com") ||
+    href.includes("youtu.be") ||
+    name.includes("youtube")
+  ) {
+    return "youtube";
+  }
+  if (
+    href.includes("wikipedia.org") ||
+    name === "wiki" ||
+    name.includes("wikipedia")
+  ) {
+    return "wiki";
+  }
+  if (
+    href.includes("musicbrainz.org") ||
+    name === "track" ||
+    name === "release" ||
+    name === "artist"
+  ) {
+    return "disc";
+  }
+  return "link";
+}
+
+/** Drops Yes/No and artist/title echoes. The cover already named those. */
+export function theaterDossierFacts(
+  facts: TheaterFact[],
+  track?: string | null,
+): TheaterFact[] {
+  const cover = (track ?? "").toLowerCase();
+  return facts
+    .filter((fact) => {
+      const label = fact.label.trim();
+      const value = fact.value.trim();
+      if (!label || !value) return false;
+      if (HOLLOW_FACT.test(value)) return false;
+      if (ECHO_FACT.test(label)) {
+        if (!cover) return false;
+        return !cover.includes(value.toLowerCase());
+      }
+      return true;
+    })
+    .slice(0, 4);
+}
+
+export function theaterMeridians(links: TheaterLink[]): TheaterLink[] {
+  return links
+    .filter((link) => link.label.trim() && link.url.trim())
+    .sort(
+      (left, right) =>
+        MERIDIAN_RANK[meridianKind(left.url, left.label)] -
+        MERIDIAN_RANK[meridianKind(right.url, right.label)],
+    )
+    .slice(0, 3);
+}
+
+export function theaterIntelligenceFromRoom(input: {
+  hasTrack: boolean;
+  captionBody?: string | null;
+  summary?: string | null;
+  facts?: TheaterFact[];
+  imageUrl?: string | null;
+  links?: TheaterLink[];
+  track?: string | null;
+}) {
+  return theaterIntelligence({
+    hasTrack: input.hasTrack,
+    dispatchBody: input.captionBody,
+    summary: input.summary,
+    facts: input.facts,
+    imageUrl: input.imageUrl,
+    links: input.links,
+    track: input.track,
+  });
+}
+
 export function theaterIntelligence(input: {
   hasTrack: boolean;
   dispatchBody?: string | null;
   summary?: string | null;
   facts?: TheaterFact[];
+  imageUrl?: string | null;
+  links?: TheaterLink[];
+  track?: string | null;
 }) {
   const dispatchBody = input.dispatchBody?.trim() || null;
   if (!input.hasTrack) {
-    return { dispatchBody, summary: null, facts: [] as TheaterFact[] };
+    return {
+      dispatchBody,
+      summary: null,
+      facts: [] as TheaterFact[],
+      imageUrl: null,
+      links: [] as TheaterLink[],
+    };
   }
   const summary = input.summary?.trim() || null;
   const same =
@@ -593,9 +695,9 @@ export function theaterIntelligence(input: {
   return {
     dispatchBody,
     summary: same ? null : summary,
-    facts: (input.facts ?? [])
-      .filter((fact) => fact.label.trim() && fact.value.trim())
-      .slice(0, 3),
+    facts: theaterDossierFacts(input.facts ?? [], input.track),
+    imageUrl: input.imageUrl?.trim() || null,
+    links: theaterMeridians(input.links ?? []),
   };
 }
 

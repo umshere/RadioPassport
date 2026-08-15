@@ -243,7 +243,7 @@ export function fieldNodesFromReleases(
 export function fieldDensity(phase: TheaterPhase): FieldDensity {
   if (phase === "locking") return { reach: 0.32, glow: 0.9, drift: 0.8 };
   if (phase === "reading") return { reach: 0.28, glow: 0.64, drift: 0.42 };
-  if (phase === "filed") return { reach: 0.24, glow: 0.26, drift: 0.1 };
+  if (phase === "filed") return { reach: 0.29, glow: 0.76, drift: 0.4 };
   return { reach: 0.2, glow: 0.12, drift: 0 };
 }
 
@@ -303,7 +303,14 @@ export function fieldVisitLabel(family: FieldFamily, label: string) {
   if (family === "dispatch" || family === "cover") return null;
   const text = label.trim();
   if (!text) return null;
+  if (family === "fact" && text.split(/\s+/).length > 3) return null;
   return text.length > 22 ? `${text.slice(0, 21)}…` : text;
+}
+
+/** Names that stay on the sky after the disc leaves the star. */
+export function fieldStandingLabel(family: FieldFamily, label: string) {
+  if (family !== "place" && family !== "track") return null;
+  return fieldVisitLabel(family, label);
 }
 
 function nearestUnvisited(
@@ -466,6 +473,72 @@ export function fieldSemanticEdges(
     }
   }
   return edges;
+}
+
+/** Span isolated clusters so the disc never walks empty sky. */
+export function fieldSpanEdges(
+  nodes: Array<{ family: FieldFamily }>,
+  points: FieldPoint[],
+  edges: FieldEdge[],
+  aspect = 1,
+): FieldEdge[] {
+  const count = nodes.length;
+  if (count < 2) return [];
+  const parent = Array.from({ length: count }, (_, index) => index);
+  const find = (index: number) => {
+    let current = index;
+    while (parent[current] !== current) {
+      parent[current] = parent[parent[current]!]!;
+      current = parent[current]!;
+    }
+    return current;
+  };
+  const unite = (left: number, right: number) => {
+    const a = find(left);
+    const b = find(right);
+    if (a === b) return false;
+    parent[a] = b;
+    return true;
+  };
+  for (const edge of edges) unite(edge.i, edge.j);
+  const components = () => new Set(Array.from({ length: count }, (_, index) => find(index))).size;
+  if (components() <= 1) return [];
+
+  const candidates: Array<{ i: number; j: number; dist: number; kindred: boolean }> = [];
+  for (let i = 0; i < count; i += 1) {
+    for (let j = i + 1; j < count; j += 1) {
+      if (find(i) === find(j)) continue;
+      const kindred =
+        nodes[i]!.family === nodes[j]!.family ||
+        fieldFamiliesConnect(nodes[i]!.family, nodes[j]!.family);
+      candidates.push({
+        i,
+        j,
+        dist: fieldDistance(points[i]!, points[j]!, aspect),
+        kindred,
+      });
+    }
+  }
+  candidates.sort(
+    (left, right) =>
+      left.dist - right.dist || Number(right.kindred) - Number(left.kindred),
+  );
+
+  const spans: FieldEdge[] = [];
+  for (const pair of candidates) {
+    if (!unite(pair.i, pair.j)) continue;
+    spans.push({
+      i: pair.i,
+      j: pair.j,
+      strength: pair.kindred ? 0.58 : 0.4,
+    });
+    if (components() <= 1) break;
+  }
+  return spans;
+}
+
+export function fieldTravelerInTransit(state: FieldTravelerState) {
+  return state.dwelling <= 0 && state.from !== state.to;
 }
 
 export function fieldTriangles(
@@ -631,4 +704,9 @@ export function theaterWellAria(phase: TheaterPhase) {
 
 export function theaterLockLive(phase: TheaterPhase) {
   return phase === "reading" || phase === "locking";
+}
+
+/** The sky stays inhabited after the dossier files — only quiet goes dark. */
+export function theaterSkyLive(phase: TheaterPhase) {
+  return phase === "reading" || phase === "locking" || phase === "filed";
 }

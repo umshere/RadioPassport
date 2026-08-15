@@ -12,13 +12,7 @@ import { usePlayerStore } from "~/state/playerStore";
 import { useJourneyStore } from "~/state/journeyStore";
 import { resolveKeptSignals } from "~/state/favoriteSnapshot";
 import { useListeningMode } from "~/hooks/useListeningMode";
-import { sourceKeyForNowPlaying } from "~/hooks/useNowPlayingMetadata";
-import { useTrackTrivia } from "~/hooks/useTrackTrivia";
-import { useDispatchStore } from "~/state/dispatchStore";
-import {
-  IDLE_NOW_PLAYING_METADATA,
-  useNowPlayingMetadataStore,
-} from "~/state/nowPlayingMetadataStore";
+import { roomForStation, useRoomStore } from "~/state/roomStore";
 import { loadWorldDescriptorPreview } from "~/services/aiOrchestrator";
 import { ParticleGlobe } from "~/components/radio-passport/ParticleGlobe";
 import {
@@ -66,7 +60,7 @@ import {
   hourBoardLabel,
   seekingBoardLabel,
   seekingStatus,
-  theaterIntelligence,
+  theaterIntelligenceFromRoom,
 } from "~/components/radio-passport/productFlow";
 import { resolveTypedIntent, solarHourFromWord } from "~/services/ai/intent/promptIntent";
 import { BRAND } from "~/constants/brand";
@@ -140,19 +134,8 @@ export default function Index() {
   const toggleFavorite = useJourneyStore((state) => state.toggleFavorite);
   const recordPlayed = useJourneyStore((state) => state.recordPlayed);
   const listening = useListeningMode();
-  const sharedMetadata = useNowPlayingMetadataStore((state) => state.state);
-  const sourceKey = sourceKeyForNowPlaying(nowPlaying);
-  const metadata =
-    sourceKey && sharedMetadata.sourceKey === sourceKey
-      ? sharedMetadata
-      : IDLE_NOW_PLAYING_METADATA;
-  const trivia = useTrackTrivia({
-    track: metadata.track,
-    source: "ai",
-    enabled: Boolean(nowPlaying && metadata.track),
-  });
-  const dispatch = useDispatchStore((state) => state.dispatch);
-  const requestDispatch = useDispatchStore((state) => state.requestDispatch);
+  const storedRoom = useRoomStore((state) => state.room);
+  const room = roomForStation(storedRoom, nowPlaying?.uuid);
   const [hour, setHour] = useState<SolarHour | null>(null);
   const [place, setPlace] = useState<string | null>(null);
   const [query, setQuery] = useState(() =>
@@ -476,38 +459,6 @@ export default function Index() {
   );
 
   useEffect(() => {
-    if (!nowPlaying || !isPlaying) return;
-    const timer = window.setTimeout(() => {
-      const longitude =
-        typeof nowPlaying.longitude === "number" ? nowPlaying.longitude : 0;
-      const local = localDateAtLongitude(longitude);
-      requestDispatch({
-        stationId: nowPlaying.uuid,
-        stationName: nowPlaying.name,
-        city: stationLocation(nowPlaying),
-        country: nowPlaying.country,
-        countryCode: nowPlaying.countryCode ?? null,
-        language: nowPlaying.language,
-        tags: nowPlaying.tagList ?? [],
-        localTimeISO: local.toISOString(),
-        track: metadata.track
-          ? {
-              title: metadata.track.title,
-              artist: metadata.track.artist,
-              raw: metadata.track.raw,
-            }
-          : null,
-      });
-    }, 1500);
-    return () => window.clearTimeout(timer);
-  }, [
-    isPlaying,
-    metadata.track,
-    nowPlaying,
-    requestDispatch,
-  ]);
-
-  useEffect(() => {
     if (passportRequested(searchParams.toString())) {
       setPassport(true);
     }
@@ -543,14 +494,17 @@ export default function Index() {
     arrivalStation && typeof arrivalStation.longitude === "number"
       ? localDateAtLongitude(arrivalStation.longitude)
       : null;
-  const trackLine = metadata.track
-    ? [metadata.track.artist, metadata.track.title].filter(Boolean).join(" — ")
+  const trackLine = room.signal.track
+    ? [room.signal.track.artist, room.signal.track.title].filter(Boolean).join(" — ")
     : null;
-  const coverIntel = theaterIntelligence({
+  const coverIntel = theaterIntelligenceFromRoom({
     hasTrack: Boolean(trackLine),
-    dispatchBody: dispatch?.body,
-    summary: trivia.trivia?.summary,
-    facts: trivia.trivia?.facts,
+    captionBody: room.caption?.body,
+    summary: room.dossier.summary,
+    facts: room.dossier.facts,
+    imageUrl: room.plate,
+    links: room.dossier.links,
+    track: trackLine,
   });
   const sameHour = useMemo(() => {
     const current =

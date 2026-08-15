@@ -1,4 +1,6 @@
+import { useEffect, useState } from "react";
 import type { Station } from "~/types/radio";
+import { markArtworkUrlFailed, sanitizeArtworkUrl } from "~/utils/stations";
 
 function tidyPlace(value: string) {
   return value
@@ -35,10 +37,68 @@ export function stationTelemetry(station: Station) {
     ? station.codec.toUpperCase()
     : "LIVE";
 }
-function hue(id: string) {
-  return [...id].reduce(
-    (total, char) => (total * 31 + char.charCodeAt(0)) % 360,
-    0
+function ElsewhereMark() {
+  return (
+    <span className="rp-art-mark" aria-hidden="true">
+      <svg viewBox="0 0 32 32">
+        <circle
+          cx="16"
+          cy="16"
+          r="11"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.5"
+        />
+        <circle cx="16" cy="16" r="4.5" fill="currentColor" className="rp-art-core" />
+      </svg>
+    </span>
+  );
+}
+
+function StationArt({
+  station,
+  active,
+  onPlay,
+}: {
+  station: Station;
+  active: boolean;
+  onPlay: () => void;
+}) {
+  const artwork = sanitizeArtworkUrl(station.favicon);
+  const [failed, setFailed] = useState(false);
+  useEffect(() => {
+    setFailed(false);
+  }, [artwork, station.uuid]);
+  const showPlate = Boolean(artwork && !failed);
+  return (
+    <button
+      type="button"
+      onClick={onPlay}
+      className={`rp-art${showPlate ? " has-plate" : ""}${active ? " is-live" : ""}`}
+      aria-label={`Play ${station.name}`}
+    >
+      {showPlate ? (
+        <img
+          src={artwork!}
+          alt=""
+          loading="lazy"
+          decoding="async"
+          onError={() => {
+            markArtworkUrlFailed(artwork!);
+            setFailed(true);
+          }}
+        />
+      ) : (
+        <ElsewhereMark />
+      )}
+      {active ? (
+        <span className="rp-eq">
+          <i />
+          <i />
+          <i />
+        </span>
+      ) : null}
+    </button>
   );
 }
 
@@ -58,27 +118,7 @@ export function StationRow({
   const location = stationLocation(station);
   return (
     <div className={`rp-station ${active ? "is-active" : ""}`}>
-      <button
-        type="button"
-        onClick={onPlay}
-        className="rp-art"
-        aria-label={`Play ${station.name}`}
-        style={{
-          background: `radial-gradient(circle at 26% 20%, hsl(${hue(
-            station.uuid
-          )} 32% 28%), #0C0B09 72%)`,
-        }}
-      >
-        {active ? (
-          <span className="rp-eq">
-            <i />
-            <i />
-            <i />
-          </span>
-        ) : (
-          <span className="text-[13px]">▶</span>
-        )}
-      </button>
+      <StationArt station={station} active={active} onPlay={onPlay} />
       <button
         type="button"
         onClick={onPlay}

@@ -1,14 +1,8 @@
 import { Link } from "@remix-run/react";
 import { useMemo } from "react";
-import { sourceKeyForNowPlaying } from "~/hooks/useNowPlayingMetadata";
-import { useTrackTrivia } from "~/hooks/useTrackTrivia";
 import { useHydrated } from "~/hooks/useHydrated";
 import { usePlayerStore } from "~/state/playerStore";
-import { useDispatchStore } from "~/state/dispatchStore";
-import {
-  IDLE_NOW_PLAYING_METADATA,
-  useNowPlayingMetadataStore,
-} from "~/state/nowPlayingMetadataStore";
+import { roomForStation, useRoomStore } from "~/state/roomStore";
 import { BRAND } from "~/constants/brand";
 import { stationLocation, stationTelemetry } from "~/components/radio-passport/StationRow";
 import { stationTags } from "~/components/radio-passport/stationInsights";
@@ -16,13 +10,12 @@ import { TheaterField, TheaterWell } from "~/components/radio-passport/TheaterWe
 import {
   lockSeed,
   splitFieldTokens,
-  theaterPhase,
   theaterReleases,
   theaterTrackCopy,
 } from "~/components/radio-passport/theaterLock";
 import { formatLocalLabel, localDateAtLongitude } from "~/utils/localTime";
 import {
-  theaterIntelligence,
+  theaterIntelligenceFromRoom,
   theaterWithoutStation,
 } from "~/components/radio-passport/productFlow";
 
@@ -40,44 +33,32 @@ export default function ListeningPage() {
   const storedIsPlaying = usePlayerStore((state) => state.isPlaying);
   const nowPlaying = hydrated ? storedNowPlaying : null;
   const isPlaying = hydrated ? storedIsPlaying : false;
-  const sharedMetadata = useNowPlayingMetadataStore((state) => state.state);
-  const sourceKey = sourceKeyForNowPlaying(nowPlaying);
-  const metadata =
-    sourceKey && sharedMetadata.sourceKey === sourceKey
-      ? sharedMetadata
-      : IDLE_NOW_PLAYING_METADATA;
-  const trivia = useTrackTrivia({
-    track: metadata.track,
-    source: "ai",
-    enabled: Boolean(metadata.track),
-  });
-  const dispatch = useDispatchStore((state) => state.dispatch);
+  const storedRoom = useRoomStore((state) => state.room);
+  const room = roomForStation(storedRoom, nowPlaying?.uuid);
 
   const city = nowPlaying ? stationLocation(nowPlaying) : "";
   const local =
     nowPlaying && typeof nowPlaying.longitude === "number"
       ? localDateAtLongitude(nowPlaying.longitude)
       : null;
-  const rawTrackLine = metadata.track
-    ? [metadata.track.artist, metadata.track.title].filter(Boolean).join(" — ")
+  const rawTrackLine = room.signal.track
+    ? [room.signal.track.artist, room.signal.track.title].filter(Boolean).join(" — ")
     : null;
   const trackLine = theaterTrackCopy({
     isPlaying,
-    metadataStatus: metadata.status,
+    metadataStatus: room.signal.status,
     trackLine: rawTrackLine,
   });
-  const intelligence = theaterIntelligence({
+  const intelligence = theaterIntelligenceFromRoom({
     hasTrack: Boolean(rawTrackLine),
-    dispatchBody: dispatch?.body,
-    summary: trivia.trivia?.summary,
-    facts: trivia.trivia?.facts,
+    captionBody: room.caption?.body,
+    summary: room.dossier.summary,
+    facts: room.dossier.facts,
+    imageUrl: room.plate,
+    links: room.dossier.links,
+    track: rawTrackLine,
   });
-  const phase = theaterPhase({
-    isPlaying,
-    hasTrack: Boolean(rawTrackLine),
-    metadataStatus: metadata.status,
-    triviaStatus: trivia.status,
-  });
+  const phase = room.phase;
   const factKey = intelligence.facts
     .map((fact) => `${fact.label}:${fact.value}`)
     .join("|");
@@ -92,8 +73,8 @@ export default function ListeningPage() {
         codec: nowPlaying?.codec,
         languages: splitFieldTokens(nowPlaying?.language),
         tags: nowPlaying ? stationTags(nowPlaying) : [],
-        artist: metadata.track?.artist,
-        title: metadata.track?.title,
+        artist: room.signal.track?.artist,
+        title: room.signal.track?.title,
         dispatchBody: intelligence.dispatchBody,
         summary: intelligence.summary,
         facts: intelligence.facts,
@@ -103,13 +84,13 @@ export default function ListeningPage() {
       factKey,
       intelligence.dispatchBody,
       intelligence.summary,
-      metadata.track?.artist,
-      metadata.track?.title,
       nowPlaying?.bitrate,
       nowPlaying?.codec,
       nowPlaying?.country,
       nowPlaying?.language,
       nowPlaying?.longitude,
+      room.signal.track?.artist,
+      room.signal.track?.title,
       tagKey,
     ],
   );
@@ -138,12 +119,6 @@ export default function ListeningPage() {
 
   return (
     <main className="ew-theater" data-phase={phase}>
-      <TheaterField
-        seed={seed}
-        phase={phase}
-        releases={releases}
-        longitude={nowPlaying.longitude}
-      />
       <Link
         to="/"
         className="ew-theater-back rp-eyebrow text-foil"
@@ -151,26 +126,41 @@ export default function ListeningPage() {
       >
         ← {BRAND.name}
       </Link>
-      <div className="ew-theater-stage" key={nowPlaying.uuid}>
-        <p className="rp-eyebrow text-ether ew-arrive">
-          <i className="rp-live-dot" />
-          {local ? formatLocalLabel(city, local) : "LIVE"} ·{" "}
-          {stationTelemetry(nowPlaying)}
-        </p>
-        <h1 className="ew-coverline mt-3 ew-arrive ew-arrive-2">{city}</h1>
-        <p className="rp-lede mt-2 ew-arrive ew-arrive-3">
-          {nowPlaying.name} · {nowPlaying.country}
-          {nowPlaying.language ? ` · ${nowPlaying.language}` : ""}
-        </p>
-        <p className="ew-track ew-arrive ew-arrive-4" key={trackLine ?? "quiet"}>
-          {trackLine}
-        </p>
-        <TheaterWell
-          phase={phase}
-          dispatchBody={intelligence.dispatchBody}
-          summary={intelligence.summary}
-          facts={intelligence.facts}
-        />
+      <div className="ew-theater-room" key={nowPlaying.uuid}>
+        <aside className="ew-theater-sky">
+          <TheaterField
+            seed={seed}
+            phase={phase}
+            releases={releases}
+            longitude={nowPlaying.longitude}
+          />
+        </aside>
+        <div className="ew-theater-folio">
+          <p className="rp-eyebrow text-ether ew-arrive">
+            <i className="rp-live-dot" />
+            {local ? formatLocalLabel(city, local) : "LIVE"} ·{" "}
+            {stationTelemetry(nowPlaying)}
+          </p>
+          <h1 className="ew-coverline mt-3 ew-arrive ew-arrive-2">{city}</h1>
+          <p className="rp-lede mt-2 ew-arrive ew-arrive-3">
+            {nowPlaying.name} · {nowPlaying.country}
+            {nowPlaying.language ? ` · ${nowPlaying.language}` : ""}
+          </p>
+          {trackLine && phase !== "filed" ? (
+            <p className="ew-track ew-arrive ew-arrive-4" key={trackLine}>
+              {trackLine}
+            </p>
+          ) : null}
+          <TheaterWell
+            phase={phase}
+            dispatchBody={intelligence.dispatchBody}
+            summary={intelligence.summary}
+            facts={intelligence.facts}
+            imageUrl={intelligence.imageUrl}
+            links={intelligence.links}
+            track={rawTrackLine}
+          />
+        </div>
       </div>
     </main>
   );

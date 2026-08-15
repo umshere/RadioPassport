@@ -7,7 +7,7 @@ Elsewhere is a Remix 2 + React 18 + Tailwind app. The product face is one discov
 | Route | Role |
 |---|---|
 | `/` | Departure hall: coverline, globe, intent, live board, overlays |
-| `/listen` | Theater. No discovery chrome. |
+| `/listen` | Theater. Sky (constellation) + letter. No discovery chrome. |
 | `/about` | The room |
 | `/api/ai/recommend` | World mix `SceneDescriptor` |
 | `/api/ai/interpret` | Natural language → place / tags / `wantsMix` |
@@ -21,6 +21,20 @@ Elsewhere is a Remix 2 + React 18 + Tailwind app. The product face is one discov
 1. `playerStore` owns queue, now playing, and play/pause.
 2. `GlobalAudioBridge` in `app/root.tsx` is the only `<audio>` element. Recovery and skip live here.
 3. Filters, search, and overlays must not call `stop()`.
+4. `roomStore` is the current land. Land / next / prev calls `openRoom`. ICY, caption, plate, and dossier are keyed to that station. Home and Theater only read the room. The dock is the only writer (`useRoom`).
+
+## Room
+
+One object. One key. The previous station is gone on the next frame.
+
+| Field | Source | When |
+|---|---|---|
+| place | `Station` | `openRoom` |
+| caption | honest template, then `/api/ai/dispatch` | immediately, then ~1.5s |
+| signal | ICY via `/api/now-playing` | dock poller |
+| plate + dossier | free trivia (MusicBrainz / Cover Art / iTunes / Wiki), then AI cover | only if ICY sent a title |
+
+Free first. AI may upgrade the sentences. A leftover caption cannot sit under a new city.
 
 ## Journey
 

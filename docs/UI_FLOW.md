@@ -30,7 +30,7 @@ Search, chips, and overlays never call `stop()`.
 
 ## `/listen`
 
-Coverline + local clock + track-or-honest-live + dispatch. When ICY sent a title, the room also files the AI dossier (summary + up to three facts). No track → no dossier. On a phone the transport is the dock only.
+Sky + letter. The constellation has its own rectangle (right column on desktop, first and sticky on a phone). City, station, and the Room sit as type: caption, then plate + cover title, then a colophon of facts. When ICY sent a title, free trivia files the plate and facts first; AI cover may upgrade them. Filing keeps the sky inhabited — the disc keeps walking and names stay on place and track stars. No track → no dossier. On a phone the transport is the dock only. The sky stays visible while the letter scrolls.
 
 ## Empty / error
 

@@ -50,7 +50,7 @@ Product loop: land → intent → tune → inhabit → stamp → next. Theater i
 
 ## Settled story (Opus, 2026-08-14)
 
-**One sentence:** While the cover files, the disc walks everything the station has already told you — and when the dossier is ready, the room goes still.
+**One sentence:** The disc walks everything the station has told you. Filing does not empty the sky.
 
 The disc is **reading the sleeve**, not seeking. Tags first (character), then language, then track, then facts. Seats stay. Visit labels stay (mono caps, once). Fact stars say the value (`2007`), not `YEAR`. Silent stations do not walk. Dispatch/cover stay unnamed stars. Triangle fill is light (`0.08`) so tag-heavy rooms stay a constellation, not crumpled foil.
 
@@ -75,16 +75,17 @@ Three honest sources. Nothing else.
 
 | Beat | Source | When | What it may add |
 |---|---|---|---|
-| Landed | `Station` | immediately | city, country, lon, bitrate, codec, languages, tags (cap 8) |
+| Landed | `Station` via `openRoom` | immediately | city, country, lon, bitrate, codec, languages, tags (cap 8), template caption |
 | Live title | ICY via `/api/now-playing` | dock poller only | artist, title — or honest empty |
-| Dispatch | `/api/ai/dispatch` | ~1.5s after play, cached 30m | one caption line |
-| Cover | `/api/now-playing-trivia?source=ai` | only if ICY sent a title | summary + up to 4 facts (theater shows 3) |
+| Plate | `/api/now-playing-trivia?source=free` | only if ICY sent a title | Cover Art / iTunes / Wiki + MusicBrainz facts |
+| Dispatch | `/api/ai/dispatch` | ~1.5s after play, cached 30m | replaces the template caption |
+| Cover | `/api/now-playing-trivia?source=ai` | after free, grounded on it | upgraded summary / facts |
 
 **Pollers (this was the restart bug):**
 
-- `PlayerDock` owns the **only** ICY poller and publishes to `useNowPlayingMetadataStore`.
-- Home (`app/routes/_index.tsx`) and Theater (`app/routes/listen.tsx`) **read the store**. They must not start a second ICY poller.
-- Trivia: `useTrackTrivia` now joins an in-flight promise + module cache. Unmount must not abort the fetch (that was aborting home and refetching on `/listen`).
+- `PlayerDock` owns the **only** ICY poller and writes the Room (`useRoom` → `roomStore`).
+- Home (`app/routes/_index.tsx`) and Theater (`app/routes/listen.tsx`) **read the Room**. They must not start a second ICY poller or a trivia fetch.
+- Trivia: `requestTrackTrivia` joins an in-flight promise + module cache. Free first, then AI. Unmount must not abort the fetch.
 - Leftover screens (`HeroSection`, `CountryOverview`, `RetroTuner`) still start their own pollers if anyone remounts them. Leave them unmounted.
 
 Theater phase (`theaterPhase`):
@@ -121,13 +122,13 @@ Homes are **keyed** (`lockSeed([stationSeed, release.key])`). Adding a track or 
 
 Edges: same family 1.55× reach; kindred families 1.35×; others 0.52×. Triangles reject skinny faces (longest/shortest > 3.1).
 
-Motion (`fieldDensity`): locking brightest; filed dim; quiet almost still. Drift is tiny. Never bounce. `prefers-reduced-motion`: still mesh, disc rests on the first star.
+Motion (`fieldDensity`): locking brightest; filed stays lit (above reading); quiet almost still. Never bounce. `prefers-reduced-motion`: still mesh, disc rests on the first star.
 
-Traveler: `startFieldTraveler` / `advanceFieldTraveler`. Stateful. Must **not** reset when the node list grows. Draw: foil ring + lacquer disc (the mark). Label only while dwelling, Azeret Mono, uppercase, skip `dispatch`/`cover`.
+Traveler: `startFieldTraveler` / `advanceFieldTraveler`. Stateful. Must **not** reset when the node list grows. Draw: foil ring + lacquer disc (the mark). `theaterSkyLive` keeps the disc walking after filed. Isolated clusters get a span so the walk never crosses empty sky; the current hop is always stroked. Visit label while dwelling; place and track names stay (`fieldStandingLabel`). Sentence facts, dispatch, and cover stay unnamed. Azeret Mono, uppercase.
 
 Canvas loop depends on **seed only** (station change). Phase and nodes are refs so facts arriving do not tear down rAF.
 
-Well: reserved min-height (`16.75rem` / `16rem` mobile) so `← Elsewhere` and the city do not walk. Back link is sticky. Stage is `justify-end` with the well absorbing growth.
+Sky is a reserved rectangle (`.ew-theater-sky`) — right column on desktop, first and sticky on a phone (`38vh`, min `16.75rem`). The field canvas lives inside it and no longer veils for type. Folio (`.ew-theater-folio`) is a letter: caption, plate, colophon. Well min-height stays (`16.75rem` / `16rem` mobile) so the type does not jump while filing. Back link is sticky. No second transport. No cards on the sky.
 
 ---
 
@@ -143,7 +144,7 @@ Well: reserved min-height (`16.75rem` / `16rem` mobile) so `← Elsewhere` and t
 8. `app/components/radio-passport/productFlow.ts` — `theaterIntelligence`, `theaterWithoutStation`
 9. `tests/unit/theaterLock.test.ts`
 
-CSS: `.ew-theater`, `.ew-theater-field`, `.ew-theater-back`, `.ew-theater-stage`, `.ew-theater-well` in `app/tailwind.css`.
+CSS: `.ew-theater`, `.ew-theater-room`, `.ew-theater-sky`, `.ew-theater-folio`, `.ew-theater-field`, `.ew-theater-back`, `.ew-theater-well` in `app/tailwind.css`.
 
 ---
 
@@ -154,7 +155,7 @@ CSS: `.ew-theater`, `.ew-theater-field`, `.ew-theater-back`, `.ew-theater-stage`
 - A tag-heavy station (8 tags) is a large foil solid. Density may still read as wallpaper on desktop.
 - Isolated nodes (no kindred neighbor) can sit as stray dots far from the mesh.
 - `fieldDensity.count` is unused (always 0). Dead field.
-- Home still runs `useTrackTrivia` for the coverline. Same cache as Theater if the track key matches.
+- Home reads the Room for the coverline. It must not call `useTrackTrivia`.
 - `nowPlayingMetadataStore` is not persisted. Hard refresh on `/listen` waits for the dock to poll again.
 - Empty theater (`no nowPlaying`) has no field. Fine.
 - Not shipped. Do not `vercel --prod` unless the user says make it live.
