@@ -728,11 +728,81 @@
   .rp-player-notice-warning { border-color: rgba(199, 58, 58, .5); }
   .rp-player-notice-error { border-color: var(--ew-lacquer); }
   .ew-theater {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
     min-height: 100svh;
     background: var(--ew-ink);
     color: var(--ew-bone);
     padding: 28px 24px 120px;
     transition: background-color .28s ease, color .28s ease;
+  }
+  .ew-theater-field {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    display: block;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+  }
+  .ew-theater-back {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    min-height: 44px;
+    padding-top: env(safe-area-inset-top, 0px);
+    background: linear-gradient(180deg, var(--ew-ink) 68%, transparent);
+  }
+  .ew-theater-stage {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    justify-content: flex-end;
+    min-width: 0;
+    max-width: 36rem;
+  }
+  .ew-theater-stage .ew-track {
+    min-height: 2.6em;
+    margin-top: 1.5rem;
+  }
+  .ew-theater-well {
+    display: flex;
+    flex-direction: column;
+    min-height: 16.75rem;
+    max-width: 36ch;
+    margin-top: 1.15rem;
+    padding-top: 14px;
+    border-top: 1px solid var(--ew-rule);
+  }
+  .ew-theater-well.is-filed .ew-caption,
+  .ew-theater-well.is-filed .ew-dossier dl {
+    animation: ew-file .48s ease both;
+  }
+  .ew-theater-well.is-filed .ew-dossier dl:nth-child(2) { animation-delay: .07s; }
+  .ew-theater-well.is-filed .ew-dossier dl:nth-child(3) { animation-delay: .14s; }
+  .ew-theater-well .ew-caption {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+  }
+  .ew-theater-controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 16px;
+    margin-top: 2.5rem;
+  }
+  @keyframes ew-file {
+    from { opacity: 0; }
+    to { opacity: 1; }
   }
 
   @keyframes rp-pulse { 50% { opacity: .55; } }
@@ -855,11 +925,12 @@
     .rp-player-notice { width: calc(100vw - 20px); font-size: 10px; }
     .ew-theater { padding: 20px 16px calc(120px + env(safe-area-inset-bottom, 0px)); }
     .ew-theater .ew-coverline { font-size: clamp(36px, 12vw, 52px); }
+    .ew-theater-well { min-height: 16rem; }
     .ew-theater-controls { display: none; }
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .rp-live-dot, .rp-eq i, .rp-toast { animation: none; }
+    .rp-live-dot, .rp-eq i, .rp-toast, .ew-theater-well.is-filed .ew-caption, .ew-theater-well.is-filed .ew-dossier dl { animation: none; }
     .rp-chip, .rp-station, .rp-dock-play { transition: none; }
     body, .rp-home, .rp-globe-side, .rp-dock, .ew-theater { transition: none; }
   }

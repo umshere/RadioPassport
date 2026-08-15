@@ -1,12 +1,25 @@
 import { Link } from "@remix-run/react";
 import { useMemo } from "react";
-import { useNowPlayingMetadata } from "~/hooks/useNowPlayingMetadata";
+import { sourceKeyForNowPlaying } from "~/hooks/useNowPlayingMetadata";
 import { useTrackTrivia } from "~/hooks/useTrackTrivia";
 import { useHydrated } from "~/hooks/useHydrated";
 import { usePlayerStore } from "~/state/playerStore";
 import { useDispatchStore } from "~/state/dispatchStore";
+import {
+  IDLE_NOW_PLAYING_METADATA,
+  useNowPlayingMetadataStore,
+} from "~/state/nowPlayingMetadataStore";
 import { BRAND } from "~/constants/brand";
 import { stationLocation, stationTelemetry } from "~/components/radio-passport/StationRow";
+import { stationTags } from "~/components/radio-passport/stationInsights";
+import { TheaterField, TheaterWell } from "~/components/radio-passport/TheaterWell";
+import {
+  lockSeed,
+  splitFieldTokens,
+  theaterPhase,
+  theaterReleases,
+  theaterTrackCopy,
+} from "~/components/radio-passport/theaterLock";
 import { formatLocalLabel, localDateAtLongitude } from "~/utils/localTime";
 import {
   theaterIntelligence,
@@ -33,7 +46,12 @@ export default function ListeningPage() {
   const isPlaying = hydrated ? storedIsPlaying : false;
   const queue = hydrated ? storedQueue : [];
   const index = hydrated ? storedIndex : 0;
-  const metadata = useNowPlayingMetadata(nowPlaying, isPlaying);
+  const sharedMetadata = useNowPlayingMetadataStore((state) => state.state);
+  const sourceKey = sourceKeyForNowPlaying(nowPlaying);
+  const metadata =
+    sourceKey && sharedMetadata.sourceKey === sourceKey
+      ? sharedMetadata
+      : IDLE_NOW_PLAYING_METADATA;
   const trivia = useTrackTrivia({
     track: metadata.track,
     source: "ai",
@@ -46,15 +64,62 @@ export default function ListeningPage() {
     nowPlaying && typeof nowPlaying.longitude === "number"
       ? localDateAtLongitude(nowPlaying.longitude)
       : null;
-  const trackLine = metadata.track
+  const rawTrackLine = metadata.track
     ? [metadata.track.artist, metadata.track.title].filter(Boolean).join(" — ")
     : null;
+  const trackLine = theaterTrackCopy({
+    isPlaying,
+    metadataStatus: metadata.status,
+    trackLine: rawTrackLine,
+  });
   const intelligence = theaterIntelligence({
-    hasTrack: Boolean(trackLine),
+    hasTrack: Boolean(rawTrackLine),
     dispatchBody: dispatch?.body,
     summary: trivia.trivia?.summary,
     facts: trivia.trivia?.facts,
   });
+  const phase = theaterPhase({
+    isPlaying,
+    hasTrack: Boolean(rawTrackLine),
+    metadataStatus: metadata.status,
+    triviaStatus: trivia.status,
+  });
+  const factKey = intelligence.facts
+    .map((fact) => `${fact.label}:${fact.value}`)
+    .join("|");
+  const tagKey = nowPlaying ? stationTags(nowPlaying).join("|") : "";
+  const releases = useMemo(
+    () =>
+      theaterReleases({
+        city,
+        country: nowPlaying?.country,
+        longitude: nowPlaying?.longitude,
+        bitrate: nowPlaying?.bitrate,
+        codec: nowPlaying?.codec,
+        languages: splitFieldTokens(nowPlaying?.language),
+        tags: nowPlaying ? stationTags(nowPlaying) : [],
+        artist: metadata.track?.artist,
+        title: metadata.track?.title,
+        dispatchBody: intelligence.dispatchBody,
+        summary: intelligence.summary,
+        facts: intelligence.facts,
+      }),
+    [
+      city,
+      factKey,
+      intelligence.dispatchBody,
+      intelligence.summary,
+      metadata.track?.artist,
+      metadata.track?.title,
+      nowPlaying?.bitrate,
+      nowPlaying?.codec,
+      nowPlaying?.country,
+      nowPlaying?.language,
+      nowPlaying?.longitude,
+      tagKey,
+    ],
+  );
+  const seed = lockSeed([nowPlaying?.uuid, city]);
   const neighbors = useMemo(() => {
     if (!nowPlaying || queue.length < 2) return { prev: null, next: null };
     return {
@@ -78,16 +143,22 @@ export default function ListeningPage() {
   }
 
   return (
-    <main className="ew-theater">
-      <div className="mx-auto flex min-h-[calc(100svh-8rem)] max-w-4xl flex-col justify-end">
-        <Link
-          to="/"
-          className="rp-eyebrow inline-flex min-h-11 items-center text-foil"
-          prefetch="intent"
-        >
-          ← {BRAND.name}
-        </Link>
-        <p className="rp-eyebrow mt-10 text-ether">
+    <main className="ew-theater" data-phase={phase}>
+      <TheaterField
+        seed={seed}
+        phase={phase}
+        releases={releases}
+        longitude={nowPlaying.longitude}
+      />
+      <Link
+        to="/"
+        className="ew-theater-back rp-eyebrow text-foil"
+        prefetch="intent"
+      >
+        ← {BRAND.name}
+      </Link>
+      <div className="ew-theater-stage">
+        <p className="rp-eyebrow text-ether">
           <i className="rp-live-dot" />
           {local ? formatLocalLabel(city, local) : "LIVE"} ·{" "}
           {stationTelemetry(nowPlaying)}
@@ -97,26 +168,14 @@ export default function ListeningPage() {
           {nowPlaying.name} · {nowPlaying.country}
           {nowPlaying.language ? ` · ${nowPlaying.language}` : ""}
         </p>
-        <p className="ew-track mt-6">
-          {trackLine || "This station sends no track titles."}
-        </p>
-        {intelligence.dispatchBody ? (
-          <p className="ew-caption">{intelligence.dispatchBody}</p>
-        ) : null}
-        {intelligence.summary ? (
-          <p className="ew-caption">{intelligence.summary}</p>
-        ) : null}
-        {intelligence.facts.length > 0 ? (
-          <div className="ew-dossier">
-            {intelligence.facts.map((item) => (
-              <dl key={`${item.label}:${item.value}`}>
-                <dt>{item.label}</dt>
-                <dd>{item.value}</dd>
-              </dl>
-            ))}
-          </div>
-        ) : null}
-        <div className="ew-theater-controls mt-10 flex flex-wrap items-center gap-4">
+        <p className="ew-track">{trackLine}</p>
+        <TheaterWell
+          phase={phase}
+          dispatchBody={intelligence.dispatchBody}
+          summary={intelligence.summary}
+          facts={intelligence.facts}
+        />
+        <div className="ew-theater-controls">
           <button
             type="button"
             className="rp-dock-control"

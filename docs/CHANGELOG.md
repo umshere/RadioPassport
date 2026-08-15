@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-08-14 — Theater files the cover
+
+Opening Theater no longer walks `← Elsewhere` when the track dossier arrives. The back link is sticky; the city stays put above a reserved well. The room itself is a foil constellation of released metadata — place, tags, language, signal, then ICY and facts when they arrive. Missing fields do not get stars. Kindred families connect, so two stations draw different skies. While filing, the lacquer disc walks those edges and names the star it is on. Existing stars keep their seats when a new field arrives. The dock is the only ICY poller; trivia requests join instead of restarting. Not a boxed spinner. Theater reads the dock’s live metadata instead of starting a second ICY poller.
+
 ## 2026-08-14 — Atlas fits the phone
 
 Country rows were sizing to their text (~555px) and sliding off a 390px screen. The atlas grid is now `minmax(0, 1fr)` on small viewports; overlay titles wrap.

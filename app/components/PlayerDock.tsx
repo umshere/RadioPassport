@@ -10,6 +10,7 @@ import { canMutateJourney, useJourneyStore } from "~/state/journeyStore";
 import { usePlayerNoticeStore } from "~/state/playerNoticeStore";
 import { useNowPlayingMetadata } from "~/hooks/useNowPlayingMetadata";
 import { useDispatchStore } from "~/state/dispatchStore";
+import { useNowPlayingMetadataStore } from "~/state/nowPlayingMetadataStore";
 import {
   stationLocation,
   stationTelemetry,
@@ -42,8 +43,13 @@ export default function PlayerDock() {
   const stamps = useJourneyStore((state) => state.stamps);
   const notice = usePlayerNoticeStore((state) => state.notice);
   const metadata = useNowPlayingMetadata(nowPlaying, isPlaying);
+  const setMetadata = useNowPlayingMetadataStore((state) => state.setMetadata);
   const dispatch = useDispatchStore((state) => state.dispatch);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    setMetadata(metadata);
+  }, [metadata, setMetadata]);
 
   useEffect(() => {
     const canvas = canvasRef.current;

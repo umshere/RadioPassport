@@ -38,10 +38,11 @@ No animated favicon.
 - Day globe is a lithograph plate (ink continents, no starfield). Night globe is the current bone starfield.
 - Globe tooltip is HTML (not canvas-only). Click rotates, then plays.
 - Dock is full-width, not a floating pill. Theater is a link + artwork.
+- Theater (`/listen`): `← Elsewhere` is sticky. City, station, and track sit above a reserved well. ICY and track facts fill that well — they do not grow the room or walk the back link. Story: while the cover files, the disc walks everything the station has already told you — and when the dossier is ready, the room goes still. The constellation is the metadata: one node per released field. Missing fields do not get stars. Families cluster and only kindred families connect. The disc tours (tags first), it does not seek. Fact stars name the value (`2007`), not the schema (`YEAR`). Dispatch/cover stay unnamed; they already speak in the well. Not a boxed spinner. Not cyan tech wallpaper. Not “AI loading”.
 - Passport is a book (foil rims), not dashed stickers. Stamps are type: `IN · India` in foil mono, city in italic Newsreader. No full-color flags — those belong to unmounted leftovers (`CountryFlag`, AtlasGrid, StationInfo). A flag on a stamp is only allowed as a 12–14px customs mark beside the ISO code: no shadow, no glass radius, foil-tinted or faded, omitted when there is no ISO (never the old cyan/violet broadcast fallback).
 - Tuning overlay, Mantine about deck, and Radio Passport header are unmounted.
 - Live CSS is `app/tailwind.css` only: no Mantine imports, no leftover travel-stack / hero rules. Tailwind scans the mounted routes and `radio-passport/*`, not the unmounted leftovers.
 
 ## Motion
 
-Globe 0.0012 rad/frame; focus ease ~0.14 toward facing longitude. Reduced-motion: snap, no pulse. Never bounce.
+Globe 0.0012 rad/frame; focus ease ~0.14 toward facing longitude. Theater field blooms only when a real field arrives, not on a fake star count. The lacquer mark travels the real edges; it does not bounce. Reduced-motion: snap, still mesh, mark rests on the first star.

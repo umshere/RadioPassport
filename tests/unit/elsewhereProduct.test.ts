@@ -473,6 +473,11 @@ describe("live stylesheet", () => {
     expect(css).toContain(".ew-atmosphere");
     expect(css).toContain(".ew-atmosphere-icon");
     expect(css).toContain(".ew-atlas");
+    expect(css).toContain(".ew-theater-back");
+    expect(css).toContain(".ew-theater-field");
+    expect(css).toContain(".ew-theater-well");
+    expect(css).toMatch(/\.ew-theater-well[^{]*\{[^}]*min-height:\s*16\.75rem/);
+    expect(css).toMatch(/\.ew-theater-well \{ min-height: 16rem; \}/);
     expect(config).toContain("./app/components/radio-passport/**/*.{ts,tsx}");
     expect(config).not.toContain("./app/**/*.{ts,tsx,jsx,js}");
   });

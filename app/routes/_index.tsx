@@ -12,9 +12,13 @@ import { usePlayerStore } from "~/state/playerStore";
 import { useJourneyStore } from "~/state/journeyStore";
 import { resolveKeptSignals } from "~/state/favoriteSnapshot";
 import { useListeningMode } from "~/hooks/useListeningMode";
-import { useNowPlayingMetadata } from "~/hooks/useNowPlayingMetadata";
+import { sourceKeyForNowPlaying } from "~/hooks/useNowPlayingMetadata";
 import { useTrackTrivia } from "~/hooks/useTrackTrivia";
 import { useDispatchStore } from "~/state/dispatchStore";
+import {
+  IDLE_NOW_PLAYING_METADATA,
+  useNowPlayingMetadataStore,
+} from "~/state/nowPlayingMetadataStore";
 import { loadWorldDescriptorPreview } from "~/services/aiOrchestrator";
 import { ParticleGlobe } from "~/components/radio-passport/ParticleGlobe";
 import {
@@ -136,7 +140,12 @@ export default function Index() {
   const toggleFavorite = useJourneyStore((state) => state.toggleFavorite);
   const recordPlayed = useJourneyStore((state) => state.recordPlayed);
   const listening = useListeningMode();
-  const metadata = useNowPlayingMetadata(nowPlaying, isPlaying);
+  const sharedMetadata = useNowPlayingMetadataStore((state) => state.state);
+  const sourceKey = sourceKeyForNowPlaying(nowPlaying);
+  const metadata =
+    sourceKey && sharedMetadata.sourceKey === sourceKey
+      ? sharedMetadata
+      : IDLE_NOW_PLAYING_METADATA;
   const trivia = useTrackTrivia({
     track: metadata.track,
     source: "ai",
