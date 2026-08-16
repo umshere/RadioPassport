@@ -10,13 +10,32 @@ import {
   markArtworkUrlFailed,
   sanitizeArtworkUrl,
 } from "~/utils/stations";
+import type { TriviaGraph } from "~/types/trivia";
+import { EMPTY_GRAPH } from "~/types/trivia";
 import {
   advanceFieldTraveler,
+  FIELD_LINE_WEIGHT,
+  fieldBirthBloom,
+  fieldBirthRipple,
   fieldDensity,
+  fieldDensestPoint,
+  fieldDust,
+  fieldDustAlpha,
+  fieldDustPoint,
+  fieldDustTwinkle,
+  fieldEdgeShimmer,
+  fieldMilkyWay,
+  fieldShootingStar,
+  fieldHopRelation,
+  fieldKnowledgeEdges,
+  fieldNebulaAlpha,
+  fieldNebulae,
   fieldNodesFromReleases,
   fieldPoint,
   fieldSemanticEdges,
   fieldSpanEdges,
+  fieldStarTwinkle,
+  fieldTourSpans,
   fieldTravelerInTransit,
   fieldTravelerVisiting,
   fieldStandingLabel,
@@ -24,6 +43,7 @@ import {
   fieldWalk,
   fieldTriangles,
   hexRgb,
+  lockSeed,
   startFieldTraveler,
   theaterSkyLive,
   theaterWellAria,
@@ -126,7 +146,11 @@ function drawSkyLabels(
   active.forEach((entry) => {
     if (entry.node.key === visitingKey) return;
     if (compact && entry.node.family !== "place") return;
-    const name = fieldStandingLabel(entry.node.family, entry.node.label);
+    const name = fieldStandingLabel(
+      entry.node.family,
+      entry.node.label,
+      entry.node.origin,
+    );
     if (!name) return;
     paintSkyLabel(
       context,
@@ -156,11 +180,13 @@ export function TheaterField({
   phase,
   releases,
   longitude,
+  graph = EMPTY_GRAPH,
 }: {
   seed: number;
   phase: TheaterPhase;
   releases: FieldRelease[];
   longitude?: number | null;
+  graph?: TriviaGraph | null;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const reduced = usePrefersReducedMotion();
@@ -168,11 +194,31 @@ export function TheaterField({
     () => fieldNodesFromReleases(releases, seed, longitude),
     [longitude, releases, seed],
   );
+  const dust = useMemo(() => fieldDust(seed), [seed]);
+  const band = useMemo(() => fieldMilkyWay(seed), [seed]);
+  const nebulae = useMemo(
+    () =>
+      fieldNebulae(
+        seed,
+        fieldDensestPoint(nodes.map((node) => ({ x: node.x, y: node.y }))),
+      ),
+    [nodes, seed],
+  );
   const nodesRef = useRef(nodes);
   const phaseRef = useRef(phase);
+  const graphRef = useRef(graph ?? EMPTY_GRAPH);
+  const dustRef = useRef(dust);
+  const bandRef = useRef(band);
+  const nebulaeRef = useRef(nebulae);
   nodesRef.current = nodes;
   phaseRef.current = phase;
+  graphRef.current = graph ?? EMPTY_GRAPH;
+  dustRef.current = dust;
+  bandRef.current = band;
+  nebulaeRef.current = nebulae;
   const opacityRef = useRef(new Map<string, number>());
+  const birthRef = useRef(new Map<string, number>());
+  const warmthRef = useRef(new Map<string, number>());
   const glowRef = useRef(fieldDensity(phase).glow);
   const reachRef = useRef(fieldDensity(phase).reach);
   const driftRef = useRef(fieldDensity(phase).drift);
@@ -180,6 +226,8 @@ export function TheaterField({
 
   useEffect(() => {
     opacityRef.current.clear();
+    birthRef.current.clear();
+    warmthRef.current.clear();
     travelerRef.current = null;
     glowRef.current = fieldDensity("reading").glow;
     reachRef.current = fieldDensity("reading").reach;
@@ -207,6 +255,8 @@ export function TheaterField({
     const draw = (now: number) => {
       const nodes = nodesRef.current;
       const phase = phaseRef.current;
+      const graph = graphRef.current;
+      const stillSky = reduced.current;
       const dt = Math.min(0.05, (now - last) / 1000);
       last = now;
       const rect = parent.getBoundingClientRect();
@@ -214,7 +264,8 @@ export function TheaterField({
       const height = rect.height;
       const ease = 0.055;
       const target = fieldDensity(phase);
-      const motion = reduced.current ? 0 : target.drift;
+      const live = theaterSkyLive(phase);
+      const motion = stillSky ? 0 : target.drift;
       glowRef.current += (target.glow - glowRef.current) * ease;
       reachRef.current += (target.reach - reachRef.current) * ease;
       driftRef.current += (motion - driftRef.current) * ease;
@@ -222,15 +273,22 @@ export function TheaterField({
       const reach = reachRef.current;
       const drift = driftRef.current;
       const opacity = opacityRef.current;
+      const births = birthRef.current;
+      const warmth = warmthRef.current;
       const liveKeys = new Set(nodes.map((node) => node.key));
+      const inhabited = [...opacity.values()].some((value) => value > 0.9);
       liveKeys.forEach((key) => {
+        if (!births.has(key)) births.set(key, inhabited ? now : 0);
         opacity.set(key, (opacity.get(key) ?? 0) + (1 - (opacity.get(key) ?? 0)) * ease);
       });
       [...opacity.keys()].forEach((key) => {
         if (liveKeys.has(key)) return;
         const next = (opacity.get(key) ?? 0) * (1 - ease);
-        if (next < 0.02) opacity.delete(key);
-        else opacity.set(key, next);
+        if (next < 0.02) {
+          opacity.delete(key);
+          births.delete(key);
+          warmth.delete(key);
+        } else opacity.set(key, next);
       });
       const time = now / 1000;
       const palette = paletteOf(parent);
@@ -240,7 +298,74 @@ export function TheaterField({
 
       context.clearRect(0, 0, width, height);
 
+      const sky = bandRef.current;
+      {
+        const span = Math.hypot(width, height);
+        const half = sky.width * Math.max(width, height) * 1.6;
+        context.save();
+        context.translate(sky.cx * width, sky.cy * height);
+        context.rotate(sky.angle);
+        const river = context.createLinearGradient(0, -half, 0, half);
+        river.addColorStop(0, rgba(palette.bone, 0));
+        river.addColorStop(0.5, rgba(palette.bone, 0.05));
+        river.addColorStop(1, rgba(palette.bone, 0));
+        context.fillStyle = river;
+        context.fillRect(-span, -half, span * 2, half * 2);
+        context.restore();
+      }
+
+      dustRef.current.forEach((grain) => {
+        const point = fieldDustPoint(grain, time, live, stillSky);
+        const twinkle = fieldDustTwinkle(time, grain.freq, grain.phase, stillSky);
+        const alpha = fieldDustAlpha(grain.depth) * twinkle;
+        if (alpha < 0.02) return;
+        const tint =
+          grain.tint === "bone"
+            ? palette.bone
+            : grain.tint === "ether"
+              ? palette.ether
+              : palette.foil;
+        const px = point.x * width;
+        const py = point.y * height;
+        context.fillStyle = rgba(tint, Math.min(0.44, alpha));
+        context.beginPath();
+        context.arc(px, py, grain.size, 0, Math.PI * 2);
+        context.fill();
+        if (grain.flare) {
+          const ray = grain.size * (4.4 + 1.8 * twinkle);
+          context.strokeStyle = rgba(tint, Math.min(0.3, alpha * 0.8));
+          context.lineWidth = 0.5;
+          context.beginPath();
+          context.moveTo(px - ray, py);
+          context.lineTo(px + ray, py);
+          context.moveTo(px, py - ray);
+          context.lineTo(px, py + ray);
+          context.stroke();
+        }
+      });
+
       const points = nodes.map((node) => fieldPoint(node, time, drift));
+      nebulaeRef.current.forEach((cloud) => {
+        const alpha = fieldNebulaAlpha(cloud, time, stillSky);
+        if (alpha < 0.008) return;
+        const cx = cloud.x * width;
+        const cy = cloud.y * height;
+        const radius = cloud.radius * Math.max(width, height);
+        const wash = context.createRadialGradient(cx, cy, 0, cx, cy, radius);
+        const tint =
+          cloud.tint === "ether"
+            ? palette.ether
+            : cloud.tint === "bone"
+              ? palette.bone
+              : palette.foil;
+        wash.addColorStop(0, rgba(tint, alpha));
+        wash.addColorStop(1, rgba(tint, 0));
+        context.fillStyle = wash;
+        context.beginPath();
+        context.arc(cx, cy, radius, 0, Math.PI * 2);
+        context.fill();
+      });
+
       const active = nodes
         .map((node, index) => ({
           node,
@@ -252,6 +377,17 @@ export function TheaterField({
       const activeNodes = active.map((entry) => entry.node);
       const triangles = fieldTriangles(activePoints, reach, aspect);
       const local = fieldSemanticEdges(activeNodes, activePoints, reach, aspect);
+      const knowledge = fieldKnowledgeEdges(activeNodes, graph.edges);
+      const knowledgeReady = knowledge.filter((edge) => {
+        const weight = Math.min(
+          active[edge.i]!.weight,
+          active[edge.j]!.weight,
+        );
+        return weight >= FIELD_LINE_WEIGHT;
+      });
+      const knowledgeKeys = new Set(
+        knowledgeReady.map((edge) => `${edge.i}:${edge.j}`),
+      );
       const edges = [
         ...local,
         ...fieldSpanEdges(activeNodes, activePoints, local, aspect),
@@ -262,7 +398,7 @@ export function TheaterField({
         const b = active[triangle.j]!;
         const c = active[triangle.k]!;
         const alpha =
-          triangle.strength * glow * 0.08 * Math.min(a.weight, b.weight, c.weight);
+          triangle.strength * glow * 0.055 * Math.min(a.weight, b.weight, c.weight);
         if (alpha < 0.01) return;
         context.beginPath();
         context.moveTo(a.point.x * width, a.point.y * height);
@@ -273,17 +409,54 @@ export function TheaterField({
         context.fill();
       });
 
-      const pairs = edges.map((edge) => [
-        active[edge.i]!.node.key,
-        active[edge.j]!.node.key,
-      ] as [string, string]);
-      const walk = fieldWalk(
-        active.map((entry) => entry.node),
-        pairs,
+      const walkNodes = active
+        .filter((entry) => entry.weight >= FIELD_LINE_WEIGHT)
+        .map((entry) => entry.node);
+      const walkKeys = new Set(walkNodes.map((node) => node.key));
+      const pairs = edges
+        .filter(
+          (edge) =>
+            walkKeys.has(active[edge.i]!.node.key) &&
+            walkKeys.has(active[edge.j]!.node.key),
+        )
+        .map(
+          (edge) =>
+            [active[edge.i]!.node.key, active[edge.j]!.node.key] as [
+              string,
+              string,
+            ],
+        );
+      const preferred = knowledgeReady.map(
+        (edge) =>
+          [active[edge.i]!.node.key, active[edge.j]!.node.key] as [
+            string,
+            string,
+          ],
       );
-      if (!theaterSkyLive(phase)) {
+      const walk = fieldWalk(walkNodes, pairs, preferred);
+      const drawnPairs = [
+        ...edges.map(
+          (edge) =>
+            [active[edge.i]!.node.key, active[edge.j]!.node.key] as [
+              string,
+              string,
+            ],
+        ),
+        ...knowledge.map(
+          (edge) =>
+            [active[edge.i]!.node.key, active[edge.j]!.node.key] as [
+              string,
+              string,
+            ],
+        ),
+      ];
+      const mesh = [
+        ...edges,
+        ...fieldTourSpans(walk, activeNodes, drawnPairs),
+      ];
+      if (!live) {
         travelerRef.current = null;
-      } else if (walk.length && !reduced.current) {
+      } else if (walk.length && !stillSky) {
         travelerRef.current = travelerRef.current
           ? advanceFieldTraveler(travelerRef.current, walk, dt)
           : startFieldTraveler(walk);
@@ -292,34 +465,104 @@ export function TheaterField({
       }
       const traveler = travelerRef.current;
       const byKey = new Map(active.map((entry) => [entry.node.key, entry]));
+      const visiting = traveler ? fieldTravelerVisiting(traveler) : null;
+      active.forEach((entry) => {
+        const current = warmth.get(entry.node.key) ?? 0;
+        const next =
+          entry.node.key === visiting
+            ? Math.min(1, current + dt * 3.2)
+            : current * 0.92;
+        if (next < 0.02) warmth.delete(entry.node.key);
+        else warmth.set(entry.node.key, next);
+      });
 
-      edges.forEach((edge) => {
+      mesh.forEach((edge) => {
+        if (knowledgeKeys.has(`${edge.i}:${edge.j}`)) return;
         const a = active[edge.i]!;
         const b = active[edge.j]!;
         const onPath =
           traveler &&
           ((traveler.from === a.node.key && traveler.to === b.node.key) ||
             (traveler.from === b.node.key && traveler.to === a.node.key));
-        const alpha = edge.strength * glow * 0.62 * Math.min(a.weight, b.weight);
+        const alpha = edge.strength * glow * 0.72 * Math.min(a.weight, b.weight);
         if (alpha < 0.02 && !onPath) return;
         context.beginPath();
         context.moveTo(a.point.x * width, a.point.y * height);
         context.lineTo(b.point.x * width, b.point.y * height);
         context.strokeStyle = rgba(palette.foil, onPath ? Math.max(alpha, 0.72) : alpha);
-        context.lineWidth = onPath ? 1.6 : 0.7 + edge.strength * 0.6;
+        context.lineWidth = onPath ? 1.5 : 0.8 + edge.strength * 0.55;
         context.stroke();
+      });
+
+      knowledge.forEach((edge) => {
+        const a = active[edge.i]!;
+        const b = active[edge.j]!;
+        const onPath =
+          traveler &&
+          ((traveler.from === a.node.key && traveler.to === b.node.key) ||
+            (traveler.from === b.node.key && traveler.to === a.node.key));
+        const alpha = glow * 0.88 * Math.min(a.weight, b.weight);
+        const x1 = a.point.x * width;
+        const y1 = a.point.y * height;
+        const x2 = b.point.x * width;
+        const y2 = b.point.y * height;
+        const pulse = fieldEdgeShimmer(
+          lockSeed([a.node.key, b.node.key]),
+          time,
+          stillSky,
+        );
+        const midX = x1 + (x2 - x1) * pulse;
+        const midY = y1 + (y2 - y1) * pulse;
+        context.beginPath();
+        context.moveTo(x1, y1);
+        context.lineTo(x2, y2);
+        context.strokeStyle = rgba(palette.foil, onPath ? Math.max(alpha, 0.9) : alpha);
+        context.lineWidth = onPath ? 2 : 1.35;
+        context.stroke();
+        if (!stillSky) {
+          context.beginPath();
+          context.arc(midX, midY, 1.35, 0, Math.PI * 2);
+          context.fillStyle = rgba(palette.bone, 0.55);
+          context.fill();
+        }
       });
 
       if (traveler && fieldTravelerInTransit(traveler)) {
         const origin = byKey.get(traveler.from);
         const dest = byKey.get(traveler.to);
         if (origin && dest) {
+          const x1 = origin.point.x * width;
+          const y1 = origin.point.y * height;
+          const x2 = dest.point.x * width;
+          const y2 = dest.point.y * height;
           context.beginPath();
-          context.moveTo(origin.point.x * width, origin.point.y * height);
-          context.lineTo(dest.point.x * width, dest.point.y * height);
+          context.moveTo(x1, y1);
+          context.lineTo(x2, y2);
           context.strokeStyle = rgba(palette.foil, 0.78);
           context.lineWidth = 1.6;
           context.stroke();
+          const relation = fieldHopRelation(
+            traveler.from,
+            traveler.to,
+            activeNodes,
+            knowledge,
+          );
+          if (relation) {
+            const fade =
+              traveler.progress < 0.18
+                ? traveler.progress / 0.18
+                : traveler.progress > 0.82
+                  ? (1 - traveler.progress) / 0.18
+                  : 1;
+            context.font = '500 9px "Azeret Mono", ui-monospace, monospace';
+            context.letterSpacing = "0.08em";
+            context.fillStyle = rgba(palette.foil, 0.72 * fade);
+            context.fillText(
+              relation,
+              (x1 + x2) / 2 - context.measureText(relation).width / 2,
+              (y1 + y2) / 2 - 6,
+            );
+          }
         }
       }
 
@@ -327,17 +570,32 @@ export function TheaterField({
         const body = entry.node;
         const px = entry.point.x * width;
         const py = entry.point.y * height;
-        const alpha = glow * entry.weight;
+        const twinkle = fieldStarTwinkle(time, body.freq, body.phase, stillSky);
+        const alpha = glow * entry.weight * twinkle;
         if (alpha < 0.03) return;
         const rgb = kindRgb(body.kind, palette);
-        const radius = (body.kind === "ether" ? 1.8 : 1.25) * body.size * mark;
-        const halo = context.createRadialGradient(px, py, 0, px, py, radius * 3.4);
-        halo.addColorStop(0, rgba(rgb, alpha * 0.42));
+        const bornAt = births.get(body.key) ?? 0;
+        const age = bornAt > 0 ? now - bornAt : null;
+        const bloom = fieldBirthBloom(age, stillSky);
+        const visit = 1 + 0.5 * (warmth.get(body.key) ?? 0);
+        const radius =
+          (body.kind === "ether" ? 1.8 : 1.25) * body.size * mark * bloom;
+        const haloR = radius * 3.4 * visit;
+        const halo = context.createRadialGradient(px, py, 0, px, py, haloR);
+        halo.addColorStop(0, rgba(rgb, alpha * 0.42 * visit));
         halo.addColorStop(1, rgba(rgb, 0));
         context.fillStyle = halo;
         context.beginPath();
-        context.arc(px, py, radius * 3.4, 0, Math.PI * 2);
+        context.arc(px, py, haloR, 0, Math.PI * 2);
         context.fill();
+        const ripple = fieldBirthRipple(age, stillSky);
+        if (ripple) {
+          context.beginPath();
+          context.arc(px, py, radius * ripple.radius, 0, Math.PI * 2);
+          context.strokeStyle = rgba(palette.foil, ripple.alpha * 0.7);
+          context.lineWidth = 1.1;
+          context.stroke();
+        }
         context.fillStyle = rgba(rgb, Math.min(1, alpha + 0.18));
         context.beginPath();
         context.arc(px, py, radius, 0, Math.PI * 2);
@@ -365,10 +623,53 @@ export function TheaterField({
           context.fill();
         }
       }
+
+      const meteor = fieldShootingStar(seed, time, {
+        live,
+        reduced: stillSky,
+      });
+      if (meteor) {
+        const flash = Math.sin(Math.PI * meteor.progress);
+        const hx = (meteor.x0 + (meteor.x1 - meteor.x0) * meteor.progress) * width;
+        const hy = (meteor.y0 + (meteor.y1 - meteor.y0) * meteor.progress) * height;
+        const tx = hx - (meteor.x1 - meteor.x0) * 0.28 * width;
+        const ty = hy - (meteor.y1 - meteor.y0) * 0.28 * height;
+        const streak = context.createLinearGradient(tx, ty, hx, hy);
+        streak.addColorStop(0, rgba(palette.bone, 0));
+        streak.addColorStop(1, rgba(palette.bone, 0.66 * flash));
+        context.beginPath();
+        context.moveTo(tx, ty);
+        context.lineTo(hx, hy);
+        context.strokeStyle = streak;
+        context.lineWidth = 1;
+        context.stroke();
+        context.beginPath();
+        context.arc(hx, hy, 1.2, 0, Math.PI * 2);
+        context.fillStyle = rgba(palette.bone, 0.8 * flash);
+        context.fill();
+      }
+
+      {
+        const cx = width / 2;
+        const cy = height / 2;
+        const edge = Math.hypot(cx, cy);
+        const vignette = context.createRadialGradient(
+          cx,
+          cy,
+          edge * 0.55,
+          cx,
+          cy,
+          edge,
+        );
+        vignette.addColorStop(0, "rgba(6, 5, 3, 0)");
+        vignette.addColorStop(1, "rgba(6, 5, 3, 0.32)");
+        context.fillStyle = vignette;
+        context.fillRect(0, 0, width, height);
+      }
       drawSkyLabels(
         context,
         active,
-        traveler ? fieldTravelerVisiting(traveler) : null,
+        visiting,
         compact,
         width,
         height,
@@ -382,7 +683,7 @@ export function TheaterField({
         Math.abs(target.glow - glow) < 0.012 &&
         Math.abs(target.reach - reach) < 0.003;
       const still =
-        reduced.current || (!theaterSkyLive(phase) && drift < 0.02 && settled);
+        stillSky || (!live && drift < 0.02 && settled);
       if (!still) frame = window.requestAnimationFrame(draw);
     };
 

@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-08-15 — The sky is a galaxy, and the figure reads again
+
+The room leans against a real night: a seeded milky river, ~200 grains of dust in three depths tinted bone, foil and ether, brighter grains carrying a cross flare, a breathing nebula, and a vignette that settles the edges. Home keeps the same night behind the globe.
+
+The figure was drowning in its own gold. A filed sky drew hundreds of faces and every star roped to everything in reach, so the constellation stacked into crumpled foil. Faces are capped at the tightest fourteen and each star keeps at most three threads — the mesh is a figure again, not a web. Crowded families fan on a golden angle instead of queueing down the page in a column.
+
+Scrolling the theater folds the sky, giving the folio room to be read — but only when there is enough page left to reveal, so a shallow room never fights the scroll.
+
+## 2026-08-15 — The sky becomes knowledge
+
+The constellation is a graph now. MusicBrainz relations and the cover AI return real nodes and edges (`wrote`, `composed`, `featured in`). About ten seconds after the dossier files, one second-ring pass may add a few more stars — they keep their seats and ignite with a birth ripple. The lacquer disc prefers those knowledge threads and names the relation mid-edge. Behind the mesh: seeded dust, a faint nebula, a rare meteor. Reduced motion keeps a still sky. Nothing is invented.
+
 ## 2026-08-15 — Filed sky stays inhabited
 
 Filing the cover no longer ghosts the constellation. The mesh keeps its glow, place and track names stay on the stars, and the lacquer disc keeps walking. Isolated clusters are spanned so the disc never crosses empty sky. Sentence-length facts do not become labels. Home station rows use the station plate when Radio Browser sent one; otherwise the Elsewhere mark — not a clipart play triangle.

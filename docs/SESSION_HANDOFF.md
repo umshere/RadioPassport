@@ -26,7 +26,7 @@ Saved so this conversation can be compacted. Next turn: read this file + `docs/R
 - Globe is **not a mock**: real Radio Browser cities. HTML tooltip = city, region, country code, lead station, live count. Click rotates the earth to face that longitude, then plays the strongest station there.
 - Search (any language, tag, city — not Tamil-only) keeps the globe live. Missing Radio Browser geo falls back to the country center. Globe faces the densest match. Contract: `app/components/radio-passport/globePlaces.ts`.
 - Intent bar + voice + Surprise mix
-- `/listen` theater: constellation is a sky (right column / phone-first sticky strip). Type is a letter. Honest ICY. Filing keeps the sky inhabited (disc + place/track names). Home station rows use the station plate or the Elsewhere mark — never a clipart play.
+- `/listen` theater: constellation is a sky (right column / phone-first sticky strip) and a knowledge graph on a seeded galaxy river. Type is a letter. Honest ICY. Filing keeps the sky inhabited (disc + place/track names). After filing, one deepening pass may add stars. Faces cap at 14; each star keeps at most 3 threads so a filed film track stays a figure, not crumpled foil. Scroll folds the sky when there is page left to reveal. Home keeps the same night behind the globe (`GalaxyBackdrop`). Station rows use the station plate or the Elsewhere mark — never a clipart play.
 - Atlas + country drill-down overlays
 - Passport stamps after **60s continuous** listen; favorites; localStorage only
 - Mobile: globe first, full-width Land here, compact dock, theater via art / Theater link
@@ -40,7 +40,7 @@ Saved so this conversation can be compacted. Next turn: read this file + `docs/R
 - Local: Heuristics gateway, model hardcoded to `deepseek-v4-flash`
 - Vercel prod (as of this session): `AI_PROVIDER=gemini`, `GEMINI_MODEL=gemini-2.5-flash` (free tier; better writing than Flash-Lite). No Heuristics URL. Needs a **redeploy** after the env fix.
 - Dispatch and trivia try Flash first, then Gemini 2.5 Flash, then template / hide
-- The Room owns the current land. Theater files free trivia (plate + facts) first, then AI cover, only when ICY sent a title
+- The Room owns the current land. Theater files free trivia (plate + facts + verified relations) first, then AI cover + graph, then one deepen, only when ICY sent a title
 - Never put AI on the audio path
 - Never `AbortController.abort()` Remix fetch (it can kill the process). Use `Promise.race`
 

@@ -4,6 +4,9 @@ import { theaterPhase, type TheaterPhase } from "~/components/radio-passport/the
 import type { PlaceDispatch } from "~/types/ai";
 import type { NowPlayingTrack } from "~/types/nowPlaying";
 import type { Station } from "~/types/radio";
+import type { TriviaGraph } from "~/types/trivia";
+import { EMPTY_GRAPH } from "~/types/trivia";
+import { mergeTriviaGraphs } from "~/components/radio-passport/theaterLock";
 import { localDateAtLongitude } from "~/utils/localTime";
 import { templateDispatch } from "~/utils/placeDispatch";
 import { create } from "~/utils/zustand-lite";
@@ -26,6 +29,7 @@ export type RoomDossier = {
   links: Array<{ label: string; url: string }>;
   imageUrl: string | null;
   source: RoomDossierSource;
+  graph: TriviaGraph;
 };
 
 export type Room = {
@@ -54,6 +58,7 @@ const IDLE_DOSSIER: RoomDossier = {
   links: [],
   imageUrl: null,
   source: null,
+  graph: EMPTY_GRAPH,
 };
 
 export const EMPTY_ROOM: Room = {
@@ -218,6 +223,7 @@ export function roomAfterDossier(
     links: incoming.links.length ? incoming.links : current.links,
     imageUrl: incoming.imageUrl || current.imageUrl,
     source: incoming.source ?? current.source,
+    graph: mergeTriviaGraphs(current.graph, incoming.graph),
   };
   return withPhase({
     ...room,

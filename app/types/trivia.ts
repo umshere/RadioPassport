@@ -9,6 +9,35 @@ export type TriviaLink = {
   kind: "youtube" | "artist" | "release" | "track" | "info";
 };
 
+export type TriviaGraphKind =
+  | "person"
+  | "work"
+  | "film"
+  | "place"
+  | "year"
+  | "genre"
+  | "event";
+
+export type TriviaGraphNode = {
+  id: string;
+  label: string;
+  kind: TriviaGraphKind;
+};
+
+export type TriviaGraphEdge = {
+  from: string;
+  to: string;
+  relation: string;
+  verified?: boolean;
+};
+
+export type TriviaGraph = {
+  nodes: TriviaGraphNode[];
+  edges: TriviaGraphEdge[];
+};
+
+export const EMPTY_GRAPH: TriviaGraph = { nodes: [], edges: [] };
+
 export type TrackTrivia = {
   summary: string;
   facts: TriviaFact[];
@@ -16,6 +45,7 @@ export type TrackTrivia = {
   imageUrl?: string | null;
   cleanTitle?: string | null;
   cleanArtist?: string | null;
+  graph?: TriviaGraph;
   source: "free" | "ai";
   fetchedAt: string;
 };

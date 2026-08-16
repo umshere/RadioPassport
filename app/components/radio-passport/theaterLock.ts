@@ -1,3 +1,11 @@
+import type {
+  TriviaGraph,
+  TriviaGraphEdge,
+  TriviaGraphKind,
+  TriviaGraphNode,
+} from "~/types/trivia";
+import { EMPTY_GRAPH } from "~/types/trivia";
+
 export type TheaterPhase = "reading" | "locking" | "filed" | "quiet";
 
 export type LockKind = "foil" | "ether" | "bone";
@@ -10,12 +18,17 @@ export type FieldFamily =
   | "track"
   | "dispatch"
   | "fact"
-  | "cover";
+  | "cover"
+  | "graph";
+
+export type FieldOrigin = "meta" | "graph";
 
 export type FieldRelease = {
   key: string;
   family: FieldFamily;
   label: string;
+  refId?: string;
+  origin?: FieldOrigin;
 };
 
 export type FieldNode = {
@@ -30,11 +43,23 @@ export type FieldNode = {
   phase: number;
   kind: LockKind;
   size: number;
+  refId?: string;
+  origin?: FieldOrigin;
 };
 
 export const TAG_RELEASE_CAP = 8;
 export const LANGUAGE_RELEASE_CAP = 4;
-export const FACT_RELEASE_CAP = 4;
+export const FACT_RELEASE_CAP = 6;
+export const GRAPH_NODE_CAP = 10;
+export const GRAPH_EDGE_CAP = 14;
+export const DEEPEN_NODE_CAP = 6;
+export const STAR_BIRTH_MS = 600;
+/** A star must be this opaque before the disc may walk it — a line needs a body. */
+export const FIELD_LINE_WEIGHT = 0.28;
+/** Faces past this many stack into foil instead of reading as a figure. */
+export const FIELD_TRIANGLE_CAP = 14;
+/** Threads per star. A constellation draws to its kin, not to every neighbour. */
+export const FIELD_DEGREE_CAP = 3;
 
 export type FieldPoint = { x: number; y: number };
 
@@ -61,9 +86,10 @@ const FAMILY_TOUR: Record<FieldFamily, number> = {
   tag: 0,
   language: 1,
   track: 2,
-  fact: 3,
-  place: 4,
-  signal: 5,
+  graph: 3,
+  fact: 4,
+  place: 5,
+  signal: 6,
   cover: 8,
   dispatch: 9,
 };
@@ -77,6 +103,7 @@ const FAMILY_KIND: Record<FieldFamily, LockKind> = {
   dispatch: "foil",
   fact: "foil",
   cover: "foil",
+  graph: "foil",
 };
 
 const FAMILY_HOME: Record<FieldFamily, { x: number; y: number; spread: number }> = {
@@ -88,6 +115,7 @@ const FAMILY_HOME: Record<FieldFamily, { x: number; y: number; spread: number }>
   dispatch: { x: 0.28, y: 0.64, spread: 0.05 },
   fact: { x: 0.7, y: 0.6, spread: 0.11 },
   cover: { x: 0.62, y: 0.72, spread: 0.05 },
+  graph: { x: 0.8, y: 0.48, spread: 0.12 },
 };
 
 const FAMILY_SIZE: Record<FieldFamily, number> = {
@@ -99,17 +127,53 @@ const FAMILY_SIZE: Record<FieldFamily, number> = {
   dispatch: 0.9,
   fact: 1.05,
   cover: 1.1,
+  graph: 1.08,
 };
 
 const FAMILY_LINKS: Record<FieldFamily, readonly FieldFamily[]> = {
-  place: ["place", "language", "signal", "dispatch"],
+  place: ["place", "language", "signal", "dispatch", "graph"],
   signal: ["signal", "place", "track"],
   language: ["language", "place", "tag"],
-  tag: ["tag", "language", "fact", "cover"],
-  track: ["track", "signal", "fact", "cover", "dispatch"],
+  tag: ["tag", "language", "fact", "cover", "graph"],
+  track: ["track", "signal", "fact", "cover", "dispatch", "graph"],
   dispatch: ["dispatch", "place", "track"],
-  fact: ["fact", "track", "tag", "cover"],
+  fact: ["fact", "track", "tag", "cover", "graph"],
   cover: ["cover", "fact", "track", "tag"],
+  graph: ["graph", "track", "fact", "place", "tag"],
+};
+
+const GRAPH_KIND_FAMILY: Record<string, FieldFamily> = {
+  person: "track",
+  work: "fact",
+  film: "fact",
+  place: "place",
+  year: "fact",
+  genre: "tag",
+  event: "fact",
+};
+
+const GRAPH_KINDS = new Set(Object.keys(GRAPH_KIND_FAMILY));
+
+const MB_RELATION_WORD: Record<string, string> = {
+  composer: "composed",
+  lyricist: "wrote",
+  writer: "wrote",
+  librettist: "wrote",
+  producer: "produced",
+  performer: "performed",
+  vocal: "sang",
+  instrument: "played on",
+  arranger: "arranged",
+  remixer: "remixed",
+  mix: "mixed",
+  recording: "recorded",
+  "recording engineer": "recorded",
+  orchestra: "performed",
+  conductor: "conducted",
+  performance: "recording of",
+  "based on": "based on",
+  samples: "sampled",
+  "samples material": "sampled",
 };
 
 export function lockSeed(parts: Array<string | number | null | undefined>): number {
@@ -145,6 +209,20 @@ export function splitFieldTokens(value?: string | null): string[] {
   return tokens;
 }
 
+export function fieldSlug(value: string) {
+  return value
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLocaleLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 48);
+}
+
+export function graphKindFamily(kind: string): FieldFamily {
+  return GRAPH_KIND_FAMILY[kind] ?? "graph";
+}
+
 export function theaterReleases(input: {
   city?: string | null;
   country?: string | null;
@@ -158,14 +236,29 @@ export function theaterReleases(input: {
   dispatchBody?: string | null;
   summary?: string | null;
   facts?: Array<{ label: string; value: string }>;
+  graph?: TriviaGraph | null;
 }): FieldRelease[] {
   const releases: FieldRelease[] = [];
-  const push = (family: FieldFamily, label: string) => {
+  const push = (
+    family: FieldFamily,
+    label: string,
+    extra?: { refId?: string; origin?: FieldOrigin },
+  ) => {
     const trimmed = label.trim();
     if (!trimmed) return;
     const key = `${family}:${trimmed.toLocaleLowerCase()}`;
-    if (releases.some((item) => item.key === key)) return;
-    releases.push({ key, family, label: trimmed });
+    const existing = releases.find((item) => item.key === key);
+    if (existing) {
+      if (extra?.refId && !existing.refId) existing.refId = extra.refId;
+      return;
+    }
+    releases.push({
+      key,
+      family,
+      label: trimmed,
+      refId: extra?.refId || fieldSlug(trimmed),
+      origin: extra?.origin ?? "meta",
+    });
   };
 
   if (input.city?.trim()) push("place", input.city);
@@ -187,6 +280,21 @@ export function theaterReleases(input: {
     .filter((fact) => fact.label.trim() && fact.value.trim())
     .slice(0, FACT_RELEASE_CAP)
     .forEach((fact) => push("fact", fact.value));
+  (input.graph?.nodes ?? []).forEach((node) => {
+    const trimmed = node.label.trim();
+    if (!trimmed) return;
+    const existing = releases.find(
+      (item) => item.label.toLocaleLowerCase() === trimmed.toLocaleLowerCase(),
+    );
+    if (existing) {
+      existing.refId = fieldSlug(node.id || trimmed);
+      return;
+    }
+    push(graphKindFamily(node.kind), node.label, {
+      refId: fieldSlug(node.id || node.label),
+      origin: "graph",
+    });
+  });
   if (input.summary?.trim()) push("cover", "cover");
   return releases;
 }
@@ -216,8 +324,13 @@ export function fieldNodesFromReleases(
     counts[release.family] = index + 1;
     const next = createRng(lockSeed([seed, release.key]));
     const home = FAMILY_HOME[release.family];
-    let x = home.x + (next() - 0.5) * home.spread * 2;
-    let y = home.y + (next() - 0.5) * home.spread * 1.6 + index * 0.035;
+    // Golden angle: a crowded family fans into a spiral instead of queueing
+    // down the page in a straight, mechanical column.
+    const arm = index * 2.39996;
+    const ring = index === 0 ? 0 : home.spread * (0.5 + 0.3 * Math.sqrt(index));
+    let x = home.x + (next() - 0.5) * home.spread * 2 + Math.cos(arm) * ring;
+    let y =
+      home.y + (next() - 0.5) * home.spread * 1.6 + Math.sin(arm) * ring * 0.9;
     if (release.family === "place" && lonX != null) {
       x = lonX + (index === 0 ? 0 : 0.05);
       y = 0.2 + index * 0.08;
@@ -236,6 +349,8 @@ export function fieldNodesFromReleases(
       phase: next() * Math.PI * 2,
       kind: FAMILY_KIND[release.family],
       size: FAMILY_SIZE[release.family] * (0.9 + next() * 0.2),
+      refId: release.refId,
+      origin: release.origin,
     };
   });
 }
@@ -308,7 +423,12 @@ export function fieldVisitLabel(family: FieldFamily, label: string) {
 }
 
 /** Names that stay on the sky after the disc leaves the star. */
-export function fieldStandingLabel(family: FieldFamily, label: string) {
+export function fieldStandingLabel(
+  family: FieldFamily,
+  label: string,
+  origin?: FieldOrigin,
+) {
+  if (origin === "graph") return null;
   if (family !== "place" && family !== "track") return null;
   return fieldVisitLabel(family, label);
 }
@@ -335,17 +455,29 @@ function nearestUnvisited(
 export function fieldWalk(
   nodes: Array<{ key: string; family: FieldFamily }>,
   pairs: Array<[string, string]>,
+  preferredPairs: Array<[string, string]> = [],
 ): string[] {
   if (!nodes.length) return [];
+  const known = new Set(nodes.map((node) => node.key));
   const neighbors = new Map<string, string[]>();
-  for (const [left, right] of pairs) {
+  const link = (left: string, right: string) => {
+    if (!known.has(left) || !known.has(right) || left === right) return;
     neighbors.set(left, [...(neighbors.get(left) ?? []), right]);
     neighbors.set(right, [...(neighbors.get(right) ?? []), left]);
+  };
+  for (const [left, right] of pairs) link(left, right);
+  const preferred = new Set<string>();
+  for (const [left, right] of preferredPairs) {
+    if (!known.has(left) || !known.has(right) || left === right) continue;
+    preferred.add(`${left}\0${right}`);
+    preferred.add(`${right}\0${left}`);
+    link(left, right);
   }
   const rankOf = (key: string) => {
     const node = nodes.find((entry) => entry.key === key);
     return node ? fieldTourRank(node.family) : 99;
   };
+  const prefers = (from: string, to: string) => preferred.has(`${from}\0${to}`);
   const start = [...nodes].sort(
     (left, right) =>
       fieldTourRank(left.family) - fieldTourRank(right.family) ||
@@ -355,10 +487,17 @@ export function fieldWalk(
   const visited = new Set([start]);
   let current = start;
   while (visited.size < nodes.length) {
-    const open = (neighbors.get(current) ?? []).filter((key) => !visited.has(key));
+    const open = [...new Set(neighbors.get(current) ?? [])].filter(
+      (key) => known.has(key) && !visited.has(key),
+    );
     const next =
       (open.length
-        ? open.sort((left, right) => rankOf(left) - rankOf(right) || left.localeCompare(right))[0]
+        ? open.sort(
+            (left, right) =>
+              Number(prefers(current, right)) - Number(prefers(current, left)) ||
+              rankOf(left) - rankOf(right) ||
+              left.localeCompare(right),
+          )[0]
         : nearestUnvisited(current, neighbors, visited)) ??
       nodes.find((node) => !visited.has(node.key))?.key;
     if (!next) break;
@@ -460,6 +599,7 @@ export function fieldSemanticEdges(
   points: FieldPoint[],
   reach: number,
   aspect = 1,
+  degreeCap = FIELD_DEGREE_CAP,
 ): FieldEdge[] {
   const edges: FieldEdge[] = [];
   if (reach <= 0) return edges;
@@ -472,7 +612,18 @@ export function fieldSemanticEdges(
       }
     }
   }
-  return edges;
+  if (degreeCap <= 0) return edges;
+  // A star draws to its nearest kin, not to everything in reach. Without this
+  // a filed sky becomes a web instead of a figure.
+  const degree = new Array<number>(nodes.length).fill(0);
+  const kept: FieldEdge[] = [];
+  for (const edge of [...edges].sort((a, b) => b.strength - a.strength)) {
+    if (degree[edge.i]! >= degreeCap || degree[edge.j]! >= degreeCap) continue;
+    degree[edge.i] = degree[edge.i]! + 1;
+    degree[edge.j] = degree[edge.j]! + 1;
+    kept.push(edge);
+  }
+  return kept;
 }
 
 /** Span isolated clusters so the disc never walks empty sky. */
@@ -530,9 +681,40 @@ export function fieldSpanEdges(
     spans.push({
       i: pair.i,
       j: pair.j,
-      strength: pair.kindred ? 0.58 : 0.4,
+      strength: pair.kindred ? 0.62 : 0.52,
     });
     if (components() <= 1) break;
+  }
+  return spans;
+}
+
+/** A foil thread for every walk hop that is not already a drawn edge. */
+export function fieldTourSpans(
+  walk: string[],
+  nodes: Array<{ key: string }>,
+  existing: Array<[string, string]>,
+): FieldEdge[] {
+  const indexOf = new Map(nodes.map((node, index) => [node.key, index]));
+  const have = new Set<string>();
+  for (const [left, right] of existing) {
+    have.add(`${left}\0${right}`);
+    have.add(`${right}\0${left}`);
+  }
+  const spans: FieldEdge[] = [];
+  for (let index = 0; index < walk.length - 1; index += 1) {
+    const left = walk[index]!;
+    const right = walk[index + 1]!;
+    if (left === right || have.has(`${left}\0${right}`)) continue;
+    const i = indexOf.get(left);
+    const j = indexOf.get(right);
+    if (i == null || j == null) continue;
+    spans.push({
+      i: Math.min(i, j),
+      j: Math.max(i, j),
+      strength: 0.52,
+    });
+    have.add(`${left}\0${right}`);
+    have.add(`${right}\0${left}`);
   }
   return spans;
 }
@@ -545,6 +727,7 @@ export function fieldTriangles(
   points: FieldPoint[],
   reach: number,
   aspect = 1,
+  cap = FIELD_TRIANGLE_CAP,
 ): FieldTriangle[] {
   const triangles: FieldTriangle[] = [];
   if (reach <= 0) return triangles;
@@ -568,7 +751,12 @@ export function fieldTriangles(
       }
     }
   }
-  return triangles;
+  // A rich sky yields hundreds of faces, and stacked translucency turns the
+  // constellation into crumpled foil. Keep only the tightest few.
+  if (triangles.length <= cap) return triangles;
+  return triangles
+    .sort((left, right) => right.strength - left.strength)
+    .slice(0, cap);
 }
 
 export function hexRgb(value: string): [number, number, number] | null {
@@ -710,3 +898,424 @@ export function theaterLockLive(phase: TheaterPhase) {
 export function theaterSkyLive(phase: TheaterPhase) {
   return phase === "reading" || phase === "locking" || phase === "filed";
 }
+
+function normalizeRelation(value: string) {
+  const text = value.trim().toLowerCase().replace(/\s+/g, " ");
+  if (!text || text.length > 22) return null;
+  if (/(influenc|vibe|spirit|energy|essence|feel of)/.test(text)) return null;
+  return text;
+}
+
+function nodeHasId(
+  node: { key: string; refId?: string; label: string },
+  id: string,
+) {
+  const slug = fieldSlug(id);
+  if (!slug) return false;
+  if (node.refId && fieldSlug(node.refId) === slug) return true;
+  if (fieldSlug(node.label) === slug) return true;
+  if (node.key === id || fieldSlug(node.key) === slug) return true;
+  const tail = node.key.split(":")[1];
+  return Boolean(tail && fieldSlug(tail) === slug);
+}
+
+export function normalizeTriviaGraph(
+  raw: unknown,
+  options?: { nodeCap?: number; edgeCap?: number },
+): TriviaGraph {
+  if (!raw || typeof raw !== "object") return { nodes: [], edges: [] };
+  const obj = raw as Record<string, unknown>;
+  const nodeCap = options?.nodeCap ?? GRAPH_NODE_CAP;
+  const edgeCap = options?.edgeCap ?? GRAPH_EDGE_CAP;
+  const seen = new Map<string, TriviaGraphNode>();
+  const nodesRaw = Array.isArray(obj.nodes) ? obj.nodes : [];
+  for (const entry of nodesRaw) {
+    if (!entry || typeof entry !== "object") continue;
+    const item = entry as Record<string, unknown>;
+    const label = typeof item.label === "string" ? item.label.trim() : "";
+    if (!label) continue;
+    const kindRaw = typeof item.kind === "string" ? item.kind.trim() : "";
+    if (!GRAPH_KINDS.has(kindRaw)) continue;
+    const id = fieldSlug(
+      typeof item.id === "string" && item.id.trim() ? item.id : label,
+    );
+    if (!id || seen.has(id)) continue;
+    seen.set(id, { id, label, kind: kindRaw as TriviaGraphKind });
+  }
+
+  const edges: TriviaGraphEdge[] = [];
+  const edgeSeen = new Set<string>();
+  const edgesRaw = Array.isArray(obj.edges) ? obj.edges : [];
+  for (const entry of edgesRaw) {
+    if (!entry || typeof entry !== "object") continue;
+    const item = entry as Record<string, unknown>;
+    const from = fieldSlug(typeof item.from === "string" ? item.from : "");
+    const to = fieldSlug(typeof item.to === "string" ? item.to : "");
+    const relation = normalizeRelation(
+      typeof item.relation === "string" ? item.relation : "",
+    );
+    if (!from || !to || from === to || !relation) continue;
+    if (!seen.has(from) || !seen.has(to)) continue;
+    const key = `${from}|${to}`;
+    if (edgeSeen.has(key)) continue;
+    edgeSeen.add(key);
+    edges.push({
+      from,
+      to,
+      relation,
+      verified: item.verified === true,
+    });
+    if (edges.length >= edgeCap) break;
+  }
+
+  const linked = new Set<string>();
+  for (const edge of edges) {
+    linked.add(edge.from);
+    linked.add(edge.to);
+  }
+  const nodes = [...seen.values()]
+    .filter((node) => linked.has(node.id))
+    .slice(0, nodeCap);
+  const keep = new Set(nodes.map((node) => node.id));
+  return {
+    nodes,
+    edges: edges.filter((edge) => keep.has(edge.from) && keep.has(edge.to)),
+  };
+}
+
+export function mergeTriviaGraphs(
+  primary?: TriviaGraph | null,
+  secondary?: TriviaGraph | null,
+  options?: { nodeCap?: number; edgeCap?: number },
+): TriviaGraph {
+  return normalizeTriviaGraph(
+    {
+      nodes: [...(primary?.nodes ?? []), ...(secondary?.nodes ?? [])],
+      edges: [...(primary?.edges ?? []), ...(secondary?.edges ?? [])],
+    },
+    options,
+  );
+}
+
+export function graphFromMusicBrainzRelations(input: {
+  title?: string | null;
+  artist?: string | null;
+  relations?: Array<{
+    type?: string;
+    artist?: { name?: string };
+    work?: { title?: string };
+  }>;
+}): TriviaGraph {
+  const title = input.title?.trim() ?? "";
+  const artist = input.artist?.trim() ?? "";
+  const nodes: TriviaGraphNode[] = [];
+  const edges: TriviaGraphEdge[] = [];
+  const addNode = (label: string, kind: TriviaGraphKind) => {
+    const id = fieldSlug(label);
+    if (!id) return null;
+    if (!nodes.some((node) => node.id === id)) {
+      nodes.push({ id, label, kind });
+    }
+    return id;
+  };
+  const addEdge = (from: string | null, to: string | null, relation: string) => {
+    if (!from || !to || from === to) return;
+    if (edges.some((edge) => edge.from === from && edge.to === to)) return;
+    edges.push({ from, to, relation, verified: true });
+  };
+
+  const workId = title ? addNode(title, "work") : null;
+  const artistId = artist ? addNode(artist, "person") : null;
+  if (artistId && workId) addEdge(artistId, workId, "performed");
+
+  for (const rel of input.relations ?? []) {
+    const type = (rel.type ?? "").trim().toLowerCase();
+    const word = MB_RELATION_WORD[type];
+    if (!word) continue;
+    if (rel.artist?.name?.trim()) {
+      const personId = addNode(rel.artist.name, "person");
+      addEdge(personId, workId, word);
+    }
+    if (rel.work?.title?.trim()) {
+      const related = addNode(rel.work.title, "work");
+      addEdge(workId, related, word);
+    }
+  }
+
+  return normalizeTriviaGraph({ nodes, edges });
+}
+
+export type FieldKnowledgeEdge = FieldEdge & { relation: string };
+
+export function fieldKnowledgeEdges(
+  nodes: Array<{ key: string; refId?: string; label: string }>,
+  graphEdges: TriviaGraphEdge[],
+): FieldKnowledgeEdge[] {
+  const edges: FieldKnowledgeEdge[] = [];
+  const seen = new Set<string>();
+  for (const edge of graphEdges) {
+    const from = nodes.findIndex((node) => nodeHasId(node, edge.from));
+    const to = nodes.findIndex((node) => nodeHasId(node, edge.to));
+    if (from < 0 || to < 0 || from === to) continue;
+    const i = Math.min(from, to);
+    const j = Math.max(from, to);
+    const key = `${i}:${j}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    edges.push({ i, j, strength: 0.92, relation: edge.relation });
+  }
+  return edges;
+}
+
+export function fieldHopRelation(
+  fromKey: string,
+  toKey: string,
+  nodes: Array<{ key: string }>,
+  knowledge: FieldKnowledgeEdge[],
+) {
+  const from = nodes.findIndex((node) => node.key === fromKey);
+  const to = nodes.findIndex((node) => node.key === toKey);
+  if (from < 0 || to < 0) return null;
+  return (
+    knowledge.find(
+      (edge) =>
+        (edge.i === from && edge.j === to) || (edge.i === to && edge.j === from),
+    )?.relation ?? null
+  );
+}
+
+export function fieldDensestPoint(points: FieldPoint[]): FieldPoint | null {
+  if (!points.length) return null;
+  let best = points[0]!;
+  let bestScore = -1;
+  for (const point of points) {
+    let score = 0;
+    for (const other of points) {
+      const distance = fieldDistance(point, other);
+      if (distance < 0.22) score += 1 - distance / 0.22;
+    }
+    if (score > bestScore) {
+      bestScore = score;
+      best = point;
+    }
+  }
+  return best;
+}
+
+export type FieldDustTint = "bone" | "foil" | "ether";
+
+export type FieldDustGrain = {
+  x: number;
+  y: number;
+  depth: 0 | 1 | 2;
+  size: number;
+  phase: number;
+  freq: number;
+  tint: FieldDustTint;
+  flare: boolean;
+};
+
+/** The seeded river of far stars the whole sky leans against. */
+export type FieldBand = {
+  cx: number;
+  cy: number;
+  angle: number;
+  width: number;
+};
+
+export function fieldMilkyWay(seed: number): FieldBand {
+  const rng = createRng(lockSeed([seed, "band"]));
+  return {
+    cx: 0.35 + rng() * 0.3,
+    cy: 0.35 + rng() * 0.3,
+    angle: -0.9 + rng() * 0.55,
+    width: 0.14 + rng() * 0.08,
+  };
+}
+
+export function fieldDust(seed: number): FieldDustGrain[] {
+  const rng = createRng(lockSeed([seed, "dust"]));
+  const band = fieldMilkyWay(seed);
+  const cos = Math.cos(band.angle);
+  const sin = Math.sin(band.angle);
+  const count = 170 + Math.floor(rng() * 61);
+  const grains: FieldDustGrain[] = [];
+  for (let index = 0; index < count; index += 1) {
+    let x: number;
+    let y: number;
+    if (rng() < 0.55) {
+      const along = -0.7 + rng() * 2.4;
+      const off = (rng() + rng() + rng() - 1.5) * band.width;
+      x = (((band.cx + along * cos - off * sin) % 1) + 1) % 1;
+      y = (((band.cy + along * sin + off * cos) % 1) + 1) % 1;
+    } else {
+      x = rng();
+      y = rng();
+    }
+    const depthRoll = rng();
+    const depth = (depthRoll < 0.5 ? 0 : depthRoll < 0.85 ? 1 : 2) as 0 | 1 | 2;
+    const tintRoll = rng();
+    const tint: FieldDustTint =
+      tintRoll < 0.62 ? "bone" : tintRoll < 0.86 ? "foil" : "ether";
+    grains.push({
+      x,
+      y,
+      depth,
+      size: depth === 0 ? 0.35 : depth === 1 ? 0.6 : 0.95,
+      phase: rng() * Math.PI * 2,
+      freq: 0.3 + rng() * 0.6,
+      tint,
+      flare: depth === 2 && rng() < 0.3,
+    });
+  }
+  return grains;
+}
+
+export function fieldDustPoint(
+  grain: FieldDustGrain,
+  time: number,
+  live: boolean,
+  reduced: boolean,
+) {
+  if (!live || reduced) return { x: grain.x, y: grain.y };
+  const speed = grain.depth === 0 ? 0.0007 : grain.depth === 1 ? 0.0012 : 0.002;
+  return {
+    x: (grain.x + time * speed) % 1,
+    y: (grain.y + time * speed * 0.18) % 1,
+  };
+}
+
+export function fieldDustAlpha(depth: 0 | 1 | 2) {
+  return depth === 0 ? 0.14 : depth === 1 ? 0.24 : 0.38;
+}
+
+export type FieldNebula = {
+  x: number;
+  y: number;
+  radius: number;
+  tint: FieldDustTint;
+  phase: number;
+};
+
+export function fieldNebulae(
+  seed: number,
+  cluster?: FieldPoint | null,
+): FieldNebula[] {
+  const rng = createRng(lockSeed([seed, "nebula"]));
+  const extra = rng() < 0.75;
+  const band = fieldMilkyWay(seed);
+  const first: FieldNebula = {
+    x: cluster?.x ?? 0.42 + rng() * 0.2,
+    y: cluster?.y ?? 0.38 + rng() * 0.18,
+    radius: 0.3 + rng() * 0.14,
+    tint: "foil",
+    phase: rng() * Math.PI * 2,
+  };
+  const clouds = [first];
+  if (extra) {
+    clouds.push({
+      x: Math.min(0.9, Math.max(0.1, first.x + (rng() - 0.5) * 0.28)),
+      y: Math.min(0.9, Math.max(0.1, first.y + (rng() - 0.5) * 0.24)),
+      radius: 0.22 + rng() * 0.1,
+      tint: "ether",
+      phase: rng() * Math.PI * 2,
+    });
+  }
+  clouds.push({
+    x: Math.min(0.92, Math.max(0.08, band.cx)),
+    y: Math.min(0.92, Math.max(0.08, band.cy)),
+    radius: 0.34 + rng() * 0.1,
+    tint: "bone",
+    phase: rng() * Math.PI * 2,
+  });
+  return clouds;
+}
+
+export function fieldNebulaAlpha(
+  cloud: FieldNebula,
+  time: number,
+  reduced: boolean,
+) {
+  const base =
+    cloud.tint === "foil" ? 0.065 : cloud.tint === "ether" ? 0.05 : 0.045;
+  if (reduced) return base;
+  return base * (0.82 + 0.18 * Math.sin((time / 40) * Math.PI * 2 + cloud.phase));
+}
+
+export function fieldStarTwinkle(
+  time: number,
+  freq: number,
+  phase: number,
+  reduced: boolean,
+) {
+  if (reduced) return 1;
+  return 0.9 + 0.1 * Math.sin(time * freq * Math.PI * 2 + phase);
+}
+
+export function fieldDustTwinkle(
+  time: number,
+  freq: number,
+  phase: number,
+  reduced: boolean,
+) {
+  if (reduced) return 1;
+  return 0.72 + 0.28 * Math.sin(time * freq * Math.PI * 2 + phase);
+}
+
+export function fieldBirthBloom(ageMs: number | null, reduced: boolean) {
+  if (reduced || ageMs == null || ageMs < 0 || ageMs > STAR_BIRTH_MS) return 1;
+  return 1 + 0.6 * (1 - ageMs / STAR_BIRTH_MS);
+}
+
+export function fieldBirthRipple(ageMs: number | null, reduced: boolean) {
+  if (reduced || ageMs == null || ageMs < 0 || ageMs > STAR_BIRTH_MS) return null;
+  const t = ageMs / STAR_BIRTH_MS;
+  return { radius: 1 + t * 3.4, alpha: 1 - t };
+}
+
+export function fieldEdgeShimmer(seed: number, time: number, reduced: boolean) {
+  if (reduced) return 0.5;
+  return (time / 7 + (seed % 1000) / 1000) % 1;
+}
+
+export type FieldMeteor = {
+  x0: number;
+  y0: number;
+  x1: number;
+  y1: number;
+  progress: number;
+};
+
+export function fieldShootingStar(
+  seed: number,
+  timeSec: number,
+  options?: { live?: boolean; reduced?: boolean },
+): FieldMeteor | null {
+  if (options?.reduced || options?.live === false) return null;
+  const rng = createRng(lockSeed([seed, "meteor"]));
+  const period = 90 + rng() * 60;
+  const delay = 18 + rng() * 24;
+  if (timeSec < delay) return null;
+  const local = (timeSec - delay) % period;
+  const duration = 0.7;
+  if (local > duration) return null;
+  const corner = Math.floor(rng() * 4);
+  const span = 0.16 + rng() * 0.06;
+  const inset = 0.08;
+  const corners = [
+    { x0: inset, y0: inset, dx: span, dy: span * 0.35 },
+    { x0: 1 - inset, y0: inset, dx: -span, dy: span * 0.35 },
+    { x0: inset, y0: 1 - inset, dx: span, dy: -span * 0.35 },
+    { x0: 1 - inset, y0: 1 - inset, dx: -span, dy: -span * 0.35 },
+  ];
+  const chosen = corners[corner] ?? corners[0]!;
+  return {
+    x0: chosen.x0,
+    y0: chosen.y0,
+    x1: chosen.x0 + chosen.dx,
+    y1: chosen.y0 + chosen.dy,
+    progress: local / duration,
+  };
+}
+
+export { EMPTY_GRAPH };

@@ -1,5 +1,5 @@
 import { Link } from "@remix-run/react";
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { useHydrated } from "~/hooks/useHydrated";
 import { usePlayerStore } from "~/state/playerStore";
 import { roomForStation, useRoomStore } from "~/state/roomStore";
@@ -18,6 +18,11 @@ import {
   theaterIntelligenceFromRoom,
   theaterWithoutStation,
 } from "~/components/radio-passport/productFlow";
+
+/** Scroll depth that folds the sky all the way. */
+const SKY_FOLD_TRAVEL = 260;
+/** Below this much page left to read, the sky keeps its full height. */
+const SKY_FOLD_MIN_ROOM = 420;
 
 export const meta = () => [
   { title: `Theater · ${BRAND.name}` },
@@ -57,11 +62,16 @@ export default function ListeningPage() {
     imageUrl: room.plate,
     links: room.dossier.links,
     track: rawTrackLine,
+    graph: room.dossier.graph,
   });
   const phase = room.phase;
   const factKey = intelligence.facts
     .map((fact) => `${fact.label}:${fact.value}`)
     .join("|");
+  const graphKey = [
+    ...intelligence.graph.nodes.map((node) => node.id),
+    ...intelligence.graph.edges.map((edge) => `${edge.from}:${edge.to}`),
+  ].join("|");
   const tagKey = nowPlaying ? stationTags(nowPlaying).join("|") : "";
   const releases = useMemo(
     () =>
@@ -78,10 +88,12 @@ export default function ListeningPage() {
         dispatchBody: intelligence.dispatchBody,
         summary: intelligence.summary,
         facts: intelligence.facts,
+        graph: intelligence.graph,
       }),
     [
       city,
       factKey,
+      graphKey,
       intelligence.dispatchBody,
       intelligence.summary,
       nowPlaying?.bitrate,
@@ -95,6 +107,54 @@ export default function ListeningPage() {
     ],
   );
   const seed = lockSeed([nowPlaying?.uuid, city]);
+
+  // The sky gives ground as you read deeper — scroll folds it, never a jump.
+  const theaterRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const node = theaterRef.current;
+    if (!node) return;
+    const sky = node.querySelector<HTMLElement>(".ew-theater-sky");
+    if (!sky) return;
+    let frame = 0;
+    let skyFull = sky.getBoundingClientRect().height;
+
+    const measure = () => {
+      node.style.setProperty("--ew-sky-shrink", "0");
+      skyFull = sky.getBoundingClientRect().height;
+    };
+
+    const apply = () => {
+      frame = 0;
+      const folded = skyFull - sky.getBoundingClientRect().height;
+      const room =
+        document.documentElement.scrollHeight - window.innerHeight + folded;
+      // A shallow folio has nothing to reveal, and folding it there would only
+      // shorten the page under the scroll it was answering.
+      const shrink =
+        room < SKY_FOLD_MIN_ROOM
+          ? 0
+          : Math.min(1, Math.max(0, window.scrollY / SKY_FOLD_TRAVEL));
+      node.style.setProperty("--ew-sky-shrink", shrink.toFixed(3));
+    };
+
+    const onScroll = () => {
+      if (!frame) frame = window.requestAnimationFrame(apply);
+    };
+    const onResize = () => {
+      measure();
+      apply();
+    };
+
+    measure();
+    apply();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onResize);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onResize);
+      if (frame) window.cancelAnimationFrame(frame);
+    };
+  }, []);
 
   if (!nowPlaying) {
     const empty = theaterWithoutStation();
@@ -118,7 +178,7 @@ export default function ListeningPage() {
   }
 
   return (
-    <main className="ew-theater" data-phase={phase}>
+    <main className="ew-theater" data-phase={phase} ref={theaterRef}>
       <Link
         to="/"
         className="ew-theater-back rp-eyebrow text-foil"
@@ -133,6 +193,7 @@ export default function ListeningPage() {
             phase={phase}
             releases={releases}
             longitude={nowPlaying.longitude}
+            graph={intelligence.graph}
           />
         </aside>
         <div className="ew-theater-folio">

@@ -1,4 +1,6 @@
 import type { Station } from "~/types/radio";
+import type { TriviaGraph } from "~/types/trivia";
+import { EMPTY_GRAPH } from "~/types/trivia";
 import { stationLocation } from "./StationRow";
 
 /**
@@ -634,7 +636,7 @@ export function theaterDossierFacts(
       }
       return true;
     })
-    .slice(0, 4);
+    .slice(0, 6);
 }
 
 export function theaterMeridians(links: TheaterLink[]): TheaterLink[] {
@@ -656,6 +658,7 @@ export function theaterIntelligenceFromRoom(input: {
   imageUrl?: string | null;
   links?: TheaterLink[];
   track?: string | null;
+  graph?: TriviaGraph | null;
 }) {
   return theaterIntelligence({
     hasTrack: input.hasTrack,
@@ -665,6 +668,7 @@ export function theaterIntelligenceFromRoom(input: {
     imageUrl: input.imageUrl,
     links: input.links,
     track: input.track,
+    graph: input.graph,
   });
 }
 
@@ -676,6 +680,7 @@ export function theaterIntelligence(input: {
   imageUrl?: string | null;
   links?: TheaterLink[];
   track?: string | null;
+  graph?: TriviaGraph | null;
 }) {
   const dispatchBody = input.dispatchBody?.trim() || null;
   if (!input.hasTrack) {
@@ -685,6 +690,7 @@ export function theaterIntelligence(input: {
       facts: [] as TheaterFact[],
       imageUrl: null,
       links: [] as TheaterLink[],
+      graph: EMPTY_GRAPH,
     };
   }
   const summary = input.summary?.trim() || null;
@@ -698,6 +704,7 @@ export function theaterIntelligence(input: {
     facts: theaterDossierFacts(input.facts ?? [], input.track),
     imageUrl: input.imageUrl?.trim() || null,
     links: theaterMeridians(input.links ?? []),
+    graph: input.graph ?? EMPTY_GRAPH,
   };
 }
 

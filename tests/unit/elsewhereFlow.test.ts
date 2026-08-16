@@ -609,6 +609,7 @@ describe("A stamp is a next city, not a souvenir", () => {
       facts: [],
       imageUrl: null,
       links: [],
+      graph: { nodes: [], edges: [] },
     });
     const rich = theaterIntelligence({
       hasTrack: true,
@@ -636,6 +637,7 @@ describe("A stamp is a next city, not a souvenir", () => {
       "Album",
       "Origin",
       "Length",
+      "Extra",
     ]);
     expect(rich.links.map((link) => link.label)).toEqual([
       "YouTube",

@@ -1,27 +1,43 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
+  FACT_RELEASE_CAP,
+  FIELD_DEGREE_CAP,
+  FIELD_TRIANGLE_CAP,
   TAG_RELEASE_CAP,
+  fieldBirthBloom,
+  fieldBirthRipple,
   fieldDensity,
+  fieldDust,
+  fieldDustTwinkle,
   fieldEdges,
   fieldFamiliesConnect,
+  fieldKnowledgeEdges,
+  fieldMilkyWay,
+  fieldNebulae,
   fieldNodesFromReleases,
   fieldPoint,
   advanceFieldTraveler,
   fieldSemanticEdges,
+  fieldShootingStar,
   fieldSpanEdges,
+  fieldStarTwinkle,
   fieldTourRank,
   fieldTravelerInTransit,
   fieldTravelerAt,
   fieldStandingLabel,
+  fieldTourSpans,
   fieldVisitLabel,
   fieldWalk,
   fieldTriangles,
   formatBearing,
+  graphFromMusicBrainzRelations,
   hexRgb,
   lockFingerprint,
   lockSeed,
   longitudeHomeX,
+  mergeTriviaGraphs,
+  normalizeTriviaGraph,
   splitFieldTokens,
   theaterLockLineAt,
   theaterLockLines,
@@ -146,6 +162,21 @@ describe("theater lock", () => {
       tags: ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"],
     });
     expect(manyTags.filter((item) => item.family === "tag")).toHaveLength(TAG_RELEASE_CAP);
+    const manyFacts = theaterReleases({
+      facts: [
+        { label: "A", value: "1" },
+        { label: "B", value: "2" },
+        { label: "C", value: "3" },
+        { label: "D", value: "4" },
+        { label: "E", value: "5" },
+        { label: "F", value: "6" },
+        { label: "G", value: "7" },
+        { label: "H", value: "8" },
+      ],
+    });
+    expect(manyFacts.filter((item) => item.family === "fact")).toHaveLength(
+      FACT_RELEASE_CAP,
+    );
   });
 
   it("places the field from released metadata so two stations draw different skies", () => {
@@ -202,9 +233,43 @@ describe("theater lock", () => {
     ];
     expect(fieldEdges(cluster, 0.06).length).toBe(3);
     expect(fieldTriangles(cluster, 0.06)).toHaveLength(1);
+    // A rich sky must not stack into crumpled foil.
+    const swarm = Array.from({ length: 14 }, (_, index) => ({
+      x: 0.4 + (index % 4) * 0.02,
+      y: 0.4 + Math.floor(index / 4) * 0.02,
+    }));
+    const capped = fieldTriangles(swarm, 0.4);
+    expect(capped.length).toBe(FIELD_TRIANGLE_CAP);
+    expect(fieldTriangles(swarm, 0.4, 1, 4)).toHaveLength(4);
+    expect(capped[0]!.strength).toBeGreaterThanOrEqual(
+      capped[capped.length - 1]!.strength,
+    );
     expect(
       fieldSemanticEdges(west, west.map((node) => ({ x: node.x, y: node.y })), 0.4).length,
     ).toBeGreaterThan(0);
+    // A filed sky must stay a figure, not a web: every star keeps a few threads.
+    const crowd = Array.from({ length: 12 }, (_, index) =>
+      fieldNodesFromReleases(
+        [{ key: `tag:t${index}`, family: "tag", label: `t${index}` }],
+        lockSeed(["crowd", index]),
+      )[0]!,
+    );
+    const crowdPoints = crowd.map((_, index) => ({
+      x: 0.45 + (index % 4) * 0.015,
+      y: 0.45 + Math.floor(index / 4) * 0.015,
+    }));
+    const thinned = fieldSemanticEdges(crowd, crowdPoints, 0.4);
+    const degree = new Map<number, number>();
+    thinned.forEach((edge) => {
+      degree.set(edge.i, (degree.get(edge.i) ?? 0) + 1);
+      degree.set(edge.j, (degree.get(edge.j) ?? 0) + 1);
+    });
+    expect([...degree.values()].every((count) => count <= FIELD_DEGREE_CAP)).toBe(
+      true,
+    );
+    expect(
+      fieldSemanticEdges(crowd, crowdPoints, 0.4, 1, 0).length,
+    ).toBeGreaterThan(thinned.length);
     const split = [
       { family: "language" as const, x: 0.12, y: 0.4 },
       { family: "track" as const, x: 0.88, y: 0.28 },
@@ -264,6 +329,9 @@ describe("theater lock", () => {
     expect(fieldVisitLabel("dispatch", "dispatch")).toBeNull();
     expect(fieldVisitLabel("fact", "This is a lofi cover of a Malayalam song")).toBeNull();
     expect(fieldVisitLabel("fact", "1958")).toBe("1958");
+    expect(
+      fieldWalk(nodes, [["tag:fado", "tag:folk"]], [["tag:fado", "ghost:star"]]),
+    ).not.toContain("ghost:star");
     expect(fieldStandingLabel("place", "Kerala")).toBe("Kerala");
     expect(fieldStandingLabel("track", "K.J. Yesudas")).toBe("K.J. Yesudas");
     expect(fieldStandingLabel("tag", "kollywood")).toBeNull();
@@ -315,6 +383,213 @@ describe("theater lock", () => {
     expect(formatBearing(77.2)).toBe("77.2°E");
   });
 
+  it("normalizes a knowledge graph and drops orphans, dangling edges, and extras", () => {
+    const graph = normalizeTriviaGraph({
+      nodes: [
+        { id: "Raj Shekhar", label: "Raj Shekhar", kind: "person" },
+        { id: "raj-shekhar", label: "Duplicate", kind: "person" },
+        { id: "tum-ho-toh", label: "Tum Ho Toh", kind: "work" },
+        { id: "orphan", label: "Lonely", kind: "place" },
+        { id: "bad", label: "Vibe", kind: "mood" },
+        { id: "azhar", label: "Azhar", kind: "film" },
+      ],
+      edges: [
+        { from: "raj-shekhar", to: "tum-ho-toh", relation: "wrote" },
+        { from: "tum-ho-toh", to: "missing", relation: "featured in" },
+        { from: "raj-shekhar", to: "tum-ho-toh", relation: "wrote" },
+        { from: "tum-ho-toh", to: "azhar", relation: "influenced the scene" },
+        { from: "tum-ho-toh", to: "azhar", relation: "featured in" },
+      ],
+    });
+    expect(graph.nodes.map((node) => node.id).sort()).toEqual([
+      "azhar",
+      "raj-shekhar",
+      "tum-ho-toh",
+    ]);
+    expect(graph.edges).toEqual([
+      { from: "raj-shekhar", to: "tum-ho-toh", relation: "wrote", verified: false },
+      { from: "tum-ho-toh", to: "azhar", relation: "featured in", verified: false },
+    ]);
+    const flooded = normalizeTriviaGraph({
+      nodes: Array.from({ length: 16 }, (_, index) => ({
+        id: `n${index}`,
+        label: `Node ${index}`,
+        kind: "person",
+      })),
+      edges: Array.from({ length: 20 }, (_, index) => ({
+        from: `n${index % 16}`,
+        to: `n${(index + 1) % 16}`,
+        relation: "wrote",
+      })),
+    });
+    expect(flooded.nodes.length).toBeLessThanOrEqual(10);
+    expect(flooded.edges.length).toBeLessThanOrEqual(14);
+  });
+
+  it("connects knowledge edges by identity, not proximity", () => {
+    const nodes = [
+      {
+        key: "track:tum ho toh",
+        refId: "tum-ho-toh",
+        label: "Tum Ho Toh",
+        x: 0.1,
+        y: 0.1,
+      },
+      {
+        key: "track:raj shekhar",
+        refId: "raj-shekhar",
+        label: "Raj Shekhar",
+        x: 0.9,
+        y: 0.9,
+      },
+      { key: "place:mumbai", refId: "mumbai", label: "Mumbai", x: 0.5, y: 0.5 },
+    ];
+    const edges = fieldKnowledgeEdges(nodes, [
+      { from: "raj-shekhar", to: "tum-ho-toh", relation: "wrote" },
+    ]);
+    expect(edges).toHaveLength(1);
+    expect(edges[0]).toMatchObject({ i: 0, j: 1, relation: "wrote" });
+    expect(edges[0]!.strength).toBeGreaterThan(0.8);
+    expect(
+      fieldKnowledgeEdges(nodes, [
+        { from: "raj-shekhar", to: "missing-title", relation: "wrote" },
+      ]),
+    ).toEqual([]);
+  });
+
+  it("never walks a hop that has no knowledge, semantic, or span thread", () => {
+    const stub = (
+      key: string,
+      family: "language" | "track" | "place" | "cover",
+      x: number,
+      y: number,
+    ) => ({
+      key,
+      family,
+      label: key.split(":")[1] ?? key,
+      x,
+      y,
+      ampX: 0,
+      ampY: 0,
+      freq: 0,
+      phase: 0,
+      kind: "foil" as const,
+      size: 1,
+      refId: key.split(":")[1],
+    });
+    const nodes = [
+      stub("language:hindi", "language", 0.12, 0.4),
+      stub("track:mirchi", "track", 0.88, 0.28),
+      stub("place:india", "place", 0.84, 0.18),
+      stub("cover:cover", "cover", 0.2, 0.82),
+    ];
+    const points = nodes.map((node) => ({ x: node.x, y: node.y }));
+    const local = fieldSemanticEdges(nodes, points, 0.24);
+    const knowledge = fieldKnowledgeEdges(nodes, [
+      { from: "ghost", to: "nobody", relation: "wrote" },
+    ]);
+    expect(knowledge).toHaveLength(0);
+    const spans = fieldSpanEdges(nodes, points, local);
+    const pairs = [...local, ...spans].map(
+      (edge) => [nodes[edge.i]!.key, nodes[edge.j]!.key] as [string, string],
+    );
+    const preferred = knowledge.map(
+      (edge) => [nodes[edge.i]!.key, nodes[edge.j]!.key] as [string, string],
+    );
+    const walk = fieldWalk(nodes, pairs, preferred);
+    const tour = fieldTourSpans(walk, nodes, [...pairs, ...preferred]);
+    const drawn = new Set(
+      [...pairs, ...preferred, ...tour.map((edge) => [nodes[edge.i]!.key, nodes[edge.j]!.key] as [string, string])]
+        .map(([left, right]) => [left, right].sort().join("\0")),
+    );
+    expect(walk.length).toBeGreaterThan(1);
+    expect(new Set(walk)).toEqual(new Set(nodes.map((node) => node.key)));
+    for (let index = 0; index < walk.length - 1; index += 1) {
+      const left = walk[index]!;
+      const right = walk[index + 1]!;
+      if (left === right) continue;
+      expect(drawn.has([left, right].sort().join("\0"))).toBe(true);
+    }
+  });
+
+  it("keeps existing homes when a deepening ring adds stars", () => {
+    const seed = lockSeed(["mirchi", "Mumbai"]);
+    const firstGraph = {
+      nodes: [
+        { id: "tum-ho-toh", label: "Tum Ho Toh", kind: "work" as const },
+        { id: "raj-shekhar", label: "Raj Shekhar", kind: "person" as const },
+      ],
+      edges: [
+        { from: "raj-shekhar", to: "tum-ho-toh", relation: "wrote" },
+      ],
+    };
+    const first = theaterReleases({
+      city: "Mumbai",
+      title: "Tum Ho Toh",
+      graph: firstGraph,
+    });
+    const firstHomes = fieldNodesFromReleases(first, seed);
+    const city = firstHomes.find((node) => node.key === "place:mumbai");
+    const writer = firstHomes.find((node) => node.key === "track:raj shekhar");
+    const second = theaterReleases({
+      city: "Mumbai",
+      title: "Tum Ho Toh",
+      graph: mergeTriviaGraphs(firstGraph, {
+        nodes: [
+          { id: "azhar", label: "Azhar", kind: "film" },
+          { id: "tum-ho-toh", label: "Tum Ho Toh", kind: "work" },
+        ],
+        edges: [{ from: "tum-ho-toh", to: "azhar", relation: "featured in" }],
+      }),
+    });
+    const later = fieldNodesFromReleases(second, seed);
+    expect(later.find((node) => node.key === "place:mumbai")?.x).toBe(city?.x);
+    expect(later.find((node) => node.key === "track:raj shekhar")?.y).toBe(
+      writer?.y,
+    );
+    expect(later.some((node) => node.label === "Azhar")).toBe(true);
+  });
+
+  it("turns MusicBrainz relations into verified edges and never invents", () => {
+    const graph = graphFromMusicBrainzRelations({
+      title: "Tum Ho Toh",
+      artist: "Palak Muchhal",
+      relations: [
+        { type: "lyricist", artist: { name: "Raj Shekhar" } },
+        { type: "composer", artist: { name: "Amaal Mallik" } },
+        { type: "vibe", artist: { name: "Someone" } },
+      ],
+    });
+    expect(graph.edges.every((edge) => edge.verified)).toBe(true);
+    expect(graph.edges.some((edge) => edge.relation === "wrote")).toBe(true);
+    expect(graph.edges.some((edge) => edge.relation === "composed")).toBe(true);
+    expect(graph.nodes.some((node) => node.label === "Someone")).toBe(false);
+  });
+
+  it("seeds the same dust, nebula, and meteor for a station", () => {
+    const seed = lockSeed(["station-sky", "Lisbon"]);
+    expect(fieldDust(seed)).toEqual(fieldDust(seed));
+    expect(fieldDust(seed).length).toBeGreaterThanOrEqual(170);
+    expect(fieldDust(seed).length).toBeLessThanOrEqual(230);
+    expect(
+      fieldDust(seed).every((grain) =>
+        ["bone", "foil", "ether"].includes(grain.tint),
+      ),
+    ).toBe(true);
+    expect(fieldMilkyWay(seed)).toEqual(fieldMilkyWay(seed));
+    expect(fieldMilkyWay(seed)).not.toEqual(fieldMilkyWay(seed + 1));
+    expect(fieldDust(seed)).not.toEqual(fieldDust(seed + 1));
+    expect(fieldNebulae(seed)).toEqual(fieldNebulae(seed));
+    expect(fieldShootingStar(seed, 12)).toEqual(fieldShootingStar(seed, 12));
+    expect(fieldShootingStar(seed, 200, { reduced: true })).toBeNull();
+    expect(fieldShootingStar(seed, 200, { live: false })).toBeNull();
+    expect(fieldStarTwinkle(1, 0.5, 0, true)).toBe(1);
+    expect(fieldDustTwinkle(1, 0.5, 0, true)).toBe(1);
+    expect(fieldBirthRipple(120, true)).toBeNull();
+    expect(fieldBirthBloom(0, false)).toBeCloseTo(1.6);
+    expect(fieldBirthBloom(600, false)).toBe(1);
+  });
+
   it("keeps the theater back link out of the growing room and reads the dock poller", () => {
     const listen = readFileSync(
       new URL("../../app/routes/listen.tsx", import.meta.url),
@@ -336,12 +611,25 @@ describe("theater lock", () => {
     expect(well).toContain("theaterSkyLive");
     expect(well).toContain("fieldStandingLabel");
     expect(well).toContain("fieldSpanEdges");
+    expect(well).toContain("fieldTourSpans");
     expect(well).toContain("fieldTravelerInTransit");
+    expect(well).toContain("fieldShootingStar");
+    expect(well).toContain("fieldMilkyWay");
     expect(listen).toContain('from "~/components/radio-passport/TheaterWell"');
     expect(listen).not.toContain("useNowPlayingMetadata(");
     expect(listen).toContain("useRoomStore");
     expect(listen).not.toContain("useTrackTrivia(");
+    expect(listen).toContain("graph:");
     expect(dock).toContain("useRoom(");
+    const roomHook = readFileSync(
+      new URL("../../app/hooks/useRoom.ts", import.meta.url),
+      "utf8",
+    );
+    expect(roomHook).toContain("ai-deepen");
+    expect(roomHook).toContain("DEEPEN_AFTER_MS");
+    expect(well).toContain("fieldKnowledgeEdges");
+    expect(well).toContain("fieldDust");
+    expect(well).toContain("fieldBirthRipple");
     const home = readFileSync(
       new URL("../../app/routes/_index.tsx", import.meta.url),
       "utf8",
@@ -349,5 +637,13 @@ describe("theater lock", () => {
     expect(home).not.toContain("useNowPlayingMetadata(");
     expect(home).toContain("useRoomStore");
     expect(home).not.toContain("useTrackTrivia(");
+    expect(home).toContain("GalaxyBackdrop");
+    expect(listen).toContain("--ew-sky-shrink");
+    const stylesheet = readFileSync(
+      new URL("../../app/tailwind.css", import.meta.url),
+      "utf8",
+    );
+    expect(stylesheet).toContain(".ew-galaxy");
+    expect(stylesheet).toContain("--ew-sky-shrink");
   });
 });

@@ -2,9 +2,12 @@
 
 Pass this whole file to Claude Opus. Ask it for **story direction** first, then small tweaks. Do not treat this as a rewrite brief.
 
+Next chapter (knowledge graph + living sky): `docs/CONSTELLATION_GRAPH_HANDOFF.md`.  
+Fable review of that pass: `docs/CONSTELLATION_FABLE_REVIEW.md`.
+
 **Repo:** `/Users/umeshmc/Code/RadioPassport`  
 **Product:** Elsewhere (`elsewheremusic.com`)  
-**This work is local only.** Live is still `d245fb0` (Atlas mobile fit). Dev: `http://localhost:5173/listen` after landing a station.
+Graph + galaxy night shipped on `main`. Dev: `http://127.0.0.1:5173/listen` after landing a station.
 
 ---
 

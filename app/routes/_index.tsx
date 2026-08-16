@@ -15,6 +15,7 @@ import { useListeningMode } from "~/hooks/useListeningMode";
 import { roomForStation, useRoomStore } from "~/state/roomStore";
 import { loadWorldDescriptorPreview } from "~/services/aiOrchestrator";
 import { ParticleGlobe } from "~/components/radio-passport/ParticleGlobe";
+import { GalaxyBackdrop } from "~/components/radio-passport/GalaxyBackdrop";
 import {
   buildGlobePlaces,
   globeFocusId,
@@ -793,6 +794,7 @@ export default function Index() {
           )}
         </section>
         <section className="rp-globe-side">
+          <GalaxyBackdrop />
           <div className="rp-globe-wrap">
             <ParticleGlobe
               places={places}

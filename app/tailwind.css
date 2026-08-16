@@ -731,7 +731,16 @@
     background: var(--ew-ink);
     transition: background-color .28s ease;
   }
-  .rp-globe-wrap { position: absolute; inset: 0; }
+  .ew-galaxy {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    display: block;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+  }
+  .rp-globe-wrap { position: absolute; inset: 0; z-index: 1; }
   .rp-globe-hit { position: absolute; inset: 0; }
   .rp-globe { width: 100%; height: 100%; cursor: crosshair; }
   .rp-globe.is-aimed { cursor: pointer; }
@@ -1051,8 +1060,8 @@
     top: 72px;
     align-self: start;
     min-width: 0;
-    height: calc(100svh - 168px);
-    min-height: 28rem;
+    height: calc((100svh - 168px) * (1 - 0.3 * var(--ew-sky-shrink, 0)));
+    min-height: calc(28rem - 9rem * var(--ew-sky-shrink, 0));
     overflow: hidden;
   }
   .ew-theater-field {
@@ -1317,8 +1326,8 @@
       position: sticky;
       top: calc(44px + env(safe-area-inset-top, 0px));
       z-index: 1;
-      min-height: 16.75rem;
-      height: 38vh;
+      min-height: calc(16.75rem - 6rem * var(--ew-sky-shrink, 0));
+      height: calc(38vh - 14vh * var(--ew-sky-shrink, 0));
       max-height: 320px;
       background: var(--ew-ink);
     }

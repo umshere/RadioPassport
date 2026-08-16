@@ -11,7 +11,7 @@ Vercel production currently has **no Heuristics URL**. There we use **Gemini 2.5
 | `POST /api/ai/interpret` | User submits a sentence | `extractPromptIntent`, `fallback: true` |
 | `POST /api/ai/dispatch` | 1.5s after play, and on track change. Room already shows the template. | Template stays |
 | `/api/ai/recommend` | Surprise / mix | Next configured provider (OpenRouter → OpenAI → Ollama → Gemini) |
-| `/api/now-playing-trivia` | Dock only, after ICY title. `source=free` first, then `source=ai` grounded on those facts. AI files a journey (specific stops, never Yes/No or artist/title echoes). | Well hides the plate |
+| `/api/now-playing-trivia` | Dock only, after ICY title. `source=free` first (MusicBrainz facts + verified relations), then `source=ai` grounded on those facts (journey + graph). ~10s after filed, one `source=ai-deepen` call may add 3–6 related nodes. Never invent; empty graph beats a wrong edge. | Well hides the plate; deepen failure is silence |
 
 ## Provider order
 

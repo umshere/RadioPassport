@@ -8,6 +8,8 @@ import {
 import { shouldAnimateDock } from "~/components/PlayerDock";
 import { trackKey } from "~/components/radio-passport/stationInsights";
 import {
+  requestTrackTrivia,
+  resetTriviaRequestState,
   triviaForCurrentRequest,
   triviaRequestKey,
   type TriviaState,
@@ -85,6 +87,33 @@ describe("now-playing polling lifecycle", () => {
     const collisionLeft = triviaRequestKey("ai", trackKey({ artist: "A|B", title: "C" }), "");
     const collisionRight = triviaRequestKey("ai", trackKey({ artist: "A", title: "B|C" }), "");
     expect(collisionLeft).not.toBe(collisionRight);
+    const deepenA = triviaRequestKey("ai-deepen", trackKey({ artist: "Artist", title: "A" }), "ctx-1");
+    const deepenB = triviaRequestKey("ai-deepen", trackKey({ artist: "Artist", title: "A" }), "ctx-2");
+    expect(deepenA).toBe(deepenB);
+    expect(deepenA).not.toBe(triviaRequestKey("ai", trackKey({ artist: "Artist", title: "A" }), ""));
+  });
+
+  it("joins one deepen call per track", () => {
+    resetTriviaRequestState();
+    const fetchMock = vi.fn(() => new Promise(() => {}));
+    vi.stubGlobal("fetch", fetchMock);
+    const track = {
+      raw: "Raj — Tum Ho Toh",
+      title: "Tum Ho Toh",
+      artist: "Raj",
+      source: "icy" as const,
+      fetchedAt: "2026-08-15T18:00:00.000Z",
+    };
+    const first = requestTrackTrivia({ track, source: "ai-deepen" });
+    const second = requestTrackTrivia({
+      track,
+      source: "ai-deepen",
+      context: { summary: "already filed" },
+    });
+    expect(first).toBe(second);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    vi.unstubAllGlobals();
+    resetTriviaRequestState();
   });
 
   it("does not reschedule a deferred periodic request after station cleanup", async () => {

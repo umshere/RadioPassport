@@ -30,7 +30,7 @@ Search, chips, and overlays never call `stop()`.
 
 ## `/listen`
 
-Sky + letter. The constellation has its own rectangle (right column on desktop, first and sticky on a phone). City, station, and the Room sit as type: caption, then plate + cover title, then a colophon of facts. When ICY sent a title, free trivia files the plate and facts first; AI cover may upgrade them. Filing keeps the sky inhabited — the disc keeps walking and names stay on place and track stars. No track → no dossier. On a phone the transport is the dock only. The sky stays visible while the letter scrolls.
+Sky + letter. The constellation has its own rectangle (right column on desktop, first and sticky on a phone) on a seeded galaxy river — the same night that sits behind the home globe. City, station, and the Room sit as type: caption, then plate + cover title, then a colophon of facts. When ICY sent a title, free trivia files the plate and facts first; AI cover may upgrade them and return a knowledge graph. A later deepening pass may add a few stars. Filing keeps the sky inhabited — the disc keeps walking knowledge edges and names stay on place and track stars. The mesh stays a figure (14 faces, 3 threads per star). No track → no dossier. On a phone the transport is the dock only. The sky stays visible while the letter scrolls; when there is page left, scroll folds the sky so the folio can be read.
 
 ## Empty / error
 

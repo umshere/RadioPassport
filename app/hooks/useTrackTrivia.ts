@@ -18,8 +18,12 @@ const INITIAL_STATE: TriviaState = { status: "idle", trivia: null, message: null
 const AI_TRIVIA_CACHE = new Map<string, TriviaState>();
 const AI_TRIVIA_INFLIGHT = new Map<string, Promise<TriviaState>>();
 
-export function triviaRequestKey(source: "free" | "ai", trackKey: string, contextKey: string) {
-  return trackKey ? JSON.stringify([source, trackKey, contextKey]) : "";
+export type TriviaSource = "free" | "ai" | "ai-deepen";
+
+export function triviaRequestKey(source: TriviaSource, trackKey: string, contextKey: string) {
+  if (!trackKey) return "";
+  if (source === "ai-deepen") return JSON.stringify([source, trackKey]);
+  return JSON.stringify([source, trackKey, contextKey]);
 }
 
 export function triviaForCurrentRequest(
@@ -39,29 +43,36 @@ export function triviaForCurrentRequest(
 type TriviaContext = {
   summary?: string | null;
   facts?: Array<{ label: string; value: string }>;
+  graph?: { nodes: Array<{ id: string; label: string; kind: string }>; edges: Array<{ from: string; to: string; relation: string }> } | null;
 };
 
 type UseTrackTriviaOptions = {
   track: NowPlayingTrack | null;
-  source: "free" | "ai";
+  source: TriviaSource;
   enabled: boolean;
   context?: TriviaContext;
 };
 
-export function triviaContextKey(source: "free" | "ai", context?: TriviaContext) {
-  if (source !== "ai" || !context) return "";
+export function triviaContextKey(source: TriviaSource, context?: TriviaContext) {
+  if (source === "free" || !context) return "";
   return JSON.stringify({
     summary: context.summary ?? "",
     facts: (context.facts ?? []).map((fact) => ({
       label: fact.label,
       value: fact.value,
     })),
+    graph: context.graph ?? null,
   });
+}
+
+export function resetTriviaRequestState() {
+  AI_TRIVIA_CACHE.clear();
+  AI_TRIVIA_INFLIGHT.clear();
 }
 
 export function requestTrackTrivia(input: {
   track: NowPlayingTrack;
-  source: "free" | "ai";
+  source: TriviaSource;
   context?: TriviaContext;
 }): Promise<TriviaState> {
   const currentTrackKey = trackKey(input.track);
@@ -76,7 +87,9 @@ export function requestTrackTrivia(input: {
   if (input.track.title) params.set("title", input.track.title);
   if (input.track.artist) params.set("artist", input.track.artist);
   params.set("source", input.source);
-  if (input.source === "ai" && contextKey) params.set("context", contextKey);
+  if ((input.source === "ai" || input.source === "ai-deepen") && contextKey) {
+    params.set("context", contextKey);
+  }
 
   const next = fetch(`/api/now-playing-trivia?${params.toString()}`)
     .then(async (res) =>

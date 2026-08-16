@@ -1,5 +1,6 @@
 import { json, type LoaderFunctionArgs } from "@remix-run/node";
 import type { TrackTriviaResponse, TrackTrivia } from "~/types/trivia";
+import { EMPTY_GRAPH } from "~/types/trivia";
 import { resolveTrackImage } from "~/utils/imageSearch";
 import { getOpenRouterTriviaModelRotation } from "~/services/ai/providers/openRouterModels";
 import { parseJsonObjectFromText } from "~/services/ai/providers/providerUtils";
@@ -11,6 +12,12 @@ import {
 } from "~/services/ai/completeFallback";
 import { completeJson, isGatewayConfigured } from "~/services/ai/gateway";
 import { theaterDossierFacts } from "~/components/radio-passport/productFlow";
+import {
+  DEEPEN_NODE_CAP,
+  graphFromMusicBrainzRelations,
+  mergeTriviaGraphs,
+  normalizeTriviaGraph,
+} from "~/components/radio-passport/theaterLock";
 
 const MUSICBRAINZ_BASE = "https://musicbrainz.org/ws/2";
 const USER_AGENT =
@@ -28,9 +35,18 @@ const AI_SYSTEM_PROMPT = `You file a short journey for a live radio cover.
 Return JSON only with:
 - summary: 2 sentences, max 42 words. Sentence one says what the track is. Sentence two is one specific, checkable thing (who wrote it, where it was cut, a year, a scene). No filler like "two artists known for their contributions" or "a captivating track".
 - facts: 3 or 4 stops, each { label, value }. Labels are short (YEAR, ORIGIN, CUT, WRITER, ALBUM). Values are specific nouns or dates. Never Yes/No. Never repeat the artist name or title we already have.
+- graph: { nodes, edges }. 5 to 10 nodes. Each node: { id (slug), label, kind: person|work|film|place|year|genre|event }. Each edge: { from, to, relation }. Every node must have one edge to the track, the artist, the place, or another new node. Relations are checkable verbs (wrote, composed, featured in, recorded in, sampled). Never vibes (influenced the scene).
 - cleanTitle: cleaned song title for search (no extra tags like "lyrics", "HQ", "live").
 - cleanArtist: cleaned artist name for search (no extra tags).
-Do not invent. An empty field is better than Collaboration: Yes.`;
+Do not invent. An empty graph is better than a wrong edge. An empty field is better than Collaboration: Yes.`;
+
+const DEEPEN_SYSTEM_PROMPT = `You add only new notes to a filed radio cover.
+Return JSON only with graph: { nodes, edges }.
+Only NEW related entities: collaborators, the film, the composer's other landmark work, the city or scene, the raga or genre lineage.
+3 to 6 new nodes. Each new node has one edge to something we already have or another new node.
+Each node: { id (slug), label, kind: person|work|film|place|year|genre|event }.
+Each edge: { from, to, relation } with a checkable verb (wrote, composed, featured in, recorded in, sampled).
+Never invent. An empty graph is better than a wrong edge.`;
 
 type CacheEntry = {
   expiresAt: number;
@@ -74,7 +90,11 @@ function buildSearchQuery(title?: string | null, artist?: string | null) {
 function normalizeTriviaPayload(
   raw: unknown,
   source: "free" | "ai",
-  options?: { links?: TrackTrivia["links"]; imageUrl?: string | null },
+  options?: {
+    links?: TrackTrivia["links"];
+    imageUrl?: string | null;
+    deepen?: boolean;
+  },
 ): TrackTrivia | null {
   if (!raw || typeof raw !== "object") return null;
   const obj = raw as Record<string, unknown>;
@@ -95,7 +115,11 @@ function normalizeTriviaPayload(
     })
     .filter(Boolean) as { label: string; value: string }[];
 
-  if (!summary && facts.length === 0) return null;
+  const graph = normalizeTriviaGraph(obj.graph, {
+    nodeCap: source === "ai" && options?.deepen ? DEEPEN_NODE_CAP : undefined,
+  });
+
+  if (!summary && facts.length === 0 && graph.nodes.length === 0) return null;
 
   return {
     summary,
@@ -104,6 +128,7 @@ function normalizeTriviaPayload(
     imageUrl: options?.imageUrl ?? null,
     cleanTitle,
     cleanArtist,
+    graph,
     source,
     fetchedAt: new Date().toISOString(),
   };
@@ -122,7 +147,11 @@ function parseJsonFromText(text: string): unknown | null {
   }
 }
 
-async function fetchOpenAiTrivia(prompt: string): Promise<AiTriviaResult> {
+async function fetchOpenAiTrivia(
+  prompt: string,
+  system = AI_SYSTEM_PROMPT,
+  deepen = false,
+): Promise<AiTriviaResult> {
   const apiKey = process.env.OPENAI_API_KEY ?? "";
   if (!apiKey) return { trivia: null, error: "Missing OPENAI_API_KEY." };
   const response = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -134,7 +163,7 @@ async function fetchOpenAiTrivia(prompt: string): Promise<AiTriviaResult> {
     body: JSON.stringify({
       model: OPENAI_MODEL,
       messages: [
-        { role: "system", content: AI_SYSTEM_PROMPT },
+        { role: "system", content: system },
         { role: "user", content: prompt },
       ],
       response_format: { type: "json_object" },
@@ -151,10 +180,14 @@ async function fetchOpenAiTrivia(prompt: string): Promise<AiTriviaResult> {
   const text = payload?.choices?.[0]?.message?.content;
   if (!text) return { trivia: null, error: "OpenAI response was empty." };
   const parsed = parseJsonFromText(text);
-  return { trivia: normalizeTriviaPayload(parsed, "ai") };
+  return { trivia: normalizeTriviaPayload(parsed, "ai", { deepen }) };
 }
 
-async function fetchOpenRouterTrivia(prompt: string): Promise<AiTriviaResult> {
+async function fetchOpenRouterTrivia(
+  prompt: string,
+  system = AI_SYSTEM_PROMPT,
+  deepen = false,
+): Promise<AiTriviaResult> {
   const apiKey = process.env.OPENROUTER_API_KEY ?? "";
   if (!apiKey) return { trivia: null, error: "Missing OPENROUTER_API_KEY." };
   const modelsToTry = getOpenRouterTriviaModelRotation();
@@ -174,7 +207,7 @@ async function fetchOpenRouterTrivia(prompt: string): Promise<AiTriviaResult> {
           body: JSON.stringify({
             model,
             messages: [
-              { role: "system", content: AI_SYSTEM_PROMPT },
+              { role: "system", content: system },
               { role: "user", content: prompt },
             ],
             temperature: 0.4,
@@ -205,7 +238,7 @@ async function fetchOpenRouterTrivia(prompt: string): Promise<AiTriviaResult> {
       continue;
     }
     const parsed = parseJsonFromText(text);
-    const trivia = normalizeTriviaPayload(parsed, "ai");
+    const trivia = normalizeTriviaPayload(parsed, "ai", { deepen });
     if (trivia) return { trivia };
     lastError = `OpenRouter response parse failed for ${model}.`;
   }
@@ -213,17 +246,21 @@ async function fetchOpenRouterTrivia(prompt: string): Promise<AiTriviaResult> {
   return { trivia: null, error: lastError };
 }
 
-async function fetchHeuristicsTrivia(prompt: string): Promise<AiTriviaResult> {
+async function fetchHeuristicsTrivia(
+  prompt: string,
+  system = AI_SYSTEM_PROMPT,
+  deepen = false,
+): Promise<AiTriviaResult> {
   if (!isGatewayConfigured()) {
     return { trivia: null, error: "Heuristics gateway is not configured." };
   }
   try {
     const parsed = await completeJson<unknown>({
-      system: AI_SYSTEM_PROMPT,
+      system,
       user: prompt,
       timeoutMs: 8_000,
     });
-    return { trivia: normalizeTriviaPayload(parsed, "ai") };
+    return { trivia: normalizeTriviaPayload(parsed, "ai", { deepen }) };
   } catch (error) {
     return {
       trivia: null,
@@ -235,15 +272,19 @@ async function fetchHeuristicsTrivia(prompt: string): Promise<AiTriviaResult> {
   }
 }
 
-async function fetchGeminiTrivia(prompt: string): Promise<AiTriviaResult> {
+async function fetchGeminiTrivia(
+  prompt: string,
+  system = AI_SYSTEM_PROMPT,
+  deepen = false,
+): Promise<AiTriviaResult> {
   if (!hasGeminiKey()) return { trivia: null, error: "Missing GEMINI_API_KEY." };
   try {
     const parsed = await completeGeminiJson<unknown>({
-      system: AI_SYSTEM_PROMPT,
+      system,
       user: prompt,
       timeoutMs: 8_000,
     });
-    return { trivia: normalizeTriviaPayload(parsed, "ai") };
+    return { trivia: normalizeTriviaPayload(parsed, "ai", { deepen }) };
   } catch (error) {
     return {
       trivia: null,
@@ -255,7 +296,11 @@ async function fetchGeminiTrivia(prompt: string): Promise<AiTriviaResult> {
   }
 }
 
-async function fetchOllamaTrivia(prompt: string): Promise<AiTriviaResult> {
+async function fetchOllamaTrivia(
+  prompt: string,
+  system = AI_SYSTEM_PROMPT,
+  deepen = false,
+): Promise<AiTriviaResult> {
   if (!OLLAMA_URL) return { trivia: null, error: "Missing OLLAMA_URL." };
   const response = await fetch(
     `${OLLAMA_URL.replace(/\/$/, "")}/api/generate`,
@@ -264,7 +309,7 @@ async function fetchOllamaTrivia(prompt: string): Promise<AiTriviaResult> {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         model: OLLAMA_MODEL,
-        prompt: `${AI_SYSTEM_PROMPT}\n\n${prompt}`,
+        prompt: `${system}\n\n${prompt}`,
         format: "json",
         stream: false,
       }),
@@ -282,13 +327,15 @@ async function fetchOllamaTrivia(prompt: string): Promise<AiTriviaResult> {
     return { trivia: null, error: "Ollama response was empty." };
   }
   const parsed = parseJsonFromText(text);
-  return { trivia: normalizeTriviaPayload(parsed, "ai") };
+  return { trivia: normalizeTriviaPayload(parsed, "ai", { deepen }) };
 }
 
 async function fetchAiTrivia(
   title?: string | null,
   artist?: string | null,
   promptOverride?: string,
+  system = AI_SYSTEM_PROMPT,
+  deepen = false,
 ) {
   const promptParts = ["Track info request:"];
   if (title) promptParts.push(`Title: ${title}`);
@@ -316,15 +363,15 @@ async function fetchAiTrivia(
   const enqueueByName = (name: string) => {
     const n = name.trim().toLowerCase();
     if (n === "heuristics")
-      pushIf(n, hasHeuristics, () => fetchHeuristicsTrivia(prompt));
+      pushIf(n, hasHeuristics, () => fetchHeuristicsTrivia(prompt, system, deepen));
     else if (n === "gemini")
-      pushIf(n, hasGemini, () => fetchGeminiTrivia(prompt));
+      pushIf(n, hasGemini, () => fetchGeminiTrivia(prompt, system, deepen));
     else if (n === "openrouter")
-      pushIf(n, hasOpenRouter, () => fetchOpenRouterTrivia(prompt));
+      pushIf(n, hasOpenRouter, () => fetchOpenRouterTrivia(prompt, system, deepen));
     else if (n === "openai")
-      pushIf(n, hasOpenAI, () => fetchOpenAiTrivia(prompt));
+      pushIf(n, hasOpenAI, () => fetchOpenAiTrivia(prompt, system, deepen));
     else if (n === "ollama")
-      pushIf(n, hasOllama, () => fetchOllamaTrivia(prompt));
+      pushIf(n, hasOllama, () => fetchOllamaTrivia(prompt, system, deepen));
   };
 
   // Flash locally when the gateway is up. Gemini 2.5 Flash next (free, better than Lite).
@@ -336,10 +383,10 @@ async function fetchAiTrivia(
   if (chain.length === 0) {
     // No keys present; try free/preferred sources before Gemini to return clear errors.
     chain.push(
-      () => fetchOpenRouterTrivia(prompt),
-      () => fetchOpenAiTrivia(prompt),
-      () => fetchOllamaTrivia(prompt),
-      () => fetchGeminiTrivia(prompt),
+      () => fetchOpenRouterTrivia(prompt, system, deepen),
+      () => fetchOpenAiTrivia(prompt, system, deepen),
+      () => fetchOllamaTrivia(prompt, system, deepen),
+      () => fetchGeminiTrivia(prompt, system, deepen),
     );
   }
 
@@ -396,13 +443,14 @@ async function fetchMusicBrainzEnrichment(
   facts: TrackTrivia["facts"];
   links: TrackTrivia["links"];
   imageUrl: string | null;
+  graph: TrackTrivia["graph"];
 }> {
   const queryParts = [];
   if (title) queryParts.push(`recording:"${escapeQueryValue(title)}"`);
   if (artist) queryParts.push(`artist:"${escapeQueryValue(artist)}"`);
   const query = queryParts.join(" AND ");
   if (!query) {
-    return { facts: [], links: [], imageUrl: null };
+    return { facts: [], links: [], imageUrl: null, graph: EMPTY_GRAPH };
   }
 
   const searchUrl = new URL(`${MUSICBRAINZ_BASE}/recording/`);
@@ -454,7 +502,43 @@ async function fetchMusicBrainzEnrichment(
           : null,
       ].filter(Boolean) as TrackTrivia["links"],
       imageUrl: await resolveTrackImage(title ?? "", artist ?? ""),
+      graph: EMPTY_GRAPH,
     };
+  }
+
+  const recordingId = recording.id ?? null;
+  const detailed = recordingId
+    ? await fetchJson<{
+        id?: string;
+        title?: string;
+        length?: number;
+        "first-release-date"?: string;
+        releases?: Array<{ id?: string; title?: string; date?: string }>;
+        "artist-credit"?: Array<{
+          name?: string;
+          artist?: { id?: string; name?: string };
+        }>;
+        tags?: Array<{ name: string }>;
+        relations?: Array<{
+          type?: string;
+          artist?: { name?: string };
+          work?: { title?: string };
+        }>;
+      }>(
+        `${MUSICBRAINZ_BASE}/recording/${recordingId}?fmt=json&inc=artists+releases+tags+artist-rels+work-rels`,
+      )
+    : null;
+  if (detailed) {
+    recording.title = detailed.title ?? recording.title;
+    recording.length = detailed.length ?? recording.length;
+    recording["first-release-date"] =
+      detailed["first-release-date"] ?? recording["first-release-date"];
+    recording.releases = detailed.releases ?? recording.releases;
+    recording["artist-credit"] =
+      detailed["artist-credit"] ?? recording["artist-credit"];
+    recording.tags = detailed.tags ?? recording.tags;
+    (recording as { relations?: typeof detailed.relations }).relations =
+      detailed.relations;
   }
 
   const artistCredit = recording["artist-credit"]?.[0];
@@ -467,7 +551,6 @@ async function fetchMusicBrainzEnrichment(
   const release = recording.releases?.[0];
   const releaseTitle = release?.title ?? null;
   const releaseId = release?.id ?? null;
-  const recordingId = recording.id ?? null;
   const releaseDate = recording["first-release-date"] ?? release?.date ?? null;
   const releaseYear = pickReleaseYear(releaseDate);
   const duration = formatDuration(recording.length ?? null);
@@ -475,7 +558,7 @@ async function fetchMusicBrainzEnrichment(
   let artistArea: string | null = null;
   let artistTags: string[] = [];
   if (artistId) {
-    const artistUrl = `${MUSICBRAINZ_BASE}/artist/${artistId}?fmt=json&inc=tags`;
+    const artistUrl = `${MUSICBRAINZ_BASE}/artist/${artistId}?fmt=json&inc=tags+url-rels`;
     const artistData = await fetchJson<{
       area?: { name?: string };
       country?: string;
@@ -561,6 +644,15 @@ async function fetchMusicBrainzEnrichment(
     facts,
     links,
     imageUrl,
+    graph: graphFromMusicBrainzRelations({
+      title: recording.title ?? title ?? "",
+      artist: artistName,
+      relations: (recording as { relations?: Array<{
+        type?: string;
+        artist?: { name?: string };
+        work?: { title?: string };
+      }> }).relations,
+    }),
   };
 }
 
@@ -576,7 +668,7 @@ function mergeTriviaFacts(
     seen.add(key);
     merged.push(fact);
   }
-  return merged.slice(0, 5);
+  return merged.slice(0, 7);
 }
 
 function mergeTriviaLinks(
@@ -603,6 +695,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
   let contextInfo: {
     summary?: string;
     facts?: Array<{ label: string; value: string }>;
+    graph?: TrackTrivia["graph"];
   } | null = null;
 
   if (contextRaw) {
@@ -610,6 +703,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
       const parsed = JSON.parse(contextRaw) as {
         summary?: string;
         facts?: Array<{ label: string; value: string }>;
+        graph?: TrackTrivia["graph"];
       };
       contextInfo = parsed;
     } catch {
@@ -628,6 +722,64 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const cached = triviaCache.get(cacheKey);
   if (cached && cached.expiresAt > Date.now()) {
     return json<TrackTriviaResponse>(cached.value);
+  }
+
+  if (source === "ai-deepen") {
+    const known = [
+      ...(contextInfo?.graph?.nodes ?? []).map(
+        (node) => `${node.id}: ${node.label} (${node.kind})`,
+      ),
+      ...(contextInfo?.facts ?? []).map(
+        (fact) => `${fact.label}: ${fact.value}`,
+      ),
+    ];
+    let prompt = "Second-ring notes only.";
+    if (title) prompt += `\nTitle: ${title}`;
+    if (artist) prompt += `\nArtist: ${artist}`;
+    if (known.length) prompt += `\nAlready filed:\n${known.join("\n")}`;
+    if (contextInfo?.graph?.edges?.length) {
+      prompt += `\nEdges:\n${contextInfo.graph.edges
+        .map((edge) => `${edge.from} -${edge.relation}-> ${edge.to}`)
+        .join("\n")}`;
+    }
+    prompt += "\nReturn only new graph nodes and edges. JSON only.";
+
+    const { trivia } = await fetchAiTrivia(
+      title,
+      artist,
+      prompt,
+      DEEPEN_SYSTEM_PROMPT,
+      true,
+    );
+    const graph = normalizeTriviaGraph(trivia?.graph, {
+      nodeCap: DEEPEN_NODE_CAP,
+    });
+    if (!graph.nodes.length) {
+      const response: TrackTriviaResponse = {
+        status: "empty",
+        reason: "No deeper notes.",
+      };
+      triviaCache.set(cacheKey, {
+        expiresAt: Date.now() + AI_CACHE_TTL_MS,
+        value: response,
+      });
+      return json(response);
+    }
+    const response: TrackTriviaResponse = {
+      status: "ok",
+      trivia: {
+        summary: "",
+        facts: [],
+        graph,
+        source: "ai",
+        fetchedAt: new Date().toISOString(),
+      },
+    };
+    triviaCache.set(cacheKey, {
+      expiresAt: Date.now() + AI_CACHE_TTL_MS,
+      value: response,
+    });
+    return json(response);
   }
 
   if (source === "ai") {
@@ -671,6 +823,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
         facts: mergeTriviaFacts(trivia.facts, enrichment.facts),
         imageUrl: enrichment.imageUrl ?? trivia.imageUrl ?? null,
         links: mergeTriviaLinks(trivia.links, enrichment.links),
+        graph: mergeTriviaGraphs(enrichment.graph, trivia.graph),
       },
     };
     triviaCache.set(cacheKey, {
@@ -768,6 +921,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
     facts: mergeTriviaFacts(facts, enrichment.facts),
     links: mergeTriviaLinks([], enrichment.links),
     imageUrl: enrichment.imageUrl,
+    graph: enrichment.graph ?? EMPTY_GRAPH,
     source: "free",
     fetchedAt: new Date().toISOString(),
   };

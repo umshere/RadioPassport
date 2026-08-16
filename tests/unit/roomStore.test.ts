@@ -11,6 +11,7 @@ import {
   roomAfterSignal,
   roomForStation,
 } from "~/state/roomStore";
+import { EMPTY_GRAPH } from "~/types/trivia";
 
 function station(overrides: Partial<Station> = {}): Station {
   return {
@@ -101,6 +102,7 @@ describe("room identity", () => {
         links: [],
         imageUrl: "https://cover.example/old.jpg",
         source: "free",
+        graph: EMPTY_GRAPH,
       }).plate,
     ).toBeNull();
   });
@@ -124,6 +126,7 @@ describe("room identity", () => {
       links: [{ label: "Wiki", url: "https://en.wikipedia.org/wiki/Evening_Star" }],
       imageUrl: "https://coverartarchive.org/release/abc/front-250",
       source: "free",
+      graph: EMPTY_GRAPH,
     });
     expect(filed.phase).toBe("filed");
     expect(filed.plate).toMatch(/coverartarchive/);
@@ -164,6 +167,7 @@ describe("room identity", () => {
         links: [],
         imageUrl: "https://coverartarchive.org/release/abc/front-250",
         source: "free",
+        graph: EMPTY_GRAPH,
       },
     );
     const nextSong = roomAfterSignal(titled, "adroit", {
@@ -188,6 +192,7 @@ describe("room identity", () => {
         links: [],
         imageUrl: "https://coverartarchive.org/release/abc/front-250",
         source: "free",
+        graph: EMPTY_GRAPH,
       },
     );
     const upgraded = roomAfterDossier(room, "adroit", {
@@ -200,10 +205,57 @@ describe("room identity", () => {
       links: [{ label: "Wiki", url: "https://en.wikipedia.org/wiki/Evening_Star" }],
       imageUrl: null,
       source: "ai",
+      graph: EMPTY_GRAPH,
     });
     expect(upgraded.plate).toMatch(/coverartarchive/);
     expect(upgraded.dossier.summary).toMatch(/Fripp/);
     expect(upgraded.dossier.source).toBe("ai");
+  });
+
+  it("adds deepening graph nodes without replacing the filed dossier", () => {
+    const filed = roomAfterDossier(
+      createRoom(station({ uuid: "adroit" })),
+      "adroit",
+      {
+        status: "ready",
+        summary: "Tum Ho Toh from the film.",
+        facts: [{ label: "Year", value: "2016" }],
+        links: [],
+        imageUrl: "https://coverartarchive.org/release/abc/front-250",
+        source: "ai",
+        graph: {
+          nodes: [
+            { id: "tum-ho-toh", label: "Tum Ho Toh", kind: "work" },
+            { id: "raj-shekhar", label: "Raj Shekhar", kind: "person" },
+          ],
+          edges: [
+            { from: "raj-shekhar", to: "tum-ho-toh", relation: "wrote" },
+          ],
+        },
+      },
+    );
+    const deepened = roomAfterDossier(filed, "adroit", {
+      status: "ready",
+      summary: null,
+      facts: [],
+      links: [],
+      imageUrl: null,
+      source: "ai",
+      graph: {
+        nodes: [
+          { id: "azhar", label: "Azhar", kind: "film" },
+          { id: "tum-ho-toh", label: "Tum Ho Toh", kind: "work" },
+        ],
+        edges: [{ from: "tum-ho-toh", to: "azhar", relation: "featured in" }],
+      },
+    });
+    expect(deepened.dossier.summary).toMatch(/Tum Ho Toh/);
+    expect(deepened.plate).toMatch(/coverartarchive/);
+    expect(deepened.dossier.graph.nodes.map((node) => node.id).sort()).toEqual([
+      "azhar",
+      "raj-shekhar",
+      "tum-ho-toh",
+    ]);
   });
 
   it("clears the room when nothing is playing", () => {
