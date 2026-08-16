@@ -747,6 +747,47 @@ function MeridianIcon({ kind }: { kind: MeridianKind }) {
   );
 }
 
+function TheaterLetter({ text }: { text: string }) {
+  const ref = useRef<HTMLParagraphElement>(null);
+  const [open, setOpen] = useState(false);
+  const [needed, setNeeded] = useState(false);
+
+  useEffect(() => {
+    setOpen(false);
+    setNeeded(false);
+  }, [text]);
+
+  useEffect(() => {
+    const node = ref.current;
+    if (!node || open) return;
+    const check = () => {
+      if (node.scrollHeight > node.clientHeight + 1) setNeeded(true);
+    };
+    check();
+    const observer = new ResizeObserver(check);
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [open, text]);
+
+  return (
+    <div className={`ew-letter${open ? " is-open" : ""}`}>
+      <p ref={ref} className="ew-caption">
+        {text}
+      </p>
+      {needed ? (
+        <button
+          type="button"
+          className="ew-letter-more"
+          aria-expanded={open}
+          onClick={() => setOpen((value) => !value)}
+        >
+          {open ? "less" : "more"}
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
 export function TheaterWell({
   phase,
   dispatchBody,
@@ -794,7 +835,7 @@ export function TheaterWell({
       aria-label={aria}
     >
       <i className="ew-cover-rule" />
-      {dispatchBody ? <p className="ew-caption">{dispatchBody}</p> : null}
+      {dispatchBody ? <TheaterLetter text={dispatchBody} /> : null}
       {phase === "filed" ? (
         <>
           {showCover ? (
@@ -813,7 +854,7 @@ export function TheaterWell({
               ) : null}
               <div>
                 {coverTitle ? <p className="ew-cover-title">{coverTitle}</p> : null}
-                {summary ? <p className="ew-caption">{summary}</p> : null}
+                {summary ? <TheaterLetter text={summary} /> : null}
               </div>
             </div>
           ) : null}

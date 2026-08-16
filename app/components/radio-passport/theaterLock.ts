@@ -899,6 +899,27 @@ export function theaterSkyLive(phase: TheaterPhase) {
   return phase === "reading" || phase === "locking" || phase === "filed";
 }
 
+/** Scroll depth that folds the sky all the way. */
+export const SKY_FOLD_TRAVEL = 180;
+/** Keep this much page after a fold so the sky never claws the scroll back. */
+export const SKY_FOLD_MIN_ROOM = 140;
+
+/** How far the sky recedes. 0 is open night, 1 is the compact ribbon. */
+export function theaterSkyShrink(
+  scrollY: number,
+  pageRoom: number,
+  maxFold: number,
+  travel = SKY_FOLD_TRAVEL,
+  minRoom = SKY_FOLD_MIN_ROOM,
+) {
+  if (maxFold <= 0 || travel <= 0) return 0;
+  const allowed = pageRoom - minRoom;
+  if (allowed <= 0) return 0;
+  const fromScroll = Math.max(0, scrollY) / travel;
+  const fromRoom = allowed / maxFold;
+  return Math.min(1, fromScroll, fromRoom);
+}
+
 function normalizeRelation(value: string) {
   const text = value.trim().toLowerCase().replace(/\s+/g, " ");
   if (!text || text.length > 22) return null;

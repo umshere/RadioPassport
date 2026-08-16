@@ -11,6 +11,7 @@ import {
   lockSeed,
   splitFieldTokens,
   theaterReleases,
+  theaterSkyShrink,
   theaterTrackCopy,
 } from "~/components/radio-passport/theaterLock";
 import { formatLocalLabel, localDateAtLongitude } from "~/utils/localTime";
@@ -18,11 +19,6 @@ import {
   theaterIntelligenceFromRoom,
   theaterWithoutStation,
 } from "~/components/radio-passport/productFlow";
-
-/** Scroll depth that folds the sky all the way. */
-const SKY_FOLD_TRAVEL = 260;
-/** Below this much page left to read, the sky keeps its full height. */
-const SKY_FOLD_MIN_ROOM = 420;
 
 export const meta = () => [
   { title: `Theater · ${BRAND.name}` },
@@ -108,7 +104,8 @@ export default function ListeningPage() {
   );
   const seed = lockSeed([nowPlaying?.uuid, city]);
 
-  // The sky gives ground as you read deeper — scroll folds it, never a jump.
+  // The sky recedes as you read — the figure scales, seats stay. A shallow
+  // folio does not fold: shortening that page would claw the scroll back.
   const theaterRef = useRef<HTMLElement>(null);
   useEffect(() => {
     const node = theaterRef.current;
@@ -116,24 +113,31 @@ export default function ListeningPage() {
     const sky = node.querySelector<HTMLElement>(".ew-theater-sky");
     if (!sky) return;
     let frame = 0;
-    let skyFull = sky.getBoundingClientRect().height;
+    let skyFull = 0;
+
+    const foldAmount = () => {
+      const raw = getComputedStyle(node).getPropertyValue("--ew-sky-fold");
+      const next = Number.parseFloat(raw);
+      return Number.isFinite(next) && next > 0 ? next : 0.4;
+    };
 
     const measure = () => {
+      const previous = node.style.getPropertyValue("--ew-sky-shrink") || "0";
       node.style.setProperty("--ew-sky-shrink", "0");
       skyFull = sky.getBoundingClientRect().height;
+      node.style.setProperty("--ew-sky-shrink", previous);
     };
 
     const apply = () => {
       frame = 0;
-      const folded = skyFull - sky.getBoundingClientRect().height;
-      const room =
+      const folded = Math.max(0, skyFull - sky.getBoundingClientRect().height);
+      const pageRoom =
         document.documentElement.scrollHeight - window.innerHeight + folded;
-      // A shallow folio has nothing to reveal, and folding it there would only
-      // shorten the page under the scroll it was answering.
-      const shrink =
-        room < SKY_FOLD_MIN_ROOM
-          ? 0
-          : Math.min(1, Math.max(0, window.scrollY / SKY_FOLD_TRAVEL));
+      const shrink = theaterSkyShrink(
+        window.scrollY,
+        pageRoom,
+        skyFull * foldAmount(),
+      );
       node.style.setProperty("--ew-sky-shrink", shrink.toFixed(3));
     };
 
@@ -154,7 +158,7 @@ export default function ListeningPage() {
       window.removeEventListener("resize", onResize);
       if (frame) window.cancelAnimationFrame(frame);
     };
-  }, []);
+  }, [phase, factKey]);
 
   if (!nowPlaying) {
     const empty = theaterWithoutStation();

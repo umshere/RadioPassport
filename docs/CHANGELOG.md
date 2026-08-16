@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-08-15 — The letter runs; the sky recedes
+
+The cover sits at four lines. A foil `more` opens the rest; `less` folds it back. Facts still stop at six. As you go, the constellation scales down into a ribbon so the folio has room; scroll back and the night opens again. A shallow page still refuses to fold, so the sky cannot claw the scroll.
+
 ## 2026-08-15 — The sky is a galaxy, and the figure reads again
 
 The room leans against a real night: a seeded milky river, ~200 grains of dust in three depths tinted bone, foil and ether, brighter grains carrying a cross flare, a breathing nebula, and a vignette that settles the edges. Home keeps the same night behind the globe.

@@ -43,6 +43,7 @@ import {
   theaterLockLines,
   theaterLockLive,
   theaterSkyLive,
+  theaterSkyShrink,
   theaterPhase,
   theaterReleases,
   theaterTrackCopy,
@@ -377,6 +378,11 @@ describe("theater lock", () => {
     expect(theaterLockLive("filed")).toBe(false);
     expect(theaterSkyLive("filed")).toBe(true);
     expect(theaterSkyLive("quiet")).toBe(false);
+    expect(theaterSkyShrink(0, 80, 160)).toBe(0);
+    expect(theaterSkyShrink(200, 80, 160)).toBe(0);
+    expect(theaterSkyShrink(90, 400, 160)).toBeCloseTo(0.5, 5);
+    expect(theaterSkyShrink(400, 400, 160)).toBe(1);
+    expect(theaterSkyShrink(400, 180, 160)).toBeCloseTo(0.25, 5);
     expect(theaterWellAria("locking")).toMatch(/filing/i);
     expect(theaterWellAria("filed")).toBeUndefined();
     expect(formatBearing(0)).toBe("0°");
@@ -639,11 +645,20 @@ describe("theater lock", () => {
     expect(home).not.toContain("useTrackTrivia(");
     expect(home).toContain("GalaxyBackdrop");
     expect(listen).toContain("--ew-sky-shrink");
+    expect(listen).toContain("theaterSkyShrink");
     const stylesheet = readFileSync(
       new URL("../../app/tailwind.css", import.meta.url),
       "utf8",
     );
     expect(stylesheet).toContain(".ew-galaxy");
     expect(stylesheet).toContain("--ew-sky-shrink");
+    expect(stylesheet).toContain("--ew-sky-scale");
+    expect(stylesheet).toContain("--ew-sky-fold");
+    expect(stylesheet).toContain(".ew-letter-more");
+    expect(stylesheet).toMatch(
+      /\.ew-letter:not\(\.is-open\) \.ew-caption[\s\S]*?-webkit-line-clamp:\s*4/,
+    );
+    expect(well).toContain("TheaterLetter");
+    expect(well).toContain('"more"');
   });
 });
