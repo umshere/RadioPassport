@@ -112,9 +112,11 @@ land · dusk · hour · stamp · live · cover · elsewhere · now
 - `_index.tsx`: `intentEcho` state + `queryRef` staleness guard (a slow interpret response never whispers over retyped text). Echo set after the existing setQuery calls; cleared on any keystroke in the IntentBar onChange. Props: `statusLabel={intentEcho ?? seek.label}`, spoken `Heard: ${echo}`. Tone unchanged. No CSS changes.
 - Contract untouched: `seekingStatus` outputs still locked by exact assertions; 183 passing.
 
-### 4. Sky draws connections (small)
+### 4. Sky draws connections — done 2026-08-22 (on PR #17, awaiting review)
 
-When the trivia graph lands in the theater, pulse the knowledge-edge alpha once. `TheaterField` already eases glow/reach toward phase targets and has star-birth bloom constants in `theaterLock.ts`. Keep everything seeded/deterministic — `theaterLock.test.ts` locks that down.
+- Pure curve `fieldGraphPulse(ageMs, reduced)` + `GRAPH_PULSE_MS = 1400` in `theaterLock.ts`, modeled on the star-birth bloom family: quick attack (~18% of window), quadratic settle, exact 0 at the boundary (`>=` clamp against float epsilon); reduced motion always 0. Unit-tested in `theaterLock.test.ts`.
+- `TheaterField` tracks graph edge count; any increase (first land or deepen growth) fires a one-shot pulse: knowledge-edge alpha up to x1.7 clamped <= 1, line width +0.9px. Render-side only — seeded field math untouched.
+- Gate green on branch: 184/184 tests, typecheck, eslint.
 
 ### 5. Flow audit + loops — Pass 3
 
