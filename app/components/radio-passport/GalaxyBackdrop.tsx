@@ -11,6 +11,7 @@ import {
   hexRgb,
   lockSeed,
 } from "./theaterLock";
+import { grainPath } from "./halftone";
 
 const HOME_SKY_SEED = lockSeed(["elsewhere", "home-sky"]);
 const FRAME_MS = 80;
@@ -105,6 +106,7 @@ export function GalaxyBackdrop({
         context.beginPath();
         context.arc(cx, cy, radius, 0, Math.PI * 2);
         context.fill();
+        if (!reduced) grainPath(context, 0.07);
       });
 
       dust.forEach((grain) => {

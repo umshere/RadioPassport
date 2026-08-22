@@ -132,9 +132,8 @@ export function AtlasOverlay({
   const visible = countries.filter(
     (country) =>
       !normalized ||
-      `${country.name} ${country.iso_3166_1} ${
-        languagesByCountry.get(country.name) ?? ""
-      }`
+      `${country.name} ${country.iso_3166_1} ${languagesByCountry.get(country.name) ?? ""
+        }`
         .toLowerCase()
         .includes(normalized)
   );
@@ -190,9 +189,8 @@ export function AtlasOverlay({
                     type="button"
                     key={country.name}
                     onClick={() => openCountry(country.name)}
-                    className={`rp-country ${
-                      country.stationcount ? "" : "is-unavailable"
-                    }`}
+                    className={`rp-country ${country.stationcount ? "" : "is-unavailable"
+                      }`}
                     disabled={!country.stationcount}
                   >
                     <span className="rp-telemetry">
@@ -280,9 +278,9 @@ export function CountryOverlay({
   }, [country, languageFilter, stations]);
   const visibleStations = languageFilter
     ? languageStations ??
-      stations.filter((station) =>
-        stationSpeaksLanguage(station, languageFilter)
-      )
+    stations.filter((station) =>
+      stationSpeaksLanguage(station, languageFilter)
+    )
     : stations;
   const catalogLive = applyLiveCatalog(visibleStations);
   const liveStations = useShelfProbe(
@@ -340,9 +338,8 @@ export function CountryOverlay({
               {languages.map((language) => (
                 <button
                   type="button"
-                  className={`rp-chip ${
-                    languageFilter === language ? "active" : ""
-                  }`}
+                  className={`rp-chip ${languageFilter === language ? "active" : ""
+                    }`}
                   onClick={() =>
                     setLanguageFilter((current) =>
                       current === language ? null : language
@@ -362,8 +359,8 @@ export function CountryOverlay({
                 <section key={city}>
                   <p className="rp-eyebrow text-foil">
                     {index === 0 &&
-                    !languageFilter &&
-                    liveStations.length > 24
+                      !languageFilter &&
+                      liveStations.length > 24
                       ? "TOP PICKS · "
                       : ""}
                     {city.toUpperCase()}
@@ -467,19 +464,36 @@ export function PassportOverlay({
             {stamps.map((stamp, index) => (
               <button
                 type="button"
-                className="rp-stamp text-left"
+                className="rp-stamp rp-stamp-ticket text-left"
                 style={{ transform: `rotate(${index % 2 ? 1.5 : -1.5}deg)` }}
                 key={stamp.id}
                 onClick={() => onReplay?.(stamp)}
               >
-                <p className="rp-eyebrow text-foil">
-                  {stamp.countryCode || "--"} · {stamp.country}
-                </p>
-                <h3>{stamp.city}</h3>
-                <p>
-                  {stamp.stationName} · {stamp.telemetry}
-                </p>
-                <small>{new Date(stamp.stampedAt).toLocaleDateString()}</small>
+                <span className="rp-stamp-main">
+                  <p className="rp-eyebrow text-foil">
+                    {stamp.countryCode || "--"} · {stamp.country}
+                  </p>
+                  <h3>{stamp.city}</h3>
+                  <p>{stamp.stationName}</p>
+                </span>
+                <span className="rp-stamp-stub">
+                  <strong>
+                    {new Date(stamp.stampedAt).toLocaleTimeString(undefined, {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                      hour12: false,
+                    })}
+                  </strong>
+                  <em>
+                    {new Date(stamp.stampedAt)
+                      .toLocaleDateString(undefined, {
+                        month: "short",
+                        day: "numeric",
+                      })
+                      .toUpperCase()}
+                  </em>
+                  <small>{stamp.telemetry}</small>
+                </span>
               </button>
             ))}
             {Array.from({ length: Math.max(0, 6 - stamps.length) }).map(

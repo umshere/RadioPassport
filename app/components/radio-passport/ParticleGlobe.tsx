@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useAtmosphereStore } from "~/state/atmosphereStore";
 import { globeAtmospherePaint } from "~/utils/atmosphere";
+import { grainRect } from "./halftone";
 
 export type GlobePlace = {
   id: string;
@@ -258,6 +259,7 @@ export function ParticleGlobe({
         wash.addColorStop(1, paint.washFade);
         ctx.fillStyle = wash;
         ctx.fillRect(0, 0, rect.width, rect.height);
+        if (!reduced) grainRect(ctx, 0, 0, rect.width, rect.height, 0.05);
       }
       ctx.beginPath();
       ctx.arc(cx, cy, r, 0, Math.PI * 2);
@@ -294,8 +296,8 @@ export function ParticleGlobe({
         ctx.fillStyle = p.playing
           ? paint.cityPlaying
           : p.stamped
-          ? paint.cityStamped
-          : paint.cityLive;
+            ? paint.cityStamped
+            : paint.cityLive;
         ctx.beginPath();
         ctx.arc(
           point.x,

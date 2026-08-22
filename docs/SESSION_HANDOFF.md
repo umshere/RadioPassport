@@ -98,13 +98,12 @@ land · dusk · hour · stamp · live · cover · elsewhere · now
 - The fill is a lacquer conic-gradient on `.ew-stamp-ring`, appended **outside any `@layer`** at the end of `app/tailwind.css` (same layer-drop gremlin as the site bar). `PlayerDock`'s inline style only sets `background` when stamped, so the stylesheet owns the unstamped fill.
 - Contract tests untouched and green: `isStampReady` semantics did not move; 182 passing.
 
-### 2. Ticket-stub passport — Inspora pick
+### 2. Ticket-stub passport — done 2026-08-22 (local, not yet deployed)
 
-Ums chose boarding-pass/ticket-stub language as the primary creative direction (Inspora board), plus dither/halftone as texture layer.
-
-- Restyle `PassportOverlay` stamps (`Overlays.tsx` ~392–520) as ticket stubs: perforated edge, big city + country code, local time at stamp moment, telemetry small, slight rotation. Stamps already store `stampedAt`, `telemetry`.
-- Dither/halftone shading pass on the canvas atmosphere washes (`ParticleGlobe`, `TheaterField` dust/nebulae). Perf-first: no per-pixel work on hot loops without measuring.
-- Voice gate before shipping any new copy: land · dusk · hour · stamp · live · cover · elsewhere · now. Ban list still applies.
+- Stamps in `PassportOverlay` render as boarding-pass stubs: `.rp-stamp-ticket` — semicircle side notches punched through with CSS `mask` (autoprefixer adds `-webkit-`), dashed tear line, big italic city on the main panel, tear-off strip carrying local time at stamp moment (`stampedAt` → HH:MM), short date, telemetry small. ±1.5° rotation kept; empty slots untouched.
+- Ticket CSS lives **outside any `@layer`** at the end of `app/tailwind.css` (layer-drop gremlin).
+- Halftone grain: new `app/components/radio-passport/halftone.ts` — one fixed 6×6 dot tile reused as a CanvasPattern, stamped over the playing wash (`ParticleGlobe`, α .05) and nebulae (`GalaxyBackdrop` α .07, `TheaterWell` α .06). No per-pixel loops anywhere; skipped under reduced motion.
+- Voice gate: no new copy — stubs render stored data only.
 
 ### 3. Intent echo (small)
 

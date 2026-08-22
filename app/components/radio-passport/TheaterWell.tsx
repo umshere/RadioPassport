@@ -6,6 +6,7 @@ import {
   type TheaterLink,
 } from "./productFlow";
 import { safeExternalUrl } from "./stationInsights";
+import { grainPath } from "./halftone";
 import {
   markArtworkUrlFailed,
   sanitizeArtworkUrl,
@@ -364,6 +365,7 @@ export function TheaterField({
         context.beginPath();
         context.arc(cx, cy, radius, 0, Math.PI * 2);
         context.fill();
+        if (!reduced.current) grainPath(context, 0.06);
       });
 
       const active = nodes
