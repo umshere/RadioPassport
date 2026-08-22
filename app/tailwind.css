@@ -1590,7 +1590,7 @@
 .rp-stamp-ticket .rp-stamp-stub strong {
   font: 500 15px/1 "Azeret Mono", monospace;
   letter-spacing: 0.06em;
-                 -bone);
+  color: var(--ew-bone);
 }
 .rp-stamp-ticket .rp-stamp-stub em {
   font: 500 9px/1 "Azeret Mono", monospace;
