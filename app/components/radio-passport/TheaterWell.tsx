@@ -16,6 +16,7 @@ import { EMPTY_GRAPH } from "~/types/trivia";
 import {
   advanceFieldTraveler,
   FIELD_LINE_WEIGHT,
+  GRAPH_PULSE_MS,
   fieldBirthBloom,
   fieldBirthRipple,
   fieldDensity,
@@ -25,6 +26,7 @@ import {
   fieldDustPoint,
   fieldDustTwinkle,
   fieldEdgeShimmer,
+  fieldGraphPulse,
   fieldMilkyWay,
   fieldShootingStar,
   fieldHopRelation,
@@ -211,6 +213,9 @@ export function TheaterField({
   const dustRef = useRef(dust);
   const bandRef = useRef(band);
   const nebulaeRef = useRef(nebulae);
+  // The graph's arrival is a moment: one foil pulse across its edges.
+  const graphPulseRef = useRef<number | null>(null);
+  const graphEdgesRef = useRef(0);
   nodesRef.current = nodes;
   phaseRef.current = phase;
   graphRef.current = graph ?? EMPTY_GRAPH;
@@ -258,6 +263,15 @@ export function TheaterField({
       const phase = phaseRef.current;
       const graph = graphRef.current;
       const stillSky = reduced.current;
+      const edgeCount = graph.edges.length;
+      if (edgeCount > graphEdgesRef.current) graphPulseRef.current = now;
+      graphEdgesRef.current = edgeCount;
+      const pulseAge =
+        graphPulseRef.current === null ? null : now - graphPulseRef.current;
+      if (pulseAge !== null && pulseAge > GRAPH_PULSE_MS) {
+        graphPulseRef.current = null;
+      }
+      const graphPulse = stillSky ? 0 : fieldGraphPulse(pulseAge, false);
       const dt = Math.min(0.05, (now - last) / 1000);
       last = now;
       const rect = parent.getBoundingClientRect();
@@ -503,7 +517,11 @@ export function TheaterField({
           traveler &&
           ((traveler.from === a.node.key && traveler.to === b.node.key) ||
             (traveler.from === b.node.key && traveler.to === a.node.key));
-        const alpha = glow * 0.88 * Math.min(a.weight, b.weight);
+        // The landing pulse lifts every knowledge thread for one breath.
+        const alpha = Math.min(
+          1,
+          glow * 0.88 * Math.min(a.weight, b.weight) * (1 + graphPulse * 0.7),
+        );
         const x1 = a.point.x * width;
         const y1 = a.point.y * height;
         const x2 = b.point.x * width;
@@ -519,7 +537,7 @@ export function TheaterField({
         context.moveTo(x1, y1);
         context.lineTo(x2, y2);
         context.strokeStyle = rgba(palette.foil, onPath ? Math.max(alpha, 0.9) : alpha);
-        context.lineWidth = onPath ? 2 : 1.35;
+        context.lineWidth = onPath ? 2 : 1.35 + graphPulse * 0.9;
         context.stroke();
         if (!stillSky) {
           context.beginPath();

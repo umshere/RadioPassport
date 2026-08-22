@@ -106,7 +106,10 @@ const FAMILY_KIND: Record<FieldFamily, LockKind> = {
   graph: "foil",
 };
 
-const FAMILY_HOME: Record<FieldFamily, { x: number; y: number; spread: number }> = {
+const FAMILY_HOME: Record<
+  FieldFamily,
+  { x: number; y: number; spread: number }
+> = {
   place: { x: 0.22, y: 0.2, spread: 0.07 },
   signal: { x: 0.16, y: 0.44, spread: 0.06 },
   language: { x: 0.3, y: 0.33, spread: 0.07 },
@@ -176,7 +179,9 @@ const MB_RELATION_WORD: Record<string, string> = {
   "samples material": "sampled",
 };
 
-export function lockSeed(parts: Array<string | number | null | undefined>): number {
+export function lockSeed(
+  parts: Array<string | number | null | undefined>,
+): number {
   let hash = 2166136261;
   const text = parts.map((part) => String(part ?? "")).join("\u001f");
   for (let index = 0; index < text.length; index += 1) {
@@ -370,15 +375,13 @@ export function fieldPoint(
   if (!drift) return { x: node.x, y: node.y };
   return {
     x: node.x + Math.sin(time * node.freq + node.phase) * node.ampX * drift,
-    y: node.y + Math.cos(time * node.freq * 0.83 + node.phase) * node.ampY * drift,
+    y:
+      node.y +
+      Math.cos(time * node.freq * 0.83 + node.phase) * node.ampY * drift,
   };
 }
 
-export function fieldDistance(
-  a: FieldPoint,
-  b: FieldPoint,
-  aspect = 1,
-) {
+export function fieldDistance(a: FieldPoint, b: FieldPoint, aspect = 1) {
   return Math.hypot(a.x - b.x, (a.y - b.y) * aspect);
 }
 
@@ -494,7 +497,8 @@ export function fieldWalk(
       (open.length
         ? open.sort(
             (left, right) =>
-              Number(prefers(current, right)) - Number(prefers(current, left)) ||
+              Number(prefers(current, right)) -
+                Number(prefers(current, left)) ||
               rankOf(left) - rankOf(right) ||
               left.localeCompare(right),
           )[0]
@@ -545,7 +549,8 @@ export function advanceFieldTraveler(
   }
   if (state.dwelling > 0) {
     const left = state.dwelling - dt;
-    if (left > 0) return { ...state, to: state.from, progress: 0, dwelling: left };
+    if (left > 0)
+      return { ...state, to: state.from, progress: 0, dwelling: left };
     return {
       from: state.from,
       to: nextWalkKey(walk, state.from),
@@ -605,7 +610,11 @@ export function fieldSemanticEdges(
   if (reach <= 0) return edges;
   for (let i = 0; i < nodes.length; i += 1) {
     for (let j = i + 1; j < nodes.length; j += 1) {
-      const allowed = fieldReachForPair(nodes[i]!.family, nodes[j]!.family, reach);
+      const allowed = fieldReachForPair(
+        nodes[i]!.family,
+        nodes[j]!.family,
+        reach,
+      );
       const distance = fieldDistance(points[i]!, points[j]!, aspect);
       if (distance < allowed) {
         edges.push({ i, j, strength: 1 - distance / allowed });
@@ -652,10 +661,16 @@ export function fieldSpanEdges(
     return true;
   };
   for (const edge of edges) unite(edge.i, edge.j);
-  const components = () => new Set(Array.from({ length: count }, (_, index) => find(index))).size;
+  const components = () =>
+    new Set(Array.from({ length: count }, (_, index) => find(index))).size;
   if (components() <= 1) return [];
 
-  const candidates: Array<{ i: number; j: number; dist: number; kindred: boolean }> = [];
+  const candidates: Array<{
+    i: number;
+    j: number;
+    dist: number;
+    kindred: boolean;
+  }> = [];
   for (let i = 0; i < count; i += 1) {
     for (let j = i + 1; j < count; j += 1) {
       if (find(i) === find(j)) continue;
@@ -818,7 +833,9 @@ export function formatBearing(longitude: number): string {
   return longitude < 0 ? `${abs}°W` : `${abs}°E`;
 }
 
-export function lockFingerprint(parts: Array<string | number | null | undefined>) {
+export function lockFingerprint(
+  parts: Array<string | number | null | undefined>,
+) {
   const seed = lockSeed(parts);
   const left = seed.toString(16).padStart(8, "0").slice(0, 4);
   const right = (Math.imul(seed, 2654435761) >>> 0)
@@ -850,7 +867,9 @@ export function theaterLockLines(input: {
   if (typeof input.longitude === "number") {
     const bearing = formatBearing(input.longitude);
     if (bearing) {
-      lines.push(input.city?.trim() ? `${bearing} · ${input.city.trim()}` : bearing);
+      lines.push(
+        input.city?.trim() ? `${bearing} · ${input.city.trim()}` : bearing,
+      );
     }
   } else if (input.city?.trim()) {
     lines.push(input.city.trim());
@@ -1039,7 +1058,11 @@ export function graphFromMusicBrainzRelations(input: {
     }
     return id;
   };
-  const addEdge = (from: string | null, to: string | null, relation: string) => {
+  const addEdge = (
+    from: string | null,
+    to: string | null,
+    relation: string,
+  ) => {
     if (!from || !to || from === to) return;
     if (edges.some((edge) => edge.from === from && edge.to === to)) return;
     edges.push({ from, to, relation, verified: true });
@@ -1100,7 +1123,8 @@ export function fieldHopRelation(
   return (
     knowledge.find(
       (edge) =>
-        (edge.i === from && edge.j === to) || (edge.i === to && edge.j === from),
+        (edge.i === from && edge.j === to) ||
+        (edge.i === to && edge.j === from),
     )?.relation ?? null
   );
 }
@@ -1260,7 +1284,9 @@ export function fieldNebulaAlpha(
   const base =
     cloud.tint === "foil" ? 0.065 : cloud.tint === "ether" ? 0.05 : 0.045;
   if (reduced) return base;
-  return base * (0.82 + 0.18 * Math.sin((time / 40) * Math.PI * 2 + cloud.phase));
+  return (
+    base * (0.82 + 0.18 * Math.sin((time / 40) * Math.PI * 2 + cloud.phase))
+  );
 }
 
 export function fieldStarTwinkle(
@@ -1289,9 +1315,22 @@ export function fieldBirthBloom(ageMs: number | null, reduced: boolean) {
 }
 
 export function fieldBirthRipple(ageMs: number | null, reduced: boolean) {
-  if (reduced || ageMs == null || ageMs < 0 || ageMs > STAR_BIRTH_MS) return null;
+  if (reduced || ageMs == null || ageMs < 0 || ageMs > STAR_BIRTH_MS)
+    return null;
   const t = ageMs / STAR_BIRTH_MS;
   return { radius: 1 + t * 3.4, alpha: 1 - t };
+}
+
+/** One-shot pulse when the knowledge graph lands: quick rise, long settle. */
+export const GRAPH_PULSE_MS = 1400;
+
+export function fieldGraphPulse(ageMs: number | null, reduced: boolean) {
+  if (reduced || ageMs == null || ageMs < 0 || ageMs >= GRAPH_PULSE_MS)
+    return 0;
+  const t = ageMs / GRAPH_PULSE_MS;
+  const attack = Math.min(1, t / 0.18);
+  const settle = 1 - (t - 0.18) / 0.82;
+  return attack * settle * settle;
 }
 
 export function fieldEdgeShimmer(seed: number, time: number, reduced: boolean) {
