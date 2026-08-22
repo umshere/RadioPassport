@@ -105,9 +105,11 @@ land · dusk · hour · stamp · live · cover · elsewhere · now
 - Halftone grain: new `app/components/radio-passport/halftone.ts` — one fixed 6×6 dot tile reused as a CanvasPattern, stamped over the playing wash (`ParticleGlobe`, α .05) and nebulae (`GalaxyBackdrop` α .07, `TheaterWell` α .06). No per-pixel loops anywhere; skipped under reduced motion.
 - Voice gate: no new copy — stubs render stored data only.
 
-### 3. Intent echo (small)
+### 3. Intent echo — done 2026-08-22 (local, not yet deployed)
 
-When `/api/ai/interpret` rewrites the typed query (`submitIntent` in `_index.tsx`), whisper back what was understood via the existing seek status line (`seek.spoken` → IntentBar `statusLabel`/`statusSpoken`). One transient state, cleared on next keystroke.
+- Pure helper `intentEchoFromInterpret(prompt, intent)` in `productFlow.ts`: language rewrite wins (mirroring route precedence); identical or whitespace-equal query whispers nothing; returns null otherwise. Unit-tested in `elsewhereFlow.test.ts`.
+- `_index.tsx`: `intentEcho` state + `queryRef` staleness guard (a slow interpret response never whispers over retyped text). Echo set after the existing setQuery calls; cleared on any keystroke in the IntentBar onChange. Props: `statusLabel={intentEcho ?? seek.label}`, spoken `Heard: ${echo}`. Tone unchanged. No CSS changes.
+- Contract untouched: `seekingStatus` outputs still locked by exact assertions; 183 passing.
 
 ### 4. Sky draws connections (small)
 
@@ -148,4 +150,4 @@ TWA → Play Store via Bubblewrap/PWABuilder was the chosen path (near-zero code
 
 ## Tests
 
-`npm test` — 182 passing (22 files; `stampInkProgress` added 2026-08-22). Keep those exports (`titleCasePlaceName`, `toggleSelection`, `shouldAnimateDock`, `aggregateCountryStationContext`, `applyAiPreviewPool` returns the descriptor, `stampForContinuousSession`, `stampInkProgress`, `sharedSignals`). Note: `elsewhereProduct.test.ts` asserts the raw compact formatting of `app/tailwind.css` — keep one-line rules like `.ew-theater-well { min-height: 16rem; }` intact (editor formatters will reflow the whole file if you let them).
+`npm test` — 183 passing (22 files; `stampInkProgress` + `intentEchoFromInterpret` added 2026-08-22). Keep those exports (`titleCasePlaceName`, `toggleSelection`, `shouldAnimateDock`, `aggregateCountryStationContext`, `applyAiPreviewPool` returns the descriptor, `stampForContinuousSession`, `stampInkProgress`, `intentEchoFromInterpret`, `sharedSignals`). Note: `elsewhereProduct.test.ts` asserts the raw compact formatting of `app/tailwind.css` — keep one-line rules like `.ew-theater-well { min-height: 16rem; }` intact (editor formatters will reflow the whole file if you let them).

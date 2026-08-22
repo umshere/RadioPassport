@@ -80,7 +80,7 @@ export function requestOpenPassport() {
 
 export function passportRequested(search: string) {
   const params = new URLSearchParams(
-    search.startsWith("?") ? search.slice(1) : search
+    search.startsWith("?") ? search.slice(1) : search,
   );
   const value = params.get("passport");
   return value === null ? false : value !== "0";
@@ -92,7 +92,7 @@ export function homeWithPassportHref() {
 
 export function openPassportNow(
   pathname: string,
-  goHomeWithPassport: () => void
+  goHomeWithPassport: () => void,
 ) {
   if (pathname === "/") {
     requestOpenPassport();
@@ -397,14 +397,12 @@ export function looksLikeIntentSentence(value: string) {
   return (
     words.length >= 3 ||
     /\b(mix|surprise|take me|anywhere|night|tonight|rainy|dusk|dawn|somewhere|wander|random)\b/i.test(
-      value
+      value,
     )
   );
 }
 
-export function intentPath(
-  value: string
-): "idle" | "catalog" | "interpret" {
+export function intentPath(value: string): "idle" | "catalog" | "interpret" {
   const prompt = value.trim();
   if (!prompt) return "idle";
   return looksLikeIntentSentence(prompt) ? "interpret" : "catalog";
@@ -456,10 +454,26 @@ export function seekingStatus(input: {
   };
 }
 
+/**
+ * What the interpreter understood differently: the rewrite worth whispering
+ * back through the seek status line. Language rewrites win (mirroring the
+ * route's precedence); an identical or whitespace-equal query whispers nothing.
+ */
+export function intentEchoFromInterpret(
+  prompt: string,
+  intent: { language?: string | null; query?: string | null },
+): string | null {
+  const language = intent.language?.trim();
+  if (language) return language;
+  const query = intent.query?.trim();
+  if (!query) return null;
+  return query.toLowerCase() === prompt.trim().toLowerCase() ? null : query;
+}
+
 export function seekingBoardLabel(
   query: string,
   loading: boolean,
-  count: number
+  count: number,
 ) {
   const trimmed = query.trim();
   if (!trimmed) return null;
@@ -472,7 +486,7 @@ export function seekingBoardLabel(
 export function hourBoardLabel(
   hour: string | null,
   loading: boolean,
-  count: number
+  count: number,
 ) {
   if (!hour) return null;
   const name = hour.toUpperCase();
@@ -548,7 +562,7 @@ export type StampReplay = {
 
 export function resolveStampReplay(
   stamp: { stationId: string; city: string; country: string },
-  pools: Station[]
+  pools: Station[],
 ): StampReplay {
   const byId = pools.find((station) => station.uuid === stamp.stationId);
   if (byId) return { station: byId, fallback: "country" };

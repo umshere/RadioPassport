@@ -1,6 +1,6 @@
 import { json, type LoaderFunctionArgs } from "@remix-run/node";
 import { Link, useLoaderData, useSearchParams } from "@remix-run/react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { rbFetchJson } from "~/utils/radioBrowser";
 import { normalizeStations } from "~/utils/stations";
 import { applyLiveCatalog } from "~/utils/stationMeta";
@@ -57,6 +57,7 @@ import {
   resolveStampReplay,
   looksLikeIntentSentence,
   hourBoardLabel,
+  intentEchoFromInterpret,
   seekingBoardLabel,
   seekingStatus,
   theaterIntelligenceFromRoom,
@@ -153,6 +154,10 @@ export default function Index() {
   );
   const [mixLabel, setMixLabel] = useState<string | null>(null);
   const [passport, setPassport] = useState(false);
+  // The interpreter's whisper: what it understood differently, until the next keystroke.
+  const [intentEcho, setIntentEcho] = useState<string | null>(null);
+  const queryRef = useRef(query);
+  queryRef.current = query;
 
   useEffect(() => {
     if (!catalogRequestState(query).shouldFetch) {
@@ -214,8 +219,8 @@ export default function Index() {
     query.trim().length >= 2
       ? catalog
       : listening.listeningMode === "world" && listening.exploreStations.length
-      ? listening.exploreStations
-      : initialStations;
+        ? listening.exploreStations
+        : initialStations;
 
   const filtered = useMemo(
     () =>
@@ -276,10 +281,10 @@ export default function Index() {
         sourceType: home
           ? "atlas"
           : q.trim()
-          ? "search"
-          : listening.listeningMode === "world"
-          ? "ai_mix"
-          : "atlas",
+            ? "search"
+            : listening.listeningMode === "world"
+              ? "ai_mix"
+              : "atlas",
         sourceLabel: mix || (q.trim() ? `Search: ${q.trim()}` : label),
         stations: pool,
         context: {
@@ -431,6 +436,8 @@ export default function Index() {
           solarHourFromWord(payload.intent.mood) ??
           solarHourFromWord(payload.intent.query);
         if (hour) setHour(hour);
+        const echo = intentEchoFromInterpret(prompt, payload.intent);
+        if (echo && queryRef.current === prompt) setIntentEcho(echo);
       } catch {
         // Catalog search already runs from the typed query.
       }
@@ -472,10 +479,10 @@ export default function Index() {
   const arrivalCity = nowPlaying
     ? stationLocation(nowPlaying)
     : continueStation
-    ? stationLocation(continueStation)
-    : featured
-    ? stationLocation(featured)
-    : "the world";
+      ? stationLocation(continueStation)
+      : featured
+        ? stationLocation(featured)
+        : "the world";
   const arrivalStation = nowPlaying || continueStation || featured;
   const isSeeking = query.trim().length >= 2;
   const locatorShrunk = isSeeking || Boolean(hour);
@@ -562,6 +569,7 @@ export default function Index() {
         <IntentBar
           value={query}
           onChange={(value) => {
+            setIntentEcho(null);
             setQuery(value);
             if (shouldClearBrowsingFilters(value)) {
               setHour(null);
@@ -572,8 +580,10 @@ export default function Index() {
           onSurprise={() => void requestAiWorld()}
           loading={catalogLoading}
           surpriseLoading={aiStatus === "loading"}
-          statusLabel={seek.label}
-          statusSpoken={seek.spoken}
+          statusLabel={intentEcho ?? seek.label}
+          statusSpoken={
+            intentEcho ? `Heard: ${intentEcho}` : seek.spoken
+          }
           statusTone={seek.tone}
         />
         <AtmospherePin />
@@ -725,24 +735,24 @@ export default function Index() {
           <div className="rp-station-list" aria-busy={catalogLoading}>
             {catalogLoading && isSeeking
               ? [0, 1, 2].map((slot) => (
-                  <div
-                    key={`pending-${slot}`}
-                    className="rp-station is-pending"
-                    aria-hidden="true"
-                  />
-                ))
+                <div
+                  key={`pending-${slot}`}
+                  className="rp-station is-pending"
+                  aria-hidden="true"
+                />
+              ))
               : liveFiltered
-                  .slice(0, isSeeking ? 32 : 8)
-                  .map((station) => (
-                    <StationRow
-                      key={station.uuid}
-                      station={station}
-                      active={nowPlaying?.uuid === station.uuid && isPlaying}
-                      favorite={favorites.includes(station.uuid)}
-                      onPlay={() => play(station)}
-                      onFavorite={() => toggleFavorite(station.uuid, station)}
-                    />
-                  ))}
+                .slice(0, isSeeking ? 32 : 8)
+                .map((station) => (
+                  <StationRow
+                    key={station.uuid}
+                    station={station}
+                    active={nowPlaying?.uuid === station.uuid && isPlaying}
+                    favorite={favorites.includes(station.uuid)}
+                    onPlay={() => play(station)}
+                    onFavorite={() => toggleFavorite(station.uuid, station)}
+                  />
+                ))}
           </div>
           {liveFiltered.length === 0 && !catalogLoading && (
             <div className="py-8" role="status">
@@ -794,18 +804,16 @@ export default function Index() {
             <p className="rp-eyebrow ew-arrive ew-arrive-2">
               {seekingCover
                 ? seekingBoardLabel(
-                    query,
-                    catalogLoading,
-                    liveFiltered.length
-                  ) ?? ""
+                  query,
+                  catalogLoading,
+                  liveFiltered.length
+                ) ?? ""
                 : arrivalStation
-                  ? `${
-                      arrivalStation.bitrate
-                        ? `${arrivalStation.bitrate} · `
-                        : ""
-                    }${arrivalCity.toUpperCase()} · ${
-                      arrival.live ? "LIVE" : "LAND"
-                    }`
+                  ? `${arrivalStation.bitrate
+                    ? `${arrivalStation.bitrate} · `
+                    : ""
+                  }${arrivalCity.toUpperCase()} · ${arrival.live ? "LIVE" : "LAND"
+                  }`
                   : "TAP A CITY TO TUNE"}
               {!seekingCover && localNow ? ` · ${formatClock(localNow)}` : ""}
             </p>

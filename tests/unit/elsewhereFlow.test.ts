@@ -21,6 +21,7 @@ import {
   resolveStampReplay,
   searchKeepsPlayback,
   hourBoardLabel,
+  intentEchoFromInterpret,
   seekingBoardLabel,
   seekingStatus,
   meridianKind,
@@ -97,9 +98,15 @@ describe("Elsewhere living loop", () => {
 
   it("keeps search, chips, and overlays from calling stop", () => {
     const keepers = SURFACE_CONNECTIONS.filter((item) =>
-      ["intent", "solar-hour", "atmosphere", "atlas", "passport", "favorite", "issue"].includes(
-        item.action
-      )
+      [
+        "intent",
+        "solar-hour",
+        "atmosphere",
+        "atlas",
+        "passport",
+        "favorite",
+        "issue",
+      ].includes(item.action),
     );
     expect(keepers.length).toBeGreaterThan(0);
     expect(keepers.every((item) => item.keepsPlayback)).toBe(true);
@@ -215,6 +222,19 @@ describe("Intent is a step, not a dead field", () => {
     expect(resolveTypedIntent("tonight").hour).toBe("Night");
   });
 
+  it("whispers only what interpret understood differently", () => {
+    expect(intentEchoFromInterpret("jazz", { language: "malayalam" })).toBe(
+      "malayalam",
+    );
+    expect(intentEchoFromInterpret("Lisbon at dusk", { query: "Lisbon" })).toBe(
+      "Lisbon",
+    );
+    // An identical rewrite says nothing new; neither does an empty one.
+    expect(intentEchoFromInterpret("jazz", { query: "jazz" })).toBeNull();
+    expect(intentEchoFromInterpret("jazz", { query: "  jazz  " })).toBeNull();
+    expect(intentEchoFromInterpret("jazz", {})).toBeNull();
+    expect(intentEchoFromInterpret("jazz", { query: "" })).toBeNull();
+  });
   it("names the search in the bar and on the board below", () => {
     expect(seekingStatus({ query: "", loading: false, count: 0 })).toEqual({
       tone: "idle",
@@ -222,16 +242,16 @@ describe("Intent is a step, not a dead field", () => {
       spoken: "",
     });
     expect(
-      seekingStatus({ query: "malayalam", loading: true, count: 0 })
+      seekingStatus({ query: "malayalam", loading: true, count: 0 }),
     ).toMatchObject({ tone: "searching", label: "Searching" });
     expect(
-      seekingStatus({ query: "malayalam", loading: false, count: 88 })
+      seekingStatus({ query: "malayalam", loading: false, count: 88 }),
     ).toMatchObject({ tone: "ready", label: "88 live" });
     expect(seekingBoardLabel("malayalam", true, 0)).toBe(
-      "SEARCHING · MALAYALAM"
+      "SEARCHING · MALAYALAM",
     );
     expect(seekingBoardLabel("malayalam", false, 88)).toBe(
-      "88 LIVE · MALAYALAM"
+      "88 LIVE · MALAYALAM",
     );
     expect(shouldClearBrowsingFilters("malayalam")).toBe(true);
     expect(hourTapNextState(null, "Dawn", "Rahman")).toEqual({
@@ -342,7 +362,7 @@ describe("Cover only claims on air while audio is playing", () => {
         hasNowPlaying: false,
         hasContinue: false,
         city: "Lisbon",
-      })
+      }),
     ).toEqual({
       headline: "Land in Lisbon.",
       cta: "Land here",
@@ -358,7 +378,7 @@ describe("Cover only claims on air while audio is playing", () => {
         hasNowPlaying: true,
         hasContinue: false,
         city: "Kochi",
-      })
+      }),
     ).toEqual({
       headline: "Continue in Kochi.",
       cta: "Continue in Kochi",
@@ -371,7 +391,7 @@ describe("Cover only claims on air while audio is playing", () => {
         hasNowPlaying: false,
         hasContinue: true,
         city: "Accra",
-      })
+      }),
     ).toMatchObject({
       headline: "Continue in Accra.",
       ctaKind: "continue",
@@ -386,7 +406,7 @@ describe("Cover only claims on air while audio is playing", () => {
         hasNowPlaying: true,
         hasContinue: true,
         city: "Lisbon",
-      })
+      }),
     ).toEqual({
       headline: "Lisbon is on air.",
       cta: "",
@@ -399,7 +419,7 @@ describe("Cover only claims on air while audio is playing", () => {
 describe("Cover does not name a leftover city while seeking", () => {
   it("names the search while the catalog is still arriving", () => {
     expect(
-      coverWhileSeeking({ query: "Rahman", count: 0, loading: true })
+      coverWhileSeeking({ query: "Rahman", count: 0, loading: true }),
     ).toEqual({
       headline: "Searching Rahman.",
       cta: "",
@@ -410,7 +430,7 @@ describe("Cover does not name a leftover city while seeking", () => {
 
   it("names how many are live for the search, not a featured city", () => {
     expect(
-      coverWhileSeeking({ query: "Malayalam", count: 88, loading: false })
+      coverWhileSeeking({ query: "Malayalam", count: 88, loading: false }),
     ).toEqual({
       headline: "88 live for Malayalam.",
       cta: "",
@@ -421,7 +441,7 @@ describe("Cover does not name a leftover city while seeking", () => {
 
   it("says no signal for the search instead of landing the leftover city", () => {
     expect(
-      coverWhileSeeking({ query: "Lisbon", count: 0, loading: false })
+      coverWhileSeeking({ query: "Lisbon", count: 0, loading: false }),
     ).toEqual({
       headline: "No signal for Lisbon.",
       cta: "",
@@ -440,7 +460,7 @@ describe("Cover does not name a leftover city while seeking", () => {
         query: "Rahman",
         count: 12,
         loading: false,
-      })
+      }),
     ).toEqual({
       headline: "Tamil Nadu is on air.",
       cta: "",
@@ -456,7 +476,7 @@ describe("Cover does not name a leftover city while seeking", () => {
         query: "Rahman",
         count: 12,
         loading: false,
-      }).headline
+      }).headline,
     ).toBe("12 live for Rahman.");
     expect(
       resolveCoverArrival({
@@ -467,7 +487,7 @@ describe("Cover does not name a leftover city while seeking", () => {
         query: "",
         count: 8,
         loading: false,
-      })
+      }),
     ).toMatchObject({
       headline: "Continue in Tamil Nadu.",
       ctaKind: "continue",
@@ -496,7 +516,7 @@ describe("Icons that look live must land somewhere", () => {
     expect(
       openPassportNow("/listen", () => {
         routed = true;
-      })
+      }),
     ).toBe("route");
     expect(routed).toBe(true);
   });
@@ -558,26 +578,25 @@ describe("A stamp is a next city, not a souvenir", () => {
     expect(
       resolveStampReplay(
         { stationId: "abc", city: "Kochi", country: "India" },
-        [kochi, lisbon]
-      ).station?.uuid
+        [kochi, lisbon],
+      ).station?.uuid,
     ).toBe("abc");
     expect(
       resolveStampReplay(
         { stationId: "gone", city: "Lisbon", country: "Portugal" },
-        [kochi, lisbon]
-      ).station?.uuid
+        [kochi, lisbon],
+      ).station?.uuid,
     ).toBe("lis");
     expect(
       resolveStampReplay(
         { stationId: "gone", city: "Accra", country: "Ghana" },
-        [kochi, lisbon]
-      )
+        [kochi, lisbon],
+      ),
     ).toEqual({ station: null, fallback: "country" });
     expect(
-      resolveStampReplay(
-        { stationId: "gone", city: "Nowhere", country: "" },
-        [kochi]
-      ).fallback
+      resolveStampReplay({ stationId: "gone", city: "Nowhere", country: "" }, [
+        kochi,
+      ]).fallback,
     ).toBe("atlas");
   });
 
@@ -585,11 +604,11 @@ describe("A stamp is a next city, not a souvenir", () => {
     const live = station({ city: "Kochi", country: "India" });
     expect(isStampReady(1_000, 60_999, true)).toBe(false);
     expect(stampForContinuousSession(live, 1_000, 61_000, true)?.city).toBe(
-      "Kochi"
+      "Kochi",
     );
     expect(stampForContinuousSession(live, 1_000, 61_000, false)).toBeNull();
     expect(stationStampId("other", "Kochi", "India")).toBe(
-      stationStampId("abc", "Kochi", "India")
+      stationStampId("abc", "Kochi", "India"),
     );
   });
 
@@ -602,7 +621,7 @@ describe("A stamp is a next city, not a souvenir", () => {
         facts: [{ label: "Year", value: "1977" }],
         imageUrl: "https://coverart.example/hidden.jpg",
         links: [{ label: "Wiki", url: "https://en.wikipedia.org/wiki/Hidden" }],
-      })
+      }),
     ).toEqual({
       dispatchBody: "Club FM is on the air from Kochi.",
       summary: null,
@@ -625,7 +644,10 @@ describe("A stamp is a next city, not a souvenir", () => {
       imageUrl: "https://coverartarchive.org/release/abc/front-250",
       links: [
         { label: "Wiki", url: "https://en.wikipedia.org/wiki/Evening_Star" },
-        { label: "YouTube", url: "https://www.youtube.com/results?search_query=evening+star" },
+        {
+          label: "YouTube",
+          url: "https://www.youtube.com/results?search_query=evening+star",
+        },
         { label: "Track", url: "https://musicbrainz.org/recording/1" },
         { label: "Drop", url: "https://example.com/drop" },
       ],
@@ -656,11 +678,11 @@ describe("A stamp is a next city, not a souvenir", () => {
         "Fripp and Eno — Evening Star",
       ).map((fact) => fact.label),
     ).toEqual(["Year", "Origin"]);
-    expect(meridianKind("https://www.youtube.com/results?search_query=x", "YouTube")).toBe(
-      "youtube",
-    );
-    expect(meridianKind("https://en.wikipedia.org/wiki/Evening_Star", "Wiki")).toBe(
-      "wiki",
-    );
+    expect(
+      meridianKind("https://www.youtube.com/results?search_query=x", "YouTube"),
+    ).toBe("youtube");
+    expect(
+      meridianKind("https://en.wikipedia.org/wiki/Evening_Star", "Wiki"),
+    ).toBe("wiki");
   });
 });
