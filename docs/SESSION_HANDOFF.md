@@ -104,6 +104,7 @@ land · dusk · hour · stamp · live · cover · elsewhere · now
 - Ticket CSS lives **outside any `@layer`** at the end of `app/tailwind.css` (layer-drop gremlin).
 - Halftone grain: new `app/components/radio-passport/halftone.ts` — one fixed 6×6 dot tile reused as a CanvasPattern, stamped over the playing wash (`ParticleGlobe`, α .05) and nebulae (`GalaxyBackdrop` α .07, `TheaterWell` α .06). No per-pixel loops anywhere; skipped under reduced motion.
 - Voice gate: no new copy — stubs render stored data only.
+- Review pass 2026-08-22 (`3907729`, external DeepSeek harness): fixed a mangled fragment in `.rp-stamp-ticket .rp-stamp-stub strong` (postcss could not parse tailwind.css at all); restored `color: var(--ew-bone);`. Rest of the checklist clean; gate re-verified locally (183/183, typecheck).
 
 ### 3. Intent echo — done 2026-08-22 (local, not yet deployed)
 
@@ -132,6 +133,7 @@ TWA → Play Store via Bubblewrap/PWABuilder was the chosen path (near-zero code
 ## Housekeeping
 
 - `.playwright-mcp/` test artifacts are untracked; add to `.gitignore` if they annoy.
+- Known leftover (predates this range): a slow `/api/ai/interpret` response can still overwrite a retyped query via the unconditional setQuery calls in submitIntent — the echo has a queryRef guard, the rewrite does not. Fold into item 5 flow audit if it bites.
 - Legacy dead files fail lint (`HeroSection.tsx` `no-empty`) and are unimported; safe to delete in a cleanup pass (`RetroTuner`, `Premium*`, `AppHeader`, `MobileSidebarMenu`, scenes/\*).
 
 ## Key files
