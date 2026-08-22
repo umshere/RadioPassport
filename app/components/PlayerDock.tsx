@@ -9,7 +9,13 @@ import { usePlayerStore } from "~/state/playerStore";
 import { canMutateJourney, useJourneyStore } from "~/state/journeyStore";
 import { usePlayerNoticeStore } from "~/state/playerNoticeStore";
 import { useRoom } from "~/hooks/useRoom";
-import { roomForStation, useRoomStore } from "~/state/roomStore";
+import { dispatchRequestFor, roomForStation, useRoomStore } from "~/state/roomStore";
+import {
+  sharedSignals,
+  upNextFresh,
+  useUpNextStore,
+} from "~/state/upNextStore";
+import type { DispatchResponse } from "~/types/ai";
 import { stationLocation } from "~/components/radio-passport/StationRow";
 
 export function shouldAnimateDock(isPlaying: boolean, reducedMotion: boolean) {
@@ -88,6 +94,41 @@ export default function PlayerDock() {
   }, [isPlaying, nowPlaying]);
 
   useEffect(() => {
+    if (!mounted || !nowPlaying) return;
+    const next = queue.length
+      ? queue[(index + 1) % queue.length]
+      : null;
+    if (!isPlaying || !next || next.uuid === nowPlaying.uuid) return;
+    const id = next.uuid;
+    const store = useUpNextStore.getState();
+    if (upNextFresh(store.entries[id], Date.now())) return;
+    store.put(id, {
+      dispatch: null,
+      shared: sharedSignals(nowPlaying, next),
+      fetchedAt: Date.now(),
+    });
+    let alive = true;
+    void fetch("/api/ai/dispatch", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(dispatchRequestFor(next, null)),
+    })
+      .then(async (response) => (response.ok ? response.json() : null))
+      .then((payload: DispatchResponse | null) => {
+        if (!alive || !payload?.dispatch) return;
+        useUpNextStore.getState().put(id, {
+          dispatch: payload.dispatch,
+          shared: sharedSignals(nowPlaying, next),
+          fetchedAt: Date.now(),
+        });
+      })
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, [index, isPlaying, mounted, nowPlaying, queue]);
+
+  useEffect(() => {
     if (!nowPlaying) return;
     const apply = () => {
       const mobile = window.matchMedia("(max-width: 960px)").matches;
@@ -126,7 +167,7 @@ export default function PlayerDock() {
 
   return (
     <aside className="rp-dock" aria-label="Now playing">
-      <Link to="/listen" prefetch="intent" aria-label="Open listening theater">
+      <Link to="/listen" prefetch="intent" viewTransition aria-label="Open listening theater">
         <canvas ref={canvasRef} className="rp-dock-art" aria-hidden="true" />
       </Link>
       <div className="min-w-0 flex-1">
@@ -203,6 +244,7 @@ export default function PlayerDock() {
         to="/listen"
         className="rp-theater-link rp-eyebrow text-foil"
         prefetch="intent"
+        viewTransition
       >
         Theater
       </Link>

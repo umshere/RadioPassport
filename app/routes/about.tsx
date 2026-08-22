@@ -1,7 +1,4 @@
-import { Link } from "@remix-run/react";
 import { BRAND } from "~/constants/brand";
-import { SignalWordmark } from "~/components/radio-passport/SignalMark";
-import { AtmospherePin } from "~/components/radio-passport/AtmospherePin";
 
 export const meta = () => [
   { title: `The room · ${BRAND.name}` },
@@ -14,13 +11,6 @@ export const meta = () => [
 export default function About() {
   return (
     <main className="rp-home min-h-screen">
-      <header className="rp-home-header">
-        <SignalWordmark />
-        <AtmospherePin />
-        <Link to="/" className="rp-passport-button" prefetch="intent">
-          Land
-        </Link>
-      </header>
       <article className="mx-auto max-w-3xl px-5 py-16 sm:px-8">
         <p className="rp-eyebrow text-foil">The room</p>
         <h1 className="ew-coverline mt-4">You are not here.</h1>

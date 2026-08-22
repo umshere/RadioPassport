@@ -21,7 +21,6 @@ import {
   globeFocusId,
   globeStationPool,
 } from "~/components/radio-passport/globePlaces";
-import { SignalWordmark } from "~/components/radio-passport/SignalMark";
 import { AtmospherePin } from "~/components/radio-passport/AtmospherePin";
 import {
   StationRow,
@@ -46,7 +45,6 @@ import {
   playFromAtlasNextState,
   shouldClearBrowsingFilters,
   surpriseTapNextState,
-  wordmarkHomeNextState,
 } from "~/components/radio-passport/searchState";
 import { IntentBar } from "~/components/radio-passport/IntentBar";
 import {
@@ -561,17 +559,6 @@ export default function Index() {
   return (
     <main className={`rp-home ${locatorShrunk ? "is-seeking" : ""}`}>
       <header className="rp-home-header">
-        <SignalWordmark
-          onHome={() => {
-            const next = wordmarkHomeNextState();
-            setQuery(next.query);
-            setHour(next.hour);
-            setPlace(next.place);
-            setMixLabel(next.mixLabel);
-            setAtlas(next.atlas);
-            setPassport(next.passport);
-          }}
-        />
         <IntentBar
           value={query}
           onChange={(value) => {
@@ -589,19 +576,7 @@ export default function Index() {
           statusSpoken={seek.spoken}
           statusTone={seek.tone}
         />
-        <Link to="/about" className="rp-eyebrow text-dust" prefetch="intent">
-          Room
-        </Link>
         <AtmospherePin />
-        <button
-          type="button"
-          className="rp-passport-button"
-          onClick={() => setPassport(true)}
-          aria-label={`Open passport, ${stamps.length} places stamped`}
-        >
-          Passport
-          <b>{String(stamps.length).padStart(2, "0")}</b>
-        </button>
       </header>
       <div className="rp-stage">
         <section className="rp-intro">
@@ -809,7 +784,7 @@ export default function Index() {
             />
           </div>
           <div
-            className="ew-cover"
+            className={`ew-cover${arrivalCity ? " ew-seam-city" : ""}`}
             key={seekingCover ? "seeking" : arrivalStation?.uuid ?? arrivalCity}
           >
             <i className="ew-cover-rule" />

@@ -27,6 +27,7 @@ import {
 import { playbackNoticeCopy } from "~/utils/playbackNoticeCopy";
 import stylesheet from "./tailwind.css?url";
 import PlayerDock from "~/components/PlayerDock";
+import SiteBar from "~/components/SiteBar";
 import { usePlayerNoticeStore } from "~/state/playerNoticeStore";
 import type { Station } from "~/types/radio";
 import { sanitizeArtworkUrl } from "~/utils/stations";
@@ -142,6 +143,7 @@ export default function App() {
   return (
     <Document>
       <>
+        <SiteBar />
         {isNavigating && (
           <div className="ew-passage-bar" aria-hidden="true">
             <i />

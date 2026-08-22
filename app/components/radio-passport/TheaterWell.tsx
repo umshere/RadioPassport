@@ -747,7 +747,13 @@ function MeridianIcon({ kind }: { kind: MeridianKind }) {
   );
 }
 
-function TheaterLetter({ text }: { text: string }) {
+function TheaterLetter({
+  text,
+  signed,
+}: {
+  text: string;
+  signed?: boolean;
+}) {
   const ref = useRef<HTMLParagraphElement>(null);
   const [open, setOpen] = useState(false);
   const [needed, setNeeded] = useState(false);
@@ -774,6 +780,7 @@ function TheaterLetter({ text }: { text: string }) {
       <p ref={ref} className="ew-caption">
         {text}
       </p>
+      {signed && !open ? <span className="ew-letter-sign">— night desk</span> : null}
       {needed ? (
         <button
           type="button"
@@ -791,6 +798,7 @@ function TheaterLetter({ text }: { text: string }) {
 export function TheaterWell({
   phase,
   dispatchBody,
+  deskSigned,
   summary,
   facts,
   imageUrl,
@@ -799,6 +807,7 @@ export function TheaterWell({
 }: {
   phase: TheaterPhase;
   dispatchBody: string | null;
+  deskSigned?: boolean;
   summary: string | null;
   facts: TheaterFact[];
   imageUrl?: string | null;
@@ -835,7 +844,9 @@ export function TheaterWell({
       aria-label={aria}
     >
       <i className="ew-cover-rule" />
-      {dispatchBody ? <TheaterLetter text={dispatchBody} /> : null}
+      {dispatchBody ? (
+        <TheaterLetter text={dispatchBody} signed={deskSigned} />
+      ) : null}
       {phase === "filed" ? (
         <>
           {showCover ? (
@@ -859,15 +870,22 @@ export function TheaterWell({
             </div>
           ) : null}
           {facts.length > 0 ? (
-            <ol className="ew-journey">
-              {facts.map((item) => (
-                <li key={`${item.label}:${item.value}`}>
-                  <i className="ew-journey-star" />
-                  <span className="ew-journey-value">{item.value}</span>
-                  <span className="ew-journey-label">{item.label}</span>
-                </li>
-              ))}
-            </ol>
+            <div className="ew-journey-wrap">
+              {deskSigned ? (
+                <p className="rp-eyebrow text-ether ew-desk-label">
+                  the desk found
+                </p>
+              ) : null}
+              <ol className="ew-journey">
+                {facts.map((item) => (
+                  <li key={`${item.label}:${item.value}`}>
+                    <i className="ew-journey-star" />
+                    <span className="ew-journey-value">{item.value}</span>
+                    <span className="ew-journey-label">{item.label}</span>
+                  </li>
+                ))}
+              </ol>
+            </div>
           ) : null}
           {meridians.length > 0 ? (
             <p className="ew-meridians">

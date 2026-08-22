@@ -130,8 +130,7 @@
     text-transform: uppercase;
   }
   .rp-home-header {
-    position: sticky;
-    top: 0;
+    position: relative;
     z-index: 30;
     display: flex;
     align-items: center;
@@ -1198,6 +1197,67 @@
     to { transform: translateX(420%); }
   }
 
+  /* Seam: home and theater hand one world to the next. The globe dissolves
+     into the night sky, the city name carries across. Browsers without the
+     View Transitions API keep the Passage rise above. */
+  .rp-globe-wrap,
+  .ew-theater-sky {
+    view-transition-name: vt-globe-sky;
+  }
+  .ew-theater .ew-coverline,
+  .ew-seam-city {
+    view-transition-name: vt-city;
+  }
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation-duration: 0.32s;
+    animation-timing-function: var(--ew-settle);
+  }
+  ::view-transition-group(vt-globe-sky),
+  ::view-transition-group(vt-city) {
+    animation-duration: 0.6s;
+  }
+  @keyframes ew-seam-out {
+    to { opacity: 0; transform: scale(0.96); }
+  }
+  @keyframes ew-seam-in {
+    from { opacity: 0; transform: scale(1.04); }
+  }
+  ::view-transition-old(vt-globe-sky) {
+    animation: ew-seam-out 0.6s var(--ew-settle) both;
+  }
+  ::view-transition-new(vt-globe-sky) {
+    animation: ew-seam-in 0.6s var(--ew-settle) both;
+  }
+
+
+  /* Night desk: the letters sign themselves, the found facts get a byline. */
+  .ew-letter-sign {
+    display: block;
+    margin-top: 6px;
+    font: italic 11px/1 "Azeret Mono", monospace;
+    letter-spacing: 0.08em;
+    color: var(--ew-ether);
+  }
+  .ew-desk-label {
+    margin-bottom: 10px;
+  }
+  .ew-journey-wrap {
+    position: relative;
+  }
+  .ew-upnext {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 6px 10px;
+    margin-top: 16px;
+  }
+  .ew-upnext-line {
+    font: 11px/1.5 "Azeret Mono", monospace;
+    letter-spacing: 0.04em;
+    color: var(--ew-dust);
+  }
+
   @keyframes rp-pulse { 50% { opacity: .55; } }
   @keyframes rp-eq { to { transform: scaleY(.45); } }
   @keyframes rp-toast {
@@ -1211,8 +1271,7 @@
       padding-bottom: calc(var(--player-dock-clearance, 96px) + env(safe-area-inset-bottom, 0px));
     }
     .rp-home-header {
-      position: sticky;
-      top: 0;
+      position: relative;
       flex-wrap: wrap;
       gap: 10px;
       min-height: 52px;
@@ -1332,13 +1391,6 @@
       --ew-sky-fold: 0.58;
       padding: 20px 16px 16px;
     }
-    .ew-theater-back {
-      display: flex;
-      width: calc(100% + 32px);
-      margin: 0 -16px;
-      padding-right: 16px;
-      padding-left: 16px;
-    }
     .ew-theater .ew-coverline { font-size: clamp(36px, 12vw, 52px); }
     .ew-theater-room {
       grid-template-columns: minmax(0, 1fr);
@@ -1383,6 +1435,11 @@
     .ew-land, .ew-atlas::after, .ew-theater-back::after { transition: none; }
     .ew-hour, .ew-hour i { transition: none; }
     body, .rp-home, .rp-globe-side, .rp-dock, .ew-theater { transition: none; }
+    ::view-transition-group(*),
+    ::view-transition-old(*),
+    ::view-transition-new(*) {
+      animation-duration: 0.01ms !important;
+    }
   }
 }
 
@@ -1436,4 +1493,33 @@
     pointer-events: none;
     user-select: none;
   }
+}
+
+/* Site bar — kept outside @layer on purpose: the Tailwind layer pipeline
+   was nondeterministically dropping these rules in dev builds. */
+
+/* Site bar: one quiet rail on every surface — wordmark left, Room and
+   Passport right. It sticks while rooms scroll beneath it. */
+.ew-site-bar {
+  position: sticky;
+  top: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: calc(52px + env(safe-area-inset-top, 0px));
+  padding: env(safe-area-inset-top, 0px) 20px 0;
+  background: var(--ew-ink);
+  backdrop-filter: blur(10px);
+}
+.ew-site-bar-side {
+  display: inline-flex;
+  align-items: center;
+  gap: 20px;
+}
+
+@media (max-width: 960px) {
+  .ew-site-bar { padding-right: 16px; padding-left: 16px; }
+  .ew-site-bar-side { gap: 14px; }
 }

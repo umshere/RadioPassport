@@ -90,7 +90,8 @@ export function useRoom(nowPlaying: Station | null, isPlaying: boolean) {
   useEffect(() => {
     if (!nowPlaying || !isPlaying) return;
     const stationId = nowPlaying.uuid;
-    const timer = window.setTimeout(() => {
+
+    const request = () => {
       void fetch("/api/ai/dispatch", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -106,8 +107,21 @@ export function useRoom(nowPlaying: Station | null, isPlaying: boolean) {
         .catch(() => {
           // Template caption already sits on the room.
         });
-    }, 1500);
-    return () => window.clearTimeout(timer);
+    };
+
+    const timer = window.setTimeout(request, 1500);
+    // Stations that send no titles still get fresh letters as their local
+    // hour moves — the room never goes fully quiet while playing.
+    const ambient =
+      metadata.track &&
+      (metadata.track.title || metadata.track.artist)
+        ? 0
+        : window.setInterval(request, 90_000);
+
+    return () => {
+      window.clearTimeout(timer);
+      if (ambient) window.clearInterval(ambient);
+    };
   }, [isPlaying, metadata.track, nowPlaying, setCaption]);
 
   useEffect(() => {

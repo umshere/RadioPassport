@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "@remix-run/react";
 import { usePlayerStore } from "~/state/playerStore";
+import { dispatchRequestFor } from "~/state/roomStore";
+import type { DispatchResponse } from "~/types/ai";
 import {
   isStampReady,
   stationStampId,
@@ -43,6 +45,7 @@ export function JourneyBridge() {
   const hydrate = useJourneyStore((state) => state.hydrate);
   const addStamp = useJourneyStore((state) => state.addStamp);
   const [toast, setToast] = useState<PassportStamp | null>(null);
+  const [toastLine, setToastLine] = useState<string | null>(null);
   const startedAtRef = useRef<number | null>(null);
 
   useEffect(() => hydrate(), [hydrate]);
@@ -74,6 +77,18 @@ export function JourneyBridge() {
       if (!stamp) return;
       addStamp(stamp);
       setToast(stamp);
+      setToastLine(null);
+      void fetch("/api/ai/dispatch", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(dispatchRequestFor(nowPlaying, null)),
+      })
+        .then(async (response) => (response.ok ? response.json() : null))
+        .then((payload: DispatchResponse | null) => {
+          const headline = payload?.dispatch?.headline?.trim();
+          if (headline) setToastLine(headline);
+        })
+        .catch(() => {});
     }, 60_000);
 
     return () => {
@@ -84,9 +99,9 @@ export function JourneyBridge() {
 
   useEffect(() => {
     if (!toast) return;
-    const timer = window.setTimeout(() => setToast(null), 4000);
+    const timer = window.setTimeout(() => setToast(null), toastLine ? 6500 : 4000);
     return () => window.clearTimeout(timer);
-  }, [toast]);
+  }, [toast, toastLine]);
 
   if (!toast) return null;
   return (
@@ -108,6 +123,7 @@ export function JourneyBridge() {
       <small>
         {toast.stationName} · {toast.country}
       </small>
+      {toastLine ? <em className="rp-toast-line">{toastLine}</em> : null}
     </button>
   );
 }

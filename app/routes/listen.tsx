@@ -7,6 +7,7 @@ import { BRAND } from "~/constants/brand";
 import { stationLocation, stationTelemetry } from "~/components/radio-passport/StationRow";
 import { stationTags } from "~/components/radio-passport/stationInsights";
 import { TheaterField, TheaterWell } from "~/components/radio-passport/TheaterWell";
+import UpNextRow from "~/components/radio-passport/UpNextRow";
 import {
   lockSeed,
   splitFieldTokens,
@@ -173,6 +174,7 @@ export default function ListeningPage() {
           to={empty.route}
           className="ew-land mt-8 ew-arrive ew-arrive-4"
           prefetch="intent"
+          viewTransition
         >
           <span className="ew-land-kicker">EW · Departure</span>
           <span className="ew-land-city">{empty.label}</span>
@@ -182,14 +184,15 @@ export default function ListeningPage() {
   }
 
   return (
-    <main className="ew-theater" data-phase={phase} ref={theaterRef}>
-      <Link
-        to="/"
-        className="ew-theater-back rp-eyebrow text-foil"
-        prefetch="intent"
-      >
-        ← {BRAND.name}
-      </Link>
+      <main className="ew-theater" data-phase={phase} ref={theaterRef}>
+        <Link
+          to="/"
+          className="ew-theater-back rp-eyebrow text-foil"
+          prefetch="intent"
+          viewTransition
+        >
+          ← {BRAND.name}
+        </Link>
       <div className="ew-theater-room" key={nowPlaying.uuid}>
         <aside className="ew-theater-sky">
           <TheaterField
@@ -216,6 +219,7 @@ export default function ListeningPage() {
               {trackLine}
             </p>
           ) : null}
+          <UpNextRow />
           <TheaterWell
             phase={phase}
             dispatchBody={intelligence.dispatchBody}
