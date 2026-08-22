@@ -28,7 +28,10 @@ import {
   countryCacheWith,
   fetchCountryDrilldown,
 } from "~/components/radio-passport/countryData";
-import { stampForContinuousSession } from "~/components/radio-passport/JourneyBridge";
+import {
+  stampForContinuousSession,
+  stampInkProgress,
+} from "~/components/radio-passport/JourneyBridge";
 import { applyAiPreviewPool } from "~/components/radio-passport/aiPreview";
 import { catalogRequestState } from "~/components/radio-passport/searchState";
 
@@ -100,6 +103,15 @@ describe("Signal & Stamp journey contracts", () => {
     expect(useJourneyStore.getState().stamps).toHaveLength(1);
     expect(stationStampId("other", "Kochi", "India")).toBe(id);
   });
+  it("fills the stamp ring's ink linearly across the continuous minute", () => {
+    expect(stampInkProgress(1_000, 1_000)).toBe(0);
+    expect(stampInkProgress(2_000, 1_000)).toBe(0);
+    expect(stampInkProgress(1_000, 16_000)).toBeCloseTo(0.25);
+    expect(stampInkProgress(1_000, 31_000)).toBeCloseTo(0.5);
+    expect(stampInkProgress(1_000, 61_000)).toBe(1);
+    // Ink never overflows past full; the stamped state takes over there.
+    expect(stampInkProgress(1_000, 120_000)).toBe(1);
+  });
   it("hydrates the previous favorites and passport storage keys into the journey store", () => {
     const values = new Map<string, string>([
       ["radio-passport-favorites", JSON.stringify(["legacy-favorite"])],
@@ -162,7 +174,7 @@ describe("Signal & Stamp journey contracts", () => {
     expect(vi.mocked(rbFetchJson)).toHaveBeenCalledWith(
       expect.stringContaining("/json/stations/bycountry/India?limit=1000"),
       undefined,
-      expect.objectContaining({ softFail: true })
+      expect.objectContaining({ softFail: true }),
     );
     const cache = countryCacheWith({}, "India", {
       status: "ready",
@@ -192,11 +204,11 @@ describe("Signal & Stamp journey contracts", () => {
         stations: aiPool,
         play: { strategy: "queue_only" },
       },
-      (stations) => expect(stations).toBe(aiPool)
+      (stations) => expect(stations).toBe(aiPool),
     );
     expect(usePlayerStore.getState().nowPlaying?.uuid).toBe("next");
     expect(usePlayerStore.getState().queue.map((entry) => entry.uuid)).toEqual(
-      queueBefore
+      queueBefore,
     );
     expect(usePlayerStore.getState().currentStationIndex).toBe(indexBefore);
   });
@@ -204,13 +216,13 @@ describe("Signal & Stamp journey contracts", () => {
     expect(canMutateJourney(false)).toBe(false);
     expect(canMutateJourney(true)).toBe(true);
     expect(
-      stampForContinuousSession(station("session"), 1_000, 60_999, true)
+      stampForContinuousSession(station("session"), 1_000, 60_999, true),
     ).toBeNull();
     expect(
-      stampForContinuousSession(station("session"), 1_000, 61_000, false)
+      stampForContinuousSession(station("session"), 1_000, 61_000, false),
     ).toBeNull();
     expect(
-      stampForContinuousSession(station("session"), 1_000, 61_000, true)?.city
+      stampForContinuousSession(station("session"), 1_000, 61_000, true)?.city,
     ).toBe("Kochi");
   });
   it("clears debounce loading for short search and permits retry cache replacement", () => {
@@ -262,7 +274,7 @@ describe("Kept-signal snapshots survive a gone search catalog", () => {
     const resolved = resolveKeptSignals(
       ["gone", "live", "missing"],
       [slim],
-      [live]
+      [live],
     );
     expect(resolved.map((entry) => entry.uuid)).toEqual(["gone", "live"]);
     expect(resolved[0]?.name).toBe(gone.name);
@@ -276,9 +288,9 @@ describe("Kept-signal snapshots survive a gone search catalog", () => {
     }
     expect(list).toHaveLength(FAVORITE_SNAPSHOT_CAP);
     expect(list.some((entry) => entry.uuid === "keep")).toBe(false);
-    expect(dropFavoriteSnapshot(list, "s0").some((entry) => entry.uuid === "s0")).toBe(
-      false
-    );
+    expect(
+      dropFavoriteSnapshot(list, "s0").some((entry) => entry.uuid === "s0"),
+    ).toBe(false);
   });
 
   it("hydrates old favorite ids without snapshots, and new hearts write both", () => {
@@ -308,18 +320,28 @@ describe("Kept-signal snapshots survive a gone search catalog", () => {
       favoriteStations: [],
     });
     useJourneyStore.getState().hydrate();
-    expect(useJourneyStore.getState().favoriteStationIds).toEqual(["legacy-id"]);
+    expect(useJourneyStore.getState().favoriteStationIds).toEqual([
+      "legacy-id",
+    ]);
     expect(useJourneyStore.getState().favoriteStations).toEqual([]);
     expect(parseFavoriteSnapshots(undefined)).toEqual([]);
 
-    useJourneyStore.getState().toggleFavorite("search-heart", station("search-heart"));
-    expect(useJourneyStore.getState().favoriteStationIds).toContain("search-heart");
+    useJourneyStore
+      .getState()
+      .toggleFavorite("search-heart", station("search-heart"));
+    expect(useJourneyStore.getState().favoriteStationIds).toContain(
+      "search-heart",
+    );
     expect(
-      useJourneyStore.getState().favoriteStations.some((entry) => entry.uuid === "search-heart")
+      useJourneyStore
+        .getState()
+        .favoriteStations.some((entry) => entry.uuid === "search-heart"),
     ).toBe(true);
     useJourneyStore.getState().toggleFavorite("search-heart");
     expect(
-      useJourneyStore.getState().favoriteStations.some((entry) => entry.uuid === "search-heart")
+      useJourneyStore
+        .getState()
+        .favoriteStations.some((entry) => entry.uuid === "search-heart"),
     ).toBe(false);
     if (previous) Object.defineProperty(globalThis, "window", previous);
     else Reflect.deleteProperty(globalThis, "window");

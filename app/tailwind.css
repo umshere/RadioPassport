@@ -1523,3 +1523,15 @@
   .ew-site-bar { padding-right: 16px; padding-left: 16px; }
   .ew-site-bar-side { gap: 14px; }
 }
+
+/* Stamp ink — outside @layer on purpose (same Tailwind layer-drop gremlin as
+   the site bar above). While a city plays unstamped, JourneyBridge publishes
+   --stamp-ink (0..1) once a second; the dock ring fills with lacquer over the
+   continuous minute, then flips to its foil stamped state. Reduced motion
+   never receives the var, so the ring stays static with its title copy. */
+.ew-stamp-ring {
+  background: conic-gradient(
+    var(--ew-lacquer) calc(var(--stamp-ink, 0) * 100%),
+    transparent 0
+  );
+}

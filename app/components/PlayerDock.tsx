@@ -122,7 +122,7 @@ export default function PlayerDock() {
           fetchedAt: Date.now(),
         });
       })
-      .catch(() => {});
+      .catch(() => { });
     return () => {
       alive = false;
     };
@@ -196,10 +196,11 @@ export default function PlayerDock() {
         title={stamped ? "Stamped" : "Stay 60 seconds to ink this city"}
         style={{
           borderRadius: "50%",
-          border: `1px solid ${
-            stamped ? "var(--ew-foil)" : "var(--ew-ghost)"
-          }`,
-          background: stamped ? "var(--ew-foil-wash-strong)" : "transparent",
+          border: `1px solid ${stamped ? "var(--ew-foil)" : "var(--ew-ghost)"
+            }`,
+          // Unstamped background belongs to the stylesheet: the ink fill is a
+          // conic-gradient driven by --stamp-ink, written by JourneyBridge.
+          ...(stamped ? { background: "var(--ew-foil-wash-strong)" } : {}),
         }}
       />
       <button
@@ -209,9 +210,8 @@ export default function PlayerDock() {
           toggleFavorite(nowPlaying.uuid, nowPlaying)
         }
         disabled={!canMutateJourney(hydrated)}
-        className={`grid h-11 w-11 place-items-center rounded-full text-lg ${
-          favorites.includes(nowPlaying.uuid) ? "text-foil" : "text-dust"
-        }`}
+        className={`grid h-11 w-11 place-items-center rounded-full text-lg ${favorites.includes(nowPlaying.uuid) ? "text-foil" : "text-dust"
+          }`}
         aria-label="Toggle favorite"
       >
         {favorites.includes(nowPlaying.uuid) ? "♥" : "♡"}

@@ -82,7 +82,7 @@ land · dusk · hour · stamp · live · cover · elsewhere · now
 
 ## Launch (not started)
 
-- Campaign: *Someone else's now*
+- Campaign: _Someone else's now_
 - Viral frame is `/listen`, not the globe
 - Public domain **live**: `elsewheremusic.com` (Cloudflare DNS-only → Vercel). Apex serves. `www` serves. `radiopassport.art` + `www` 308 to the apex. See `docs/DOMAINS.md`.
 - Tailscale MagicDNS can hide the new name on this laptop. Public DNS is fine. See `docs/TROUBLESHOOTING.md`.
@@ -92,13 +92,11 @@ land · dusk · hour · stamp · live · cover · elsewhere · now
 
 ## Next work (in order)
 
-### 1. Stamp ink progress — Pass 2 core
+### 1. Stamp ink progress — done 2026-08-22 (local, not yet deployed)
 
-The 60-second stamp timer is invisible; make it seen.
-
-- The dock stamp ring is `.ew-stamp-ring` in `PlayerDock.tsx` (inline styles ~line 156). Fill it with ink over the continuous minute: conic-gradient driven by a CSS var (`--stamp-ink: 0..1`) that `JourneyBridge` already owns the clock for (`startedAtRef`). Write the var once per second while playing, reset on station change / pause / stamp.
-- At full ink it becomes the existing "stamped" state. Reduced motion: skip animation, show static ring + existing title copy ("Stay 60 seconds to ink this city").
-- Keep the contract tests green: `isStampReady` semantics must not move (`elsewhereFlow`, `radioPassportRedesign`).
+- `JourneyBridge` publishes `--stamp-ink` (0..1) on `document.documentElement` once a second while the current city plays unstamped; resets on station change / pause / stamp; reduced motion never receives the var (static ring + existing title copy). Pure helper: `stampInkProgress` (unit-tested).
+- The fill is a lacquer conic-gradient on `.ew-stamp-ring`, appended **outside any `@layer`** at the end of `app/tailwind.css` (same layer-drop gremlin as the site bar). `PlayerDock`'s inline style only sets `background` when stamped, so the stylesheet owns the unstamped fill.
+- Contract tests untouched and green: `isStampReady` semantics did not move; 182 passing.
 
 ### 2. Ticket-stub passport — Inspora pick
 
@@ -127,13 +125,13 @@ TWA → Play Store via Bubblewrap/PWABuilder was the chosen path (near-zero code
 ### Still open (business track, unchanged)
 
 - OG still from `/listen` on the new host
-- 14-day *Someone else's now* campaign (`docs/ROADMAP.md`)
+- 14-day _Someone else's now_ campaign (`docs/ROADMAP.md`)
 - Correspondent ($6/mo) — magic link + Stripe + quotas + probe-ahead; billing flag stays off during launch
 
 ## Housekeeping
 
 - `.playwright-mcp/` test artifacts are untracked; add to `.gitignore` if they annoy.
-- Legacy dead files fail lint (`HeroSection.tsx` `no-empty`) and are unimported; safe to delete in a cleanup pass (`RetroTuner`, `Premium*`, `AppHeader`, `MobileSidebarMenu`, scenes/*).
+- Legacy dead files fail lint (`HeroSection.tsx` `no-empty`) and are unimported; safe to delete in a cleanup pass (`RetroTuner`, `Premium*`, `AppHeader`, `MobileSidebarMenu`, scenes/\*).
 
 ## Key files
 
@@ -151,4 +149,4 @@ TWA → Play Store via Bubblewrap/PWABuilder was the chosen path (near-zero code
 
 ## Tests
 
-`npm test` — 181 passing (22 files; `upNext.test.ts` added 2026-08-21). Keep those exports (`titleCasePlaceName`, `toggleSelection`, `shouldAnimateDock`, `aggregateCountryStationContext`, `applyAiPreviewPool` returns the descriptor, `stampForContinuousSession`, `sharedSignals`).
+`npm test` — 182 passing (22 files; `stampInkProgress` added 2026-08-22). Keep those exports (`titleCasePlaceName`, `toggleSelection`, `shouldAnimateDock`, `aggregateCountryStationContext`, `applyAiPreviewPool` returns the descriptor, `stampForContinuousSession`, `stampInkProgress`, `sharedSignals`). Note: `elsewhereProduct.test.ts` asserts the raw compact formatting of `app/tailwind.css` — keep one-line rules like `.ew-theater-well { min-height: 16rem; }` intact (editor formatters will reflow the whole file if you let them).
