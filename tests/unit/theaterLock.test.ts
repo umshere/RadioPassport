@@ -4,6 +4,7 @@ import {
   FACT_RELEASE_CAP,
   FIELD_DEGREE_CAP,
   FIELD_TRIANGLE_CAP,
+  GRAPH_PULSE_MS,
   TAG_RELEASE_CAP,
   fieldBirthBloom,
   fieldBirthRipple,
@@ -12,6 +13,7 @@ import {
   fieldDustTwinkle,
   fieldEdges,
   fieldFamiliesConnect,
+  fieldGraphPulse,
   fieldKnowledgeEdges,
   fieldMilkyWay,
   fieldNebulae,
@@ -150,10 +152,9 @@ describe("theater lock", () => {
       ],
       summary: "A 2000s downtempo track.",
     });
-    expect(rich.filter((item) => item.family === "track").map((item) => item.label)).toEqual([
-      "Chris Coco",
-      "Love Made Me Tough",
-    ]);
+    expect(
+      rich.filter((item) => item.family === "track").map((item) => item.label),
+    ).toEqual(["Chris Coco", "Love Made Me Tough"]);
     expect(rich.filter((item) => item.family === "fact")).toHaveLength(2);
     expect(
       rich.filter((item) => item.family === "fact").map((item) => item.label),
@@ -162,7 +163,9 @@ describe("theater lock", () => {
     const manyTags = theaterReleases({
       tags: ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"],
     });
-    expect(manyTags.filter((item) => item.family === "tag")).toHaveLength(TAG_RELEASE_CAP);
+    expect(manyTags.filter((item) => item.family === "tag")).toHaveLength(
+      TAG_RELEASE_CAP,
+    );
     const manyFacts = theaterReleases({
       facts: [
         { label: "A", value: "1" },
@@ -216,15 +219,21 @@ describe("theater lock", () => {
       -122.4,
     );
     const city = west.find((node) => node.key === "place:san francisco");
-    const cityLater = afterTrack.find((node) => node.key === "place:san francisco");
+    const cityLater = afterTrack.find(
+      (node) => node.key === "place:san francisco",
+    );
     expect(city?.x).toBe(cityLater?.x);
     expect(city?.y).toBe(cityLater?.y);
     expect(fieldPoint(west[0]!, 0, 0)).toEqual(fieldPoint(west[0]!, 1.25, 0));
     expect(fieldPoint(west[0]!, 1.25, 1).x).not.toBe(west[0]!.x);
     expect(fieldFamiliesConnect("tag", "fact")).toBe(true);
     expect(fieldFamiliesConnect("place", "fact")).toBe(false);
-    expect(fieldDensity("filed").glow).toBeLessThan(fieldDensity("locking").glow);
-    expect(fieldDensity("filed").glow).toBeGreaterThan(fieldDensity("reading").glow);
+    expect(fieldDensity("filed").glow).toBeLessThan(
+      fieldDensity("locking").glow,
+    );
+    expect(fieldDensity("filed").glow).toBeGreaterThan(
+      fieldDensity("reading").glow,
+    );
     expect(fieldDensity("filed").drift).toBeGreaterThan(0.2);
     const cluster = [
       { x: 0.2, y: 0.2 },
@@ -246,14 +255,20 @@ describe("theater lock", () => {
       capped[capped.length - 1]!.strength,
     );
     expect(
-      fieldSemanticEdges(west, west.map((node) => ({ x: node.x, y: node.y })), 0.4).length,
+      fieldSemanticEdges(
+        west,
+        west.map((node) => ({ x: node.x, y: node.y })),
+        0.4,
+      ).length,
     ).toBeGreaterThan(0);
     // A filed sky must stay a figure, not a web: every star keeps a few threads.
-    const crowd = Array.from({ length: 12 }, (_, index) =>
-      fieldNodesFromReleases(
-        [{ key: `tag:t${index}`, family: "tag", label: `t${index}` }],
-        lockSeed(["crowd", index]),
-      )[0]!,
+    const crowd = Array.from(
+      { length: 12 },
+      (_, index) =>
+        fieldNodesFromReleases(
+          [{ key: `tag:t${index}`, family: "tag", label: `t${index}` }],
+          lockSeed(["crowd", index]),
+        )[0]!,
     );
     const crowdPoints = crowd.map((_, index) => ({
       x: 0.45 + (index % 4) * 0.015,
@@ -265,9 +280,9 @@ describe("theater lock", () => {
       degree.set(edge.i, (degree.get(edge.i) ?? 0) + 1);
       degree.set(edge.j, (degree.get(edge.j) ?? 0) + 1);
     });
-    expect([...degree.values()].every((count) => count <= FIELD_DEGREE_CAP)).toBe(
-      true,
-    );
+    expect(
+      [...degree.values()].every((count) => count <= FIELD_DEGREE_CAP),
+    ).toBe(true);
     expect(
       fieldSemanticEdges(crowd, crowdPoints, 0.4, 1, 0).length,
     ).toBeGreaterThan(thinned.length);
@@ -296,12 +311,22 @@ describe("theater lock", () => {
     );
     const spans = fieldSpanEdges(split, splitPoints, splitLocal);
     expect(spans.length).toBeGreaterThan(0);
-    expect(fieldTravelerInTransit({ from: "a", to: "b", progress: 0.4, dwelling: 0 })).toBe(
-      true,
-    );
-    expect(fieldTravelerInTransit({ from: "a", to: "a", progress: 0, dwelling: 0.4 })).toBe(
-      false,
-    );
+    expect(
+      fieldTravelerInTransit({
+        from: "a",
+        to: "b",
+        progress: 0.4,
+        dwelling: 0,
+      }),
+    ).toBe(true);
+    expect(
+      fieldTravelerInTransit({
+        from: "a",
+        to: "a",
+        progress: 0,
+        dwelling: 0.4,
+      }),
+    ).toBe(false);
     expect(hexRgb("#C6A56A")).toEqual([198, 165, 106]);
   });
 
@@ -317,7 +342,9 @@ describe("theater lock", () => {
       ["tag:folk", "place:lisbon"],
     ]);
     expect(walk[0]).toBe("tag:fado");
-    expect(new Set(walk)).toEqual(new Set(["tag:fado", "tag:folk", "place:lisbon", "cover:cover"]));
+    expect(new Set(walk)).toEqual(
+      new Set(["tag:fado", "tag:folk", "place:lisbon", "cover:cover"]),
+    );
     expect(fieldTourRank("tag")).toBeLessThan(fieldTourRank("place"));
     const dwell = fieldTravelerAt(walk, 0.2, 1, 0.5);
     expect(dwell?.visiting).toBe("tag:fado");
@@ -328,10 +355,16 @@ describe("theater lock", () => {
     expect(fieldVisitLabel("tag", "fado")).toBe("fado");
     expect(fieldVisitLabel("cover", "cover")).toBeNull();
     expect(fieldVisitLabel("dispatch", "dispatch")).toBeNull();
-    expect(fieldVisitLabel("fact", "This is a lofi cover of a Malayalam song")).toBeNull();
+    expect(
+      fieldVisitLabel("fact", "This is a lofi cover of a Malayalam song"),
+    ).toBeNull();
     expect(fieldVisitLabel("fact", "1958")).toBe("1958");
     expect(
-      fieldWalk(nodes, [["tag:fado", "tag:folk"]], [["tag:fado", "ghost:star"]]),
+      fieldWalk(
+        nodes,
+        [["tag:fado", "tag:folk"]],
+        [["tag:fado", "ghost:star"]],
+      ),
     ).not.toContain("ghost:star");
     expect(fieldStandingLabel("place", "Kerala")).toBe("Kerala");
     expect(fieldStandingLabel("track", "K.J. Yesudas")).toBe("K.J. Yesudas");
@@ -371,7 +404,9 @@ describe("theater lock", () => {
       phase: "locking",
     });
     expect(locking.join(" ")).toMatch(/coco · tough/i);
-    expect(locking).toContain(lockFingerprint(["Chris Coco", "Love Made Me Tough", "San Francisco"]));
+    expect(locking).toContain(
+      lockFingerprint(["Chris Coco", "Love Made Me Tough", "San Francisco"]),
+    );
     expect(theaterLockLineAt(locking, 0)).toBe(locking[0]);
     expect(theaterLockLineAt(locking, 1800)).toBe(locking[1]);
     expect(theaterLockLive("locking")).toBe(true);
@@ -413,8 +448,18 @@ describe("theater lock", () => {
       "tum-ho-toh",
     ]);
     expect(graph.edges).toEqual([
-      { from: "raj-shekhar", to: "tum-ho-toh", relation: "wrote", verified: false },
-      { from: "tum-ho-toh", to: "azhar", relation: "featured in", verified: false },
+      {
+        from: "raj-shekhar",
+        to: "tum-ho-toh",
+        relation: "wrote",
+        verified: false,
+      },
+      {
+        from: "tum-ho-toh",
+        to: "azhar",
+        relation: "featured in",
+        verified: false,
+      },
     ]);
     const flooded = normalizeTriviaGraph({
       nodes: Array.from({ length: 16 }, (_, index) => ({
@@ -505,8 +550,14 @@ describe("theater lock", () => {
     const walk = fieldWalk(nodes, pairs, preferred);
     const tour = fieldTourSpans(walk, nodes, [...pairs, ...preferred]);
     const drawn = new Set(
-      [...pairs, ...preferred, ...tour.map((edge) => [nodes[edge.i]!.key, nodes[edge.j]!.key] as [string, string])]
-        .map(([left, right]) => [left, right].sort().join("\0")),
+      [
+        ...pairs,
+        ...preferred,
+        ...tour.map(
+          (edge) =>
+            [nodes[edge.i]!.key, nodes[edge.j]!.key] as [string, string],
+        ),
+      ].map(([left, right]) => [left, right].sort().join("\0")),
     );
     expect(walk.length).toBeGreaterThan(1);
     expect(new Set(walk)).toEqual(new Set(nodes.map((node) => node.key)));
@@ -525,9 +576,7 @@ describe("theater lock", () => {
         { id: "tum-ho-toh", label: "Tum Ho Toh", kind: "work" as const },
         { id: "raj-shekhar", label: "Raj Shekhar", kind: "person" as const },
       ],
-      edges: [
-        { from: "raj-shekhar", to: "tum-ho-toh", relation: "wrote" },
-      ],
+      edges: [{ from: "raj-shekhar", to: "tum-ho-toh", relation: "wrote" }],
     };
     const first = theaterReleases({
       city: "Mumbai",
@@ -596,6 +645,20 @@ describe("theater lock", () => {
     expect(fieldBirthBloom(600, false)).toBe(1);
   });
 
+  it("pulses the knowledge edges once when the graph lands, then settles", () => {
+    expect(fieldGraphPulse(null, false)).toBe(0);
+    expect(fieldGraphPulse(-5, false)).toBe(0);
+    expect(fieldGraphPulse(0, false)).toBe(0);
+    // Quick attack to full foil at ~18% of the window...
+    expect(fieldGraphPulse(GRAPH_PULSE_MS * 0.18, false)).toBeCloseTo(1);
+    // ...then a long quadratic settle back to rest.
+    expect(fieldGraphPulse(GRAPH_PULSE_MS * 0.5, false)).toBeGreaterThan(0);
+    expect(fieldGraphPulse(GRAPH_PULSE_MS * 0.5, false)).toBeLessThan(1);
+    expect(fieldGraphPulse(GRAPH_PULSE_MS, false)).toBe(0);
+    // Reduced motion never pulses.
+    expect(fieldGraphPulse(GRAPH_PULSE_MS * 0.18, true)).toBe(0);
+  });
+
   it("keeps the theater back link out of the growing room and reads the dock poller", () => {
     const listen = readFileSync(
       new URL("../../app/routes/listen.tsx", import.meta.url),
@@ -611,7 +674,10 @@ describe("theater lock", () => {
     expect(listen).toContain("TheaterField");
     expect(listen).toContain("theaterReleases");
     const well = readFileSync(
-      new URL("../../app/components/radio-passport/TheaterWell.tsx", import.meta.url),
+      new URL(
+        "../../app/components/radio-passport/TheaterWell.tsx",
+        import.meta.url,
+      ),
       "utf8",
     );
     expect(well).toContain("theaterSkyLive");
