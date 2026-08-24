@@ -1382,7 +1382,8 @@
     .rp-dock-control { width: 40px; height: 40px; }
     .rp-dock strong { font-size: 13px; }
     .rp-dock .ew-dock-sub { display: none; }
-    .rp-dock .ew-stamp-ring { display: block; width: 16px; height: 16px; } /* Phone reaches the book through the dock ring. */
+    .rp-dock .ew-stamp-ring { display: block; position: relative; width: 24px; height: 24px; } /* Phone reaches the book through the dock ring. */
+    .rp-dock .ew-stamp-ring::after { content: ""; position: absolute; inset: -8px; border-radius: 50%; } /* Invisible halo lifts the tap target to 40x40; the 8px reach ends where the dock gaps end, so neighbors stay clear. */
     .rp-dock-play { width: 44px; height: 44px; }
     .rp-theater-link { display: inline !important; font-size: 8px; letter-spacing: .1em; }
     .rp-toast { right: 14px; left: 14px; bottom: calc(88px + env(safe-area-inset-bottom, 0px)); min-width: 0; }
