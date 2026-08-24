@@ -46,6 +46,16 @@ export function IntentBar({
         {statusLabel || ""}
         <span className="sr-only">{statusSpoken}</span>
       </span>
+      {value.trim() ? (
+        <button
+          type="button"
+          className="rp-intent-clear"
+          onClick={() => onChange("")}
+          aria-label="Clear the search"
+        >
+          ×
+        </button>
+      ) : null}
       <SearchVoice
         disabled={loading}
         onTranscript={(transcript) => {

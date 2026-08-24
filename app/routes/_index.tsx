@@ -538,6 +538,9 @@ export default function Index() {
         if (typeof station.longitude !== "number") return false;
         if (station.uuid === arrivalStation?.uuid) return false;
         if (solarHourAtLongitude(station.longitude) !== current) return false;
+        // "Also at this hour" is a city affordance: a station with no city
+        // would render a country name on the pill (flow audit F1).
+        if (!(station.city || "").trim()) return false;
         const key = stationLocation(station);
         if (seen.has(key)) return false;
         seen.add(key);
