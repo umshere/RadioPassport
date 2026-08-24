@@ -436,6 +436,9 @@ export default function Index() {
         });
         if (!response.ok) return;
         const payload = (await response.json()) as InterpretResponse;
+        // A slow response must never rewrite an intent the visitor already
+        // retyped (or cleared) while waiting — same staleness rule as the echo.
+        if (queryRef.current !== prompt) return;
         if (payload.intent.place) setPlace(payload.intent.place);
         if (payload.intent.language) {
           setQuery(payload.intent.language);
