@@ -1,3 +1,4 @@
+import { Link } from "@remix-run/react";
 import { BRAND } from "~/constants/brand";
 
 export const meta = () => [
@@ -6,6 +7,12 @@ export const meta = () => [
     name: "description",
     content: "Elsewhere is live radio from someone else's now.",
   },
+  { property: "og:title", content: `The room · ${BRAND.name}` },
+  {
+    property: "og:description",
+    content: "Elsewhere is live radio from someone else's now.",
+  },
+  { property: "og:url", content: "https://elsewheremusic.com/about" },
 ];
 
 export default function About() {
@@ -48,6 +55,13 @@ export default function About() {
             </p>
           </div>
         </section>
+        <p className="mt-16">
+          {/* SURFACE_CONNECTIONS: about-land — the room must lead back to the
+              cover. SPA link, so the audio bridge in root keeps playing. */}
+          <Link to="/" className="rp-text-button">
+            Land somewhere →
+          </Link>
+        </p>
         <p className="mt-16 rp-telemetry text-dust">
           {BRAND.name}
         </p>
