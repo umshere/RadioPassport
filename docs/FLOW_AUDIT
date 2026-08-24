@@ -149,9 +149,63 @@ this addendum wins on current code.
   (`country-close`, `passport-close`). Undeclared live controls also exist
   (atlas query field, cover empty-state quick actions). Add these rows at the
   next contract-test touch.
+- Recon for that touch (2026-08-24): all overlay closes share one shell —
+  `Overlay` (Overlays.tsx:18) renders the single `.rp-close` button at
+  Overlays.tsx:94–101 with `aria-label="Close ${label}"`. Callers:
+  Atlas `label="Atlas"` (:146 — declared), Country ``label={`${country}
+  stations`}`` (:300 — undeclared → `country-close`), Passport
+  `label="Your Passport"` (:417 — undeclared → `passport-close`). Atlas query
+  field is the controlled input inside `AtlasOverlay` (:107+); cover
+  empty-state quick actions render via `CoverEmptyState.actions`
+  (productFlow.ts:421+).
 
 ## State
 
 Fixed this pass: F1, F4, about-land. Open with approach agreed: F5, F3,
 F3-phone. Open pending taste: F2. Gate at time of writing: tests/typecheck/
 eslint green (run log in session history).
+
+---
+
+# Pass 4 addendum (2026-08-24)
+
+The open trio shipped via parallel agent dispatch: native subagents, one per
+finding, each in an isolated git worktree with an exclusive file boundary;
+orchestrator verified scope up front, reviewed every diff line-by-line, and
+re-ran the full gate on main after each cherry-pick.
+
+- **F3-phone stamp ring 16×16px — FIXED** (`5c1162f`). Inside the shipping
+  960px media query the painted ring grows 16→24px and an invisible `::after`
+  halo (`inset: -8px`) lifts the button's tap target to 40×40; the halo's
+  reach ends where the dock's 8px gaps end, so heart/theater stay clear.
+  Desktop pixel-identical. CSS-only, no markup hook needed.
+- **F5 surprise silent hang — FIXED** (`8b131bd`).
+  `withRouteDeadline()` races the whole recommendation pipeline (LLM call +
+  the previously unbounded sequential RadioBrowser pool fetches) against
+  `RECOMMEND_ROUTE_DEADLINE_MS = 15_000` in both loader and action. On
+  deadline: warn once, answer with the file's existing curated mock scene so
+  Surprise always lands somewhere. Losing work is never aborted (hard rule
+  honored); the timer is cleared when real work finishes first. Tests cover
+  fast-path-unchanged and hung-pool-still-answers within the deadline.
+- **F3 snapshot false "no live signal" — FIXED** (`0925735`). The heavy
+  stations=8000 search gets a per-call `{ softFail: true, timeoutMs: 30000 }`
+  (measured 16.8s upstream vs the 5s default that killed every mirror);
+  countries/languages/tags keep the global default. A null from softFail is
+  re-raised as a rejection so total mirror failure reads as outage, not
+  empty. Rejected snapshot builds clear the cache slot (identity-guarded so
+  a newer snapshot can't be nuked by an older failure). The route answers
+  `503 { error: "snapshot-unavailable", … }` instead of an unhandled 500;
+  the client keeps `catalogError` separate from empty results and feeds it
+  to `seekingStatus`/`seekingBoardLabel` (tone "unreachable", label "Signal
+  lost", board `SIGNAL LOST · NAME`), and the cover empty state gains a
+  "Try again" chip riding the existing `retry-catalog` action vocabulary via
+  a nonce refetch.
+
+Registry hygiene recon for the next contract-test touch lives in the Pass 3
+section above (Overlays.tsx:18/:94–101/:300/:417 citations).
+
+F2 remains open pending Ums's eye — taste call, candidate placements
+unchanged.
+
+Gate at close of Pass 4: **194 tests / 23 files green, typecheck clean,
+eslint clean** (main @ `0925735`).

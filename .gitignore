@@ -41,3 +41,6 @@ test-results/
 # Generated Radio Browser catalogues
 /data/*.jsonl
 /data/catalogue_stats_*.json
+
+# orchestrator worker worktrees (not shipped)
+.workers/
