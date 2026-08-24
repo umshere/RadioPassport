@@ -413,7 +413,12 @@ export type CoverEmptyKind = "search" | "hour" | "place" | "catalog";
 export type CoverEmptyAction = {
   id: Extract<
     FlowAction,
-    "surprise" | "atlas" | "clear-search" | "clear-hour" | "clear-place"
+    | "surprise"
+    | "atlas"
+    | "clear-search"
+    | "clear-hour"
+    | "clear-place"
+    | "retry-catalog"
   >;
   label: string;
 };
@@ -428,10 +433,20 @@ export function seekingStatus(input: {
   query: string;
   loading: boolean;
   count: number;
+  unreachable?: boolean;
 }) {
   const query = input.query.trim();
   if (!query) {
     return { tone: "idle" as const, label: "", spoken: "" };
+  }
+  // An outage is not an empty catalog: only claim "No signal" once the
+  // catalog actually answered with nothing.
+  if (input.unreachable && !input.loading) {
+    return {
+      tone: "unreachable" as const,
+      label: "Signal lost",
+      spoken: `Signal lost for ${query}`,
+    };
   }
   if (input.loading) {
     return {
@@ -474,10 +489,12 @@ export function seekingBoardLabel(
   query: string,
   loading: boolean,
   count: number,
+  unreachable = false
 ) {
   const trimmed = query.trim();
   if (!trimmed) return null;
   const name = trimmed.toUpperCase();
+  if (unreachable && !loading) return `SIGNAL LOST · ${name}`;
   if (loading) return `SEARCHING · ${name}`;
   if (count === 0) return `NO SIGNAL · ${name}`;
   return `${count} LIVE · ${name}`;
@@ -499,9 +516,22 @@ export function describeCoverEmpty(input: {
   query: string;
   hour: string | null;
   place: string | null;
+  unreachable?: boolean;
 }): CoverEmptyState {
   const query = input.query.trim();
   if (query) {
+    // An outage gets its own truth and a way back in, not a verdict on the
+    // catalog itself.
+    if (input.unreachable) {
+      return {
+        kind: "search",
+        message: `Signal lost for “${query}”.`,
+        actions: [
+          { id: "retry-catalog", label: "Try again" },
+          { id: "atlas", label: "Atlas" },
+        ],
+      };
+    }
     return {
       kind: "search",
       message: `No live signal for “${query}”.`,
@@ -791,16 +821,26 @@ export function coverWhileSeeking(input: {
   query: string;
   count: number;
   loading: boolean;
+  unreachable?: boolean;
 }): CoverArrival {
   const query = input.query.trim();
   const status = seekingStatus({
     query,
     loading: input.loading,
     count: input.count,
+    unreachable: input.unreachable,
   });
   if (status.tone === "searching") {
     return {
       headline: `Searching ${query}.`,
+      cta: "",
+      ctaKind: "none",
+      live: false,
+    };
+  }
+  if (status.tone === "unreachable") {
+    return {
+      headline: `Signal lost for ${query}.`,
       cta: "",
       ctaKind: "none",
       live: false,
@@ -831,6 +871,7 @@ export function resolveCoverArrival(input: {
   query: string;
   count: number;
   loading: boolean;
+  unreachable?: boolean;
 }): CoverArrival {
   if (input.isPlaying) {
     return coverArrival({
@@ -845,6 +886,7 @@ export function resolveCoverArrival(input: {
       query: input.query,
       count: input.count,
       loading: input.loading,
+      unreachable: input.unreachable,
     });
   }
   return coverArrival({

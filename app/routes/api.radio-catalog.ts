@@ -45,10 +45,27 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const query = url.searchParams.get("q")?.trim() ?? "";
   const stationLimit = limitParam ? Math.max(100, Number(limitParam)) : undefined;
 
-  const snapshot = await fetchRadioBrowserCatalogSnapshot({
-    stationLimit,
-    forceRefresh: force,
-  });
+  let snapshot: Awaited<ReturnType<typeof fetchRadioBrowserCatalogSnapshot>>;
+  try {
+    snapshot = await fetchRadioBrowserCatalogSnapshot({
+      stationLimit,
+      forceRefresh: force,
+    });
+  } catch {
+    // An outage is not an empty catalog. Name it so the cover can say
+    // "Signal lost" instead of lying "No signal".
+    return json(
+      {
+        error: "snapshot-unavailable",
+        stations: [],
+        fetchedAt: null,
+        countries: [],
+        languages: [],
+        tags: [],
+      },
+      { status: 503, headers: { "Cache-Control": "no-store" } }
+    );
+  }
 
   if (!query || query.length < 2) {
     return json(snapshot, {

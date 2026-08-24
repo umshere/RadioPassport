@@ -153,6 +153,14 @@ export default function Index() {
   );
   const [catalog, setCatalog] = useState<Station[]>([]);
   const [catalogLoading, setCatalogLoading] = useState(false);
+  // True only when the live catalog could not be reached — never when it
+  // answered empty. The cover owes the visitor that distinction (flow audit F3).
+  const [catalogError, setCatalogError] = useState(false);
+  const [catalogAttempt, setCatalogAttempt] = useState(0);
+  const retryCatalog = useCallback(() => {
+    setCatalogError(false);
+    setCatalogAttempt((attempt) => attempt + 1);
+  }, []);
   const [atlas, setAtlas] = useState(false);
   const [atlasQuery, setAtlasQuery] = useState("");
   const [country, setCountry] = useState<string | null>(null);
@@ -173,6 +181,7 @@ export default function Index() {
     if (!catalogRequestState(query).shouldFetch) {
       setCatalog([]);
       setCatalogLoading(false);
+      setCatalogError(false);
       return;
     }
     let cancelled = false;
@@ -184,14 +193,21 @@ export default function Index() {
             response.ok ? response.json() : Promise.reject()
           )
           .then((data: { stations?: Station[] }) => {
-            if (!cancelled)
-              setCatalog(
-                normalizeStations(data.stations || [])
-                  .filter((station) => stationMatches(station, query))
-                  .slice(0, 200)
-              );
+            if (cancelled) return;
+            setCatalog(
+              normalizeStations(data.stations || [])
+                .filter((station) => stationMatches(station, query))
+                .slice(0, 200)
+            );
+            setCatalogError(false);
           })
-          .catch(() => !cancelled && setCatalog([]))
+          .catch(() => {
+            if (cancelled) return;
+            // An outage is not an empty catalog: flag it so the cover says
+            // "Signal lost" instead of lying "No signal".
+            setCatalog([]);
+            setCatalogError(true);
+          })
           .finally(() => !cancelled && setCatalogLoading(false)),
       260
     );
@@ -199,7 +215,7 @@ export default function Index() {
       cancelled = true;
       window.clearTimeout(id);
     };
-  }, [query]);
+  }, [query, catalogAttempt]);
 
   const featured = useMemo(() => {
     const geo = initialStations.filter(
@@ -508,6 +524,7 @@ export default function Index() {
     query,
     count: liveFiltered.length,
     loading: catalogLoading,
+    unreachable: catalogError,
   });
   const localNow =
     arrivalStation && typeof arrivalStation.longitude === "number"
@@ -558,12 +575,23 @@ export default function Index() {
     query,
     loading: catalogLoading,
     count: liveFiltered.length,
+    unreachable: catalogError,
   });
   const boardLabel =
-    seekingBoardLabel(query, catalogLoading, liveFiltered.length) ??
+    seekingBoardLabel(
+      query,
+      catalogLoading,
+      liveFiltered.length,
+      catalogError
+    ) ??
     hourBoardLabel(hour, catalogLoading, liveFiltered.length) ??
     (mixLabel ? "WORLD MIX" : "LIVE NOW");
-  const coverEmpty = describeCoverEmpty({ query, hour, place });
+  const coverEmpty = describeCoverEmpty({
+    query,
+    hour,
+    place,
+    unreachable: catalogError,
+  });
 
   useEffect(() => {
     if (!isSeeking || catalogLoading) return;
@@ -600,7 +628,9 @@ export default function Index() {
           statusSpoken={
             intentEcho ? `Heard: ${intentEcho}` : seek.spoken
           }
-          statusTone={seek.tone}
+          // IntentBar tones are styling only; "Signal lost" rides the label
+          // while the outage borrows the empty tone's styling.
+          statusTone={seek.tone === "unreachable" ? "empty" : seek.tone}
         />
         <AtmospherePin />
       </header>
@@ -785,6 +815,7 @@ export default function Index() {
                       if (action.id === "clear-search") setQuery("");
                       if (action.id === "clear-hour") setHour(null);
                       if (action.id === "clear-place") setPlace(null);
+                      if (action.id === "retry-catalog") retryCatalog();
                     }}
                   >
                     {action.label}
@@ -822,7 +853,8 @@ export default function Index() {
                 ? seekingBoardLabel(
                   query,
                   catalogLoading,
-                  liveFiltered.length
+                  liveFiltered.length,
+                  catalogError
                 ) ?? ""
                 : arrivalStation
                   ? `${arrivalStation.bitrate
