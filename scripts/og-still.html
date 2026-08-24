@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<link href="https://fonts.googleapis.com/css2?family=Azeret+Mono:wght@400;500&family=Newsreader:ital,opsz,wght@0,6..72,400;1,6..72,400;1,6..72,500&family=Schibsted+Grotesk:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 1200px; height: 630px; overflow: hidden; }
+  .still {
+    position: relative;
+    width: 1200px;
+    height: 630px;
+    background: #0C0B09;
+    color: #E8DFD0;
+    font-family: "Newsreader", serif;
+    overflow: hidden;
+  }
+  /* Night-earth washes, echoing GalaxyBackdrop */
+  .nebula { position: absolute; border-radius: 50%; filter: blur(2px); pointer-events: none; }
+  .nebula.foil {
+    width: 720px; height: 720px; right: -180px; top: -300px;
+    background: radial-gradient(closest-side, rgba(198,165,106,0.14), rgba(198,165,106,0) 70%);
+  }
+  .nebula.ether {
+    width: 860px; height: 860px; left: -260px; bottom: -420px;
+    background: radial-gradient(closest-side, rgba(126,184,180,0.12), rgba(126,184,180,0) 70%);
+  }
+  /* The globe: one great circle rising past the bottom edge */
+  .earth {
+    position: absolute;
+    width: 1560px; height: 1560px;
+    left: -180px; top: 330px;
+    border-radius: 50%;
+    border: 1.5px solid rgba(198,165,106,0.38);
+    background:
+      radial-gradient(circle at 62% 18%, rgba(232,223,208,0.05), rgba(232,223,208,0) 42%),
+      #100E0B;
+    box-shadow: 0 -20px 120px rgba(0,0,0,0.55);
+  }
+  /* City lights along the limb */
+  .city { position: absolute; border-radius: 50%; background: #7EB8B4; }
+  .city.warm { background: #C6A56A; }
+  .halo { position: absolute; border-radius: 50%; pointer-events: none; }
+  /* Type */
+  .masthead {
+    position: absolute; left: 84px; top: 64px;
+    font-family: "Schibsted Grotesk", sans-serif;
+    font-size: 30px; font-weight: 500; letter-spacing: 0.34em;
+    color: #E8DFD0;
+  }
+  .eyebrow {
+    position: absolute; left: 86px; top: 116px;
+    font-family: "Azeret Mono", monospace;
+    font-size: 16.5px; letter-spacing: 0.28em; color: #9A8F80;
+  }
+  .eyebrow .dot { color: #C73A3A; }
+  .coverline {
+    position: absolute; left: 82px; top: 196px; width: 900px;
+    font-style: italic; font-weight: 500;
+    font-size: 118px; line-height: 1.04; letter-spacing: -0.01em;
+    color: #E8DFD0;
+  }
+  .coverline .stop { color: #C73A3A; font-style: normal; }
+  .deck {
+    position: absolute; left: 86px; top: 476px;
+    font-size: 31px; color: #9A8F80; font-style: italic;
+  }
+  .foot {
+    position: absolute; left: 86px; bottom: 46px; right: 86px;
+    display: flex; align-items: center; justify-content: space-between;
+    font-family: "Azeret Mono", monospace;
+    font-size: 15px; letter-spacing: 0.24em; color: #9A8F80;
+  }
+  .seal { position: absolute; right: 84px; top: 58px; width: 92px; height: 92px; }
+</style>
+</head>
+<body>
+<div class="still">
+  <div class="nebula foil"></div>
+  <div class="nebula ether"></div>
+  <div class="earth"></div>
+
+  <!-- city lights sitting on the globe's upper limb -->
+  <div class="city warm" style="left:214px; top:436px; width:5px; height:5px;"></div>
+  <div class="halo" style="left:206px; top:428px; width:21px; height:21px; background:radial-gradient(closest-side, rgba(198,165,106,0.35), transparent 70%);"></div>
+  <div class="city" style="left:388px; top:404px; width:4px; height:4px;"></div>
+  <div class="city" style="left:571px; top:386px; width:5px; height:5px;"></div>
+  <div class="halo" style="left:563px; top:378px; width:21px; height:21px; background:radial-gradient(closest-side, rgba(126,184,180,0.35), transparent 70%);"></div>
+  <div class="city" style="left:758px; top:382px; width:4px; height:4px;"></div>
+  <div class="city warm" style="left:932px; top:392px; width:5px; height:5px;"></div>
+  <div class="halo" style="left:924px; top:384px; width:21px; height:21px; background:radial-gradient(closest-side, rgba(198,165,106,0.3), transparent 70%);"></div>
+  <div class="city" style="left:1096px; top:418px; width:4px; height:4px;"></div>
+
+  <div class="masthead">ELSEWHERE</div>
+  <div class="eyebrow">LIVE RADIO <span class="dot">·</span> SOMEONE ELSE&rsquo;S NOW</div>
+
+  <div class="coverline">You are<br />not here<span class="stop">.</span></div>
+
+  <div class="deck">Live radio from cities that are awake without you.</div>
+
+  <div class="foot">
+    <span>STAY LONG ENOUGH TO BE STAMPED</span>
+    <span>ELSEWHERE.MUSIC.COM</span>
+  </div>
+
+  <!-- lacquer seal, from /elsewhere-favicon.svg -->
+  <svg class="seal" viewBox="0 0 92 92" fill="none">
+    <circle cx="46" cy="46" r="43" fill="none" stroke="#C6A56A" stroke-width="1.5"/>
+    <circle cx="46" cy="46" r="33" fill="none" stroke="#C6A56A" stroke-width="0.75" opacity="0.55"/>
+    <circle cx="46" cy="46" r="13" fill="#C73A3A"/>
+  </svg>
+</div>
+</body>
+</html>

@@ -78,6 +78,21 @@ function Document({
           name="description"
           content="Elsewhere: live radio from someone else's now. Land in a city, stay long enough to be stamped."
         />
+        {/* Social card defaults; routes override only title/description/url.
+            The still is rendered from scripts/og-still.html (render-og.mjs). */}
+        <meta property="og:site_name" content="Elsewhere" />
+        <meta property="og:type" content="website" />
+        <meta
+          property="og:image"
+          content="https://elsewheremusic.com/elsewhere-og.jpg"
+        />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+        <meta
+          property="og:image:alt"
+          content="Elsewhere — You are not here. Live radio from cities that are awake without you."
+        />
+        <meta name="twitter:card" content="summary_large_image" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link
           rel="preconnect"

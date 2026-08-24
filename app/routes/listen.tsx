@@ -27,6 +27,12 @@ export const meta = () => [
     name: "description",
     content: "A quiet listening room for the station you are already inside.",
   },
+  { property: "og:title", content: `Theater · ${BRAND.name}` },
+  {
+    property: "og:description",
+    content: "A quiet listening room for the station you are already inside.",
+  },
+  { property: "og:url", content: "https://elsewheremusic.com/listen" },
 ];
 
 export default function ListeningPage() {

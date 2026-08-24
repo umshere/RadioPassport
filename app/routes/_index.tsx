@@ -73,6 +73,16 @@ import {
   type SolarHour,
 } from "~/utils/localTime";
 
+export const meta = () => [
+  { property: "og:title", content: "Elsewhere — You are not here." },
+  {
+    property: "og:description",
+    content:
+      "Live radio from cities that are awake without you. Land somewhere, stay long enough to be stamped.",
+  },
+  { property: "og:url", content: "https://elsewheremusic.com/" },
+];
+
 export async function loader(_: LoaderFunctionArgs) {
   try {
     const [countriesRaw, stationsRaw] = await Promise.all([
