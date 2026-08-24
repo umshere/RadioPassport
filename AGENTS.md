@@ -51,6 +51,17 @@ Ship: `docs/DEPLOY.md` (`git push origin main` then `npx vercel --prod --yes`).
 
 Local AI: Heuristics + `deepseek-v4-flash`. Prod: Gemini 2.5 Flash. Details: `docs/ENVIRONMENT.md`.
 
+## Knowledge graph
+
+A graphify knowledge graph of this repo lives in `graphify-out/`. Query it before re-reading code.
+
+- Ask: `graphify query "<question>"` (cited answer, ~12k tokens vs reading files)
+- Map: `graphify-out/graph.json` · plain-language audit: `graphify-out/GRAPH_REPORT.md`
+- Shortest path between concepts: `graphify path "A" "B"` · explain a node: `graphify explain "<node>"`
+- Refresh after code changes: `graphify . --update` (re-extracts only changed files)
+
+God node today: `Station` (75 edges). Touch it via providers/routes only; check blast radius with a query first.
+
 ## Skills (Grok + Claude)
 
 - `.grok/skills/elsewhere-deploy/SKILL.md`
