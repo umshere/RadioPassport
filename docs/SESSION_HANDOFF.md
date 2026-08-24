@@ -15,7 +15,7 @@ Saved so this conversation can be compacted. Next turn: read this file + `docs/R
 
 - Branch: `main`
 - Remote: `https://github.com/umshere/RadioPassport.git`
-- Head at last product push: `e318f7e` — universal bar, seam transitions, night desk, stamp dispatch, up-next prefetch. Passport stamp rule is in `docs/DESIGN_SPECS.md`. Domain + agent docs follow.
+- Head at last product push: `478af95` — flow-audit Pass 4 (F5 route deadline, F3 snapshot truth, F3-phone stamp ring target) via parallel agent dispatch. Passport stamp rule is in `docs/DESIGN_SPECS.md`. Domain + agent docs follow.
 - Do not commit `.env`
 - `public/FTS.jpeg` is the 404 wallpaper. Ship it with the app.
 - Live host: **https://elsewheremusic.com**. Radio Passport 308s there. Facts: `docs/DOMAINS.md`. Ship: `docs/DEPLOY.md`. Breaks: `docs/TROUBLESHOOTING.md`. Agents: `AGENTS.md`.
@@ -92,7 +92,38 @@ land · dusk · hour · stamp · live · cover · elsewhere · now
 
 ## Next work (in order)
 
-### 0. Session 2026-08-23 — shipped and LIVE (auto-deploy on push confirmed)
+### 0. Session 2026-08-24 — flow-audit Pass 4 shipped and LIVE (agent-army session)
+
+The open trio fixed via **parallel agent dispatch**: three native subagents,
+one per finding, each in an isolated git worktree (`.workers/<name>`, branches
+`worker/f5`, `worker/f3`, `worker/f3-phone`) with an exclusive file boundary;
+orchestrator verified scope up front, reviewed every diff, cherry-picked
+sequentially, and re-ran the full gate on main after each pick. Briefs kept in
+`.workers/briefs/`. External Codex/Grok CLIs were tried first but cannot run
+under this sandbox (`FS_PERMISSION_DENIED` on session create) — use native
+subagents for delegation.
+
+- **F5 surprise silent hang — FIXED** (`8b131bd`) — `withRouteDeadline()`
+  races the whole recommend pipeline against 15s; warn once, lands the
+  curated mock scene; losing work never aborted. Verified live: probe
+  returned 200 in **15.15s** with a valid descriptor while upstream was slow.
+- **F3 snapshot false "no live signal" — FIXED** (`0925735`) — heavy
+  stations=8000 call gets `{ softFail: true, timeoutMs: 30000 }`; outage ≠
+  empty end to end (cache-slot clear on rejection, route 503
+  `snapshot-unavailable`, client "Signal lost" + "Try again" chip on the
+  existing `retry-catalog` action). Markers confirmed in served chunks.
+- **F3-phone stamp-ring 16×16px — FIXED** (`5c1162f`) — painted ring 16→24px,
+  invisible `::after` halo lifts tap target to 40×40 inside the shipping 960px
+  query; desktop untouched. Halo rule confirmed in served CSS.
+- `docs/FLOW_AUDIT` gained the Pass 4 addendum + registry-hygiene recon
+  (Overlays.tsx citations for `country-close`/`passport-close` rows still to
+  add at next contract-test touch).
+- Gate at ship: **194 tests / 23 files, typecheck clean, eslint clean**;
+  prod head `478af95`.
+- Still open: **F2** atmosphere pin placement (Ums's eye), PR #16
+  merge-or-close, Android TWA parked.
+
+### 0a. Session 2026-08-23 — shipped and LIVE (auto-deploy on push confirmed)
 
 Everything below item 1 is done; prod follows `main` via the Vercel git
 integration (commit status check), so "pushed" == "live".
