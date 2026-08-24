@@ -771,6 +771,35 @@ async function getRecommendation(
   return applyPostProcessing(descriptor, request);
 }
 
+// Flow-audit F5: the AI gateway bounds only its own call, while intent coverage
+// can chain many sequential RadioBrowser pool fetches with no ceiling. Race the
+// whole pipeline against a route-level deadline so a recommendation always
+// lands. Losing work is left to settle in the background — never aborted.
+export const RECOMMEND_ROUTE_DEADLINE_MS = 15_000;
+
+function withRouteDeadline(
+  request: RecommendRequest
+): Promise<SceneDescriptor> {
+  let deadlineId: ReturnType<typeof setTimeout> | undefined;
+
+  const deadline = new Promise<SceneDescriptor>((resolve) => {
+    deadlineId = setTimeout(() => {
+      console.warn(
+        `recommend route missed its ${RECOMMEND_ROUTE_DEADLINE_MS}ms deadline; landing a fallback scene`
+      );
+      resolve(toSceneDescriptor(selectMockScene(request)));
+    }, RECOMMEND_ROUTE_DEADLINE_MS);
+  });
+
+  const work = getRecommendation(request).finally(() => {
+    if (deadlineId !== undefined) {
+      clearTimeout(deadlineId);
+    }
+  });
+
+  return Promise.race([work, deadline]);
+}
+
 function buildResponse(descriptor: SceneDescriptor) {
   const payload: AiRecommendationResponse = { descriptor };
   return json(payload, {
@@ -1051,7 +1080,7 @@ function shouldUseRelatedFallback(intent: IntentMeta): boolean {
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const url = new URL(request.url);
-  const descriptor = await getRecommendation(
+  const descriptor = await withRouteDeadline(
     enrichRequestWithIntent(
       finalizeRequest({
         prompt: url.searchParams.get("prompt"),
@@ -1106,6 +1135,6 @@ export async function action({ request }: ActionFunctionArgs) {
     };
   }
 
-  const descriptor = await getRecommendation(enrichRequestWithIntent(finalizeRequest(body)));
+  const descriptor = await withRouteDeadline(enrichRequestWithIntent(finalizeRequest(body)));
   return buildResponse(descriptor);
 }

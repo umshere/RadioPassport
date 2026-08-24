@@ -9,6 +9,7 @@ vi.mock("~/utils/stations", () => ({
 }));
 
 import type { Station } from "~/types/radio";
+import { RECOMMEND_ROUTE_DEADLINE_MS } from "~/api/ai/recommend";
 import { rbFetchJson } from "~/utils/radioBrowser";
 import { normalizeStations } from "~/utils/stations";
 
@@ -187,5 +188,88 @@ describe("POST /api/ai/recommend", () => {
     expect(fetchMock.mock.calls[1]?.[0]?.toString()).toContain(
       "/v1beta/models/gemini-2.5-flash"
     );
+  });
+});
+
+describe("/api/ai/recommend route deadline", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    Object.assign(process.env, originalEnv);
+    process.env.USE_MOCK = "true";
+    mockedRbFetchJson.mockReset();
+    mockedNormalizeStations.mockReset();
+    mockedNormalizeStations.mockImplementation(() => []);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    global.fetch = originalFetch;
+  });
+
+  async function importRoute() {
+    vi.resetModules();
+    const { action } = await import("~/routes/api.ai.recommend");
+    return action;
+  }
+
+  function buildRequest(body: Record<string, unknown>): Request {
+    return new Request("http://localhost/api/ai/recommend", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+  }
+
+  it("answers from the pipeline itself when work beats the deadline", async () => {
+    mockedRbFetchJson.mockResolvedValue([]);
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    const action = await importRoute();
+    const response = await action({
+      request: buildRequest({ prompt: "arctic ambient aurora night" }),
+      context: {},
+      params: {},
+    });
+
+    expect(response.status).toBe(200);
+    const payload = await response.json();
+    expect(payload.descriptor.stations.length).toBeGreaterThan(0);
+    expect(payload.descriptor.play?.strategy).toBe("autoplay_first");
+    expect(warnSpy).not.toHaveBeenCalled();
+
+    warnSpy.mockRestore();
+  });
+
+  it("lands a usable scene within the deadline when station pools hang", async () => {
+    // F5 production shape: intent-coverage supplements chain RadioBrowser pool
+    // fetches with no ceiling. The descriptor resolves fast, rbFetchJson never
+    // does, so only the route deadline can still answer.
+    mockedRbFetchJson.mockImplementation(() => new Promise<never>(() => {}));
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    const action = await importRoute();
+
+    vi.useFakeTimers();
+    const pending = action({
+      request: buildRequest({
+        prompt: "arctic ambient aurora night",
+        language: "tamil",
+      }),
+      context: {},
+      params: {},
+    }) as Promise<Response>;
+    await vi.advanceTimersByTimeAsync(RECOMMEND_ROUTE_DEADLINE_MS + 1_000);
+    const response = await pending;
+
+    expect(response.status).toBe(200);
+    const payload = await response.json();
+    expect(payload.descriptor.stations.length).toBeGreaterThan(0);
+    expect(payload.descriptor.play?.strategy).toBe("autoplay_first");
+    expect(
+      payload.descriptor.stations.map((station: Station) => station.uuid)
+    ).toContain("aurora-horizon-1");
+    expect(warnSpy).toHaveBeenCalledTimes(1);
+
+    warnSpy.mockRestore();
   });
 });
