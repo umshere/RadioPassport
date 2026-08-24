@@ -92,7 +92,32 @@ land · dusk · hour · stamp · live · cover · elsewhere · now
 
 ## Next work (in order)
 
-### 1. Stamp ink progress — done 2026-08-22 (local, not yet deployed)
+### 0. Session 2026-08-23 — shipped and LIVE (auto-deploy on push confirmed)
+
+Everything below item 1 is done; prod follows `main` via the Vercel git
+integration (commit status check), so "pushed" == "live".
+
+- **OG still + social tags** (`2ec5902`) — `public/elsewhere-og.jpg` rendered
+  from `scripts/og-still.html` via `scripts/render-og.mjs` (Playwright;
+  re-run after edits). Site-wide og/twitter defaults in `root.tsx`;
+  per-route og:title/description/url on `/`, `/listen`, `/about`.
+- **Interpret-race fix** (`6b5b941`) — stale `/api/ai/interpret` responses now
+  return instead of clobbering a retyped/cleared intent (guard mirrors the
+  echo's queryRef rule).
+- **Legacy cleanup** (`5f2e0fd`) — 40 dead files removed (RetroTuner/Premium*
+  headers, SceneManager chain, `app/scenes/*` except live `types.ts`, whole
+  unimported `app/routes/components/`). Full-app eslint now clean.
+- **Flow audit Pass 3** — `docs/FLOW_AUDIT` is now TRACKED: Phase A browser
+  walk + Pass 3 addendum. Fixed: about-land was missing entirely (`e7e1fb3` —
+  "Land somewhere →" on /about), F1 city-only same-hour pills, F4 clear
+  control in IntentBar when text present (`02200ec`). Open with approach
+  agreed: F5 surprise route deadline, F3 snapshot per-call timeout,
+  F3-phone stamp-ring touch target. Taste call: F2 atmosphere pin placement.
+- Gate at ship: 184/184 tests, typecheck, full-app eslint green.
+- **Deploy note:** `npx vercel --prod` CLI auth broke mid-session (logged
+  out) — do not rely on it; pushes to `main` deploy themselves.
+
+### 1. Stamp ink progress — done 2026-08-22 (live)
 
 - `JourneyBridge` publishes `--stamp-ink` (0..1) on `document.documentElement` once a second while the current city plays unstamped; resets on station change / pause / stamp; reduced motion never receives the var (static ring + existing title copy). Pure helper: `stampInkProgress` (unit-tested).
 - The fill is a lacquer conic-gradient on `.ew-stamp-ring`, appended **outside any `@layer`** at the end of `app/tailwind.css` (same layer-drop gremlin as the site bar). `PlayerDock`'s inline style only sets `background` when stamped, so the stylesheet owns the unstamped fill.
