@@ -112,6 +112,20 @@ describe("Elsewhere living loop", () => {
     expect(keepers.every((item) => item.keepsPlayback)).toBe(true);
     expect(searchKeepsPlayback()).toBe(true);
   });
+
+  it("declares the country close, passport close, atlas query field, and empty-cover actions", () => {
+    for (const id of [
+      "country-close",
+      "passport-close",
+      "atlas-query",
+      "cover-empty",
+    ]) {
+      const row = connectionById(id);
+      expect(row, id).not.toBeNull();
+      expect(row!.label.trim().length).toBeGreaterThan(0);
+      expect(ELSEWHERE_LOOP).toContain(row!.step);
+    }
+  });
 });
 
 describe("Cover empty states always offer a next step", () => {
@@ -536,6 +550,21 @@ describe("Icons that look live must land somewhere", () => {
     expect(connectionById("passport-favorite")?.action).toBe("play-station");
   });
 
+  it("gives the atlas query field and the empty-cover quick actions real rows", () => {
+    expect(connectionById("atlas-query")).toMatchObject({
+      surface: "atlas",
+      step: "tune",
+      action: "atlas",
+      keepsPlayback: true,
+    });
+    expect(connectionById("cover-empty")).toMatchObject({
+      surface: "cover",
+      step: "tune",
+      action: "atlas",
+      keepsPlayback: true,
+    });
+  });
+
   it("retries a failed mix instead of leaving an error as the last word", () => {
     expect(connectionById("retry-mix")?.action).toBe("retry-mix");
     expect(connectionById("country-retry")?.action).toBe("retry-catalog");
@@ -546,6 +575,30 @@ describe("Overlays keep a way through", () => {
   it("returns country drill-down to the atlas", () => {
     expect(overlayBackFromCountry()).toBe("atlas");
     expect(connectionById("country-back")?.action).toBe("atlas");
+  });
+
+  it("closes the country and passport overlays without stopping playback", () => {
+    expect(connectionById("country-close")).toMatchObject({
+      surface: "country",
+      step: "next",
+      action: "close-overlay",
+      keepsPlayback: true,
+    });
+    expect(connectionById("passport-close")).toMatchObject({
+      surface: "passport",
+      step: "next",
+      action: "close-overlay",
+      keepsPlayback: true,
+    });
+    const closers = SURFACE_CONNECTIONS.filter(
+      (item) => item.action === "close-overlay",
+    );
+    expect(closers.map((item) => item.id)).toEqual([
+      "atlas-close",
+      "country-close",
+      "passport-close",
+    ]);
+    expect(closers.every((item) => item.keepsPlayback)).toBe(true);
   });
 
   it("lets an empty atlas search be cleared", () => {

@@ -218,6 +218,14 @@ export const SURFACE_CONNECTIONS: SurfaceConnection[] = [
     keepsPlayback: true,
   },
   {
+    id: "cover-empty",
+    surface: "cover",
+    label: "Quiet-board quick actions",
+    step: "tune",
+    action: "atlas",
+    keepsPlayback: true,
+  },
+  {
     id: "globe-dot",
     surface: "globe",
     label: "Globe city",
@@ -231,6 +239,14 @@ export const SURFACE_CONNECTIONS: SurfaceConnection[] = [
     label: "Country in atlas",
     step: "tune",
     action: "country",
+    keepsPlayback: true,
+  },
+  {
+    id: "atlas-query",
+    surface: "atlas",
+    label: "Search countries or languages",
+    step: "tune",
+    action: "atlas",
     keepsPlayback: true,
   },
   {
@@ -266,6 +282,14 @@ export const SURFACE_CONNECTIONS: SurfaceConnection[] = [
     keepsPlayback: true,
   },
   {
+    id: "country-close",
+    surface: "country",
+    label: "Close country stations",
+    step: "next",
+    action: "close-overlay",
+    keepsPlayback: true,
+  },
+  {
     id: "passport-stamp",
     surface: "passport",
     label: "Replay a stamped city",
@@ -288,6 +312,14 @@ export const SURFACE_CONNECTIONS: SurfaceConnection[] = [
     step: "tune",
     action: "play-station",
     keepsPlayback: false,
+  },
+  {
+    id: "passport-close",
+    surface: "passport",
+    label: "Close your passport",
+    step: "next",
+    action: "close-overlay",
+    keepsPlayback: true,
   },
   {
     id: "dock-art",
