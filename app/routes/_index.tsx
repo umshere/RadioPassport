@@ -632,7 +632,6 @@ export default function Index() {
           // while the outage borrows the empty tone's styling.
           statusTone={seek.tone === "unreachable" ? "empty" : seek.tone}
         />
-        <AtmospherePin />
       </header>
       <div className="rp-stage">
         <section className="rp-intro">
@@ -640,17 +639,24 @@ export default function Index() {
           <h1 className="ew-arrive" key={nowPlaying?.uuid ?? "cover"}>
             {arrival.headline}
           </h1>
-          {localNow && !seekingCover ? (
-            <p className="rp-eyebrow text-ether">
-              <i className="rp-live-dot" />
-              {formatLocalLabel(arrivalCity, localNow)} ·{" "}
-              {solarHourAtLongitude(
-                arrivalStation && typeof arrivalStation.longitude === "number"
-                  ? arrivalStation.longitude
-                  : 0
-              ).toUpperCase()}
-            </p>
-          ) : null}
+          {/* The horizon row: the room-hour pin stands on the same line as the
+              local-time readout it answers, directly above the four-hour
+              filter it mirrors. The pin stays mounted even when the readout
+              is hidden, so the room is always reachable. */}
+          <div className="rp-horizon-row">
+            {localNow && !seekingCover ? (
+              <p className="rp-eyebrow text-ether">
+                <i className="rp-live-dot" />
+                {formatLocalLabel(arrivalCity, localNow)} ·{" "}
+                {solarHourAtLongitude(
+                  arrivalStation && typeof arrivalStation.longitude === "number"
+                    ? arrivalStation.longitude
+                    : 0
+                ).toUpperCase()}
+              </p>
+            ) : null}
+            <AtmospherePin />
+          </div>
           {nowPlaying && trackLine && !seekingCover ? (
             <p className="ew-track ew-arrive" key={trackLine}>
               {trackLine}

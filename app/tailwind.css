@@ -252,6 +252,15 @@
     padding: 40px 32px 48px;
     border-right: 1px solid var(--ew-rule);
   }
+  /* Horizon row: the local-time readout on the left, the room-hour pin on the
+     right — one instrument line answering "what hour is it here?" */
+  .rp-horizon-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 4px 16px;
+  }
   .rp-intro h1, .ew-coverline {
     margin: 10px 0 12px;
     font-family: "Newsreader", "Iowan Old Style", serif;
@@ -331,7 +340,7 @@
   }
   /* The horizon: the four hours are stops on one foil line, and the sun's height
      tells the time — above the line at midday, on it at dawn and dusk, below it
-     at night. Same grammar as the header's Day/Night pin. */
+     at night. Same grammar as the Day/Night pin on the horizon row above. */
   .ew-horizon {
     display: flex;
     align-items: flex-end;
@@ -454,22 +463,34 @@
   .ew-theater-back:focus-visible::after {
     transform: scaleX(1);
   }
+  /* The Day/Night pin stands inline on the intro's horizon row, typeset in the
+     same mono grammar as the readout beside it rather than boxed like a
+     header control. Active room keeps the foil ink; hover borrows bone. */
   .ew-atmosphere {
     display: inline-flex;
     align-items: center;
-    min-height: 44px;
+    min-height: 32px;
     flex: none;
-    border: 1px solid var(--ew-rule);
-    padding: 0 4px;
+    gap: 2px;
+    border: 0;
+    padding: 0;
   }
   .ew-atmosphere-icon { display: none; }
   .ew-atmosphere button {
-    min-height: 36px;
+    min-height: 32px;
     border: 0;
     background: transparent;
-    padding: 0 10px;
+    padding: 0 8px;
     color: var(--ew-dust);
-    font: 500 12px/1 "Schibsted Grotesk", sans-serif;
+    font: 500 10px/1 "Azeret Mono", monospace;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    transition: color .3s;
+  }
+  .ew-atmosphere button:hover { color: var(--ew-bone); }
+  .ew-atmosphere button:focus-visible {
+    outline: 1px solid var(--ew-foil);
+    outline-offset: 2px;
   }
   .ew-atmosphere button.is-active {
     color: var(--ew-foil);
@@ -477,7 +498,7 @@
   .ew-atmosphere-meridian {
     display: block;
     width: 1px;
-    height: 16px;
+    height: 14px;
     background: var(--ew-foil);
     opacity: .7;
   }
@@ -1284,6 +1305,7 @@
       width: 44px;
       height: 44px;
       flex: none;
+      margin-left: auto;
       place-items: center;
       border: 1px solid var(--ew-rule);
       background: transparent;
@@ -1347,8 +1369,8 @@
       padding: 10px 16px 28px;
     }
     .rp-intro > .rp-eyebrow:first-of-type,
-    .rp-intro > .rp-eyebrow.text-ether,
-    .rp-intro > h1 {
+    .rp-intro > h1,
+    .rp-horizon-row .rp-eyebrow.text-ether {
       display: none;
     }
     .rp-intro .ew-land { width: 100%; margin-top: 4px; }

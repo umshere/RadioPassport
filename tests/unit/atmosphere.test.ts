@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
   applyAtmosphere,
@@ -107,5 +108,49 @@ describe("Atmosphere", () => {
         value: previousDocument,
       });
     }
+  });
+});
+
+describe("AtmospherePin placement", () => {
+  const home = readFileSync(
+    new URL("../../app/routes/_index.tsx", import.meta.url),
+    "utf8"
+  );
+  const pin = readFileSync(
+    new URL("../../app/components/radio-passport/AtmospherePin.tsx", import.meta.url),
+    "utf8"
+  );
+  const stylesheet = readFileSync(
+    new URL("../../app/tailwind.css", import.meta.url),
+    "utf8"
+  );
+
+  it("stands on the intro horizon row instead of tacked onto the header", () => {
+    const header = home.slice(
+      home.indexOf('className="rp-home-header"'),
+      home.indexOf("</header>")
+    );
+    expect(header).not.toContain("<AtmospherePin />");
+    const intro = home.slice(
+      home.indexOf('className="rp-intro"'),
+      home.indexOf('className="ew-horizon"')
+    );
+    expect(intro).toContain('className="rp-horizon-row"');
+    expect(intro).toContain("formatLocalLabel(arrivalCity, localNow)");
+    expect(intro).toContain("<AtmospherePin />");
+    const row = intro.slice(
+      intro.indexOf('className="rp-horizon-row"'),
+      intro.indexOf("</div>", intro.indexOf('className="rp-horizon-row"'))
+    );
+    expect(row).toContain("formatLocalLabel(arrivalCity, localNow)");
+    expect(row).toContain("<AtmospherePin />");
+  });
+
+  it("keeps the Room hour group and both doors wherever it is mounted", () => {
+    expect(pin).toContain('role="group"');
+    expect(pin).toContain('aria-label="Room hour"');
+    expect(pin).toContain('"Day room"');
+    expect(pin).toContain('"Night room"');
+    expect(stylesheet).toContain(".rp-horizon-row");
   });
 });
