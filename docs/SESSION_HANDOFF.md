@@ -15,10 +15,21 @@ Saved so this conversation can be compacted. Next turn: read this file + `docs/R
 
 - Branch: `main`
 - Remote: `https://github.com/umshere/RadioPassport.git`
-- Head at last product push: `478af95` — flow-audit Pass 4 (F5 route deadline, F3 snapshot truth, F3-phone stamp ring target) via parallel agent dispatch. Passport stamp rule is in `docs/DESIGN_SPECS.md`. Domain + agent docs follow.
+- Head at last product push: see newest *Shipped* section below (`7f8d57a` + handoff bump — flow-audit Pass 4 shipped `478af95` before it). Passport stamp rule is in `docs/DESIGN_SPECS.md`. Domain + agent docs follow.
+- **Git identity:** repo mutations (push, PR close) go as **`umshere`**, never `heuristicsai` (that token can read/comment but 403s on writes). Token path that works: `GH_TOKEN="$(gh auth token -u umshere)"`. Vercel CLI is authed as `umshere`.
 - Do not commit `.env`
 - `public/FTS.jpeg` is the 404 wallpaper. Ship it with the app.
 - Live host: **https://elsewheremusic.com**. Radio Passport 308s there. Facts: `docs/DOMAINS.md`. Ship: `docs/DEPLOY.md`. Breaks: `docs/TROUBLESHOOTING.md`. Agents: `AGENTS.md`.
+
+## Shipped 2026-08-25 (agent-army batch, `7f8d57a` + this commit)
+
+- **Graph map wired in** (`1b54327`) — `graphify-out/` committed (graph.json 1529 nodes / 3331 edges, GRAPH_REPORT.md, html, extraction cache), `AGENTS.md` Knowledge-graph section (query/path/explain; god node `Station`, 75 edges). Query before re-reading code: `graphify query "<q>"`.
+- **Registry rows** (`6e50b63`) — FLOW_AUDIT hygiene closed: `country-close`, `passport-close`, `atlas-query`, `cover-empty` declared in `SURFACE_CONNECTIONS`; contract tests in `elsewhereFlow.test.ts`. Zero JSX changes needed — all four controls already carried accessible names.
+- **Hygiene** (`7f8d57a`) — twin-skills drift guard (`tests/unit/skillTwins.test.ts`, `.claude` ⇄ `.grok` byte-equality, `npm run sync:skills` repairs); `docs/BRAND_ASSETS.md` heritage register (RPLOGO.png + root `icon.png`: keep-but-document, deletion needs Ums).
+- **PR #16 closed stale** — three grounds: total `_index.tsx` conflict vs main, banned "Discover" copy, pre-Elsewhere "AI Radio Browser" branding. three.js intro concept preserved in `ROADMAP.md` Later list.
+- **F2 atmosphere pin — two variants staged, awaiting Ums's pick:** `worker/f2-pin-rail` (`a527cfe`, pin in SiteBar rail on every route: Room · Day│Night · Passport) vs `worker/f2-pin-horizon` (`0374dc6`, pin inline on the intro horizon row answering the local-hour readout; also fixes the switch vanishing during seeks). Winner gets cherry-picked + its `productFlow.ts` surface flip applied (`cover`→`header`, rail variant only) + graphify `--update`.
+- **Agent-army pattern that worked:** native subagents ×5, one git worktree each under `.workers/<name>` off `main` with `node_modules` symlinked, exclusive file boundaries, orchestrator line-by-line diff review, sequential cherry-pick with full gate after each pick. Gate validated green in a fresh worktree *before* dispatch.
+
 
 ## Shipped 2026-08-21 (`e318f7e`, live on prod)
 
