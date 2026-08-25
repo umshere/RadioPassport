@@ -57,6 +57,7 @@ Kill experiment if ≥200 qualified users and checkout start < 1.5%, or AI COGS 
 - Paywalling a city or a stream
 - Animated favicon
 - Deleting unused legacy files (`RetroTuner`, `Premium*`, old headers) — they are unmounted, not gone
+- Intro moment (three.js canvas splash) — concept saved from PR #16 (closed stale 2026-08-25: total conflict with current `_index.tsx`, pre-Elsewhere "AI Radio Browser" branding, banned voice word). If ever revived: fresh branch against current `main`, Elsewhere voice, one WebGL budget line max, decided here first.
 
 ## Docs map
 
