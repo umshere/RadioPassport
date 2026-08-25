@@ -60,7 +60,7 @@ A graphify knowledge graph of this repo lives in `graphify-out/`. Query it befor
 - Shortest path between concepts: `graphify path "A" "B"` · explain a node: `graphify explain "<node>"`
 - Refresh after code changes: `graphify . --update` (re-extracts only changed files)
 
-God node today: `Station` (75 edges). Touch it via providers/routes only; check blast radius with a query first.
+God node today: `Station` (72 edges). Touch it via providers/routes only; check blast radius with a query first.
 
 ## Skills (Grok + Claude)
 

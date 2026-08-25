@@ -48,3 +48,6 @@ test-results/
 # graphify machine-local state (absolute paths; regenerable)
 graphify-out/.graphify_python
 graphify-out/.graphify_root
+
+# machine-local graph backups (dated snapshots)
+graphify-out/2026-*
