@@ -8,6 +8,7 @@
         "dev": "remix vite:dev",
         "lint": "eslint --ignore-path .gitignore --ignore-path .eslintignore --cache --cache-location ./node_modules/.cache/eslint \"app/**/*.{ts,tsx}\" \"tests/**/*.ts\"",
         "start": "remix-serve ./build/server/nodejs-eyJydW50aW1lIjoibm9kZWpzIn0/index.js",
+        "sync:skills": "node scripts/sync-skills.mjs",
         "typecheck": "tsc",
         "test": "vitest run"
     },
