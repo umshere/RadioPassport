@@ -13,7 +13,6 @@ import type { Station } from "~/types/radio";
 import { EMPTY_GRAPH } from "~/types/trivia";
 import { trackKey } from "~/components/radio-passport/stationInsights";
 
-export const DEEPEN_AFTER_MS = 10_000;
 
 function dossierFromTrivia(
   result: Awaited<ReturnType<typeof requestTrackTrivia>>,
@@ -131,7 +130,6 @@ export function useRoom(nowPlaying: Station | null, isPlaying: boolean) {
     }
     const stationId = nowPlaying.uuid;
     let cancelled = false;
-    let deepenTimer = 0;
     void requestTrackTrivia({ track, source: "free" }).then((free) => {
       if (cancelled) return;
       const freeDossier = dossierFromTrivia(free, "free");
@@ -146,6 +144,7 @@ export function useRoom(nowPlaying: Station | null, isPlaying: boolean) {
         context: {
           summary: free.trivia?.summary ?? null,
           facts: free.trivia?.facts ?? [],
+          links: free.trivia?.links ?? [],
           graph: free.trivia?.graph ?? null,
         },
       }).then((ai) => {
@@ -156,43 +155,10 @@ export function useRoom(nowPlaying: Station | null, isPlaying: boolean) {
         } else if (freeDossier.status !== "ready") {
           setDossier(stationId, aiDossier);
         }
-        const filed =
-          aiDossier.status === "ready" || freeDossier.status === "ready";
-        if (!filed) return;
-        deepenTimer = window.setTimeout(() => {
-          if (cancelled) return;
-          const room = useRoomStore.getState().room;
-          if (room.stationId !== stationId) return;
-          if (trackKey(room.signal.track) !== trackKey(track)) return;
-          void requestTrackTrivia({
-            track,
-            source: "ai-deepen",
-            context: {
-              summary: room.dossier.summary,
-              facts: room.dossier.facts,
-              graph: room.dossier.graph,
-            },
-          }).then((deep) => {
-            if (cancelled) return;
-            if (deep.status !== "ready" || !deep.trivia?.graph?.nodes.length) {
-              return;
-            }
-            setDossier(stationId, {
-              status: "ready",
-              summary: null,
-              facts: [],
-              links: [],
-              imageUrl: null,
-              source: "ai",
-              graph: deep.trivia.graph,
-            });
-          });
-        }, DEEPEN_AFTER_MS);
       });
     });
     return () => {
       cancelled = true;
-      window.clearTimeout(deepenTimer);
     };
   }, [isPlaying, metadata.track, nowPlaying, setDossier]);
 }

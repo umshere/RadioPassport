@@ -13,6 +13,12 @@ import {
 } from "~/utils/stations";
 import type { TriviaGraph } from "~/types/trivia";
 import { EMPTY_GRAPH } from "~/types/trivia";
+import type {
+  KnowledgeEdge,
+  KnowledgeSeat,
+  PositionedKnowledgeNode,
+} from "~/types/knowledge";
+import { TheaterNodes } from "~/components/radio-passport/knowledge/TheaterNodes";
 import {
   advanceFieldTraveler,
   FIELD_LINE_WEIGHT,
@@ -37,7 +43,12 @@ import {
   fieldPoint,
   fieldSemanticEdges,
   fieldSpanEdges,
+  FIELD_STRUCTURE_MS,
   fieldStarTwinkle,
+  fieldStructureProgress,
+  fieldStructureReady,
+  nodeHasId,
+  fieldStructuredTargets,
   fieldTourSpans,
   fieldTravelerInTransit,
   fieldTravelerVisiting,
@@ -123,6 +134,7 @@ function drawSkyLabels(
   height: number,
   foil: [number, number, number],
   glow: number,
+  pinned?: Set<string>,
 ) {
   context.font = '500 10px "Azeret Mono", ui-monospace, monospace';
   context.letterSpacing = "0.12em";
@@ -148,12 +160,11 @@ function drawSkyLabels(
   }
   active.forEach((entry) => {
     if (entry.node.key === visitingKey) return;
-    if (compact && entry.node.family !== "place") return;
-    const name = fieldStandingLabel(
-      entry.node.family,
-      entry.node.label,
-      entry.node.origin,
-    );
+    const isPinned = pinned?.has(entry.node.key) ?? false;
+    if (compact && entry.node.family !== "place" && !isPinned) return;
+    const name = isPinned
+      ? entry.node.label
+      : fieldStandingLabel(entry.node.family, entry.node.label, entry.node.origin);
     if (!name) return;
     paintSkyLabel(
       context,
@@ -163,7 +174,7 @@ function drawSkyLabels(
       width,
       height,
       foil,
-      Math.max(0.42, glow * 0.62) * entry.weight,
+      (isPinned ? 0.66 : Math.max(0.42, glow * 0.62)) * entry.weight,
       placed,
     );
   });
@@ -178,21 +189,58 @@ function kindRgb(
   return palette.bone;
 }
 
+function knowledgeTint(
+  kind: PositionedKnowledgeNode["kind"],
+  palette: ReturnType<typeof paletteOf>,
+): [number, number, number] {
+  if (
+    kind === "language" ||
+    kind === "year" ||
+    kind === "genre" ||
+    kind === "city" ||
+    kind === "place"
+  ) {
+    return palette.ether;
+  }
+  if (kind === "event") return palette.lacquer;
+  if (kind === "station" || kind === "track") return palette.bone;
+  return palette.foil;
+}
+
+/** The navigable knowledge layer handed in from /listen — the Room owns the
+ * merged graph; the field only draws and offers clicks. */
+export type TheaterKnowledgeLayer = {
+  nodes: PositionedKnowledgeNode[];
+  edges: KnowledgeEdge[];
+  awakeIds: Set<string>;
+  firing: Array<{ from: string; to: string }>;
+  focusId: string | null;
+  tunedId?: string | null;
+  onSelect: (id: string) => void;
+};
+
 export function TheaterField({
   seed,
   phase,
   releases,
   longitude,
   graph = EMPTY_GRAPH,
+  focusId = null,
+  knowledge,
 }: {
   seed: number;
   phase: TheaterPhase;
   releases: FieldRelease[];
   longitude?: number | null;
   graph?: TriviaGraph | null;
+  focusId?: string | null;
+  knowledge?: TheaterKnowledgeLayer;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const reduced = usePrefersReducedMotion();
+  const knowledgeRef = useRef<TheaterKnowledgeLayer | null>(knowledge ?? null);
+  knowledgeRef.current = knowledge ?? null;
+  const firingAtRef = useRef(new Map<string, number>());
   const nodes = useMemo(
     () => fieldNodesFromReleases(releases, seed, longitude),
     [longitude, releases, seed],
@@ -229,12 +277,25 @@ export function TheaterField({
   const reachRef = useRef(fieldDensity(phase).reach);
   const driftRef = useRef(fieldDensity(phase).drift);
   const travelerRef = useRef<ReturnType<typeof startFieldTraveler>>(null);
+  // Semantic figure state: where connected stars settle, when they began
+  // moving, and which shape definition produced them.
+  const structureRef = useRef(new Map<string, { x: number; y: number }>());
+  const structureSignatureRef = useRef("");
+  const structureStartRef = useRef<number | null>(null);
+  const focusRef = useRef(focusId);
+  focusRef.current = focusId;
+  // The draw loop stops itself once the sky settles; a later dossier upgrade
+  // (free facts, AI graph) needs one kick to paint the new stars.
+  const repaintRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     opacityRef.current.clear();
     birthRef.current.clear();
     warmthRef.current.clear();
     travelerRef.current = null;
+    structureRef.current.clear();
+    structureSignatureRef.current = "";
+    structureStartRef.current = null;
     glowRef.current = fieldDensity("reading").glow;
     reachRef.current = fieldDensity("reading").reach;
   }, [seed]);
@@ -359,7 +420,137 @@ export function TheaterField({
         }
       });
 
-      const points = nodes.map((node) => fieldPoint(node, time, drift));
+      // Knowledge layer: awake catalog/research nodes glow under their DOM
+      // buttons; a firing edge sends one bright sweep from the known star to
+      // the newly woken one — the neuron reading, drawn once per arrival.
+      const layer = knowledgeRef.current;
+      const knowledgeSky = Boolean(layer && layer.nodes.length);
+      if (layer && layer.awakeIds.size) {
+        const now = time * 1000;
+        for (const fire of layer.firing) {
+          const key = `${fire.from}>${fire.to}`;
+          if (!firingAtRef.current.has(key)) {
+            firingAtRef.current.set(key, Date.now());
+          }
+        }
+        const seatOf = (id: string) => layer.nodes.find((n) => n.id === id);
+        for (const edge of layer.edges) {
+          const a = seatOf(edge.from);
+          const b = seatOf(edge.to);
+          if (!a || !b) continue;
+          if (!layer.awakeIds.has(edge.to)) continue;
+          const x1 = a.x * width;
+          const y1 = a.y * height;
+          const x2 = b.x * width;
+          const y2 = b.y * height;
+          const baseAlpha =
+            edge.provenance === "musicbrainz"
+              ? 0.5
+              : edge.provenance === "web"
+                ? 0.34
+                : 0.22;
+          context.strokeStyle = rgba(
+            knowledgeTint(b.kind, palette),
+            baseAlpha * glow,
+          );
+          context.lineWidth = edge.provenance === "musicbrainz" ? 1 : 0.7;
+          context.beginPath();
+          context.moveTo(x1, y1);
+          context.lineTo(x2, y2);
+          context.stroke();
+          // The pulse: one sweep per firing, then the edge rests.
+          const firedAt = firingAtRef.current.get(`${edge.from}>${edge.to}`);
+          if (firedAt !== undefined) {
+            const age = (Date.now() - firedAt) / 900;
+            if (age >= 0 && age <= 1) {
+              const px = x1 + (x2 - x1) * age;
+              const py = y1 + (y2 - y1) * age;
+              const pulseAlpha = (1 - age) * 0.9;
+              context.fillStyle = rgba(palette.bone, pulseAlpha);
+              context.beginPath();
+              context.arc(px, py, 2.2, 0, Math.PI * 2);
+              context.fill();
+              context.strokeStyle = rgba(palette.bone, pulseAlpha * 0.7);
+              context.lineWidth = 1.4;
+              context.beginPath();
+              context.moveTo(x1, y1);
+              context.lineTo(px, py);
+              context.stroke();
+            }
+          }
+        }
+        for (const node of layer.nodes) {
+          if (!layer.awakeIds.has(node.id)) continue;
+          const rgb = knowledgeTint(node.kind, palette);
+          const px = node.x * width;
+          const py = node.y * height;
+          const focused = node.id === layer.focusId;
+          context.fillStyle = rgba(rgb, focused ? 0.55 : 0.28);
+          context.beginPath();
+          context.arc(px, py, focused ? 4.2 : 2.4, 0, Math.PI * 2);
+          context.fill();
+        }
+      }
+
+      // Semantic figure: when the verified graph can hold a shape, connected
+      // stars glide from their sky drift into deterministic stations — focus
+      // centre, kind-sector rings — while everything else keeps drifting.
+      const graphReady = fieldStructureReady(nodes, graph);
+      const signature = `${seed}|${focusRef.current ?? ""}|${graph.edges
+        .map((edge) => `${edge.from}>${edge.to}`)
+        .join(",")}|${nodes.map((node) => node.key).join(",")}`;
+      if (!graphReady) {
+        if (structureSignatureRef.current !== "") {
+          structureSignatureRef.current = "";
+          structureRef.current.clear();
+        }
+        structureStartRef.current = null;
+      } else if (structureSignatureRef.current !== signature) {
+        // Rebuilding keeps every surviving station pinned verbatim, so a
+        // growing figure never drags stars that were already filed.
+        const previous =
+          structureRef.current.size > 0 ? structureRef.current : null;
+        structureRef.current = fieldStructuredTargets(
+          nodes,
+          graph,
+          previous,
+          focusRef.current,
+          seed,
+        );
+        const beginning = previous === null;
+        structureSignatureRef.current = signature;
+        if (beginning || structureStartRef.current === null) {
+          structureStartRef.current = now;
+        }
+      }
+      const structureProgress =
+        graphReady && structureRef.current.size > 0
+          ? fieldStructureProgress(
+              structureStartRef.current === null
+                ? FIELD_STRUCTURE_MS
+                : now - structureStartRef.current,
+              stillSky,
+            )
+          : 0;
+      const points = nodes.map((node) => {
+        const home = fieldPoint(node, time, drift);
+        const target = structureRef.current.get(node.key);
+        if (!target || structureProgress <= 0) return home;
+        // A settled star keeps a breath of life: the station holds while the
+        // light sways a hair around it (never under reduced motion).
+        const sway = stillSky ? 0 : structureProgress * 0.0032;
+        const phase = lockSeed([seed, node.key]) % (Math.PI * 2);
+        return {
+          x:
+            home.x +
+            (target.x - home.x) * structureProgress +
+            Math.sin(time * 0.5 + phase) * sway,
+          y:
+            home.y +
+            (target.y - home.y) * structureProgress +
+            Math.cos(time * 0.43 + phase * 1.7) * sway * 0.8,
+        };
+      });
       nebulaeRef.current.forEach((cloud) => {
         const alpha = fieldNebulaAlpha(cloud, time, stillSky);
         if (alpha < 0.008) return;
@@ -391,6 +582,7 @@ export function TheaterField({
         .filter((entry) => entry.weight > 0.04);
       const activePoints = active.map((entry) => entry.point);
       const activeNodes = active.map((entry) => entry.node);
+      if (!knowledgeSky) {
       const triangles = fieldTriangles(activePoints, reach, aspect);
       const local = fieldSemanticEdges(activeNodes, activePoints, reach, aspect);
       const knowledge = fieldKnowledgeEdges(activeNodes, graph.edges);
@@ -409,12 +601,26 @@ export function TheaterField({
         ...fieldSpanEdges(activeNodes, activePoints, local, aspect),
       ];
 
+      // Once the figure stands, its decorative backdrop recedes: proximity
+      // threads touching structured stars fade to a whisper so the knowledge
+      // spine reads alone.
+      const decorativeDim = (key: string) =>
+        structureRef.current.has(key) ? 1 - 0.68 * structureProgress : 1;
       triangles.forEach((triangle) => {
         const a = active[triangle.i]!;
         const b = active[triangle.j]!;
         const c = active[triangle.k]!;
+        const dim = Math.min(
+          decorativeDim(a.node.key),
+          decorativeDim(b.node.key),
+          decorativeDim(c.node.key),
+        );
         const alpha =
-          triangle.strength * glow * 0.055 * Math.min(a.weight, b.weight, c.weight);
+          triangle.strength *
+          glow *
+          0.055 *
+          dim *
+          Math.min(a.weight, b.weight, c.weight);
         if (alpha < 0.01) return;
         context.beginPath();
         context.moveTo(a.point.x * width, a.point.y * height);
@@ -500,7 +706,12 @@ export function TheaterField({
           traveler &&
           ((traveler.from === a.node.key && traveler.to === b.node.key) ||
             (traveler.from === b.node.key && traveler.to === a.node.key));
-        const alpha = edge.strength * glow * 0.72 * Math.min(a.weight, b.weight);
+        const alpha =
+          edge.strength *
+          glow *
+          0.72 *
+          Math.min(a.weight, b.weight) *
+          Math.min(decorativeDim(a.node.key), decorativeDim(b.node.key));
         if (alpha < 0.02 && !onPath) return;
         context.beginPath();
         context.moveTo(a.point.x * width, a.point.y * height);
@@ -585,13 +796,17 @@ export function TheaterField({
           }
         }
       }
+      } else {
+        travelerRef.current = null;
+      }
 
       active.forEach((entry) => {
         const body = entry.node;
         const px = entry.point.x * width;
         const py = entry.point.y * height;
         const twinkle = fieldStarTwinkle(time, body.freq, body.phase, stillSky);
-        const alpha = glow * entry.weight * twinkle;
+        const alpha =
+          glow * entry.weight * twinkle * (knowledgeSky ? 0.28 : 1);
         if (alpha < 0.03) return;
         const rgb = kindRgb(body.kind, palette);
         const bornAt = births.get(body.key) ?? 0;
@@ -622,7 +837,9 @@ export function TheaterField({
         context.fill();
       });
 
-      if (traveler) {
+      if (!knowledgeSky && travelerRef.current) {
+        const traveler = travelerRef.current;
+        const byKey = new Map(active.map((entry) => [entry.node.key, entry]));
         const origin = byKey.get(traveler.from);
         const dest = byKey.get(traveler.to) ?? origin;
         if (origin && dest) {
@@ -686,6 +903,33 @@ export function TheaterField({
         context.fillStyle = vignette;
         context.fillRect(0, 0, width, height);
       }
+      if (!knowledgeSky) {
+      const visiting = travelerRef.current
+        ? fieldTravelerVisiting(travelerRef.current)
+        : null;
+      let pinnedLabels: Set<string> | undefined;
+      if (structureProgress > 0.5 && structureRef.current.size) {
+        const degreeByKey = new Map<string, number>();
+        for (const edge of graph.edges) {
+          degreeByKey.set(edge.from, (degreeByKey.get(edge.from) ?? 0) + 1);
+          degreeByKey.set(edge.to, (degreeByKey.get(edge.to) ?? 0) + 1);
+        }
+        const idToKey = new Map(
+          nodes.map((node) => {
+            const graphNode = graph.nodes.find((entry) =>
+              nodeHasId(node, entry.id),
+            );
+            return [graphNode?.id ?? node.key, node.key] as const;
+          }),
+        );
+        pinnedLabels = new Set(
+          [...degreeByKey.entries()]
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 4)
+            .map(([id]) => idToKey.get(id))
+            .filter((key): key is string => Boolean(key)),
+        );
+      }
       drawSkyLabels(
         context,
         active,
@@ -695,36 +939,63 @@ export function TheaterField({
         height,
         palette.foil,
         glow,
+        pinnedLabels,
       );
+      }
 
       const missing = nodes.some((node) => (opacity.get(node.key) ?? 0) < 0.96);
       const settled =
         !missing &&
         Math.abs(target.glow - glow) < 0.012 &&
         Math.abs(target.reach - reach) < 0.003;
+      const pulseAlive = [...firingAtRef.current.values()].some(
+        (started) => Date.now() - started < 900,
+      );
       const still =
-        stillSky || (!live && drift < 0.02 && settled);
+        !pulseAlive && (stillSky || (!live && drift < 0.02 && settled));
       if (!still) frame = window.requestAnimationFrame(draw);
+      else frame = 0; // settled — a later repaint kick may restart us
     };
 
     resize();
     const observer = new ResizeObserver(resize);
     observer.observe(parent);
     frame = window.requestAnimationFrame(draw);
+    repaintRef.current = () => {
+      if (frame) return;
+      frame = window.requestAnimationFrame(draw);
+    };
     return () => {
       observer.disconnect();
       window.cancelAnimationFrame(frame);
+      frame = 0;
+      repaintRef.current = null;
     };
   }, [seed]);
 
+  useEffect(() => {
+    repaintRef.current?.();
+  }, [releases, phase, knowledge?.nodes.length, knowledge?.firing.length]);
+
   return (
-    <canvas
-      ref={canvasRef}
-      className="ew-theater-field"
-      data-phase={phase}
-      data-nodes={String(releases.length)}
-      aria-hidden="true"
-    />
+    <div className="ew-theater-field-wrap">
+      <canvas
+        ref={canvasRef}
+        className="ew-theater-field"
+        data-phase={phase}
+        data-nodes={String(releases.length)}
+        aria-hidden="true"
+      />
+      {knowledge && knowledge.nodes.length ? (
+        <TheaterNodes
+          nodes={knowledge.nodes}
+          focusId={knowledge.focusId}
+          tunedId={knowledge.tunedId ?? null}
+          reducedMotion={reduced.current}
+          onSelect={knowledge.onSelect}
+        />
+      ) : null}
+    </div>
   );
 }
 

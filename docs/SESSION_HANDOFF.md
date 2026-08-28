@@ -15,11 +15,24 @@ Saved so this conversation can be compacted. Next turn: read this file + `docs/R
 
 - Branch: `main`
 - Remote: `https://github.com/umshere/RadioPassport.git`
-- Head at last product push: see newest *Shipped* section below (`7f8d57a` + handoff bump — flow-audit Pass 4 shipped `478af95` before it). Passport stamp rule is in `docs/DESIGN_SPECS.md`. Domain + agent docs follow.
+- Head at last product push: see newest *Shipped* section below (Theater knowledge graph, 2026-08-28). Passport stamp rule is in `docs/DESIGN_SPECS.md`. Domain + agent docs follow.
 - **Git identity:** repo mutations (push, PR close) go as **`umshere`**, never `heuristicsai` (that token can read/comment but 403s on writes). Token path that works: `GH_TOKEN="$(gh auth token -u umshere)"`. Vercel CLI is authed as `umshere`.
 - Do not commit `.env`
 - `public/FTS.jpeg` is the 404 wallpaper. Ship it with the app.
 - Live host: **https://elsewheremusic.com**. Radio Passport 308s there. Facts: `docs/DOMAINS.md`. Ship: `docs/DEPLOY.md`. Breaks: `docs/TROUBLESHOOTING.md`. Agents: `AGENTS.md`.
+
+## Shipped 2026-08-28 (Theater is the knowledge graph)
+
+Sol's correction (`docs/PRODUCT_CORRECTION_THEATER_GRAPH.md`): a separate `/atlas` page is the wrong container. `/listen` is the navigable knowledge graph. Country/language/station light on landing; ICY/MB/cited web wake further neurons; DOM button layer over the canvas (keyboard + tap); Tune here is the only playback change; `/api/atlas/expand` stays as an internal catalog API. No SiteBar Atlas link and no `/atlas` page. Sky labels are DOM-only, color-coded by kind, seated with a gap so they do not stack.
+
+Donor catalog code lives in `app/services/atlas/` + `app/types/atlas.ts` (data contract still noted in `docs/ATLAS_HANDOFF.md`).
+
+## Shipped 2026-08-28 (theater evidence + morph)
+
+- **Trivia pipeline is two calls again** — `ai-deepen` and `DEEPEN_AFTER_MS` are gone (`useRoom`, `useTrackTrivia`, route). `source=free` = ONE cached MusicBrainz resolution per track (search → recording rels → artist, module-level pacer ≥`MUSICBRAINZ_MIN_INTERVAL_MS`, default 1000ms; concurrent loaders join one in-flight promise; honest empty results cached 6h). `source=ai` consumes the client-sent dossier (summary ≤400 chars, ≤8 facts, ≤8 whitelisted links, graph re-normalized server-side) and makes **zero** MusicBrainz calls. Unknown `source` → 400. Cache keys: free ignores context, AI hashes it (`buildTriviaCacheKey`). Provider errors are never cached; success sets `Cache-Control: s-maxage=21600` (free) / `3600` (ai) with `Vary: Accept`.
+- **Optional Firecrawl evidence pass (default OFF)** — `app/services/trivia/firecrawlEvidence.server.ts`. Needs `FIRECRAWL_TRIVIA=1` AND a non-empty `FIRECRAWL_API_KEY`; fires only when the verified graph has <3 edges. One v2 search (limit 5, `includeDomains` pinned to the allowlist: wikipedia/wikidata/allmusic/discogs) → ≤2 parallel scrapes from that same allowlist (markdown flattened to ≤1800 chars/page, 3600 total, 9s Promise.race deadlines — never AbortController). Evidence goes into the prompt as delimited untrusted excerpts; every AI edge must carry a `sourceUrl` whose canonical form matches a retrieved page or it is dropped server-side (`citedAiGraph`) — kept edges are forced `verified:false, provenance:"web"`; with no evidence the AI may only rephrase known facts (novel claims filtered) and verified MB facts merge first. MB-context edges stay `verified:true, "musicbrainz"`. Any Firecrawl failure degrades silently to no-evidence.
+- **Semantic figure morph** — `fieldStructuredTargets`/`fieldStructureReady`/`fieldStructureProgress` in `theaterLock.ts`; `TheaterField` takes `focusId` (listen passes the ICY title). When the focus sits in a connected component of ≥3 stars with ≥2 drawable edges, connected stars glide from drift into deterministic stations over 900ms ease-in-out: focus centre {0.5,0.5}, hop-1 ring r=.17, hop≥2 r=.31 on kind sectors (person −150°, work −30°, film −70°, place/year 130°, genre/event 47.5°), y×0.62, seeded jitter ±0.175rad. Sparse graphs never move; reduced-motion resolves instantly; growth pins existing seats verbatim (addition-stability). Edge rendering splits by provenance: verified spines 0.92, web-cited threads 0.72 (legacy unmarked keeps 0.92). No legend, no cards.
+- **Tests** — `tests/unit/triviaEvidence.test.ts` (18): MB-call budgets, join, pacing gaps, honest cached empty, cacheability split, zero-MB ai path, citation allowlist (evil/uncited/vibes edges + ghost node dropped), outage resilience, removed-source 400. `nowPlayingMetadataLifecycle` asserts the two-request contract + in-flight joins. `theaterLock.test.ts` gains the semantic-figure suite. Gate at handoff: 228 passing / 25 files, typecheck + lint green, vite build green (publicDir copy of OS-locked `FTS.jpeg` EPERMs in this sandbox — file untouched).
 
 ## Shipped 2026-08-25 (agent-army batch, `7f8d57a` + this commit)
 

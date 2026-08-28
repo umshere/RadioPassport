@@ -18,11 +18,11 @@ const INITIAL_STATE: TriviaState = { status: "idle", trivia: null, message: null
 const AI_TRIVIA_CACHE = new Map<string, TriviaState>();
 const AI_TRIVIA_INFLIGHT = new Map<string, Promise<TriviaState>>();
 
-export type TriviaSource = "free" | "ai" | "ai-deepen";
+export type TriviaSource = "free" | "ai";
 
 export function triviaRequestKey(source: TriviaSource, trackKey: string, contextKey: string) {
   if (!trackKey) return "";
-  if (source === "ai-deepen") return JSON.stringify([source, trackKey]);
+  // Uniform for both sources: free ignores its (always-empty) context.
   return JSON.stringify([source, trackKey, contextKey]);
 }
 
@@ -43,6 +43,7 @@ export function triviaForCurrentRequest(
 type TriviaContext = {
   summary?: string | null;
   facts?: Array<{ label: string; value: string }>;
+  links?: Array<{ label: string; url: string; kind: string }>;
   graph?: { nodes: Array<{ id: string; label: string; kind: string }>; edges: Array<{ from: string; to: string; relation: string }> } | null;
 };
 
@@ -60,6 +61,10 @@ export function triviaContextKey(source: TriviaSource, context?: TriviaContext) 
     facts: (context.facts ?? []).map((fact) => ({
       label: fact.label,
       value: fact.value,
+    })),
+    links: (context.links ?? []).map((link) => ({
+      url: link.url,
+      kind: link.kind,
     })),
     graph: context.graph ?? null,
   });
@@ -87,7 +92,7 @@ export function requestTrackTrivia(input: {
   if (input.track.title) params.set("title", input.track.title);
   if (input.track.artist) params.set("artist", input.track.artist);
   params.set("source", input.source);
-  if ((input.source === "ai" || input.source === "ai-deepen") && contextKey) {
+  if (input.source === "ai" && contextKey) {
     params.set("context", contextKey);
   }
 

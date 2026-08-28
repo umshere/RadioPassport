@@ -1641,3 +1641,70 @@
 .rp-intent-clear:hover {
   color: var(--ew-lacquer);
 }
+
+/* Atlas page — appended; keep the one-line rule format. */
+.ew-atlaspage{max-width:1360px;margin:0 auto;min-height:100svh;padding:34px clamp(20px,4vw,48px) calc(var(--player-dock-clearance, 0px) + 3rem);background:var(--ew-ink);color:var(--ew-bone);font-family:"Schibsted Grotesk","Sora",sans-serif;}
+.ew-atlaspage-toprow{display:flex;align-items:center;justify-content:space-between;gap:16px;}
+.ew-atlaspage-home{color:var(--ew-dust);text-decoration:none;}
+.ew-atlaspage-home:hover,.ew-atlaspage-home:focus-visible{color:var(--ew-foil);}
+.ew-atlaspage-trail{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:12px;}
+.ew-atlaspage-sep{color:var(--ew-dust);font:500 11px/1 "Azeret Mono",monospace;}
+.ew-atlaspage-crumbbtn{border:0;background:none;padding:2px 0;cursor:pointer;color:var(--ew-dust);font:500 12px/1.4 "Azeret Mono",monospace;letter-spacing:.1em;text-transform:uppercase;}
+.ew-atlaspage-crumbbtn:hover,.ew-atlaspage-crumbbtn:focus-visible{color:var(--ew-bone);}
+.ew-atlaspage-crumbbtn[aria-current="true"]{color:var(--ew-foil);}
+.ew-atlaspage-back{margin-top:16px;}
+.ew-atlaspage-wait{margin-top:28px;}
+.ew-atlaspage-error{display:flex;flex-wrap:wrap;align-items:center;gap:16px;margin-top:28px;}
+.ew-atlaspage-grid{display:grid;gap:30px;margin-top:26px;}
+.ew-atlaspage-skywrap{position:relative;min-height:420px;transition:opacity .25s ease;}
+.ew-atlaspage-list{margin-top:6px;}
+.ew-atlaspage-list h2{margin:0 0 10px;}
+.ew-atlaspage-nodes{list-style:none;margin:0;padding:0;max-width:560px;}
+.ew-atlaspage-nodes li{border-top:1px solid var(--ew-rule);}
+.ew-atlaspage-nodes li:last-child{border-bottom:1px solid var(--ew-rule);}
+.ew-atlaspage-nodebtn{display:flex;width:100%;align-items:baseline;justify-content:space-between;gap:16px;border:0;background:none;padding:9px 2px;cursor:pointer;text-align:left;color:var(--ew-bone);}
+.ew-atlaspage-nodelabel{font-size:14px;line-height:1.35;color:var(--ew-bone);}
+.ew-atlaspage-nodebtn[data-kind="country"] .ew-atlaspage-nodelabel, .ew-atlaspage-nodebtn[data-kind="language"] .ew-atlaspage-nodelabel{font:500 11px/1.4 "Azeret Mono",monospace;letter-spacing:.18em;text-transform:uppercase;}
+.ew-atlaspage-nodebtn:hover .ew-atlaspage-nodelabel, .ew-atlaspage-nodebtn:focus-visible .ew-atlaspage-nodelabel{color:var(--ew-foil);}
+.ew-atlaspage-nodebtn[aria-current="true"] .ew-atlaspage-nodelabel{color:var(--ew-foil);}
+.ew-atlaspage-nodekind{flex:none;color:var(--ew-dust);}
+.ew-atlaspage-empty{margin-top:10px;}
+@media (min-width: 1024px){ .ew-atlaspage-grid{grid-template-columns:minmax(0,1fr) 320px;grid-template-rows:auto minmax(0,1fr);}
+.ew-atlaspage-skywrap{grid-column:1;grid-row:1;}
+.ew-atlaspage-panel{grid-column:2;grid-row:1 / span 2;border-left:1px solid var(--ew-rule);padding-left:26px;min-width:0;}
+.ew-atlaspage-list{grid-column:1;grid-row:2;}
+}
+
+/* Theater knowledge layer — DOM buttons over the sky; keep one-line rules. */
+.ew-theater-field-wrap { position: absolute; inset: 0; }
+.ew-theater-field-wrap .ew-theater-field { position: absolute; inset: 0; width: 100%; height: 100%; }
+.ew-knode-layer { position: absolute; inset: 0; pointer-events: none; z-index: 2; }
+.ew-knode { pointer-events: auto; position: absolute; display: flex; align-items: center; gap: 6px; min-width: 28px; min-height: 28px; padding: 3px 8px 3px 4px; border: 0; background: color-mix(in srgb, var(--ew-ink) 78%, transparent); border-radius: 999px; cursor: pointer; color: var(--ew-bone); font: 500 11px/1.2 "Azeret Mono", ui-monospace, monospace; letter-spacing: 0.08em; z-index: 1; }
+.ew-knode[data-anchor="w"] { flex-direction: row-reverse; padding: 3px 4px 3px 8px; }
+.ew-knode[data-anchor="n"] { flex-direction: column-reverse; }
+.ew-knode[data-anchor="s"] { flex-direction: column; }
+.ew-knode:hover, .ew-knode:focus-visible, .ew-knode[data-focused="true"] { z-index: 4; }
+.ew-knode[data-kind="country"], .ew-knode[data-kind="artist"], .ew-knode[data-kind="album"] { color: var(--ew-foil); }
+.ew-knode[data-kind="language"], .ew-knode[data-kind="year"], .ew-knode[data-kind="genre"], .ew-knode[data-kind="city"], .ew-knode[data-kind="place"] { color: var(--ew-ether); }
+.ew-knode[data-kind="station"], .ew-knode[data-kind="track"] { color: var(--ew-bone); }
+.ew-knode[data-kind="event"] { color: var(--ew-lacquer); }
+.ew-knode:hover .ew-knode-label, .ew-knode:focus-visible .ew-knode-label { opacity: 1; }
+.ew-knode:focus-visible { outline: 1px solid var(--ew-foil); outline-offset: 2px; }
+.ew-knode-mark { display: block; width: 7px; height: 7px; border-radius: 50%; background: currentColor; box-shadow: 0 0 7px currentColor; flex: none; }
+.ew-knode-imagery { display: block; width: 18px; height: 18px; border-radius: 50%; overflow: hidden; background: color-mix(in srgb, currentColor 22%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, currentColor 55%, transparent); }
+.ew-knode-imagery img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.ew-knode-label { color: currentColor; opacity: 0.92; white-space: nowrap; max-width: 12em; overflow: hidden; text-overflow: ellipsis; }
+.ew-knode[data-kind="country"] .ew-knode-label, .ew-knode[data-kind="language"] .ew-knode-label { font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; }
+.ew-knode[data-motion="wake"] { animation: ew-knode-wake 0.4s ease both; }
+@keyframes ew-knode-wake { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .ew-knode[data-motion="wake"] { animation: none; } }
+/* Theater folio — selected node details + trail. */
+.ew-ktrail { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 10px 0 2px; }
+.ew-ktrail button { border: 0; background: none; padding: 2px 0; cursor: pointer; color: var(--ew-dust); font: 500 11px/1.4 "Azeret Mono", monospace; letter-spacing: 0.1em; text-transform: uppercase; }
+.ew-ktrail button:hover { color: var(--ew-foil); }
+.ew-ktrail [aria-current="true"] { color: var(--ew-foil); }
+.ew-knode-detail { margin-top: 12px; border-top: 1px solid var(--ew-rule); padding-top: 12px; }
+.ew-knode-detail h2 { margin: 0; font-size: 15px; color: var(--ew-bone); }
+.ew-knode-detail p { margin: 4px 0 0; color: var(--ew-dust); font-size: 13px; }
+.ew-knode-detail .ew-knode-tune { margin-top: 10px; display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--ew-foil); border-radius: 999px; padding: 6px 14px; background: none; color: var(--ew-foil); font: 500 12px/1 "Azeret Mono", monospace; letter-spacing: 0.14em; text-transform: uppercase; cursor: pointer; }
+.ew-knode-detail .ew-knode-tune:hover { background: color-mix(in srgb, var(--ew-foil) 12%, transparent); }

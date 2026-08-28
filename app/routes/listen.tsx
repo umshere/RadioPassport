@@ -1,5 +1,5 @@
 import { Link } from "@remix-run/react";
-import { useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useHydrated } from "~/hooks/useHydrated";
 import { usePlayerStore } from "~/state/playerStore";
 import { roomForStation, useRoomStore } from "~/state/roomStore";
@@ -7,6 +7,18 @@ import { BRAND } from "~/constants/brand";
 import { stationLocation, stationTelemetry } from "~/components/radio-passport/StationRow";
 import { stationTags } from "~/components/radio-passport/stationInsights";
 import { TheaterField, TheaterWell } from "~/components/radio-passport/TheaterWell";
+import {
+  buildTheaterKnowledge,
+  seatTheaterKnowledge,
+  toExpandedNeighborhood,
+  wakeTheaterKnowledge,
+} from "~/components/radio-passport/knowledge/theaterKnowledge";
+import type {
+  ExpandedNeighborhood,
+  KnowledgeGraph,
+  KnowledgeNode,
+} from "~/types/knowledge";
+import type { Station } from "~/types/radio";
 import UpNextRow from "~/components/radio-passport/UpNextRow";
 import {
   lockSeed,
@@ -38,6 +50,7 @@ export const meta = () => [
 export default function ListeningPage() {
   const hydrated = useHydrated();
   const storedNowPlaying = usePlayerStore((state) => state.nowPlaying);
+  const startStation = usePlayerStore((state) => state.startStation);
   const storedIsPlaying = usePlayerStore((state) => state.isPlaying);
   const nowPlaying = hydrated ? storedNowPlaying : null;
   const isPlaying = hydrated ? storedIsPlaying : false;
@@ -67,6 +80,149 @@ export default function ListeningPage() {
     track: rawTrackLine,
     graph: room.dossier.graph,
   });
+
+  // ── The merged Theater knowledge graph (owner: this page) ──────────────
+  // Catalog (from the tuned station) + Room dossier (MB + cited web) +
+  // lazily expanded catalog neighbourhoods. The field only draws and clicks.
+  const [expansions, setExpansions] = useState<ExpandedNeighborhood[]>([]);
+  const [expandedFocuses, setExpandedFocuses] = useState<Set<string>>(
+    () => new Set(),
+  );
+  const seatsRef = useRef<Map<string, { x: number; y: number }>>(new Map());
+  const awakeRef = useRef<Set<string>>(new Set());
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [trail, setTrail] = useState<Array<{ id: string; label: string }>>([]);
+  const [stationByUuid, setStationByUuid] = useState<Record<string, Station>>(
+    () => ({}),
+  );
+
+  const knowledgeGraph: KnowledgeGraph = useMemo(
+    () =>
+      buildTheaterKnowledge({
+        station: hydrated ? storedNowPlaying : null,
+        roomGraph: intelligence.graph,
+        expansions,
+      }),
+    [expansions, hydrated, storedNowPlaying, intelligence.graph],
+  );
+
+  const evidenceArrived = useMemo(
+    () => intelligence.graph.edges.some((edge) => edge.provenance === "web"),
+    [intelligence.graph],
+  );
+  const knowledge = useMemo(() => {
+    const cap = typeof window !== "undefined" && window.innerWidth < 720 ? 10 : 18;
+    const seats = seatTheaterKnowledge({
+      graph: knowledgeGraph,
+      seats: seatsRef.current,
+      focusId: selectedId,
+      seed: lockSeed([storedNowPlaying?.uuid ?? "elsewhere"]),
+    });
+    seatsRef.current = seats;
+    const model = wakeTheaterKnowledge({
+      graph: knowledgeGraph,
+      seats,
+      awake: awakeRef.current,
+      events: {
+        landed: Boolean(hydrated && storedNowPlaying),
+        icy: Boolean(room.signal.track),
+        enrichment: Boolean(intelligence.summary || intelligence.facts.length),
+        evidence: evidenceArrived,
+      },
+      focusId: selectedId,
+      cap,
+    });
+    awakeRef.current = model.awake;
+    return model;
+  }, [
+    evidenceArrived,
+    hydrated,
+    intelligence.facts.length,
+    intelligence.summary,
+    knowledgeGraph,
+    room.signal.track,
+    selectedId,
+    storedNowPlaying,
+  ]);
+
+  const knowledgeNodes = useMemo(
+    () =>
+      knowledge.visible
+        .map((id) => {
+          const node = knowledge.graph.nodes.find((entry) => entry.id === id);
+          const seat = knowledge.seats.get(id);
+          if (!node || !seat) return null;
+          return { ...node, x: seat.x, y: seat.y };
+        })
+        .filter((node): node is KnowledgeNode & { x: number; y: number } =>
+          Boolean(node),
+        ),
+    [knowledge],
+  );
+
+  const handleNodeSelect = useCallback(
+    (id: string) => {
+      const node = knowledgeGraph.nodes.find((entry) => entry.id === id);
+      if (!node) return;
+      setSelectedId(id);
+      setTrail((current) => {
+        const seenAt = current.findIndex((crumb) => crumb.id === id);
+        if (seenAt >= 0) return current.slice(0, seenAt + 1);
+        return [...current, { id, label: node.label }];
+      });
+      const kind = node.kind;
+      const rawId = id.split(":").slice(1).join(":");
+      // Country/language heads lazily reveal connected stations. Station
+      // clicks fetch the full Station so Tune here has a real object — they
+      // never change playback on their own.
+      if (
+        (kind === "country" || kind === "language" || kind === "station") &&
+        !expandedFocuses.has(id)
+      ) {
+        setExpandedFocuses((current) => new Set(current).add(id));
+        const expandKind = kind === "station" ? "station" : kind;
+        void fetch(
+          `/api/atlas/expand?kind=${expandKind}&id=${encodeURIComponent(rawId)}`,
+        )
+          .then((response) => (response.ok ? response.json() : Promise.reject()))
+          .then((payload: {
+            graph: {
+              nodes: Array<{
+                id: string;
+                label: string;
+                kind: string;
+                count?: number;
+                favicon?: string | null;
+                countryCode?: string | null;
+              }>;
+              edges: Array<{ from: string; to: string; relation: string }>;
+            };
+            stationDetail?: Station;
+          }) => {
+            if (payload.stationDetail?.uuid) {
+              setStationByUuid((current) => ({
+                ...current,
+                [payload.stationDetail!.uuid]: payload.stationDetail!,
+              }));
+            }
+            if (kind === "station") return;
+            setExpansions((current) => [
+              ...current,
+              toExpandedNeighborhood(id, payload),
+            ]);
+          })
+          .catch(() => {
+            // An expansion outage keeps the already-lit sky; nothing lies.
+          });
+      }
+    },
+    [expandedFocuses, knowledgeGraph.nodes],
+  );
+
+  const selectedKnowledgeNode: KnowledgeNode | null = selectedId
+    ? knowledge.graph.nodes.find((entry) => entry.id === selectedId) ?? null
+    : null;
+
   const phase = room.phase;
   const factKey = intelligence.facts
     .map((fact) => `${fact.label}:${fact.value}`)
@@ -207,6 +363,18 @@ export default function ListeningPage() {
             releases={releases}
             longitude={nowPlaying.longitude}
             graph={intelligence.graph}
+            focusId={room.signal.track?.title ?? null}
+            knowledge={{
+              nodes: knowledgeNodes,
+              edges: knowledge.graph.edges,
+              awakeIds: knowledge.awake,
+              firing: knowledge.firing,
+              focusId: selectedId,
+              tunedId: storedNowPlaying
+                ? `station:${storedNowPlaying.uuid}`
+                : null,
+              onSelect: handleNodeSelect,
+            }}
           />
         </aside>
         <div className="ew-theater-folio">
@@ -226,6 +394,62 @@ export default function ListeningPage() {
             </p>
           ) : null}
           <UpNextRow />
+          {trail.length > 1 ? (
+            <nav className="ew-ktrail" aria-label="Knowledge trail">
+              {trail.map((crumb, index) => (
+                <button
+                  key={crumb.id}
+                  type="button"
+                  aria-current={index === trail.length - 1 || undefined}
+                  onClick={() => {
+                    handleNodeSelect(crumb.id);
+                  }}
+                >
+                  {index > 0 ? "· " : ""}
+                  {crumb.label}
+                </button>
+              ))}
+            </nav>
+          ) : null}
+          {selectedKnowledgeNode ? (
+            <div className="ew-knode-detail" key={selectedKnowledgeNode.id}>
+              <h2>{selectedKnowledgeNode.label}</h2>
+              <p>
+                {selectedKnowledgeNode.kind}
+                {selectedKnowledgeNode.count
+                  ? ` · ${selectedKnowledgeNode.count} stations`
+                  : ""}
+                {" · "}
+                {selectedKnowledgeNode.provenance}
+              </p>
+              {selectedKnowledgeNode.kind === "station" ? (
+                (() => {
+                  const uuid = selectedKnowledgeNode.id.split(":").slice(1).join(":");
+                  const detail =
+                    stationByUuid[uuid] ??
+                    (storedNowPlaying?.uuid === uuid ? storedNowPlaying : null);
+                  const tuned = storedNowPlaying?.uuid === uuid;
+                  if (tuned) {
+                    return <p>Now tuning — the Theater holds this room.</p>;
+                  }
+                  return detail ? (
+                    <button
+                      type="button"
+                      className="ew-knode-tune"
+                      onClick={() => startStation(detail, { autoPlay: true })}
+                    >
+                      Tune here
+                    </button>
+                  ) : (
+                    <p>Filing the signal…</p>
+                  );
+                })()
+              ) : null}
+              {knowledge.darkCount > 0 ? (
+                <p>{knowledge.darkCount} more remain dark.</p>
+              ) : null}
+            </div>
+          ) : null}
           <TheaterWell
             phase={phase}
             dispatchBody={intelligence.dispatchBody}

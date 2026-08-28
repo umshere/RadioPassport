@@ -22,6 +22,9 @@ Configure the AI layer and playback helpers through the following environment va
 | `OPENROUTER_TRIVIA_MODELS` | Optional comma-separated OpenRouter trivia fallback models.                                                |
 | `OLLAMA_URL`         | Base URL (e.g. `http://localhost:11434`) for the Ollama server when `AI_PROVIDER=ollama`.                        |
 | `OLLAMA_MODEL`       | Optional Ollama model identifier (defaults to `radio-passport`).                                                 |
+| `FIRECRAWL_TRIVIA`   | Opt-in flag (`1`/`true`/`yes`/`on`) enabling web evidence retrieval for AI trivia. Default off.                   |
+| `FIRECRAWL_API_KEY`  | Firecrawl secret key. Evidence is fetched only when this is set AND `FIRECRAWL_TRIVIA` is on. Server-side only; never sent to the client. |
+| `MUSICBRAINZ_MIN_INTERVAL_MS` | Minimum spacing between outbound MusicBrainz requests from one process (default `1000`). Set `0` in tests. |
 
 Place these variables in `.env` or your deployment platform's secrets manager. Do not commit real keys to the repository.
 

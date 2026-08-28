@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   FACT_RELEASE_CAP,
   FIELD_DEGREE_CAP,
+  FIELD_STRUCTURE_MS,
   FIELD_TRIANGLE_CAP,
   GRAPH_PULSE_MS,
   TAG_RELEASE_CAP,
@@ -20,6 +21,7 @@ import {
   fieldNodesFromReleases,
   fieldPoint,
   advanceFieldTraveler,
+  fieldResolveFocus,
   fieldSemanticEdges,
   fieldShootingStar,
   fieldSpanEdges,
@@ -28,6 +30,9 @@ import {
   fieldTravelerInTransit,
   fieldTravelerAt,
   fieldStandingLabel,
+  fieldStructureProgress,
+  fieldStructureReady,
+  fieldStructuredTargets,
   fieldTourSpans,
   fieldVisitLabel,
   fieldWalk,
@@ -51,6 +56,7 @@ import {
   theaterTrackCopy,
   theaterWellAria,
 } from "~/components/radio-passport/theaterLock";
+import type { TriviaGraph } from "~/types/trivia";
 
 describe("theater lock", () => {
   it("files the dossier only after a title and ready trivia", () => {
@@ -697,10 +703,16 @@ describe("theater lock", () => {
       new URL("../../app/hooks/useRoom.ts", import.meta.url),
       "utf8",
     );
-    expect(roomHook).toContain("ai-deepen");
-    expect(roomHook).toContain("DEEPEN_AFTER_MS");
+    // The enrichment pipeline is exactly two requests: free, then one
+    // evidence-grounded ai call. No deepen pass exists anywhere client-side.
+    expect(roomHook).not.toContain("ai-deepen");
+    expect(roomHook).not.toContain("DEEPEN_AFTER_MS");
+    expect(roomHook).toContain('source: "free"');
+    expect(roomHook).toContain('source: "ai"');
+    expect(roomHook).toContain("links:");
     expect(well).toContain("fieldKnowledgeEdges");
     expect(well).toContain("fieldDust");
+    expect(listen).toContain("focusId");
     expect(well).toContain("fieldBirthRipple");
     const home = readFileSync(
       new URL("../../app/routes/_index.tsx", import.meta.url),
@@ -726,5 +738,378 @@ describe("theater lock", () => {
     );
     expect(well).toContain("TheaterLetter");
     expect(well).toContain('"more"');
+  });
+});
+
+describe("semantic figure", () => {
+  const FIGURE_GRAPH: TriviaGraph = {
+    nodes: [
+      { id: "tum-ho-toh", label: "Tum Ho Toh", kind: "work" },
+      { id: "raj", label: "Raj", kind: "person" },
+      { id: "asha", label: "Asha", kind: "person" },
+      { id: "goa", label: "Goa", kind: "place" },
+      { id: "monsoon", label: "Monsoon", kind: "event" },
+      { id: "downtempo", label: "Downtempo", kind: "genre" },
+    ],
+    edges: [
+      {
+        from: "raj",
+        to: "tum-ho-toh",
+        relation: "wrote",
+        verified: true,
+        provenance: "musicbrainz",
+      },
+      {
+        from: "asha",
+        to: "tum-ho-toh",
+        relation: "sang",
+        verified: true,
+        provenance: "musicbrainz",
+      },
+      {
+        from: "downtempo",
+        to: "tum-ho-toh",
+        relation: "genre of",
+        verified: true,
+        provenance: "musicbrainz",
+      },
+      {
+        from: "tum-ho-toh",
+        to: "goa",
+        relation: "recorded in",
+        sourceUrl: "https://en.wikipedia.org/wiki/Tum_Ho_Toh",
+        provenance: "web",
+      },
+      {
+        from: "monsoon",
+        to: "goa",
+        relation: "flooded",
+        sourceUrl: "https://en.wikipedia.org/wiki/Tum_Ho_Toh",
+        provenance: "web",
+      },
+    ],
+  };
+
+  const SPARSE_GRAPH = {
+    nodes: [{ id: "lonely", label: "Lonely", kind: "place" as const }],
+    edges: [],
+  } satisfies TriviaGraph;
+
+  function figureNodes(seed = 4242) {
+    return fieldNodesFromReleases(
+      theaterReleases({
+        city: "Goa",
+        country: "India",
+        languages: ["Hindi"],
+        tags: ["Downtempo", "Bollywood"],
+        artist: "Raj",
+        title: "Tum Ho Toh",
+        facts: [{ label: "Year", value: "2007" }],
+        graph: FIGURE_GRAPH,
+      }),
+      seed,
+      longitudeHomeX(74),
+    );
+  }
+
+  function nodeFor(nodes: ReturnType<typeof figureNodes>, refId: string) {
+    const node = nodes.find((entry) => entry.refId === refId);
+    expect(node, `expected a figure star for ${refId}`).toBeTruthy();
+    return node!;
+  }
+
+  it("exports a single structure duration constant inside one breath", () => {
+    expect(FIELD_STRUCTURE_MS).toBeGreaterThan(600);
+    expect(FIELD_STRUCTURE_MS).toBeLessThanOrEqual(1600);
+  });
+
+  it("resolves the exact focus star first, then the busiest survivor, then nothing", () => {
+    const nodes = figureNodes();
+    expect(fieldResolveFocus(nodes, FIGURE_GRAPH, null)).toBe(
+      nodeFor(nodes, "tum-ho-toh").key,
+    );
+    // An explicit focusId wins when it names a visible graph star.
+    expect(fieldResolveFocus(nodes, FIGURE_GRAPH, "tum-ho-toh")).toBe(
+      nodeFor(nodes, "tum-ho-toh").key,
+    );
+
+    const fallbackGraph: TriviaGraph = {
+      nodes: [
+        { id: "asha", label: "Asha", kind: "person" },
+        { id: "goa", label: "Goa", kind: "place" },
+        { id: "monsoon", label: "Monsoon", kind: "event" },
+      ],
+      edges: [
+        { from: "asha", to: "goa", relation: "sang in", verified: true },
+        { from: "monsoon", to: "goa", relation: "flooded", provenance: "web" },
+      ],
+    };
+    expect(fieldResolveFocus(nodes, fallbackGraph, null)).toBe(
+      nodeFor(nodes, "goa").key,
+    );
+    // Same inputs, same answer — no ambient wobble in the choice.
+    expect(fieldResolveFocus(nodes, fallbackGraph, null)).toBe(
+      fieldResolveFocus(nodes, fallbackGraph, null),
+    );
+
+    expect(fieldResolveFocus(nodes, SPARSE_GRAPH, null)).toBeNull();
+    expect(fieldResolveFocus([], SPARSE_GRAPH, null)).toBeNull();
+  });
+
+  it("refuses to structure sparse graphs but accepts the connected figure", () => {
+    const nodes = figureNodes();
+    expect(fieldStructureReady(nodes, SPARSE_GRAPH)).toBe(false);
+    expect(fieldStructureReady(nodes, null)).toBe(false);
+    expect(fieldStructuredTargets(nodes, SPARSE_GRAPH)).toEqual(new Map());
+    expect(fieldStructuredTargets(nodes, FIGURE_GRAPH).size).toBeGreaterThan(0);
+    expect(fieldStructureReady(nodes, FIGURE_GRAPH)).toBe(true);
+  });
+
+  it("accepts any connected component of three stars with two drawable edges", () => {
+    // A minimal honest figure: track — artist, track — year. Under the old
+    // focus-neighbour rule this refused to morph; the contract says it must.
+    const trio: TriviaGraph = {
+      nodes: [
+        { id: "song", label: "Song", kind: "work" },
+        { id: "singer", label: "Singer", kind: "person" },
+        { id: "1999", label: "1999", kind: "year" },
+      ],
+      edges: [
+        { from: "singer", to: "song", relation: "sang", verified: true },
+        { from: "song", to: "1999", relation: "released in", verified: true },
+      ],
+    };
+    const trioNodes = fieldNodesFromReleases(
+      theaterReleases({
+        city: "Goa",
+        country: "India",
+        languages: ["Hindi"],
+        tags: [],
+        artist: "Singer",
+        title: "Song",
+        facts: [{ label: "Year", value: "1999" }],
+        graph: trio,
+      }),
+      4242,
+      longitudeHomeX(74),
+    );
+    expect(fieldStructureReady(trioNodes, trio)).toBe(true);
+    expect(fieldStructuredTargets(trioNodes, trio).size).toBe(3);
+
+    // Two stars one edge is still just a pair, not a figure.
+    const duo: TriviaGraph = {
+      nodes: [
+        { id: "song", label: "Song", kind: "work" },
+        { id: "singer", label: "Singer", kind: "person" },
+      ],
+      edges: [
+        { from: "singer", to: "song", relation: "sang", verified: true },
+      ],
+    };
+    const duoNodes = fieldNodesFromReleases(
+      theaterReleases({
+        city: "Goa",
+        country: "India",
+        languages: ["Hindi"],
+        tags: [],
+        artist: "Singer",
+        title: "Song",
+        facts: [],
+        graph: duo,
+      }),
+      4242,
+      longitudeHomeX(74),
+    );
+    expect(fieldStructureReady(duoNodes, duo)).toBe(false);
+
+    // Three stars but a dangling single edge never forms a figure either.
+    const dangler: TriviaGraph = {
+      nodes: [
+        { id: "a", label: "A", kind: "work" },
+        { id: "b", label: "B", kind: "person" },
+        { id: "c", label: "C", kind: "place" },
+      ],
+      edges: [{ from: "b", to: "a", relation: "sang", verified: true }],
+    };
+    expect(
+      fieldStructureReady(
+        fieldNodesFromReleases(
+          theaterReleases({
+            city: "Goa",
+            country: "India",
+            languages: ["Hindi"],
+            tags: [],
+            artist: "B",
+            title: "A",
+            facts: [],
+            graph: dangler,
+          }),
+          4242,
+          longitudeHomeX(74),
+        ),
+        dangler,
+      ),
+    ).toBe(false);
+  });
+
+  it("builds verified nodes from MusicBrainz catalog facts", () => {
+    const graph = graphFromMusicBrainzRelations({
+      title: "Un Tipo Como Yo",
+      artist: "Sergio Esquivel",
+      catalog: {
+        album: "16 Grandes Exitos",
+        year: "1979",
+        origin: "Venezuela",
+        styles: ["balada"],
+      },
+      relations: [],
+    });
+    const ids = new Set(graph.nodes.map((node) => node.id));
+    expect(ids).toContain("un-tipo-como-yo");
+    expect(ids).toContain("sergio-esquivel");
+    expect(ids).toContain("1979");
+    expect(ids).toContain("venezuela");
+    expect(ids).toContain("balada");
+    for (const edge of graph.edges) {
+      expect(edge.verified).toBe(true);
+    }
+    const relations = graph.edges.map((edge) => edge.relation);
+    expect(relations).toContain("performed");
+    expect(relations).toContain("appears on");
+    expect(relations).toContain("released in");
+    expect(relations).toContain("from");
+    expect(relations).toContain("tagged");
+
+    // A self-titled single is one star, not an edge to itself.
+    const selfTitled = graphFromMusicBrainzRelations({
+      title: "Saree",
+      artist: "Sanju Rathod",
+      catalog: { album: "Saree", year: "2025", origin: null, styles: [] },
+      relations: [],
+    });
+    expect(
+      selfTitled.edges.some((edge) => edge.relation === "appears on"),
+    ).toBe(false);
+  });
+
+  it("centers the focus and rings first hops inside second hops by kind sectors", () => {
+    const nodes = figureNodes();
+    const targets = fieldStructuredTargets(nodes, FIGURE_GRAPH);
+
+    const trackTarget = targets.get(nodeFor(nodes, "tum-ho-toh").key)!;
+    expect(trackTarget.x).toBeCloseTo(0.5, 5);
+    expect(trackTarget.y).toBeCloseTo(0.5, 5);
+
+    const radiusOf = (refId: string) => {
+      const point = targets.get(nodeFor(nodes, refId).key)!;
+      return Math.hypot(point.x - 0.5, (point.y - 0.5) / 0.62);
+    };
+    for (const hopOne of ["raj", "asha", "downtempo", "goa"]) {
+      expect(radiusOf(hopOne)).toBeGreaterThan(0.1);
+      expect(radiusOf(hopOne)).toBeLessThan(0.24);
+    }
+    expect(radiusOf("monsoon")).toBeGreaterThan(0.26);
+
+    const sectorOf = (refId: string) => {
+      const point = targets.get(nodeFor(nodes, refId).key)!;
+      return { dx: point.x - 0.5, dy: point.y - 0.5 };
+    };
+    // People sit left of centre; genres and events lower-right;
+    // places lower-left. Jitter never flips a sector.
+    expect(sectorOf("raj").dx).toBeLessThan(0);
+    expect(sectorOf("raj").dy).toBeLessThan(0);
+    expect(sectorOf("asha").dx).toBeLessThan(0);
+    expect(sectorOf("asha").dy).toBeLessThan(0);
+    expect(sectorOf("downtempo").dx).toBeGreaterThan(0);
+    expect(sectorOf("downtempo").dy).toBeGreaterThanOrEqual(0);
+    expect(sectorOf("monsoon").dx).toBeGreaterThan(0);
+    expect(sectorOf("monsoon").dy).toBeGreaterThan(0);
+    expect(sectorOf("goa").dx).toBeLessThan(0);
+    expect(sectorOf("goa").dy).toBeGreaterThan(0);
+  });
+
+  it("is deterministic and addition-stable through the previous map", () => {
+    const nodes = figureNodes();
+    const first = fieldStructuredTargets(nodes, FIGURE_GRAPH);
+    const second = fieldStructuredTargets(nodes, FIGURE_GRAPH);
+    expect([...first.entries()]).toEqual([...second.entries()]);
+
+    const extended: TriviaGraph = {
+      nodes: [
+        ...FIGURE_GRAPH.nodes,
+        { id: "monsoon-two", label: "Monsoon Two", kind: "event" },
+      ],
+      edges: [
+        ...FIGURE_GRAPH.edges,
+        {
+          from: "monsoon-two",
+          to: "goa",
+          relation: "soaked",
+          provenance: "web",
+        },
+      ],
+    };
+    const extendedNodes = fieldNodesFromReleases(
+      theaterReleases({
+        city: "Goa",
+        country: "India",
+        languages: ["Hindi"],
+        tags: ["Downtempo", "Bollywood"],
+        artist: "Raj",
+        title: "Tum Ho Toh",
+        facts: [{ label: "Year", value: "2007" }],
+        graph: extended,
+      }),
+      4242,
+      longitudeHomeX(74),
+    );
+    const stable = fieldStructuredTargets(extendedNodes, extended, first);
+    for (const [key, point] of first) {
+      expect(stable.get(key)).toEqual(point);
+    }
+    expect(stable.size).toBe(first.size + 1);
+  });
+
+  it("leaves unconnected metadata stars at their seeded homes", () => {
+    const nodes = figureNodes();
+    const homes = new Map(nodes.map((node) => [node.key, node]));
+    const targets = fieldStructuredTargets(nodes, FIGURE_GRAPH);
+    const untouched = nodes.filter((node) => !targets.has(node.key));
+    expect(untouched.length).toBeGreaterThan(3);
+    for (const node of untouched) {
+      expect(targets.has(node.key)).toBe(false);
+      expect(homes.get(node.key)?.x).toBe(node.x);
+    }
+  });
+
+  it("clamps progress between zero and one and finishes instantly under reduced motion", () => {
+    expect(fieldStructureProgress(-5000, false)).toBe(0);
+    expect(fieldStructureProgress(FIELD_STRUCTURE_MS / 2, false)).toBeGreaterThan(0);
+    expect(fieldStructureProgress(FIELD_STRUCTURE_MS / 2, false)).toBeLessThan(1);
+    expect(fieldStructureProgress(FIELD_STRUCTURE_MS * 10, false)).toBe(1);
+    expect(fieldStructureProgress(123, true)).toBe(1);
+    expect(fieldStructureProgress(-123, true)).toBe(1);
+  });
+
+  it("ranks verified knowledge threads above web threads and carries provenance", () => {
+    const nodes = figureNodes();
+    const edges = fieldKnowledgeEdges(nodes, FIGURE_GRAPH.edges);
+    expect(edges.length).toBe(FIGURE_GRAPH.edges.length);
+    for (const edge of edges) {
+      expect(edge.strength).toBeGreaterThan(0.6);
+    }
+    const verified = edges.filter((edge) => edge.provenance === "musicbrainz");
+    const web = edges.filter((edge) => edge.provenance === "web");
+    expect(verified).toHaveLength(3);
+    expect(web).toHaveLength(2);
+    for (const edge of verified) {
+      expect(edge.strength).toBeGreaterThan(0.8);
+    }
+    for (const edge of web) {
+      expect(edge.sourceUrl).toMatch(/^https:\/\/en\.wikipedia\.org\//);
+      expect(edge.strength).toBeLessThan(
+        Math.min(...verified.map((entry) => entry.strength)),
+      );
+    }
   });
 });

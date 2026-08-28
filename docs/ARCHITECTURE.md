@@ -32,7 +32,7 @@ One object. One key. The previous station is gone on the next frame.
 | place | `Station` | `openRoom` |
 | caption | honest template, then `/api/ai/dispatch` | immediately, then ~1.5s |
 | signal | ICY via `/api/now-playing` | dock poller |
-| plate + dossier | free trivia (MusicBrainz / Cover Art / iTunes / Wiki + verified relations), then AI cover + graph, then one deepening ring | only if ICY sent a title |
+| plate + dossier | free trivia (one cached MusicBrainz resolution: Cover Art / iTunes / Wiki + verified relations), then one AI cover call grounded on the filed dossier — optional Firecrawl evidence pass when enabled; no second deepen call | only if ICY sent a title |
 
 Free first. AI may upgrade the sentences. A leftover caption cannot sit under a new city.
 

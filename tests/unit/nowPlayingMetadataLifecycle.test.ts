@@ -10,6 +10,7 @@ import { trackKey } from "~/components/radio-passport/stationInsights";
 import {
   requestTrackTrivia,
   resetTriviaRequestState,
+  triviaContextKey,
   triviaForCurrentRequest,
   triviaRequestKey,
   type TriviaState,
@@ -87,13 +88,27 @@ describe("now-playing polling lifecycle", () => {
     const collisionLeft = triviaRequestKey("ai", trackKey({ artist: "A|B", title: "C" }), "");
     const collisionRight = triviaRequestKey("ai", trackKey({ artist: "A", title: "B|C" }), "");
     expect(collisionLeft).not.toBe(collisionRight);
-    const deepenA = triviaRequestKey("ai-deepen", trackKey({ artist: "Artist", title: "A" }), "ctx-1");
-    const deepenB = triviaRequestKey("ai-deepen", trackKey({ artist: "Artist", title: "A" }), "ctx-2");
-    expect(deepenA).toBe(deepenB);
-    expect(deepenA).not.toBe(triviaRequestKey("ai", trackKey({ artist: "Artist", title: "A" }), ""));
+    // The pipeline is exactly two requests per track/context; every source
+    // caches under its own track+context pair.
+    const aiA = triviaRequestKey("ai", trackKey({ artist: "Artist", title: "A" }), "ctx-1");
+    const aiB = triviaRequestKey("ai", trackKey({ artist: "Artist", title: "A" }), "ctx-2");
+    expect(aiA).not.toBe(aiB);
+    expect(aiA).not.toBe(triviaRequestKey("free", trackKey({ artist: "Artist", title: "A" }), ""));
   });
 
-  it("joins one deepen call per track", () => {
+  it("carries free links through the AI request context", () => {
+    const withoutLinks = triviaContextKey("ai", { summary: "S" });
+    const withLinks = triviaContextKey("ai", {
+      summary: "S",
+      links: [{ label: "Track", url: "https://musicbrainz.org/recording/r", kind: "track" }],
+    });
+    expect(withoutLinks).not.toBe("");
+    expect(withoutLinks).not.toContain("musicbrainz.org");
+    expect(withLinks).toContain("musicbrainz.org");
+    expect(triviaContextKey("free", { summary: "S" })).toBe("");
+  });
+
+  it("joins one request per track/context pair", () => {
     resetTriviaRequestState();
     const fetchMock = vi.fn(() => new Promise(() => {}));
     vi.stubGlobal("fetch", fetchMock);
@@ -104,14 +119,26 @@ describe("now-playing polling lifecycle", () => {
       source: "icy" as const,
       fetchedAt: "2026-08-15T18:00:00.000Z",
     };
-    const first = requestTrackTrivia({ track, source: "ai-deepen" });
-    const second = requestTrackTrivia({
+    const freeFirst = requestTrackTrivia({ track, source: "free" });
+    const freeSecond = requestTrackTrivia({
       track,
-      source: "ai-deepen",
-      context: { summary: "already filed" },
+      source: "free",
+      context: { summary: "ignored for free" },
     });
-    expect(first).toBe(second);
-    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(freeFirst).toBe(freeSecond);
+    const filedContext = { summary: "already filed" };
+    const aiFirst = requestTrackTrivia({ track, source: "ai", context: filedContext });
+    const aiSecond = requestTrackTrivia({ track, source: "ai", context: { ...filedContext } });
+    expect(aiFirst).toBe(aiSecond);
+    // A changed dossier is a different context pair and must not join.
+    const aiThird = requestTrackTrivia({
+      track,
+      source: "ai",
+      context: { summary: "changed" },
+    });
+    expect(aiThird).not.toBe(aiFirst);
+    // One fetch per distinct pair: free + joined AI + changed-context AI.
+    expect(fetchMock).toHaveBeenCalledTimes(3);
     vi.unstubAllGlobals();
     resetTriviaRequestState();
   });

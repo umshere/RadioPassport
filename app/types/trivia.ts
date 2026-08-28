@@ -16,7 +16,14 @@ export type TriviaGraphKind =
   | "place"
   | "year"
   | "genre"
-  | "event";
+  | "event"
+  /** Atlas-only kinds: the navigable catalog layer above the theater's
+   * track-level figure. The theater never emits these; the atlas never
+   * emits the AI-only ones without provenance. */
+  | "country"
+  | "language"
+  | "station"
+  | "album";
 
 export type TriviaGraphNode = {
   id: string;
@@ -24,11 +31,21 @@ export type TriviaGraphNode = {
   kind: TriviaGraphKind;
 };
 
+/** Where a knowledge edge came from: MusicBrainz relations are verified; web
+ * evidence is unverified until it cites the exact page it was read from;
+ * catalog edges are deterministic Radio-Browser facts (country/language/
+ * station membership) and need no external citation. */
+export type TriviaEdgeProvenance = "musicbrainz" | "web" | "catalog";
+
 export type TriviaGraphEdge = {
   from: string;
   to: string;
   relation: string;
   verified?: boolean;
+  provenance?: TriviaEdgeProvenance;
+  /** Exact retrieved evidence URL. Edges citing pages we never fetched must
+   * be dropped server-side before they reach a client. */
+  sourceUrl?: string;
 };
 
 export type TriviaGraph = {

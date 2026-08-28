@@ -1,4 +1,5 @@
 import type {
+  TriviaEdgeProvenance,
   TriviaGraph,
   TriviaGraphEdge,
   TriviaGraphKind,
@@ -52,8 +53,9 @@ export const LANGUAGE_RELEASE_CAP = 4;
 export const FACT_RELEASE_CAP = 6;
 export const GRAPH_NODE_CAP = 10;
 export const GRAPH_EDGE_CAP = 14;
-export const DEEPEN_NODE_CAP = 6;
 export const STAR_BIRTH_MS = 600;
+/** One breath for the constellation to settle into its semantic figure. */
+export const FIELD_STRUCTURE_MS = 900;
 /** A star must be this opaque before the disc may walk it — a line needs a body. */
 export const FIELD_LINE_WEIGHT = 0.28;
 /** Faces past this many stack into foil instead of reading as a figure. */
@@ -946,7 +948,7 @@ function normalizeRelation(value: string) {
   return text;
 }
 
-function nodeHasId(
+export function nodeHasId(
   node: { key: string; refId?: string; label: string },
   id: string,
 ) {
@@ -999,11 +1001,22 @@ export function normalizeTriviaGraph(
     const key = `${from}|${to}`;
     if (edgeSeen.has(key)) continue;
     edgeSeen.add(key);
+    const verified = item.verified === true;
+    const provenanceRaw =
+      item.provenance === "web" || item.provenance === "musicbrainz"
+        ? item.provenance
+        : undefined;
+    const sourceUrlRaw =
+      typeof item.sourceUrl === "string" ? item.sourceUrl.trim() : "";
     edges.push({
       from,
       to,
       relation,
-      verified: item.verified === true,
+      verified,
+      // Verified relations are MusicBrainz by definition; unverified ones only
+      // earn a provenance tag when they arrive citing web evidence.
+      provenance: provenanceRaw ?? (verified ? "musicbrainz" : undefined),
+      ...(sourceUrlRaw ? { sourceUrl: sourceUrlRaw } : {}),
     });
     if (edges.length >= edgeCap) break;
   }
@@ -1040,6 +1053,14 @@ export function mergeTriviaGraphs(
 export function graphFromMusicBrainzRelations(input: {
   title?: string | null;
   artist?: string | null;
+  /** Catalog facts become verified nodes too — a release date, an origin, an
+   * album or a genre is knowledge, not just a sentence in the letter. */
+  catalog?: {
+    album?: string | null;
+    year?: string | null;
+    origin?: string | null;
+    styles?: string[];
+  };
   relations?: Array<{
     type?: string;
     artist?: { name?: string };
@@ -1072,6 +1093,27 @@ export function graphFromMusicBrainzRelations(input: {
   const artistId = artist ? addNode(artist, "person") : null;
   if (artistId && workId) addEdge(artistId, workId, "performed");
 
+  const catalog = input.catalog ?? {};
+  // A single often shares its album's name; that is one star, not an edge.
+  const albumLabel = catalog.album?.trim();
+  if (workId && albumLabel && fieldSlug(albumLabel) !== workId) {
+    const albumId = addNode(albumLabel, "work");
+    addEdge(workId, albumId, "appears on");
+  }
+  if (workId && catalog.year?.trim()) {
+    const yearId = addNode(catalog.year.trim(), "year");
+    addEdge(workId, yearId, "released in");
+  }
+  if (artistId && catalog.origin?.trim()) {
+    const originId = addNode(catalog.origin.trim(), "place");
+    addEdge(artistId, originId, "from");
+  }
+  for (const style of (catalog.styles ?? []).slice(0, 2)) {
+    if (!style.trim()) continue;
+    const styleId = addNode(style.trim(), "genre");
+    addEdge(workId, styleId, "tagged");
+  }
+
   for (const rel of input.relations ?? []) {
     const type = (rel.type ?? "").trim().toLowerCase();
     const word = MB_RELATION_WORD[type];
@@ -1089,7 +1131,16 @@ export function graphFromMusicBrainzRelations(input: {
   return normalizeTriviaGraph({ nodes, edges });
 }
 
-export type FieldKnowledgeEdge = FieldEdge & { relation: string };
+export type FieldKnowledgeEdge = FieldEdge & {
+  relation: string;
+  provenance?: TriviaEdgeProvenance;
+  sourceUrl?: string;
+};
+
+/** Verified MusicBrainz threads read as the figure's bright spine; cited web
+ * threads join the same foil family, one step quieter. */
+const VERIFIED_KNOWLEDGE_STRENGTH = 0.92;
+const WEB_KNOWLEDGE_STRENGTH = 0.72;
 
 export function fieldKnowledgeEdges(
   nodes: Array<{ key: string; refId?: string; label: string }>,
@@ -1106,9 +1157,248 @@ export function fieldKnowledgeEdges(
     const key = `${i}:${j}`;
     if (seen.has(key)) continue;
     seen.add(key);
-    edges.push({ i, j, strength: 0.92, relation: edge.relation });
+    // Legacy unmarked edges keep the bright verified thread; only claims that
+    // arrive explicitly as web evidence read one step quieter.
+    const provenance: TriviaEdgeProvenance | undefined =
+      edge.provenance ?? (edge.verified ? "musicbrainz" : undefined);
+    edges.push({
+      i,
+      j,
+      strength:
+        provenance === "web" ? WEB_KNOWLEDGE_STRENGTH : VERIFIED_KNOWLEDGE_STRENGTH,
+      relation: edge.relation,
+      ...(provenance ? { provenance } : {}),
+      ...(edge.sourceUrl ? { sourceUrl: edge.sourceUrl } : {}),
+    });
   }
   return edges;
+}
+
+/** One breath for the whole sky to settle into its semantic figure. */
+export function fieldStructureProgress(
+  ageMs: number,
+  reducedMotion: boolean,
+): number {
+  if (reducedMotion) return 1;
+  if (!Number.isFinite(ageMs) || ageMs <= 0) return 0;
+  const t = ageMs / FIELD_STRUCTURE_MS;
+  if (t >= 1) return 1;
+  // ease-in-out cubic: the figure breathes in, then rests.
+  return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+}
+
+const FIELD_SECTOR_ANGLE: Record<TriviaGraphKind, number> = {
+  person: (-150 * Math.PI) / 180,
+  work: (-30 * Math.PI) / 180,
+  film: (-70 * Math.PI) / 180,
+  place: (130 * Math.PI) / 180,
+  year: (130 * Math.PI) / 180,
+  genre: (47.5 * Math.PI) / 180,
+  event: (47.5 * Math.PI) / 180,
+  // Atlas-only kinds never reach the theater field, but the record must stay
+  // exhaustive; they hold unused sectors of the sky.
+  country: (170 * Math.PI) / 180,
+  language: (-110 * Math.PI) / 180,
+  station: (100 * Math.PI) / 180,
+  album: (-5 * Math.PI) / 180,
+};
+
+const FIELD_SECTOR_JITTER = 0.35;
+const FIELD_HOP_ONE_RADIUS = 0.17;
+const FIELD_HOP_TWO_RADIUS = 0.31;
+
+function fieldStructureDegreeMap(
+  graph: TriviaGraph | null | undefined,
+): Map<string, number> {
+  const degree = new Map<string, number>();
+  if (!graph || !Array.isArray(graph.edges)) return degree;
+  for (const edge of graph.edges) {
+    if (!edge?.from || !edge?.to) continue;
+    degree.set(edge.from, (degree.get(edge.from) ?? 0) + 1);
+    degree.set(edge.to, (degree.get(edge.to) ?? 0) + 1);
+  }
+  return degree;
+}
+
+/**
+ * Which star the figure hangs from: an exact focus hit first, else the busiest
+ * visible graph star. Ties keep the graph's own order, so the choice never
+ * wobbles between renders.
+ */
+export function fieldResolveFocus(
+  nodes: Array<{ key: string; refId?: string; label: string }>,
+  graph: TriviaGraph | null | undefined,
+  focusId?: string | null,
+): string | null {
+  if (!graph || !graph.nodes?.length || !graph.edges?.length || !nodes.length) {
+    return null;
+  }
+  const degree = fieldStructureDegreeMap(graph);
+  const visible = graph.nodes.filter((node) => degree.has(node.id));
+  if (!visible.length) return null;
+  const findStar = (id: string) =>
+    nodes.find((node) => nodeHasId(node, id)) ?? null;
+
+  if (focusId) {
+    const focusNode = visible.find((node) => node.id === focusId) ??
+      visible.find((node) => fieldSlug(node.id) === fieldSlug(focusId));
+    if (focusNode) {
+      const star = findStar(focusNode.id);
+      if (star) return star.key;
+    }
+  }
+
+  const rank = (node: TriviaGraphNode) =>
+    (degree.get(node.id) ?? 0) * 10 + (node.kind === "work" ? 5 : 0);
+  let best: TriviaGraphNode | null = null;
+  for (const node of visible) {
+    if (!best || rank(node) > rank(best)) {
+      best = node;
+    }
+  }
+  if (best) {
+    const star = findStar(best.id);
+    if (star) return star.key;
+  }
+  for (const node of visible) {
+    const star = findStar(node.id);
+    if (star) return star.key;
+  }
+  return null;
+}
+
+/**
+ * The figure may only form around a real figure: the resolved focus must sit
+ * in a connected component of at least three stars and the graph must carry
+ * at least two drawable knowledge edges — sparse or dangling graphs stay
+ * exactly where the seed put them.
+ */
+export function fieldStructureReady(
+  nodes: Array<{ key: string; refId?: string; label: string }>,
+  graph?: TriviaGraph | null,
+): boolean {
+  if (!graph || !graph.edges?.length) return false;
+  const focusKey = fieldResolveFocus(nodes, graph, null);
+  if (!focusKey) return false;
+  const focusIndex = nodes.findIndex((node) => node.key === focusKey);
+  if (focusIndex < 0) return false;
+
+  const adjacency = new Map<number, Set<number>>();
+  let drawable = 0;
+  for (const edge of graph.edges) {
+    const i = nodes.findIndex((node) => nodeHasId(node, edge.from));
+    const j = nodes.findIndex((node) => nodeHasId(node, edge.to));
+    if (i < 0 || j < 0 || i === j) continue;
+    drawable += 1;
+    if (!adjacency.has(i)) adjacency.set(i, new Set());
+    if (!adjacency.has(j)) adjacency.set(j, new Set());
+    adjacency.get(i)!.add(j);
+    adjacency.get(j)!.add(i);
+  }
+
+  const seen = new Set<number>([focusIndex]);
+  const queue = [focusIndex];
+  while (queue.length) {
+    const current = queue.shift()!;
+    for (const neighbour of adjacency.get(current) ?? []) {
+      if (seen.has(neighbour)) continue;
+      seen.add(neighbour);
+      queue.push(neighbour);
+    }
+  }
+  return drawable >= 2 && seen.size >= 3;
+}
+
+export type FieldStructureTargets = Map<string, FieldPoint>;
+
+/**
+ * Deterministic semantic placement for a begun figure.
+ *
+ * - The focus sits dead centre; hop-1 stars take the inner ring, farther stars
+ *   the outer ring, each kind holding its own sector of the sky so people,
+ *   works, places and genres read at a glance.
+ * - Angular jitter is keyed by `[seed, node.key]` — never by array index or
+ *   counts — so adding a star reshuffles nothing already on canvas.
+ * - `previous` placements win verbatim; once a station's figure has begun it
+ *   only ever grows by addition.
+ */
+export function fieldStructuredTargets(
+  nodes: Array<{ key: string; refId?: string; label: string }>,
+  graph: TriviaGraph | null | undefined,
+  previous?: FieldStructureTargets | null,
+  focusId?: string | null,
+  seed?: number,
+): FieldStructureTargets {
+  const targets: FieldStructureTargets = new Map();
+  if (!graph || !nodes.length) return targets;
+  if (!fieldStructureReady(nodes, graph)) return targets;
+  const focusKey = fieldResolveFocus(nodes, graph, focusId ?? null);
+  if (!focusKey) return targets;
+  const focusIndex = nodes.findIndex((node) => node.key === focusKey);
+  if (focusIndex < 0) return targets;
+
+  if (previous && previous.size) {
+    for (const [key, point] of previous) {
+      if (nodes.some((node) => node.key === key)) targets.set(key, point);
+    }
+  }
+
+  const adjacency = new Map<number, Set<number>>();
+  for (const edge of graph.edges) {
+    const i = nodes.findIndex((node) => nodeHasId(node, edge.from));
+    const j = nodes.findIndex((node) => nodeHasId(node, edge.to));
+    if (i < 0 || j < 0 || i === j) continue;
+    if (!adjacency.has(i)) adjacency.set(i, new Set());
+    if (!adjacency.has(j)) adjacency.set(j, new Set());
+    adjacency.get(i)!.add(j);
+    adjacency.get(j)!.add(i);
+  }
+
+  const hops = new Map<number, number>([[focusIndex, 0]]);
+  const queue: number[] = [focusIndex];
+  while (queue.length) {
+    const current = queue.shift()!;
+    const depth = hops.get(current)!;
+    for (const neighbour of adjacency.get(current) ?? []) {
+      if (hops.has(neighbour)) continue;
+      hops.set(neighbour, depth + 1);
+      queue.push(neighbour);
+    }
+  }
+
+  const kindByIndex = new Map<number, TriviaGraphKind>();
+  for (const graphNode of graph.nodes) {
+    const index = nodes.findIndex((node) => nodeHasId(node, graphNode.id));
+    if (index >= 0 && !kindByIndex.has(index)) {
+      kindByIndex.set(index, graphNode.kind);
+    }
+  }
+
+  if (!targets.has(focusKey)) {
+    targets.set(focusKey, { x: 0.5, y: 0.5 });
+  }
+
+  for (const [index, depth] of hops) {
+    if (depth === 0) continue;
+    const node = nodes[index]!;
+    if (targets.has(node.key)) continue;
+    const baseAngle =
+      FIELD_SECTOR_ANGLE[kindByIndex.get(index) ?? "work"] ?? 0;
+    const rng = createRng(lockSeed([seed ?? 0, node.key]));
+    const angle =
+      baseAngle + (rng() - 0.5) * FIELD_SECTOR_JITTER +
+      (rng() - 0.5) * 0.04;
+    const radius =
+      depth === 1 ? FIELD_HOP_ONE_RADIUS : FIELD_HOP_TWO_RADIUS;
+    const x = 0.5 + Math.cos(angle) * radius;
+    const y = 0.5 + Math.sin(angle) * radius * 0.62;
+    targets.set(node.key, {
+      x: Math.min(0.96, Math.max(0.04, x)),
+      y: Math.min(0.94, Math.max(0.06, y)),
+    });
+  }
+
+  return targets;
 }
 
 export function fieldHopRelation(
