@@ -11,8 +11,9 @@ import {
   useNavigation,
   useRouteError,
 } from "@remix-run/react";
-import { type ReactNode, useCallback, useEffect, useRef } from "react";
+import { type ReactNode, useCallback, useEffect, useLayoutEffect, useRef } from "react";
 import { usePlayerStore } from "~/state/playerStore";
+import { rehydratePersistedStores } from "~/utils/zustand-lite";
 import {
   isStationTemporarilyUnavailable,
   useStationAvailabilityStore,
@@ -28,6 +29,7 @@ import { playbackNoticeCopy } from "~/utils/playbackNoticeCopy";
 import stylesheet from "./tailwind.css?url";
 import PlayerDock from "~/components/PlayerDock";
 import SiteBar from "~/components/SiteBar";
+import { SiteSeekProvider } from "~/components/radio-passport/SiteSeek";
 import { usePlayerNoticeStore } from "~/state/playerNoticeStore";
 import type { Station } from "~/types/radio";
 import { sanitizeArtworkUrl } from "~/utils/stations";
@@ -126,6 +128,12 @@ export default function App() {
   const location = useLocation();
   const isNavigating = navigation.state !== "idle";
 
+  // Parent layout effect runs before PlayerDock can persist a null snapshot.
+  // Restores nowPlaying + queue; does not autoplay (isPlaying is not persisted).
+  useLayoutEffect(() => {
+    rehydratePersistedStores();
+  }, []);
+
   useEffect(() => {
     if (typeof document === "undefined") return;
 
@@ -155,9 +163,13 @@ export default function App() {
     };
   }, []);
 
+  const onTheater = location.pathname === "/listen";
+
   return (
     <Document>
       <>
+        <SiteSeekProvider>
+        <div className={onTheater ? "ew-frame is-theater-frame" : undefined}>
         <SiteBar />
         {isNavigating && (
           <div className="ew-passage-bar" aria-hidden="true">
@@ -167,13 +179,17 @@ export default function App() {
 
         <div
           key={location.pathname}
-          className="ew-page w-full"
+          className={`ew-page w-full${onTheater ? " is-theater" : ""}`}
           style={{
-            paddingBottom: "calc(var(--player-dock-clearance, 0px) + 1.5rem)",
+            paddingBottom: onTheater
+              ? "var(--player-dock-clearance, 0px)"
+              : "calc(var(--player-dock-clearance, 0px) + 1.5rem)",
           }}
         >
           <Outlet />
         </div>
+        </div>
+        </SiteSeekProvider>
 
         <PlayerDock />
         <JourneyBridge />

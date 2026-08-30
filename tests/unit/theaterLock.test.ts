@@ -50,7 +50,6 @@ import {
   theaterLockLines,
   theaterLockLive,
   theaterSkyLive,
-  theaterSkyShrink,
   theaterPhase,
   theaterReleases,
   theaterTrackCopy,
@@ -419,11 +418,6 @@ describe("theater lock", () => {
     expect(theaterLockLive("filed")).toBe(false);
     expect(theaterSkyLive("filed")).toBe(true);
     expect(theaterSkyLive("quiet")).toBe(false);
-    expect(theaterSkyShrink(0, 80, 160)).toBe(0);
-    expect(theaterSkyShrink(200, 80, 160)).toBe(0);
-    expect(theaterSkyShrink(90, 400, 160)).toBeCloseTo(0.5, 5);
-    expect(theaterSkyShrink(400, 400, 160)).toBe(1);
-    expect(theaterSkyShrink(400, 180, 160)).toBeCloseTo(0.25, 5);
     expect(theaterWellAria("locking")).toMatch(/filing/i);
     expect(theaterWellAria("filed")).toBeUndefined();
     expect(formatBearing(0)).toBe("0°");
@@ -674,7 +668,20 @@ describe("theater lock", () => {
       new URL("../../app/components/PlayerDock.tsx", import.meta.url),
       "utf8",
     );
-    expect(listen).toContain("ew-theater-back");
+    const siteBar = readFileSync(
+      new URL("../../app/components/SiteBar.tsx", import.meta.url),
+      "utf8",
+    );
+    expect(listen).not.toContain("TheaterSeek");
+    expect(listen).not.toContain("ew-theater-back");
+    expect(siteBar).toContain("TheaterSeek");
+    expect(siteBar).toContain("SiteSeekRail");
+    const siteSeek = readFileSync(
+      new URL("../../app/components/radio-passport/SiteSeek.tsx", import.meta.url),
+      "utf8",
+    );
+    expect(siteSeek).toContain("useSyncExternalStore");
+    expect(siteSeek).not.toMatch(/from "react-dom"/);
     expect(listen).toContain("ew-theater-sky");
     expect(listen).toContain("ew-theater-folio");
     expect(listen).toContain("TheaterField");
@@ -722,16 +729,15 @@ describe("theater lock", () => {
     expect(home).toContain("useRoomStore");
     expect(home).not.toContain("useTrackTrivia(");
     expect(home).toContain("GalaxyBackdrop");
-    expect(listen).toContain("--ew-sky-shrink");
-    expect(listen).toContain("theaterSkyShrink");
+    expect(listen).not.toContain("theaterSkyShrink");
     const stylesheet = readFileSync(
       new URL("../../app/tailwind.css", import.meta.url),
       "utf8",
     );
     expect(stylesheet).toContain(".ew-galaxy");
-    expect(stylesheet).toContain("--ew-sky-shrink");
-    expect(stylesheet).toContain("--ew-sky-scale");
-    expect(stylesheet).toContain("--ew-sky-fold");
+    expect(stylesheet).toContain(".ew-page.is-theater");
+    expect(stylesheet).not.toContain("--ew-sky-shrink");
+    expect(stylesheet).not.toContain("--ew-sky-fold");
     expect(stylesheet).toContain(".ew-letter-more");
     expect(stylesheet).toMatch(
       /\.ew-letter:not\(\.is-open\) \.ew-caption[\s\S]*?-webkit-line-clamp:\s*4/,

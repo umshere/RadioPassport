@@ -384,6 +384,15 @@ export const SURFACE_CONNECTIONS: SurfaceConnection[] = [
     step: "next",
     action: "home",
     keepsPlayback: true,
+    optional: true,
+  },
+  {
+    id: "theater-seek",
+    surface: "theater",
+    label: "Seek",
+    step: "intent",
+    action: "intent-catalog",
+    keepsPlayback: true,
   },
   {
     id: "theater-empty",
@@ -649,6 +658,16 @@ export function theaterWithoutStation() {
     label: "Back to Elsewhere",
     message: "Land somewhere first. Then come back.",
   };
+}
+
+/** Wait until client hydration before declaring the room empty. */
+export function theaterRoomGate(
+  hydrated: boolean,
+  nowPlaying: Station | null,
+): "wait" | "empty" | "room" {
+  if (!hydrated) return "wait";
+  if (!nowPlaying) return "empty";
+  return "room";
 }
 
 export type TheaterFact = { label: string; value: string };

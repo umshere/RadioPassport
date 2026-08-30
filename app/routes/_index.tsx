@@ -47,6 +47,7 @@ import {
   surpriseTapNextState,
 } from "~/components/radio-passport/searchState";
 import { IntentBar } from "~/components/radio-passport/IntentBar";
+import { SiteSeekPortal } from "~/components/radio-passport/SiteSeek";
 import {
   resolveCoverArrival,
   describeCoverEmpty,
@@ -609,7 +610,7 @@ export default function Index() {
 
   return (
     <main className={`rp-home ${locatorShrunk ? "is-seeking" : ""}`}>
-      <header className="rp-home-header">
+      <SiteSeekPortal>
         <IntentBar
           value={query}
           onChange={(value) => {
@@ -632,7 +633,7 @@ export default function Index() {
           // while the outage borrows the empty tone's styling.
           statusTone={seek.tone === "unreachable" ? "empty" : seek.tone}
         />
-      </header>
+      </SiteSeekPortal>
       <div className="rp-stage">
         <section className="rp-intro">
           <p className="rp-eyebrow text-foil">{BRAND.eyebrow}</p>

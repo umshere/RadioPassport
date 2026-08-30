@@ -27,6 +27,7 @@ import {
   meridianKind,
   theaterDossierFacts,
   theaterIntelligence,
+  theaterRoomGate,
   theaterWithoutStation,
   sameHourPillLabel,
 } from "~/components/radio-passport/productFlow";
@@ -616,6 +617,14 @@ describe("Overlays keep a way through", () => {
     expect(empty.label).toMatch(/elsewhere/i);
     expect(empty.message).toMatch(/land/i);
     expect(connectionById("theater-empty")?.step).toBe("land");
+  });
+
+  it("waits to hydrate before calling the theater empty", () => {
+    const landed = station({ uuid: "abc", city: "Kochi", country: "India" });
+    expect(theaterRoomGate(false, landed)).toBe("wait");
+    expect(theaterRoomGate(false, null)).toBe("wait");
+    expect(theaterRoomGate(true, null)).toBe("empty");
+    expect(theaterRoomGate(true, landed)).toBe("room");
   });
 });
 

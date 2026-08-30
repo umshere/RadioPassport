@@ -126,11 +126,9 @@ describe("AtmospherePin placement", () => {
   );
 
   it("stands on the intro horizon row instead of tacked onto the header", () => {
-    const header = home.slice(
-      home.indexOf('className="rp-home-header"'),
-      home.indexOf("</header>")
-    );
-    expect(header).not.toContain("<AtmospherePin />");
+    expect(home).toContain("SiteSeekPortal");
+    expect(home).not.toContain("rp-home-header");
+    expect(home).not.toMatch(/rp-home-header[\s\S]*AtmospherePin/);
     const intro = home.slice(
       home.indexOf('className="rp-intro"'),
       home.indexOf('className="ew-horizon"')

@@ -8,7 +8,7 @@ Elsewhere is one loop: **land → intent → tune → inhabit → stamp → next
 2. **Land here** (or **Continue** if this browser has a last city) starts audio. Browsers block silent autoplay — the tap is the gesture.
 3. Place identity fills: city, country, local clock from longitude, solar hour.
 4. ICY title if the station sends one. Otherwise: *This station sends no track titles.*
-5. Intent bar is available: type, speak, or Surprise.
+5. Intent bar is in the site bar: type, speak, or Surprise.
 
 ## Primary actions
 
@@ -30,7 +30,7 @@ Search, chips, and overlays never call `stop()`.
 
 ## `/listen`
 
-Sky + letter. The constellation has its own rectangle (right column on desktop, first and sticky on a phone) on a seeded galaxy river — the same night that sits behind the home globe. City, station, and the Room sit as type: caption, then plate + cover title, then a colophon of facts. When ICY sent a title, free trivia files the plate and facts first; AI cover may upgrade them and return a knowledge graph. A later deepening pass may add a few stars. Filing keeps the sky inhabited — the disc keeps walking knowledge edges and names stay on place and track stars. The mesh stays a figure (14 faces, 3 threads per star). No track → no dossier. On a phone the transport is the dock only. The letter sits at four lines; `more` opens the rest. The sky stays visible while it scrolls; as you read, the constellation scales into a ribbon so more of the folio can sit above the dock. Scroll back and the night opens again.
+Sky + letter. One night: desktop sky bleeds under the letter and fades into ink; phone puts the traveler first as a fixed strip. Same galaxy river as the home globe. Seek is in the site bar. City, station, and the Room sit as type: caption, then plate + cover title, then a colophon of facts. When ICY sent a title, free trivia files the plate and facts first; AI cover may upgrade them and return a knowledge graph. A later deepening pass may add a few stars. Filing keeps the sky inhabited — the disc keeps walking knowledge edges and names stay on place and track stars. The mesh stays a figure (14 faces, 3 threads per star). No track → no dossier. On a phone the transport is the dock only. The letter sits at four lines; `more` opens the rest. Only the letter scrolls.
 
 ## Empty / error
 

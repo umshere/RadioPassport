@@ -56,6 +56,16 @@ export function skyCaption(kind: KnowledgeKind, label: string): string {
   return `${text.slice(0, max - 1).trimEnd()}…`;
 }
 
+/** On a compact sky, only the tuned station and the focused node keep a caption. */
+export function skyLabelOpen(opts: {
+  focused: boolean;
+  tuned: boolean;
+  compact: boolean;
+}): boolean {
+  if (!opts.compact) return true;
+  return opts.focused || opts.tuned;
+}
+
 /** Labels radiate away from the centre so neighbouring captions do not pile. */
 export function labelAnchor(x: number, y: number): "n" | "e" | "s" | "w" {
   if (y < 0.2) return "s";
@@ -185,6 +195,7 @@ const KnodeButton = memo(function KnodeButton({
       data-anchor={anchor}
       data-motion={reducedMotion ? "still" : "wake"}
       data-focused={focused ? "true" : undefined}
+      data-tuned={tunedStation ? "true" : undefined}
       title={caption && caption !== node.label ? node.label : undefined}
       aria-label={`${node.label}, ${node.kind}${tunedStation ? ", tuned station" : ""}`}
       aria-pressed={focused ? true : undefined}

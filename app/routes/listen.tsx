@@ -1,5 +1,5 @@
 import { Link } from "@remix-run/react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { useHydrated } from "~/hooks/useHydrated";
 import { usePlayerStore } from "~/state/playerStore";
 import { roomForStation, useRoomStore } from "~/state/roomStore";
@@ -24,14 +24,15 @@ import {
   lockSeed,
   splitFieldTokens,
   theaterReleases,
-  theaterSkyShrink,
   theaterTrackCopy,
 } from "~/components/radio-passport/theaterLock";
 import { formatLocalLabel, localDateAtLongitude } from "~/utils/localTime";
 import {
   theaterIntelligenceFromRoom,
+  theaterRoomGate,
   theaterWithoutStation,
 } from "~/components/radio-passport/productFlow";
+import { knowledgeSeatCopy } from "~/components/radio-passport/knowledge/knowledgeCopy";
 
 export const meta = () => [
   { title: `Theater · ${BRAND.name}` },
@@ -267,63 +268,11 @@ export default function ListeningPage() {
   );
   const seed = lockSeed([nowPlaying?.uuid, city]);
 
-  // The sky recedes as you read — the figure scales, seats stay. A shallow
-  // folio does not fold: shortening that page would claw the scroll back.
-  const theaterRef = useRef<HTMLElement>(null);
-  useEffect(() => {
-    const node = theaterRef.current;
-    if (!node) return;
-    const sky = node.querySelector<HTMLElement>(".ew-theater-sky");
-    if (!sky) return;
-    let frame = 0;
-    let skyFull = 0;
-
-    const foldAmount = () => {
-      const raw = getComputedStyle(node).getPropertyValue("--ew-sky-fold");
-      const next = Number.parseFloat(raw);
-      return Number.isFinite(next) && next > 0 ? next : 0.4;
-    };
-
-    const measure = () => {
-      const previous = node.style.getPropertyValue("--ew-sky-shrink") || "0";
-      node.style.setProperty("--ew-sky-shrink", "0");
-      skyFull = sky.getBoundingClientRect().height;
-      node.style.setProperty("--ew-sky-shrink", previous);
-    };
-
-    const apply = () => {
-      frame = 0;
-      const folded = Math.max(0, skyFull - sky.getBoundingClientRect().height);
-      const pageRoom =
-        document.documentElement.scrollHeight - window.innerHeight + folded;
-      const shrink = theaterSkyShrink(
-        window.scrollY,
-        pageRoom,
-        skyFull * foldAmount(),
-      );
-      node.style.setProperty("--ew-sky-shrink", shrink.toFixed(3));
-    };
-
-    const onScroll = () => {
-      if (!frame) frame = window.requestAnimationFrame(apply);
-    };
-    const onResize = () => {
-      measure();
-      apply();
-    };
-
-    measure();
-    apply();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", onResize);
-    return () => {
-      window.removeEventListener("scroll", onScroll);
-      window.removeEventListener("resize", onResize);
-      if (frame) window.cancelAnimationFrame(frame);
-    };
-  }, [phase, factKey]);
-
-  if (!nowPlaying) {
+  const roomGate = theaterRoomGate(hydrated, nowPlaying);
+  if (roomGate === "wait") {
+    return <main className="ew-theater" aria-busy="true" />;
+  }
+  if (roomGate === "empty" || !nowPlaying) {
     const empty = theaterWithoutStation();
     return (
       <main className="ew-theater flex min-h-screen flex-col items-start justify-center">
@@ -346,15 +295,7 @@ export default function ListeningPage() {
   }
 
   return (
-      <main className="ew-theater" data-phase={phase} ref={theaterRef}>
-        <Link
-          to="/"
-          className="ew-theater-back rp-eyebrow text-foil"
-          prefetch="intent"
-          viewTransition
-        >
-          ← {BRAND.name}
-        </Link>
+    <main className="ew-theater" data-phase={phase}>
       <div className="ew-theater-room" key={nowPlaying.uuid}>
         <aside className="ew-theater-sky">
           <TheaterField
@@ -414,14 +355,7 @@ export default function ListeningPage() {
           {selectedKnowledgeNode ? (
             <div className="ew-knode-detail" key={selectedKnowledgeNode.id}>
               <h2>{selectedKnowledgeNode.label}</h2>
-              <p>
-                {selectedKnowledgeNode.kind}
-                {selectedKnowledgeNode.count
-                  ? ` · ${selectedKnowledgeNode.count} stations`
-                  : ""}
-                {" · "}
-                {selectedKnowledgeNode.provenance}
-              </p>
+              <p>{knowledgeSeatCopy(selectedKnowledgeNode)}</p>
               {selectedKnowledgeNode.kind === "station" ? (
                 (() => {
                   const uuid = selectedKnowledgeNode.id.split(":").slice(1).join(":");
@@ -444,9 +378,6 @@ export default function ListeningPage() {
                     <p>Filing the signal…</p>
                   );
                 })()
-              ) : null}
-              {knowledge.darkCount > 0 ? (
-                <p>{knowledge.darkCount} more remain dark.</p>
               ) : null}
             </div>
           ) : null}

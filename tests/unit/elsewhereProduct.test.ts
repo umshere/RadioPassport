@@ -507,6 +507,11 @@ describe("live stylesheet", () => {
     expect(css).toContain(".ew-theater-field");
     expect(css).toContain(".ew-theater-sky");
     expect(css).toContain(".ew-theater-folio");
+    expect(css).toContain("mask-image: linear-gradient(90deg, transparent 0%, #000 32%)");
+    expect(css).toContain(".ew-site-bar");
+    expect(css).toContain("flex-wrap: nowrap");
+    expect(css).toContain(".ew-theater-rail .rp-intent");
+    expect(css).not.toContain(".ew-site-bar:has(.ew-theater-rail .rp-intent)");
     expect(css).toContain(".ew-theater-well");
     expect(css).toMatch(/\.ew-theater-well[^{]*\{[^}]*min-height:\s*16\.75rem/);
     expect(css).toMatch(/\.ew-theater-well \{ min-height: 16rem; \}/);

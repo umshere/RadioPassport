@@ -1056,36 +1056,41 @@
   .rp-player-notice-warning { border-color: rgba(199, 58, 58, .5); }
   .rp-player-notice-error { border-color: var(--ew-lacquer); }
   .ew-theater {
-    --ew-sky-fold: 0.4;
     position: relative;
     display: flex;
     flex-direction: column;
-    min-height: 100svh;
+    min-height: 0;
+    height: 100%;
     background: var(--ew-ink);
     color: var(--ew-bone);
-    padding: 28px 24px 24px;
+    padding: 0;
+    overflow: hidden;
     transition: background-color .28s ease, color .28s ease;
+  }
+  .ew-theater:not(:has(.ew-theater-room)) {
+    padding: 20px 24px 12px;
   }
   .ew-theater-room {
     display: grid;
     grid-template-columns: minmax(0, 28rem) minmax(18rem, 1fr);
     grid-template-areas: "folio sky";
-    gap: 28px 36px;
+    gap: 0;
     flex: 1 1 auto;
-    align-items: start;
-    min-height: calc(100svh - 160px);
+    align-items: stretch;
+    min-height: 0;
+    overflow: hidden;
   }
   .ew-theater-sky {
-    --ew-sky-full: calc(100svh - 168px);
-    --ew-sky-scale: calc(1 - var(--ew-sky-fold, 0.4) * var(--ew-sky-shrink, 0));
     grid-area: sky;
-    position: sticky;
-    top: 72px;
-    align-self: start;
+    position: relative;
+    align-self: stretch;
     min-width: 0;
-    height: calc(var(--ew-sky-full) * var(--ew-sky-scale));
-    min-height: calc(28rem * var(--ew-sky-scale));
+    min-height: 0;
+    height: auto;
     overflow: hidden;
+    margin-left: -7.5rem;
+    -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 32%);
+    mask-image: linear-gradient(90deg, transparent 0%, #000 32%);
   }
   .ew-theater-field {
     position: absolute;
@@ -1094,21 +1099,17 @@
     z-index: 0;
     display: block;
     width: 100%;
-    height: var(--ew-sky-full, 100%);
-    min-height: 28rem;
+    height: 100%;
+    min-height: 0;
     pointer-events: none;
-    transform: scale(var(--ew-sky-scale, 1));
-    transform-origin: top center;
   }
   .ew-theater-back {
-    position: sticky;
-    top: 0;
+    position: relative;
     z-index: 3;
     display: inline-flex;
     flex: none;
     align-items: center;
-    min-height: calc(44px + env(safe-area-inset-top, 0px));
-    padding-top: env(safe-area-inset-top, 0px);
+    min-height: 44px;
     background: var(--ew-ink);
   }
   .ew-theater-folio {
@@ -1119,7 +1120,14 @@
     flex-direction: column;
     justify-content: flex-start;
     min-width: 0;
+    min-height: 0;
     max-width: 36rem;
+    padding: 20px 48px 12px 24px;
+    background: linear-gradient(90deg, var(--ew-ink) 0%, var(--ew-ink) 68%, transparent 100%);
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
   }
   .ew-theater-folio .ew-track {
     min-height: 1.4em;
@@ -1298,7 +1306,6 @@
       min-height: 52px;
       padding: calc(10px + env(safe-area-inset-top, 0px)) 14px 10px;
     }
-    .rp-intent { order: 3; width: 100%; }
     .ew-atmosphere--split { display: none; }
     .ew-atmosphere-icon {
       display: grid;
@@ -1411,28 +1418,33 @@
     .rp-toast { right: 14px; left: 14px; bottom: calc(88px + env(safe-area-inset-bottom, 0px)); min-width: 0; }
     .rp-player-notice { width: calc(100vw - 20px); font-size: 10px; }
     .ew-theater {
-      --ew-sky-fold: 0.58;
-      padding: 20px 16px 16px;
+      padding: 0;
+    }
+    .ew-theater:not(:has(.ew-theater-room)) {
+      padding: 12px 16px 8px;
     }
     .ew-theater .ew-coverline { font-size: clamp(36px, 12vw, 52px); }
     .ew-theater-room {
       grid-template-columns: minmax(0, 1fr);
+      grid-template-rows: clamp(11.5rem, 30vh, 220px) minmax(0, 1fr);
       grid-template-areas: "sky" "folio";
-      gap: 10px 0;
+      gap: 0;
       min-height: 0;
     }
     .ew-theater-sky {
-      --ew-sky-full: clamp(16.75rem, 38vh, 320px);
-      position: sticky;
-      top: calc(44px + env(safe-area-inset-top, 0px));
+      position: relative;
+      top: auto;
       z-index: 1;
-      min-height: calc(16.75rem * var(--ew-sky-scale));
-      height: calc(var(--ew-sky-full) * var(--ew-sky-scale));
+      min-height: 0;
+      height: auto;
       max-height: none;
+      margin-left: 0;
       background: var(--ew-ink);
+      -webkit-mask-image: none;
+      mask-image: none;
     }
     .ew-theater-field {
-      min-height: 16.75rem;
+      min-height: 0;
     }
     .ew-theater-sky::after {
       content: "";
@@ -1443,7 +1455,12 @@
       background: linear-gradient(180deg, transparent, var(--ew-ink));
       pointer-events: none;
     }
-    .ew-theater-folio { max-width: none; z-index: 0; }
+    .ew-theater-folio {
+      max-width: none;
+      z-index: 0;
+      padding: 8px 16px 8px;
+      background: var(--ew-ink);
+    }
     .ew-theater-well { min-height: 16rem; }
     .ew-cover-row { grid-template-columns: 72px minmax(0, 1fr); gap: 12px; }
     .ew-plate { width: 72px; height: 72px; }
@@ -1518,6 +1535,51 @@
   }
 }
 
+/* Theater is an app shell: site bar + dock stay, only the letter scrolls.
+   Kept outside @layer with the site bar (same drop gremlin). */
+.ew-frame.is-theater-frame {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  overflow: hidden;
+}
+.ew-frame.is-theater-frame .ew-page.is-theater {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+.ew-page.is-theater .ew-theater {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+.ew-theater-rail {
+  display: flex;
+  flex: 1 1 0%;
+  align-items: center;
+  min-width: 0;
+  min-height: 36px;
+  margin: 0;
+}
+.ew-theater-rail .rp-intent {
+  width: 100%;
+  max-width: 36rem;
+  min-width: 0;
+}
+.ew-theater-seek {
+  border: 0;
+  background: none;
+  padding: 0;
+  color: var(--ew-foil);
+  font: 500 10px/1 "Azeret Mono", ui-monospace, monospace;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  min-height: 44px;
+  cursor: pointer;
+}
+
 /* Site bar — kept outside @layer on purpose: the Tailwind layer pipeline
    was nondeterministically dropping these rules in dev builds. */
 
@@ -1528,6 +1590,7 @@
   top: 0;
   z-index: 60;
   display: flex;
+  flex-wrap: nowrap;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
@@ -1536,15 +1599,29 @@
   background: var(--ew-ink);
   backdrop-filter: blur(10px);
 }
+.ew-site-bar > a {
+  flex: none;
+}
 .ew-site-bar-side {
   display: inline-flex;
   align-items: center;
   gap: 20px;
+  margin-left: auto;
+  flex: none;
+}
+.ew-site-bar-side .rp-passport-button {
+  margin-left: 0;
 }
 
 @media (max-width: 960px) {
-  .ew-site-bar { padding-right: 16px; padding-left: 16px; }
+  .ew-site-bar { padding-right: 16px; padding-left: 16px; gap: 12px; }
   .ew-site-bar-side { gap: 14px; }
+}
+
+@media (max-width: 720px) {
+  .ew-site-bar { gap: 10px; }
+  .ew-site-bar-side { gap: 10px; }
+  .ew-site-bar .rp-surprise { padding: 0 8px; }
 }
 
 /* Stamp ink — outside @layer on purpose (same Tailwind layer-drop gremlin as
@@ -1694,6 +1771,13 @@
 .ew-knode-imagery { display: block; width: 18px; height: 18px; border-radius: 50%; overflow: hidden; background: color-mix(in srgb, currentColor 22%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, currentColor 55%, transparent); }
 .ew-knode-imagery img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .ew-knode-label { color: currentColor; opacity: 0.92; white-space: nowrap; max-width: 12em; overflow: hidden; text-overflow: ellipsis; }
+@media (max-width: 720px) {
+  .ew-knode-label { display: none; }
+  .ew-knode[data-focused="true"] .ew-knode-label,
+  .ew-knode[data-tuned="true"] .ew-knode-label,
+  .ew-knode:hover .ew-knode-label,
+  .ew-knode:focus-visible .ew-knode-label { display: inline; }
+}
 .ew-knode[data-kind="country"] .ew-knode-label, .ew-knode[data-kind="language"] .ew-knode-label { font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; }
 .ew-knode[data-motion="wake"] { animation: ew-knode-wake 0.4s ease both; }
 @keyframes ew-knode-wake { from { opacity: 0; } to { opacity: 1; } }

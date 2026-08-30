@@ -88,6 +88,42 @@ describe("theater knowledge node helpers", () => {
     });
   });
 
+  describe("skyLabelOpen", () => {
+    it("keeps every caption on the desktop sky", () => {
+      expect(
+        knowledgeDom.skyLabelOpen({
+          focused: false,
+          tuned: false,
+          compact: false,
+        }),
+      ).toBe(true);
+    });
+
+    it("on a phone sky only the tuned or focused node keeps a caption", () => {
+      expect(
+        knowledgeDom.skyLabelOpen({
+          focused: false,
+          tuned: false,
+          compact: true,
+        }),
+      ).toBe(false);
+      expect(
+        knowledgeDom.skyLabelOpen({
+          focused: true,
+          tuned: false,
+          compact: true,
+        }),
+      ).toBe(true);
+      expect(
+        knowledgeDom.skyLabelOpen({
+          focused: false,
+          tuned: true,
+          compact: true,
+        }),
+      ).toBe(true);
+    });
+  });
+
   describe("labelAnchor", () => {
     it("radiates captions away from the centre", () => {
       expect(knowledgeDom.labelAnchor(0.2, 0.5)).toBe("w");

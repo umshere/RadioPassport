@@ -47,7 +47,7 @@ Donor catalog code lives in `app/services/atlas/` + `app/types/atlas.ts` (data c
 ## Shipped 2026-08-21 (`e318f7e`, live on prod)
 
 - **The seam** — home ⇄ theater navigations run through the View Transitions API (`viewTransition` on the four nav triggers). Globe dissolves into the theater sky (`vt-globe-sky`), city name carries across (`vt-city`). Browsers without VT fall back to the Passage rise untouched.
-- **Universal site bar** — `app/components/SiteBar.tsx`, mounted in `root.tsx` above `<Outlet />`. One sticky rail everywhere: wordmark → `/`, Room → `/about`, Passport (opens overlay on home, else routes to `/?passport=1`). Home/about/theater headers pruned; `.rp-home-header` is now `position: relative` — only the site bar sticks. Mobile-safe at 390px.
+- **Universal site bar** — `app/components/SiteBar.tsx`, mounted in `root.tsx` above `<Outlet />`. One sticky rail everywhere: wordmark → `/`, Room → `/about`, Passport (opens overlay on home, else routes to `/?passport=1`). Home puts the intent field on that rail (`SiteSeekPortal` slots a real child into `SiteSeekRail` — not `createPortal`, which Safari drops out of the sticky flex row). Theater puts compact Seek there. About has no extra chrome. The bar never wraps; the field shrinks (`min-width: 0`).
 - **Night desk** — AI dispatch letters sign `— night desk` in the theater letter; facts list gets a "the desk found" byline. Template letters stay unsigned. Gate: `room.captionSource === "ai"` → `deskSigned` prop through `listen.tsx` → `TheaterWell` → `TheaterLetter`.
 - **Stamp dispatch toast** — when a 60s stamp lands, `JourneyBridge` fires `/api/ai/dispatch` for that place and grows the INKED toast a one-line headline (toast holds 6.5s instead of 4s).
 - **No more dead air** — stations that send no ICY titles get a fresh ambient dispatch every 90s while playing (`useRoom.ts`); captions already refreshed per track change via `dispatchCacheKey` (station|track|hour).
@@ -57,7 +57,7 @@ Gotchas discovered this session:
 
 - **Tailwind v3 nondeterministically drops rules inside `@layer components`** (hit the site-bar block: whole rule vanished from served CSS depending on declarations like `-webkit-backdrop-filter` / `color-mix`, and even re-appearing on identical input). The site-bar CSS therefore lives **outside any `@layer`**, at the end of `app/tailwind.css`, with a comment saying why. If you add styles there, keep them outside the layer.
 - The dev server serves `/app/tailwind.css` (postcss pipeline) differently from `/app/tailwind.css?direct` (raw). After CSS edits, verify against the plain URL.
-- Full page reloads do not restore playback (`nowPlaying` is not persisted) — empty theater after reload is expected, not a bug.
+- Full page reloads restore the last station (paused) via `rehydratePersistedStores()` in a root `useLayoutEffect`. Audio does not autoplay; tap the dock disc. Empty theater is only when nothing was ever landed.
 - `HeroSection.tsx` fails lint (`no-empty`) on clean `main`; file is unimported legacy. Pre-existing, not ours.
 
 ## What shipped (live product)
@@ -65,8 +65,8 @@ Gotchas discovered this session:
 - Home `/`: coverline, night-earth globe, Land here / Continue, solar hours, same-hour cities
 - Globe is **not a mock**: real Radio Browser cities. HTML tooltip = city, region, country code, lead station, live count. Click rotates the earth to face that longitude, then plays the strongest station there.
 - Search (any language, tag, city — not Tamil-only) keeps the globe live. Missing Radio Browser geo falls back to the country center. Globe faces the densest match. Contract: `app/components/radio-passport/globePlaces.ts`.
-- Intent bar + voice + Surprise mix
-- `/listen` theater: constellation is a sky (right column / phone-first sticky strip) and a knowledge graph on a seeded galaxy river. Type is a letter. Honest ICY. Filing keeps the sky inhabited (disc + place/track names). After filing, one deepening pass may add stars. Faces cap at 14; each star keeps at most 3 threads so a filed film track stays a figure, not crumpled foil. The letter sits at four lines; a foil `more` opens the rest. Scroll recedes the sky (figure scales) when there is page left to reveal. Home keeps the same night behind the globe (`GalaxyBackdrop`). Station rows use the station plate or the Elsewhere mark — never a clipart play.
+- Intent bar + voice + Surprise mix, in the site bar on home
+- `/listen` theater: constellation is one night with the letter (desktop sky bleeds under the type and fades into ink; phone-first fixed strip) and a knowledge graph on a seeded galaxy river. Seek lives in the site bar. Type is a letter. Honest ICY. Filing keeps the sky inhabited (disc + place/track names). After filing, one deepening pass may add stars. Faces cap at 14; each star keeps at most 3 threads so a filed film track stays a figure, not crumpled foil. The letter sits at four lines; a foil `more` opens the rest. The page is an app shell (site bar + dock); only the letter scrolls — the sky does not shrink. Home keeps the same night behind the globe (`GalaxyBackdrop`). Station rows use the station plate or the Elsewhere mark — never a clipart play.
 - Atlas + country drill-down overlays
 - Passport stamps after **60s continuous** listen; favorites; localStorage only
 - Mobile: globe first, full-width Land here, compact dock, theater via art / Theater link
