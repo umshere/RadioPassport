@@ -16,7 +16,7 @@ Saved so this conversation can be compacted. Next turn: read this file + `docs/R
 - Branch: `main`
 - Remote: `https://github.com/umshere/RadioPassport.git`
 - Head at last product push: see newest *Shipped* section below (Theater knowledge graph, 2026-08-28). Passport stamp rule is in `docs/DESIGN_SPECS.md`. Domain + agent docs follow.
-- **Git identity:** repo mutations (push, PR close) go as **`umshere`**, never `heuristicsai` (that token can read/comment but 403s on writes). Token path that works: `GH_TOKEN="$(gh auth token -u umshere)"`. Vercel CLI is authed as `umshere`.
+- **Git identity:** repo mutations (push, PR close) go as **`umshere`**, never `heuristicsai` (that token can read/comment but 403s on writes). Do not `gh auth switch` (keyring) and do not SSH. Ship command: `npm run ship` (`scripts/ship.mjs`). Token path that works: `GH_TOKEN="$(gh auth token -u umshere)"`. npm/npx: `--cache "${TMPDIR:-/tmp}/elsewhere-npm-cache"` (default `~/.npm` is EPERM). Vercel CLI is authed as `umshere`.
 - Do not commit `.env`
 - `public/FTS.jpeg` is the 404 wallpaper. Ship it with the app.
 - Live host: **https://elsewheremusic.com**. Radio Passport 308s there. Facts: `docs/DOMAINS.md`. Ship: `docs/DEPLOY.md`. Breaks: `docs/TROUBLESHOOTING.md`. Agents: `AGENTS.md`.

@@ -54,6 +54,24 @@ Hour is a destination: it must leave the typed query. Contract: `hourTapNextStat
 
 Prod is `AI_PROVIDER=gemini`, `GEMINI_MODEL=gemini-2.5-flash`. Env edits need a redeploy. Never put AI on the audio path.
 
+## `git push` 403 / `Permission denied (publickey)`
+
+Writes to `umshere/RadioPassport` must use **`umshere`**. The active `gh` account on this machine is often `heuristicsai` (read/comment works, push 403s). `gh auth switch --user umshere` can fail on the keyring. SSH has no key.
+
+Use `npm run ship` (or the manual `GH_TOKEN="$(gh auth token -u umshere)"` push in [DEPLOY.md](./DEPLOY.md)). Do not invent a second remote or force-push.
+
+## `npm` / `npx` `EPERM` on `~/.npm/_cacache`
+
+The default npm cache is root-owned here. Use a writable cache:
+
+```bash
+export NPM_CACHE="${TMPDIR:-/tmp}/elsewhere-npm-cache"
+npm install --cache "$NPM_CACHE"
+npx --yes --cache "$NPM_CACHE" vercel --prod --yes
+```
+
+`npm run ship` sets this for the Vercel CLI step.
+
 ## Stream dies, copy mentions filters
 
 Dead-stream copy is `playbackNoticeCopy`. The notice store is message-only — no Retry/Next buttons unless that store grows actions.

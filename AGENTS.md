@@ -33,7 +33,7 @@ npm test
 npm run typecheck
 ```
 
-Ship: `docs/DEPLOY.md` (`git push origin main` then `npx vercel --prod --yes`).
+Ship: `docs/DEPLOY.md` (`npm run ship` after tests + commit).
 
 ## Map
 

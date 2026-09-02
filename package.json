@@ -10,7 +10,8 @@
         "start": "remix-serve ./build/server/nodejs-eyJydW50aW1lIjoibm9kZWpzIn0/index.js",
         "sync:skills": "node scripts/sync-skills.mjs",
         "typecheck": "tsc",
-        "test": "vitest run"
+        "test": "vitest run",
+        "ship": "node scripts/ship.mjs"
     },
     "dependencies": {
         "@chenglou/pretext": "^0.0.3",

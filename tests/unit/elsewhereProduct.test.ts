@@ -555,3 +555,28 @@ describe("home cover panes", () => {
     );
   });
 });
+
+describe("ship command", () => {
+  it("pushes as umshere and uses a writable npm cache", () => {
+    const ship = readFileSync(
+      new URL("../../scripts/ship.mjs", import.meta.url),
+      "utf8"
+    );
+    const deploy = readFileSync(
+      new URL("../../docs/DEPLOY.md", import.meta.url),
+      "utf8"
+    );
+    const pkg = JSON.parse(
+      readFileSync(new URL("../../package.json", import.meta.url), "utf8")
+    );
+    expect(pkg.scripts.ship).toBe("node scripts/ship.mjs");
+    expect(ship).toContain('["auth", "token", "-u", "umshere"]');
+    expect(ship).toContain("username=umshere");
+    expect(ship).toContain("vercel");
+    expect(ship).toContain("--prod");
+    expect(ship).toContain("elsewhere-npm-cache");
+    expect(ship).not.toContain("username=heuristicsai");
+    expect(deploy).toContain("npm run ship");
+    expect(deploy).toContain("gh auth token -u umshere");
+  });
+});
