@@ -509,6 +509,10 @@ describe("live stylesheet", () => {
     expect(css).toContain(".ew-theater-folio");
     expect(css).toContain("mask-image: linear-gradient(90deg, transparent 0%, #000 32%)");
     expect(css).toContain(".ew-site-bar");
+    expect(css).toContain(".ew-frame.is-home-frame");
+    expect(css).toContain(".rp-intro-board");
+    expect(css).toContain(".rp-land-slot");
+    expect(css).toContain("contain: layout paint");
     expect(css).toContain("flex-wrap: nowrap");
     expect(css).toContain(".ew-theater-rail .rp-intent");
     expect(css).not.toContain(".ew-site-bar:has(.ew-theater-rail .rp-intent)");
@@ -527,5 +531,27 @@ describe("live stylesheet", () => {
     expect(stationRow).toContain("sanitizeArtworkUrl");
     expect(stationRow).toContain("rp-art-mark");
     expect(stationRow).not.toContain("▶");
+  });
+});
+
+describe("home cover panes", () => {
+  it("keeps the intro board and globe as independent shells", () => {
+    const home = readFileSync(
+      new URL("../../app/routes/_index.tsx", import.meta.url),
+      "utf8"
+    );
+    const root = readFileSync(
+      new URL("../../app/root.tsx", import.meta.url),
+      "utf8"
+    );
+    expect(root).toContain("is-home-frame");
+    expect(root).toContain("is-home");
+    expect(home).toContain('className="rp-intro-board"');
+    expect(home).toContain('className="rp-land-slot"');
+    expect(home).toContain('className="rp-intel-slot"');
+    expect(home).not.toContain("scrollIntoView");
+    expect(home).toMatch(
+      /className=\{`ew-cover\$\{arrivalCity \? " ew-seam-city" : ""\}`\}\s*>/
+    );
   });
 });

@@ -164,12 +164,20 @@ export default function App() {
   }, []);
 
   const onTheater = location.pathname === "/listen";
+  const onHome = location.pathname === "/";
+  const onShell = onTheater || onHome;
 
   return (
     <Document>
       <>
         <SiteSeekProvider>
-        <div className={onTheater ? "ew-frame is-theater-frame" : undefined}>
+        <div
+          className={
+            onShell
+              ? `ew-frame${onTheater ? " is-theater-frame" : " is-home-frame"}`
+              : undefined
+          }
+        >
         <SiteBar />
         {isNavigating && (
           <div className="ew-passage-bar" aria-hidden="true">
@@ -179,11 +187,13 @@ export default function App() {
 
         <div
           key={location.pathname}
-          className={`ew-page w-full${onTheater ? " is-theater" : ""}`}
+          className={`ew-page w-full${onTheater ? " is-theater" : ""}${onHome ? " is-home" : ""}`}
           style={{
             paddingBottom: onTheater
               ? "var(--player-dock-clearance, 0px)"
-              : "calc(var(--player-dock-clearance, 0px) + 1.5rem)",
+              : onHome
+                ? "var(--player-dock-clearance, 88px)"
+                : "calc(var(--player-dock-clearance, 0px) + 1.5rem)",
           }}
         >
           <Outlet />

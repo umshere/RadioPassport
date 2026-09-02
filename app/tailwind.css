@@ -45,6 +45,7 @@
     --ew-lift: 0 -16px 48px rgb(0 0 0 / .45);
     --ew-ether-line: rgba(122, 168, 168, 0.55);
     --ew-settle: cubic-bezier(.22, 1, .36, 1);
+    --player-dock-clearance: 88px;
   }
 
   :root[data-atmosphere="day"] {
@@ -90,6 +91,12 @@
     --ew-ether-line: rgba(63, 122, 118, 0.55);
   }
 
+  @media (max-width: 960px) {
+    :root {
+      --player-dock-clearance: 124px;
+    }
+  }
+
   body {
     @apply antialiased font-sans;
     text-rendering: optimizeLegibility;
@@ -114,11 +121,12 @@
   .text-ether { color: var(--ew-ether); }
 
   .rp-home {
+    --player-dock-clearance: 88px;
     min-height: 100svh;
     background: var(--ew-ink);
     color: var(--ew-bone);
     font-family: "Schibsted Grotesk", "Sora", sans-serif;
-    padding-bottom: calc(var(--player-dock-clearance, 0px) + 1rem);
+    padding-bottom: calc(var(--player-dock-clearance) + 1rem);
     transition: background-color .28s ease, color .28s ease;
   }
   .rp-eyebrow, .rp-telemetry {
@@ -241,16 +249,55 @@
   .rp-stage {
     display: grid;
     grid-template-columns: minmax(340px, 400px) 1fr;
+    grid-template-rows: minmax(0, 1fr);
     min-height: calc(100svh - 56px);
     max-width: 1440px;
+    width: 100%;
     margin: 0 auto;
+    min-width: 0;
+    overflow: hidden;
   }
   .rp-intro {
     display: flex;
     flex-direction: column;
-    justify-content: center;
-    padding: 40px 32px 48px;
+    justify-content: flex-start;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+    padding: 40px 32px 24px;
     border-right: 1px solid var(--ew-rule);
+  }
+  .rp-intro-board {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-height: 0;
+    overflow: auto;
+    overscroll-behavior: contain;
+  }
+  .rp-land-slot {
+    min-height: 92px;
+  }
+  .rp-intel-slot {
+    min-height: 0;
+    max-height: 5.8em;
+    overflow: hidden;
+  }
+  .rp-intel-slot .ew-caption {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .rp-intro .ew-track,
+  .rp-intro .rp-lede {
+    min-height: 1.55em;
+  }
+  .rp-intro h1 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
   }
   /* Horizon row: the local-time readout on the left, the room-hour pin on the
      right — one instrument line answering "what hour is it here?" */
@@ -513,9 +560,10 @@
   }
   #live-board { scroll-margin-top: 72px; }
   .rp-station-list {
+    flex: 1 1 auto;
     margin-top: 14px;
-    max-height: min(520px, 48vh);
-    overflow: auto;
+    min-height: 0;
+    overflow: visible;
     padding-right: 4px;
   }
   .rp-station {
@@ -743,11 +791,13 @@
   }
 
   .rp-globe-side {
-    position: sticky;
-    top: 56px;
-    align-self: start;
-    height: calc(100svh - 56px - var(--player-dock-clearance, 0px));
-    min-height: calc(100svh - 56px - var(--player-dock-clearance, 0px));
+    position: relative;
+    align-self: stretch;
+    min-width: 0;
+    min-height: 0;
+    height: auto;
+    overflow: hidden;
+    contain: layout paint;
     background: var(--ew-ink);
     transition: background-color .28s ease;
   }
@@ -1297,7 +1347,8 @@
 
   @media (max-width: 960px) {
     .rp-home {
-      padding-bottom: calc(var(--player-dock-clearance, 96px) + env(safe-area-inset-bottom, 0px));
+      --player-dock-clearance: 124px;
+      padding-bottom: calc(var(--player-dock-clearance) + env(safe-area-inset-bottom, 0px));
     }
     .rp-home-header {
       position: relative;
@@ -1339,11 +1390,18 @@
     .ew-atmosphere-icon.is-day .ew-atmosphere-icon__track i { top: -1px; }
     .rp-passport-button { margin-left: auto; padding: 0 10px; }
     .rp-surprise { padding: 0 8px; letter-spacing: .1em; }
-    .rp-stage { display: flex; flex-direction: column; min-height: 0; }
+    .rp-stage {
+      display: flex;
+      flex: 1 1 auto;
+      flex-direction: column;
+      min-height: 0;
+      overflow: hidden;
+    }
     .rp-globe-side {
       order: -1;
       position: relative;
       top: auto;
+      flex: none;
       align-self: stretch;
       height: auto;
       min-height: 0;
@@ -1359,22 +1417,32 @@
       min-height: 180px;
     }
     .rp-home.is-seeking #live-board {
-      scroll-margin-top: 118px;
+      scroll-margin-top: 0;
     }
     .ew-cover {
       position: relative;
       left: auto;
       right: auto;
       bottom: auto;
+      min-height: 4.75rem;
       padding: 4px 16px 0;
     }
-    .ew-cover .ew-coverline { font-size: clamp(28px, 9vw, 36px); }
+    .ew-cover .ew-coverline {
+      overflow: hidden;
+      font-size: clamp(28px, 9vw, 36px);
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
     .ew-globe-tip { display: none; }
     .rp-intro {
       display: flex;
+      flex: 1 1 auto;
+      min-height: 0;
+      overflow: hidden;
       border-right: 0;
-      padding: 10px 16px 28px;
+      padding: 10px 16px 16px;
     }
+    .rp-land-slot { min-height: 76px; }
     .rp-intro > .rp-eyebrow:first-of-type,
     .rp-intro > h1,
     .rp-horizon-row .rp-eyebrow.text-ether {
@@ -1391,7 +1459,7 @@
     .ew-horizon { gap: 12px; }
     .ew-hours { max-width: none; }
     .ew-atlas { margin-left: 0; padding-left: 10px; }
-    .rp-station-list { max-height: none; }
+    .rp-station-list { max-height: none; overflow: visible; }
     .rp-station { min-height: 64px; }
     .rp-overlay {
       padding: calc(56px + env(safe-area-inset-top, 0px)) 16px calc(24px + env(safe-area-inset-bottom, 0px));
@@ -1535,15 +1603,18 @@
   }
 }
 
-/* Theater is an app shell: site bar + dock stay, only the letter scrolls.
+/* Theater and home are app shells: site bar + dock stay. Theater only
+   the letter scrolls; home keeps the intro board and globe as two panes.
    Kept outside @layer with the site bar (same drop gremlin). */
-.ew-frame.is-theater-frame {
+.ew-frame.is-theater-frame,
+.ew-frame.is-home-frame {
   display: flex;
   flex-direction: column;
   height: 100dvh;
   overflow: hidden;
 }
-.ew-frame.is-theater-frame .ew-page.is-theater {
+.ew-frame.is-theater-frame .ew-page.is-theater,
+.ew-frame.is-home-frame .ew-page.is-home {
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
@@ -1551,7 +1622,16 @@
   min-height: 0;
   overflow: hidden;
 }
-.ew-page.is-theater .ew-theater {
+.ew-page.is-theater .ew-theater,
+.ew-page.is-home .rp-home {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  padding-bottom: 0;
+}
+.ew-page.is-home .rp-stage {
   flex: 1 1 auto;
   min-height: 0;
 }

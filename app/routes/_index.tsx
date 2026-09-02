@@ -594,20 +594,6 @@ export default function Index() {
     unreachable: catalogError,
   });
 
-  useEffect(() => {
-    if (!isSeeking || catalogLoading) return;
-    const board = document.getElementById("live-board");
-    if (!board) return;
-    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const top = board.getBoundingClientRect().top;
-    if (top < 72 || top > window.innerHeight * 0.58) {
-      board.scrollIntoView({
-        behavior: reduce ? "auto" : "smooth",
-        block: "start",
-      });
-    }
-  }, [catalogLoading, isSeeking, liveFiltered.length]);
-
   return (
     <main className={`rp-home ${locatorShrunk ? "is-seeking" : ""}`}>
       <SiteSeekPortal>
@@ -669,37 +655,41 @@ export default function Index() {
           ) : (
             <p className="rp-lede">{BRAND.promise}</p>
           )}
-          {!seekingCover && coverIntel.dispatchBody ? (
-            <p className="ew-caption">{coverIntel.dispatchBody}</p>
-          ) : null}
-          {!seekingCover && coverIntel.facts[0] ? (
-            <p className="mt-3 max-w-[36ch] text-sm text-dust">
-              <span className="rp-eyebrow mr-2 text-foil">
-                {coverIntel.facts[0].label}
-              </span>
-              {coverIntel.facts[0].value}
-            </p>
-          ) : !seekingCover && coverIntel.summary ? (
-            <p className="ew-caption">{coverIntel.summary}</p>
-          ) : null}
-          {!isPlaying && arrivalStation && arrival.ctaKind !== "none" ? (
-            <button
-              type="button"
-              className="ew-land"
-              onClick={() =>
-                play(
-                  nowPlaying || continueStation || arrivalStation,
-                  selectedPool,
-                  arrival.ctaKind === "continue" ? "Continue" : "Land here"
-                )
-              }
-            >
-              <span className="ew-land-kicker">
-                {arrival.ctaKind === "continue" ? "EW · Re-entry" : "EW · Arrival"}
-              </span>
-              <span className="ew-land-city">{arrival.cta}</span>
-            </button>
-          ) : null}
+          <div className="rp-intel-slot">
+            {!seekingCover && coverIntel.dispatchBody ? (
+              <p className="ew-caption">{coverIntel.dispatchBody}</p>
+            ) : null}
+            {!seekingCover && coverIntel.facts[0] ? (
+              <p className="mt-3 max-w-[36ch] text-sm text-dust">
+                <span className="rp-eyebrow mr-2 text-foil">
+                  {coverIntel.facts[0].label}
+                </span>
+                {coverIntel.facts[0].value}
+              </p>
+            ) : !seekingCover && coverIntel.summary ? (
+              <p className="ew-caption">{coverIntel.summary}</p>
+            ) : null}
+          </div>
+          <div className="rp-land-slot">
+            {!isPlaying && arrivalStation && arrival.ctaKind !== "none" ? (
+              <button
+                type="button"
+                className="ew-land"
+                onClick={() =>
+                  play(
+                    nowPlaying || continueStation || arrivalStation,
+                    selectedPool,
+                    arrival.ctaKind === "continue" ? "Continue" : "Land here"
+                  )
+                }
+              >
+                <span className="ew-land-kicker">
+                  {arrival.ctaKind === "continue" ? "EW · Re-entry" : "EW · Arrival"}
+                </span>
+                <span className="ew-land-city">{arrival.cta}</span>
+              </button>
+            ) : null}
+          </div>
           <div className="ew-horizon">
             <div className="ew-hours">
               <i className="ew-horizon-line" aria-hidden="true" />
@@ -758,79 +748,81 @@ export default function Index() {
               })}
             </div>
           ) : null}
-          <div
-            className="mt-7 flex items-center justify-between"
-            id="live-board"
-          >
-            <span
-              className={`rp-eyebrow ${isSeeking ? "text-ether" : ""}`}
-              role="status"
-              aria-live="polite"
+          <div className="rp-intro-board">
+            <div
+              className="mt-7 flex items-center justify-between"
+              id="live-board"
             >
-              <i className="rp-live-dot" /> {boardLabel}
-            </span>
-            {mixLabel ? (
-              <span className="rp-eyebrow text-foil">{mixLabel}</span>
-            ) : null}
-          </div>
-          {aiStatus === "error" && listening.exploreError && (
-            <div className="mt-2" role="alert">
-              <p className="text-xs text-dust">{listening.exploreError}</p>
-              <button
-                type="button"
-                className="rp-text-button mt-2"
-                onClick={() => void requestAiWorld()}
+              <span
+                className={`rp-eyebrow ${isSeeking ? "text-ether" : ""}`}
+                role="status"
+                aria-live="polite"
               >
-                Try the mix again →
-              </button>
+                <i className="rp-live-dot" /> {boardLabel}
+              </span>
+              {mixLabel ? (
+                <span className="rp-eyebrow text-foil">{mixLabel}</span>
+              ) : null}
             </div>
-          )}
-          <div className="rp-station-list" aria-busy={catalogLoading}>
-            {catalogLoading && isSeeking
-              ? [0, 1, 2].map((slot) => (
-                <div
-                  key={`pending-${slot}`}
-                  className="rp-station is-pending"
-                  aria-hidden="true"
-                />
-              ))
-              : liveFiltered
-                .slice(0, isSeeking ? 32 : 8)
-                .map((station) => (
-                  <StationRow
-                    key={station.uuid}
-                    station={station}
-                    active={nowPlaying?.uuid === station.uuid && isPlaying}
-                    favorite={favorites.includes(station.uuid)}
-                    onPlay={() => play(station)}
-                    onFavorite={() => toggleFavorite(station.uuid, station)}
-                  />
-                ))}
-          </div>
-          {liveFiltered.length === 0 && !catalogLoading && (
-            <div className="py-8" role="status">
-              <p className="text-sm text-dust">{coverEmpty.message}</p>
-              <div className="mt-3 flex flex-wrap gap-2">
-                {coverEmpty.actions.map((action) => (
-                  <button
-                    type="button"
-                    key={action.id}
-                    className={action.id === "atlas" ? "ew-atlas" : "rp-chip"}
-                    onClick={() => {
-                      if (action.id === "surprise") void requestAiWorld();
-                      if (action.id === "atlas") setAtlas(true);
-                      if (action.id === "clear-search") setQuery("");
-                      if (action.id === "clear-hour") setHour(null);
-                      if (action.id === "clear-place") setPlace(null);
-                      if (action.id === "retry-catalog") retryCatalog();
-                    }}
-                  >
-                    {action.label}
-                  </button>
-                ))}
+            {aiStatus === "error" && listening.exploreError && (
+              <div className="mt-2" role="alert">
+                <p className="text-xs text-dust">{listening.exploreError}</p>
+                <button
+                  type="button"
+                  className="rp-text-button mt-2"
+                  onClick={() => void requestAiWorld()}
+                >
+                  Try the mix again →
+                </button>
               </div>
+            )}
+            <div className="rp-station-list" aria-busy={catalogLoading}>
+              {catalogLoading && isSeeking
+                ? [0, 1, 2].map((slot) => (
+                  <div
+                    key={`pending-${slot}`}
+                    className="rp-station is-pending"
+                    aria-hidden="true"
+                  />
+                ))
+                : liveFiltered
+                  .slice(0, isSeeking ? 32 : 8)
+                  .map((station) => (
+                    <StationRow
+                      key={station.uuid}
+                      station={station}
+                      active={nowPlaying?.uuid === station.uuid && isPlaying}
+                      favorite={favorites.includes(station.uuid)}
+                      onPlay={() => play(station)}
+                      onFavorite={() => toggleFavorite(station.uuid, station)}
+                    />
+                  ))}
             </div>
-          )}
+            {liveFiltered.length === 0 && !catalogLoading && (
+              <div className="py-8" role="status">
+                <p className="text-sm text-dust">{coverEmpty.message}</p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {coverEmpty.actions.map((action) => (
+                    <button
+                      type="button"
+                      key={action.id}
+                      className={action.id === "atlas" ? "ew-atlas" : "rp-chip"}
+                      onClick={() => {
+                        if (action.id === "surprise") void requestAiWorld();
+                        if (action.id === "atlas") setAtlas(true);
+                        if (action.id === "clear-search") setQuery("");
+                        if (action.id === "clear-hour") setHour(null);
+                        if (action.id === "clear-place") setPlace(null);
+                        if (action.id === "retry-catalog") retryCatalog();
+                      }}
+                    >
+                      {action.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
         </section>
         <section className="rp-globe-side">
           <GalaxyBackdrop />
@@ -849,13 +841,22 @@ export default function Index() {
           </div>
           <div
             className={`ew-cover${arrivalCity ? " ew-seam-city" : ""}`}
-            key={seekingCover ? "seeking" : arrivalStation?.uuid ?? arrivalCity}
           >
             <i className="ew-cover-rule" />
-            <p className="ew-coverline ew-arrive">
+            <p
+              className="ew-coverline ew-arrive"
+              key={seekingCover ? "seeking" : arrivalStation?.uuid ?? arrivalCity}
+            >
               {seekingCover ? query.trim() : arrivalCity}
             </p>
-            <p className="rp-eyebrow ew-arrive ew-arrive-2">
+            <p
+              className="rp-eyebrow ew-arrive ew-arrive-2"
+              key={
+                seekingCover
+                  ? `seek-meta-${query}`
+                  : `cover-meta-${arrivalStation?.uuid ?? arrivalCity}`
+              }
+            >
               {seekingCover
                 ? seekingBoardLabel(
                   query,
