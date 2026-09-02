@@ -55,7 +55,7 @@ AI never sits on the audio path. Gateway timeouts use `Promise.race`, not `Abort
 
 Radio Browser via `rbFetchJson` + `normalizeStations`. Some streams fail CORS or mixed content. That is the catalog, not a mock globe.
 
-Search catalogs often omit `geo_lat` / `geo_long`. `buildGlobePlaces` keeps those stations on the earth using a country center (ISO code). Those centers are never written onto `Station`. Solar hour and stamps still need a real coordinate.
+Search catalogs often omit `geo_lat` / `geo_long`. `buildGlobePlaces` keeps those stations on the earth using a country center (ISO code), then spreads country-only rows so the globe is the list, not one blob per country. Those centers are never written onto `Station`. Solar hour and stamps still need a real coordinate. The globe pool is the visible list (`liveFiltered`), capped.
 
 ## UI modules
 

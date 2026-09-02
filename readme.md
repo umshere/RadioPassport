@@ -28,8 +28,8 @@ Model is locked to **DeepSeek V4 Flash** (cost). Radio Browser is the catalog. S
 ## What you can do
 
 - **Land here** — start a real station. The globe turns to face that city.
-- Hover a dot — city, region, lead station, live count. Click — rotate, then play.
-- Type or speak *Lisbon at dusk* / *Malayalam night* / *tamil*. The list and the globe both update. Missing station geo lands on that country.
+- Hover a dot — city, region, that list station. Click — play that same row.
+- Type or speak *Lisbon at dusk* / *Malayalam night* / *tamil*. The globe is the list, drawn. Missing station geo lands near that country.
 - Surprise asks the model for a mix.
 - Filter by solar hour (the city's clock, not yours).
 - Open Atlas, a country, or your passport. Playback does not stop.

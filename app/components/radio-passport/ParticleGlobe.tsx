@@ -25,6 +25,8 @@ export const GLOBE_HIT_HOLD = 52;
 export const GLOBE_HIT_TOUCH = 48;
 export const GLOBE_TURN_MS = 520;
 export const GLOBE_SPIN_RAD_PER_SEC = 0.055;
+/** Same stations as the list, capped so the earth stays readable. */
+export const GLOBE_LIST_CAP = 36;
 
 export function shouldAnimateGlobe(hidden: boolean, reducedMotion: boolean) {
   return !hidden && !reducedMotion;
@@ -289,7 +291,7 @@ export function ParticleGlobe({
           ctx.stroke();
         }
       }
-      livePlaces.slice(0, 36).forEach((p) => {
+      livePlaces.slice(0, GLOBE_LIST_CAP).forEach((p) => {
         const point = projectPlace(p, rotation, cx, cy, r);
         if (!point.visible) return;
         const aimed = hoverId === p.id;
@@ -483,7 +485,7 @@ export function ParticleGlobe({
           }
         }}
         className={`rp-globe${hoveredId ? " is-aimed" : ""}`}
-        aria-label={`Interactive globe with ${places.length} live cities. Hover or tap a dot to read the place, then click to land.`}
+        aria-label={`Interactive globe with ${places.length} live stations from the list. Hover or tap a dot to read the station, then click to play.`}
         role="application"
         tabIndex={0}
       />

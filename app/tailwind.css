@@ -264,8 +264,11 @@
     min-width: 0;
     min-height: 0;
     overflow: hidden;
-    padding: 40px 32px 24px;
+    padding: 28px 32px 24px;
     border-right: 1px solid var(--ew-rule);
+  }
+  .rp-intro > :not(.rp-intro-board) {
+    flex-shrink: 0;
   }
   .rp-intro-board {
     display: flex;
@@ -1443,8 +1446,6 @@
       padding: 10px 16px 16px;
     }
     .rp-land-slot { min-height: 76px; }
-    .rp-intro > .rp-eyebrow:first-of-type,
-    .rp-intro > h1,
     .rp-horizon-row .rp-eyebrow.text-ether {
       display: none;
     }

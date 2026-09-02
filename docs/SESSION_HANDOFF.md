@@ -63,8 +63,8 @@ Gotchas discovered this session:
 ## What shipped (live product)
 
 - Home `/`: coverline, night-earth globe, Land here / Continue, solar hours, same-hour cities
-- Globe is **not a mock**: real Radio Browser cities. HTML tooltip = city, region, country code, lead station, live count. Click rotates the earth to face that longitude, then plays the strongest station there.
-- Search (any language, tag, city — not Tamil-only) keeps the globe live. Missing Radio Browser geo falls back to the country center. Globe faces the densest match. Contract: `app/components/radio-passport/globePlaces.ts`.
+- Globe is **the list, drawn** — same stations as the board, capped (`GLOBE_LIST_CAP`). HTML tooltip = city, region, country code, that station. Click plays that row; it does not filter the list to a city. Missing Radio Browser geo falls back to the country center, then spreads so many India rows are many dots. Contract: `app/components/radio-passport/globePlaces.ts`.
+- Search (any language, tag, city — not Tamil-only) keeps the globe live while the catalog arrives, then the globe becomes the search list.
 - Intent bar + voice + Surprise mix, in the site bar on home
 - `/listen` theater: constellation is one night with the letter (desktop sky bleeds under the type and fades into ink; phone-first fixed strip) and a knowledge graph on a seeded galaxy river. Seek lives in the site bar. Type is a letter. Honest ICY. Filing keeps the sky inhabited (disc + place/track names). After filing, one deepening pass may add stars. Faces cap at 14; each star keeps at most 3 threads so a filed film track stays a figure, not crumpled foil. The letter sits at four lines; a foil `more` opens the rest. The page is an app shell (site bar + dock); only the letter scrolls — the sky does not shrink. Home keeps the same night behind the globe (`GalaxyBackdrop`). Station rows use the station plate or the Elsewhere mark — never a clipart play.
 - Atlas + country drill-down overlays

@@ -37,6 +37,7 @@ import {
   GLOBE_HIT_ACQUIRE,
   GLOBE_HIT_HOLD,
   GLOBE_HIT_TOUCH,
+  GLOBE_LIST_CAP,
   nearestVisiblePlace,
   rotationAtTurn,
   shortestAngle,
@@ -48,6 +49,7 @@ import {
   countryCentroid,
   globeFocusId,
   globeStationPool,
+  spreadCountryOffset,
   stationGlobeCoords,
 } from "~/components/radio-passport/globePlaces";
 import { getGatewayConfig } from "~/services/ai/gateway";
@@ -295,15 +297,28 @@ describe("Elsewhere globe intelligence", () => {
       place: null,
       stampedKeys: new Set(),
     });
-    expect(places.map((place) => place.country).sort()).toEqual([
-      "India",
-      "Malaysia",
-      "Sri Lanka",
+    expect(places.map((place) => place.id)).toEqual([
+      "in-1",
+      "in-2",
+      "my-1",
+      "lk-1",
     ]);
-    const india = places.find((place) => place.country === "India");
-    expect(india?.count).toBe(2);
-    expect(india?.latitude).toBeCloseTo(20.59);
-    expect(india?.longitude).toBeCloseTo(78.96);
+    expect(places.map((place) => place.stationName)).toEqual([
+      "90s-tamil-melodies",
+      "Radio Paramankurichi Tamil",
+      "Jei FM Klang Tamil",
+      "Sooriyan FM",
+    ]);
+    const india = places.filter((place) => place.country === "India");
+    expect(india).toHaveLength(2);
+    expect(india[0]?.count).toBe(1);
+    expect(india[0]?.latitude).not.toBeCloseTo(india[1]?.latitude ?? 0, 3);
+    for (const place of india) {
+      expect(place.latitude).toBeGreaterThan(15);
+      expect(place.latitude).toBeLessThan(26);
+      expect(place.longitude).toBeGreaterThan(73);
+      expect(place.longitude).toBeLessThan(84);
+    }
     expect(places[0]?.country).toBe("India");
   });
 
@@ -329,18 +344,74 @@ describe("Elsewhere globe intelligence", () => {
     expect(globeStationPool("tamil", [], world)).toBe(world);
     expect(globeStationPool("tamil", tamilCatalogStub(), world)).toHaveLength(1);
     expect(globeStationPool("", [], world)).toBe(world);
+    const list = tamilCatalogStub();
+    expect(globeStationPool("tamil", tamilCatalogStub(), world, list)).toBe(
+      list
+    );
   });
 
-  it("turns the globe toward the densest search country once the catalog lands", () => {
+  it("turns the globe toward a list station once the catalog lands", () => {
     const places = buildGlobePlaces(tamilCatalogStub(), {
       nowPlaying: null,
       place: null,
       stampedKeys: new Set(),
     });
+    expect(globeFocusId(null, "tamil", true, places)).toBe("in-1");
+    expect(globeFocusId(null, "tamil", false, places)).toBeNull();
     expect(
-      globeFocusId(null, null, "tamil", true, places)
-    ).toBe("India:India");
-    expect(globeFocusId(null, null, "tamil", false, places)).toBeNull();
+      globeFocusId({ uuid: "in-1" }, "tamil", true, places)
+    ).toBe("in-1");
+  });
+
+  it("caps the globe to the list prefix and keeps the station on air", () => {
+    const many = Array.from({ length: GLOBE_LIST_CAP + 8 }, (_, index) => ({
+      ...tamilCatalogStub()[0],
+      uuid: `in-${index}`,
+      name: `Tamil ${index}`,
+      clickCount: index,
+    })) as Station[];
+    const playing = many[many.length - 1] as Station;
+    const places = buildGlobePlaces(many, {
+      nowPlaying: playing,
+      place: null,
+      stampedKeys: new Set(),
+    });
+    expect(places).toHaveLength(GLOBE_LIST_CAP);
+    expect(places[0]?.id).toBe("in-0");
+    expect(places.some((place) => place.id === playing.uuid)).toBe(true);
+    expect(places.filter((place) => place.playing)).toHaveLength(1);
+  });
+
+  it("leaves true station coordinates unjittered", () => {
+    expect(spreadCountryOffset("x", "station")).toEqual({
+      latitude: 0,
+      longitude: 0,
+    });
+    const lisbon = {
+      uuid: "lisbon",
+      name: "Antena 1",
+      country: "Portugal",
+      countryCode: "PT",
+      latitude: 38.72,
+      longitude: -9.14,
+      url: "",
+      streamUrl: null,
+      favicon: "",
+      state: null,
+      language: null,
+      tags: null,
+      bitrate: 0,
+      codec: null,
+      city: "Lisbon",
+    } as Station;
+    const [place] = buildGlobePlaces([lisbon], {
+      nowPlaying: null,
+      place: null,
+      stampedKeys: new Set(),
+    });
+    expect(place?.id).toBe("lisbon");
+    expect(place?.latitude).toBeCloseTo(38.72);
+    expect(place?.longitude).toBeCloseTo(-9.14);
   });
 });
 
@@ -549,6 +620,8 @@ describe("home cover panes", () => {
     expect(home).toContain('className="rp-intro-board"');
     expect(home).toContain('className="rp-land-slot"');
     expect(home).toContain('className="rp-intel-slot"');
+    expect(home).not.toContain("{arrival.headline}");
+    expect(home).toContain('className="ew-coverline ew-arrive"');
     expect(home).not.toContain("scrollIntoView");
     expect(home).toMatch(
       /className=\{`ew-cover\$\{arrivalCity \? " ew-seam-city" : ""\}`\}\s*>/

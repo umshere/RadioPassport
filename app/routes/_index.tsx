@@ -268,7 +268,12 @@ export default function Index() {
     `${query}|${hour ?? ""}|${place ?? ""}|${listening.listeningMode}`
   );
 
-  const globeStations = globeStationPool(query, catalog, initialStations);
+  const globeStations = globeStationPool(
+    query,
+    catalog,
+    initialStations,
+    liveFiltered
+  );
   const stampedKeys = useMemo(
     () => new Set(stamps.map((stamp) => `${stamp.country}:${stamp.city}`)),
     [stamps]
@@ -479,17 +484,8 @@ export default function Index() {
     (id: string) => {
       const found = places.find((item) => item.id === id);
       if (!found) return;
-      setPlace(found.name);
-      setHour(null);
-      const pool = globeStations.filter(
-        (station) =>
-          stationLocation(station) === found.name &&
-          station.country === found.country
-      );
-      const next = [...pool].sort(
-        (a, b) => (b.clickCount || 0) - (a.clickCount || 0)
-      )[0];
-      if (next) play(next, pool.length ? pool : selectedPool, found.name);
+      const next = globeStations.find((station) => station.uuid === id);
+      if (next) play(next, selectedPool, found.stationName);
     },
     [globeStations, places, play, selectedPool]
   );
@@ -622,10 +618,6 @@ export default function Index() {
       </SiteSeekPortal>
       <div className="rp-stage">
         <section className="rp-intro">
-          <p className="rp-eyebrow text-foil">{BRAND.eyebrow}</p>
-          <h1 className="ew-arrive" key={nowPlaying?.uuid ?? "cover"}>
-            {arrival.headline}
-          </h1>
           {/* The horizon row: the room-hour pin stands on the same line as the
               local-time readout it answers, directly above the four-hour
               filter it mirrors. The pin stays mounted even when the readout
@@ -831,7 +823,6 @@ export default function Index() {
               places={places}
               focusId={globeFocusId(
                 nowPlaying,
-                nowPlaying ? stationLocation(nowPlaying) : null,
                 query,
                 catalog.length > 0,
                 places
@@ -843,12 +834,12 @@ export default function Index() {
             className={`ew-cover${arrivalCity ? " ew-seam-city" : ""}`}
           >
             <i className="ew-cover-rule" />
-            <p
+            <h1
               className="ew-coverline ew-arrive"
               key={seekingCover ? "seeking" : arrivalStation?.uuid ?? arrivalCity}
             >
               {seekingCover ? query.trim() : arrivalCity}
-            </p>
+            </h1>
             <p
               className="rp-eyebrow ew-arrive ew-arrive-2"
               key={

@@ -15,9 +15,9 @@ Elsewhere is one loop: **land → intent → tune → inhabit → stamp → next
 | Action | Result |
 |---|---|
 | Land here | Plays the featured (or last) station. Globe turns to face it. |
-| Hover / tap a globe dot | Card: city, region, country code, lead station, live count. |
-| Click a globe dot | Globe rotates to that longitude, then plays the strongest station there. |
-| Intent (short query) | Catalog search. The bar says Searching, then N live. The list below is titled with the query. The globe stays live while the catalog arrives, then turns to the densest matching country — stations without Radio Browser coordinates still land on that country. |
+| Hover / tap a globe dot | Card: city, region, country code, that list station. |
+| Click a globe dot | Plays that same list row. Globe rotates to face it. Does not filter the list. |
+| Intent (short query) | Catalog search. The bar says Searching, then N live. The list below is titled with the query. The globe is that list, drawn (capped). It stays the world globe while the catalog arrives. Stations without Radio Browser coordinates still land near that country, spread so they do not stack as one blob. |
 | Intent (sentence) | `POST /api/ai/interpret`. May fire a mix. |
 | Surprise | AI mix, then autotune the first station. |
 | Solar hour chip | Filters by the city's local hour. Does not stop audio. |
