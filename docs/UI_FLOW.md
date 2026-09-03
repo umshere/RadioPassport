@@ -8,7 +8,7 @@ Elsewhere is one loop: **land → intent → tune → inhabit → stamp → next
 2. **Land here** (or **Continue** if this browser has a last city) starts audio. Browsers block silent autoplay — the tap is the gesture.
 3. Place identity fills: city, country, local clock from longitude, solar hour.
 4. ICY title if the station sends one. Otherwise: *This station sends no track titles.*
-5. Intent bar is in the site bar: type, speak, or Surprise.
+5. Intent bar is in the site bar: type, speak, or Surprise. On a phone the field sits on its own row so it stays tappable; the list is the page, not the dispatch.
 
 ## Primary actions
 

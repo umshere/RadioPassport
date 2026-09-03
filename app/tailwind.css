@@ -281,6 +281,9 @@
   .rp-land-slot {
     min-height: 92px;
   }
+  .rp-intro-copy {
+    flex-shrink: 0;
+  }
   .rp-intel-slot {
     min-height: 0;
     max-height: 5.8em;
@@ -1394,30 +1397,34 @@
     .rp-passport-button { margin-left: auto; padding: 0 10px; }
     .rp-surprise { padding: 0 8px; letter-spacing: .1em; }
     .rp-stage {
+      position: relative;
       display: flex;
       flex: 1 1 auto;
       flex-direction: column;
       min-height: 0;
-      overflow: hidden;
+      overflow: auto;
+      overscroll-behavior: contain;
     }
     .rp-globe-side {
       order: -1;
-      position: relative;
-      top: auto;
+      position: sticky;
+      top: 0;
+      z-index: 2;
       flex: none;
       align-self: stretch;
       height: auto;
       min-height: 0;
+      background: var(--ew-ink);
     }
     .rp-globe-wrap {
       position: relative;
       width: 100%;
-      height: 180px;
-      min-height: 180px;
+      height: 148px;
+      min-height: 148px;
     }
     .rp-home.is-seeking .rp-globe-wrap {
-      height: 180px;
-      min-height: 180px;
+      height: 120px;
+      min-height: 120px;
     }
     .rp-home.is-seeking #live-board {
       scroll-margin-top: 0;
@@ -1441,15 +1448,31 @@
       display: flex;
       flex: 1 1 auto;
       min-height: 0;
-      overflow: hidden;
+      overflow: visible;
       border-right: 0;
-      padding: 10px 16px 16px;
+      padding: 8px 16px 16px;
     }
-    .rp-land-slot { min-height: 76px; }
+    .rp-horizon-row {
+      position: absolute;
+      top: 8px;
+      right: 16px;
+      left: auto;
+      z-index: 4;
+      height: auto;
+      margin: 0;
+      min-height: 0;
+    }
     .rp-horizon-row .rp-eyebrow.text-ether {
       display: none;
     }
-    .rp-intro .ew-land { width: 100%; margin-top: 4px; }
+    .rp-intro-copy {
+      display: none;
+    }
+    .rp-home.is-landed .rp-land-slot {
+      display: none;
+    }
+    .rp-land-slot { min-height: 0; }
+    .rp-intro .ew-land { width: 100%; margin-top: 0; }
     .rp-chip-list {
       flex-wrap: wrap;
       width: calc(100% + 32px);
@@ -1460,6 +1483,11 @@
     .ew-horizon { gap: 12px; }
     .ew-hours { max-width: none; }
     .ew-atlas { margin-left: 0; padding-left: 10px; }
+    .rp-intro-board {
+      flex: 1 1 auto;
+      min-height: 16rem;
+      overflow: visible;
+    }
     .rp-station-list { max-height: none; overflow: visible; }
     .rp-station { min-height: 64px; }
     .rp-overlay {
@@ -1697,6 +1725,20 @@
 @media (max-width: 960px) {
   .ew-site-bar { padding-right: 16px; padding-left: 16px; gap: 12px; }
   .ew-site-bar-side { gap: 14px; }
+  /* Home: field on its own row so Listen stays tappable. Theater Seek stays one word. */
+  .ew-site-bar.is-home {
+    flex-wrap: wrap;
+    row-gap: 8px;
+    padding-bottom: 10px;
+  }
+  .ew-site-bar.is-home .ew-theater-rail {
+    order: 5;
+    flex: 1 1 100%;
+  }
+  .ew-site-bar.is-home .ew-theater-rail .rp-intent {
+    width: 100%;
+    max-width: none;
+  }
 }
 
 @media (max-width: 720px) {

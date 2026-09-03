@@ -586,6 +586,10 @@ describe("live stylesheet", () => {
     expect(css).toContain("contain: layout paint");
     expect(css).toContain("flex-wrap: nowrap");
     expect(css).toContain(".ew-theater-rail .rp-intent");
+    expect(css).toContain(".ew-site-bar.is-home");
+    expect(css).toContain(".ew-site-bar.is-home .ew-theater-rail");
+    expect(css).toContain(".rp-home.is-landed .rp-land-slot");
+    expect(css).toMatch(/\.rp-intro-board \{[\s\S]*?min-height: 16rem/);
     expect(css).not.toContain(".ew-site-bar:has(.ew-theater-rail .rp-intent)");
     expect(css).toContain(".ew-theater-well");
     expect(css).toMatch(/\.ew-theater-well[^{]*\{[^}]*min-height:\s*16\.75rem/);
@@ -618,8 +622,10 @@ describe("home cover panes", () => {
     expect(root).toContain("is-home-frame");
     expect(root).toContain("is-home");
     expect(home).toContain('className="rp-intro-board"');
+    expect(home).toContain('className="rp-intro-copy"');
     expect(home).toContain('className="rp-land-slot"');
     expect(home).toContain('className="rp-intel-slot"');
+    expect(home).toContain("is-landed");
     expect(home).not.toContain("{arrival.headline}");
     expect(home).toContain('className="ew-coverline ew-arrive"');
     expect(home).not.toContain("scrollIntoView");

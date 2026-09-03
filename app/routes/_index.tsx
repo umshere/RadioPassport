@@ -591,7 +591,11 @@ export default function Index() {
   });
 
   return (
-    <main className={`rp-home ${locatorShrunk ? "is-seeking" : ""}`}>
+    <main
+      className={`rp-home${locatorShrunk ? " is-seeking" : ""}${
+        nowPlaying ? " is-landed" : ""
+      }`}
+    >
       <SiteSeekPortal>
         <IntentBar
           value={query}
@@ -636,31 +640,33 @@ export default function Index() {
             ) : null}
             <AtmospherePin />
           </div>
-          {nowPlaying && trackLine && !seekingCover ? (
-            <p className="ew-track ew-arrive" key={trackLine}>
-              {trackLine}
-            </p>
-          ) : nowPlaying && !seekingCover ? (
-            <p className="rp-lede">
-              Live from {arrivalCity}. This station sends no track titles.
-            </p>
-          ) : (
-            <p className="rp-lede">{BRAND.promise}</p>
-          )}
-          <div className="rp-intel-slot">
-            {!seekingCover && coverIntel.dispatchBody ? (
-              <p className="ew-caption">{coverIntel.dispatchBody}</p>
-            ) : null}
-            {!seekingCover && coverIntel.facts[0] ? (
-              <p className="mt-3 max-w-[36ch] text-sm text-dust">
-                <span className="rp-eyebrow mr-2 text-foil">
-                  {coverIntel.facts[0].label}
-                </span>
-                {coverIntel.facts[0].value}
+          <div className="rp-intro-copy">
+            {nowPlaying && trackLine && !seekingCover ? (
+              <p className="ew-track ew-arrive" key={trackLine}>
+                {trackLine}
               </p>
-            ) : !seekingCover && coverIntel.summary ? (
-              <p className="ew-caption">{coverIntel.summary}</p>
-            ) : null}
+            ) : nowPlaying && !seekingCover ? (
+              <p className="rp-lede">
+                Live from {arrivalCity}. This station sends no track titles.
+              </p>
+            ) : (
+              <p className="rp-lede">{BRAND.promise}</p>
+            )}
+            <div className="rp-intel-slot">
+              {!seekingCover && coverIntel.dispatchBody ? (
+                <p className="ew-caption">{coverIntel.dispatchBody}</p>
+              ) : null}
+              {!seekingCover && coverIntel.facts[0] ? (
+                <p className="mt-3 max-w-[36ch] text-sm text-dust">
+                  <span className="rp-eyebrow mr-2 text-foil">
+                    {coverIntel.facts[0].label}
+                  </span>
+                  {coverIntel.facts[0].value}
+                </p>
+              ) : !seekingCover && coverIntel.summary ? (
+                <p className="ew-caption">{coverIntel.summary}</p>
+              ) : null}
+            </div>
           </div>
           <div className="rp-land-slot">
             {!isPlaying && arrivalStation && arrival.ctaKind !== "none" ? (

@@ -69,7 +69,7 @@ Gotchas discovered this session:
 - `/listen` theater: constellation is one night with the letter (desktop sky bleeds under the type and fades into ink; phone-first fixed strip) and a knowledge graph on a seeded galaxy river. Seek lives in the site bar. Type is a letter. Honest ICY. Filing keeps the sky inhabited (disc + place/track names). After filing, one deepening pass may add stars. Faces cap at 14; each star keeps at most 3 threads so a filed film track stays a figure, not crumpled foil. The letter sits at four lines; a foil `more` opens the rest. The page is an app shell (site bar + dock); only the letter scrolls — the sky does not shrink. Home keeps the same night behind the globe (`GalaxyBackdrop`). Station rows use the station plate or the Elsewhere mark — never a clipart play.
 - Atlas + country drill-down overlays
 - Passport stamps after **60s continuous** listen; favorites; localStorage only
-- Mobile: globe first, full-width Land here, compact dock, theater via art / Theater link
+- Mobile: globe first, intent on its own row, full-width Land here on first visit, list is the page (dispatch stays in theater), compact dock, theater via art / Theater link
 - Brand: lacquer seal + foil ring. Favicon `/elsewhere-favicon.svg`. Wordmark `/elsewhere-mark.jpg`. About colophon `/elsewhere-colophon.jpg`
 - Day / Night pin on the cover chips. Default Night. Persist `elsewhere-atmosphere`. Day is paper, not a white invert. 404 stays night.
 - Tuning overlay, old Radio Passport header/sidebar, Mantine about deck: **unmounted** (files may still exist — do not import them)
