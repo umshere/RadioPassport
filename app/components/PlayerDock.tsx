@@ -217,7 +217,7 @@ export default function PlayerDock() {
       </button>
       <button
         type="button"
-        className="rp-dock-control"
+        className="rp-dock-control rp-dock-prev"
         onClick={() => go(-1)}
         aria-label="Previous station"
       >
@@ -233,7 +233,7 @@ export default function PlayerDock() {
       </button>
       <button
         type="button"
-        className="rp-dock-control"
+        className="rp-dock-control rp-dock-next"
         onClick={() => go(1)}
         aria-label="Next station"
       >

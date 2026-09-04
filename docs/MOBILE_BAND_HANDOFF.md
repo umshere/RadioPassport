@@ -80,14 +80,24 @@ The bar becomes identity plus passport, nothing else.
 ### 1.4 Dock — mobile
 
 In the `max-width: 960px` block, on `.rp-dock`: keep artwork (44), title +
-`LIVE · <land>` sub-line, and the play disc (48). Hide `.rp-dock-control`
-(prev/next), the heart, `.ew-stamp-ring` and `.rp-theater-link` — Theater is a
-nav slot and the transport belongs to `/listen` (Phase 3). Re-show
-`.ew-dock-sub`; it currently sets `display: none` on mobile and the band has
-room for it now.
+`LIVE · <land>` sub-line, prev and next at 44, and the play disc (48). Hide the
+heart, `.ew-stamp-ring` and `.rp-theater-link` — the passport is in the bar,
+favourite is on the station row, and Theater is a nav slot, so all three were
+saying something twice. Re-show `.ew-dock-sub`; it sets `display: none` on
+mobile today and the band has room for it now.
 
-Dock height 64. With the 44px nav that is 108 — set
-`--player-dock-clearance: 108px` in the mobile block (it is 124 today).
+**Prev and next stay.** They carry `step: "next"` — the closing step of
+`ELSEWHERE_LOOP` — through `dock-prev` / `dock-next` in `productFlow.ts`, and
+the dock is the only surface that offers it on a phone. Dropping them left the
+loop with no way to close, which is the "dead icons" rule running backwards: not
+an icon without a step, but a step without a control. Under 360px prev yields
+first, since `next` is the one the loop actually names.
+
+Dock height 64. The band is the 44px nav on its own, and the dock's 64 is
+reserved only while something plays — otherwise an idle page holds open a strip
+for a dock that is not there. Set `--player-dock-clearance: 44px` in the mobile
+block and raise it to 108 under `:root:has(.rp-dock)`. **Anything positioning
+against the band reads the variable**; never hardcode 44 or 108.
 
 ### 1.5 Horizon rail — de-pill
 
@@ -167,6 +177,8 @@ knowledge lights a new seat, it never moves one the reader is looking at.
 - [ ] Bar and band are pixel-identical on `/`, `/listen`, `/about` at 390×844.
 - [ ] The bar never wraps at 320px width.
 - [ ] Every tap target ≥44px; nothing overlaps the band or the safe area.
+- [ ] Every step of `ELSEWHERE_LOOP` is reachable on a phone — `next` included.
+- [ ] Idle, the content sits flush on the nav; playing, flush on the dock.
 - [ ] On `/about` (a page with no dock content) the band still renders and the
       Room slot is current.
 - [ ] Atlas opens from the band on all three pages; `/?atlas=1` opens it on a

@@ -1916,7 +1916,11 @@ html, body {
 .rp-dock { bottom: calc(44px + env(safe-area-inset-bottom, 0px)); min-height: 64px; height: 64px; padding: 8px 10px; }
 .rp-dock-art { width: 44px; height: 44px; }
 .rp-dock-play { width: 48px; height: 48px; }
-.rp-dock .rp-dock-control, .rp-dock .rp-dock-heart, .rp-dock .ew-stamp-ring, .rp-dock .ew-dock-track { display: none; }
+.rp-dock .rp-dock-heart, .rp-dock .ew-stamp-ring, .rp-dock .ew-dock-track { display: none; }
+/* Prev and next stay. They are the loop's closing step ("next" in ELSEWHERE_LOOP,
+   carried by dock-prev / dock-next in productFlow) and the dock is the only place
+   a phone can reach it — hiding them left the loop with no way to close. */
+.rp-dock .rp-dock-control { display: grid; width: 44px; height: 44px; }
 .rp-dock .rp-theater-link { display: none !important; }
 .rp-dock .ew-dock-sub { display: block; }
 .ew-hours { display: grid; grid-template-columns: repeat(4, 1fr); flex: 1 1 auto; max-width: none; border: 0; border-top: 1px solid var(--ew-rule); border-bottom: 1px solid var(--ew-rule); border-radius: 0; background: transparent; padding: 0; }
@@ -1945,6 +1949,12 @@ html, body {
 @media (max-width: 960px) {
 :root[data-atmosphere="day"] .ew-band-nav-slot { color: #665F55; }
 :root[data-atmosphere="day"] .ew-band-nav-slot.is-current { color: #6F582D; }
+}
+
+/* Under 360px the dock cannot seat both arrows and a readable title. Prev yields
+   first; next is the one the loop actually names. */
+@media (max-width: 360px) {
+.rp-dock .rp-dock-prev { display: none; }
 }
 
 /* Theater knowledge layer — DOM buttons over the sky; keep one-line rules. */
