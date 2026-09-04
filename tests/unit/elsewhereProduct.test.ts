@@ -572,7 +572,8 @@ describe("live stylesheet", () => {
     expect(css).toContain("grid-template-columns: minmax(0, 1fr)");
     expect(css).toContain('[data-atmosphere="day"]');
     expect(css).toContain(".ew-atmosphere");
-    expect(css).toContain(".ew-atmosphere-icon");
+    expect(css).toContain(".ew-horizon-kicker");
+    expect(css).toContain(".ew-band-nav");
     expect(css).toContain(".ew-atlas");
     expect(css).toContain(".ew-theater-back");
     expect(css).toContain(".ew-theater-field");
@@ -586,8 +587,9 @@ describe("live stylesheet", () => {
     expect(css).toContain("contain: layout paint");
     expect(css).toContain("flex-wrap: nowrap");
     expect(css).toContain(".ew-theater-rail .rp-intent");
-    expect(css).toContain(".ew-site-bar.is-home");
-    expect(css).toContain(".ew-site-bar.is-home .ew-theater-rail");
+    expect(css).toContain(".ew-home-seek");
+    expect(css).not.toContain(".ew-site-bar.is-home");
+    expect(css).not.toContain(".ew-atmosphere-icon");
     expect(css).toContain(".rp-home.is-landed .rp-land-slot");
     expect(css).toMatch(/\.rp-intro-board \{[\s\S]*?min-height: 16rem/);
     expect(css).not.toContain(".ew-site-bar:has(.ew-theater-rail .rp-intent)");
@@ -621,6 +623,19 @@ describe("home cover panes", () => {
     );
     expect(root).toContain("is-home-frame");
     expect(root).toContain("is-home");
+    expect(root).toContain("BandNav");
+    expect(root).toContain("PlayerDock");
+    const band = readFileSync(
+      new URL("../../app/components/BandNav.tsx", import.meta.url),
+      "utf8",
+    );
+    expect(band).toContain("Elsewhere");
+    expect(band).toContain("Atlas");
+    expect(band).toContain("Theater");
+    expect(band).toContain("Room");
+    expect(band).toContain("aria-disabled");
+    expect(band).toContain("homeWithAtlasHref");
+    expect(band).not.toContain("/atlas");
     expect(home).toContain('className="rp-intro-board"');
     expect(home).toContain('className="rp-intro-copy"');
     expect(home).toContain('className="rp-land-slot"');

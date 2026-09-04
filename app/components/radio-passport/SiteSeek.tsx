@@ -17,8 +17,8 @@ type SlotStore = {
 const SiteSeekStore = createContext<SlotStore | null>(null);
 
 /**
- * Home's intent field lives in the site bar. The page owns the handlers;
- * the bar owns the rail. TheaterSeek stays a sibling on /listen.
+ * Home's intent field lives in the home column. The page owns the handlers;
+ * SiteSeekRail owns the slot. TheaterSeek stays a sibling on /listen.
  *
  * Slot, not a DOM portal: Safari will not keep a portaled form inside a
  * sticky flex header — Chrome will. A real child of the rail stays put.

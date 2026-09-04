@@ -50,13 +50,15 @@ import {
 } from "~/components/radio-passport/searchState";
 import { IntentBar } from "~/components/radio-passport/IntentBar";
 import { HourRail } from "~/components/radio-passport/HourRail";
-import { SiteSeekPortal } from "~/components/radio-passport/SiteSeek";
+import { SiteSeekPortal, SiteSeekRail } from "~/components/radio-passport/SiteSeek";
 import {
   resolveCoverArrival,
   describeCoverEmpty,
   findCityFromPassport,
   sameHourPillLabel,
+  OPEN_ATLAS_EVENT,
   OPEN_PASSPORT_EVENT,
+  atlasRequested,
   passportRequested,
   resolveStampReplay,
   looksLikeIntentSentence,
@@ -208,7 +210,9 @@ export default function Index() {
     setCatalogError(false);
     setCatalogAttempt((attempt) => attempt + 1);
   }, []);
-  const [atlas, setAtlas] = useState(false);
+  const [atlas, setAtlas] = useState(() =>
+    atlasRequested(searchParams.toString())
+  );
   const [atlasQuery, setAtlasQuery] = useState("");
   const [country, setCountry] = useState<string | null>(null);
   const [countryCache, setCountryCache] = useState<
@@ -540,6 +544,9 @@ export default function Index() {
     if (passportRequested(searchParams.toString())) {
       setPassport(true);
     }
+    if (atlasRequested(searchParams.toString())) {
+      setAtlas(true);
+    }
   }, [searchParams]);
 
   useEffect(() => {
@@ -547,6 +554,27 @@ export default function Index() {
     window.addEventListener(OPEN_PASSPORT_EVENT, open);
     return () => window.removeEventListener(OPEN_PASSPORT_EVENT, open);
   }, []);
+
+  useEffect(() => {
+    const open = () => setAtlas(true);
+    window.addEventListener(OPEN_ATLAS_EVENT, open);
+    return () => window.removeEventListener(OPEN_ATLAS_EVENT, open);
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    if (atlas) params.set("atlas", "1");
+    else params.delete("atlas");
+    const next = params.toString();
+    const search = next ? `?${next}` : "";
+    if (window.location.search === search) return;
+    window.history.replaceState(
+      window.history.state,
+      "",
+      `${window.location.pathname}${search}${window.location.hash}`,
+    );
+  }, [atlas]);
 
   const arrivalCity = nowPlaying
     ? stationLocation(nowPlaying)
@@ -642,6 +670,9 @@ export default function Index() {
         nowPlaying ? " is-landed" : ""
       }`}
     >
+      <div className="ew-home-seek">
+        <SiteSeekRail />
+      </div>
       <SiteSeekPortal>
         <IntentBar
           value={query}
@@ -793,7 +824,11 @@ export default function Index() {
               </span>
               {mixLabel ? (
                 <span className="rp-eyebrow text-foil">{mixLabel}</span>
-              ) : null}
+              ) : (
+                <span className="rp-eyebrow text-dust">
+                  {liveFiltered.length} LANDS
+                </span>
+              )}
             </div>
             {aiStatus === "error" && listening.exploreError && (
               <div className="mt-2" role="alert">

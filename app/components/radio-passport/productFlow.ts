@@ -102,6 +102,34 @@ export function openPassportNow(
   return "route";
 }
 
+export const OPEN_ATLAS_EVENT = "elsewhere:open-atlas";
+
+export function requestOpenAtlas() {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new CustomEvent(OPEN_ATLAS_EVENT));
+}
+
+export function atlasRequested(search: string) {
+  const params = new URLSearchParams(
+    search.startsWith("?") ? search.slice(1) : search,
+  );
+  const value = params.get("atlas");
+  return value === null ? false : value !== "0";
+}
+
+export function homeWithAtlasHref() {
+  return "/?atlas=1";
+}
+
+export function openAtlasNow(pathname: string, goHome: () => void) {
+  if (pathname === "/") {
+    requestOpenAtlas();
+    return "event";
+  }
+  goHome();
+  return "route";
+}
+
 /** The live product surface. If it is shown, it must do this. */
 export const SURFACE_CONNECTIONS: SurfaceConnection[] = [
   {

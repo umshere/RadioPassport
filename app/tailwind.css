@@ -104,7 +104,7 @@
 
   @media (max-width: 960px) {
     :root {
-      --player-dock-clearance: 124px;
+      --player-dock-clearance: 108px;
     }
   }
 
@@ -606,7 +606,6 @@
     border: 0;
     padding: 0;
   }
-  .ew-atmosphere-icon { display: none; }
   .ew-atmosphere button {
     min-height: 32px;
     border: 0;
@@ -1434,7 +1433,7 @@
 
   @media (max-width: 960px) {
     .rp-home {
-      --player-dock-clearance: 124px;
+      --player-dock-clearance: 108px;
       padding-bottom: calc(var(--player-dock-clearance) + env(safe-area-inset-bottom, 0px));
     }
     .rp-home-header {
@@ -1444,37 +1443,6 @@
       min-height: 52px;
       padding: calc(10px + env(safe-area-inset-top, 0px)) 14px 10px;
     }
-    .ew-atmosphere--split { display: none; }
-    .ew-atmosphere-icon {
-      display: grid;
-      width: 44px;
-      height: 44px;
-      flex: none;
-      margin-left: auto;
-      place-items: center;
-      border: 1px solid var(--ew-rule);
-      background: transparent;
-      padding: 0;
-      color: var(--ew-foil);
-    }
-    .ew-atmosphere-icon__track {
-      position: relative;
-      display: block;
-      width: 1px;
-      height: 18px;
-      background: currentColor;
-    }
-    .ew-atmosphere-icon__track i {
-      position: absolute;
-      left: 50%;
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      background: currentColor;
-      transform: translateX(-50%);
-    }
-    .ew-atmosphere-icon.is-night .ew-atmosphere-icon__track i { bottom: -1px; }
-    .ew-atmosphere-icon.is-day .ew-atmosphere-icon__track i { top: -1px; }
     .rp-passport-button { margin-left: auto; padding: 0 10px; }
     .rp-surprise { padding: 0 8px; letter-spacing: .1em; }
     .rp-stage {
@@ -1500,11 +1468,11 @@
     .rp-globe-wrap {
       position: relative;
       width: 100%;
-      height: 148px;
-      min-height: 148px;
+      height: 174px;
+      min-height: 174px;
     }
-    /* The globe keeps one height while seeking: swapping 148px to 120px
-       on every keystroke resized the canvas mid-gesture (app-feel killer).
+    /* The globe keeps one height while seeking: swapping 174px on a
+       keystroke resized the canvas mid-gesture (app-feel killer).
        Seeking intent shows in the coverline, not in globe height. */
     .rp-home.is-seeking #live-board {
       scroll-margin-top: 0;
@@ -1592,7 +1560,7 @@
     .rp-dock .ew-stamp-ring::after { content: ""; position: absolute; inset: -8px; border-radius: 50%; } /* Invisible halo lifts the tap target to 40x40; the 8px reach ends where the dock gaps end, so neighbors stay clear. */
     .rp-dock-play { width: 44px; height: 44px; }
     .rp-theater-link { display: inline !important; font-size: 8px; letter-spacing: .1em; }
-    .rp-toast { right: 14px; left: 14px; bottom: calc(var(--player-dock-clearance, 124px) + env(safe-area-inset-bottom, 0px)); min-width: 0; }
+    .rp-toast { right: 14px; left: 14px; bottom: calc(var(--player-dock-clearance, 108px) + env(safe-area-inset-bottom, 0px)); min-width: 0; }
     .rp-player-notice { width: calc(100vw - 20px); font-size: 10px; }
     .ew-theater {
       padding: 0;
@@ -1825,20 +1793,6 @@ html, body {
 @media (max-width: 960px) {
   .ew-site-bar { padding-right: 16px; padding-left: 16px; gap: 12px; }
   .ew-site-bar-side { gap: 14px; }
-  /* Home: field on its own row so Listen stays tappable. Theater Seek stays one word. */
-  .ew-site-bar.is-home {
-    flex-wrap: wrap;
-    row-gap: 8px;
-    padding-bottom: 10px;
-  }
-  .ew-site-bar.is-home .ew-theater-rail {
-    order: 5;
-    flex: 1 1 100%;
-  }
-  .ew-site-bar.is-home .ew-theater-rail .rp-intent {
-    width: 100%;
-    max-width: none;
-  }
 }
 
 @media (max-width: 720px) {
@@ -1942,37 +1896,38 @@ html, body {
   color: var(--ew-lacquer);
 }
 
-/* Atlas page — appended; keep the one-line rule format. */
-.ew-atlaspage{max-width:1360px;margin:0 auto;min-height:100svh;min-height:100dvh;padding:34px clamp(20px,4vw,48px) calc(var(--player-dock-clearance, 0px) + 3rem);background:var(--ew-ink);color:var(--ew-bone);font-family:"Schibsted Grotesk","Sora",sans-serif;}
-.ew-atlaspage-toprow{display:flex;align-items:center;justify-content:space-between;gap:16px;}
-.ew-atlaspage-home{color:var(--ew-dust);text-decoration:none;}
-.ew-atlaspage-home:hover,.ew-atlaspage-home:focus-visible{color:var(--ew-foil);}
-.ew-atlaspage-trail{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:12px;}
-.ew-atlaspage-sep{color:var(--ew-dust);font:500 11px/1 "Azeret Mono",monospace;}
-.ew-atlaspage-crumbbtn{border:0;background:none;padding:2px 0;cursor:pointer;color:var(--ew-dust);font:500 12px/1.4 "Azeret Mono",monospace;letter-spacing:.1em;text-transform:uppercase;}
-.ew-atlaspage-crumbbtn:hover,.ew-atlaspage-crumbbtn:focus-visible{color:var(--ew-bone);}
-.ew-atlaspage-crumbbtn[aria-current="true"]{color:var(--ew-foil);}
-.ew-atlaspage-back{margin-top:16px;}
-.ew-atlaspage-wait{margin-top:28px;}
-.ew-atlaspage-error{display:flex;flex-wrap:wrap;align-items:center;gap:16px;margin-top:28px;}
-.ew-atlaspage-grid{display:grid;gap:30px;margin-top:26px;}
-.ew-atlaspage-skywrap{position:relative;min-height:420px;transition:opacity .25s ease;}
-.ew-atlaspage-list{margin-top:6px;}
-.ew-atlaspage-list h2{margin:0 0 10px;}
-.ew-atlaspage-nodes{list-style:none;margin:0;padding:0;max-width:560px;}
-.ew-atlaspage-nodes li{border-top:1px solid var(--ew-rule);}
-.ew-atlaspage-nodes li:last-child{border-bottom:1px solid var(--ew-rule);}
-.ew-atlaspage-nodebtn{display:flex;width:100%;align-items:baseline;justify-content:space-between;gap:16px;border:0;background:none;padding:9px 2px;cursor:pointer;text-align:left;color:var(--ew-bone);}
-.ew-atlaspage-nodelabel{font-size:14px;line-height:1.35;color:var(--ew-bone);}
-.ew-atlaspage-nodebtn[data-kind="country"] .ew-atlaspage-nodelabel, .ew-atlaspage-nodebtn[data-kind="language"] .ew-atlaspage-nodelabel{font:500 11px/1.4 "Azeret Mono",monospace;letter-spacing:.18em;text-transform:uppercase;}
-.ew-atlaspage-nodebtn:hover .ew-atlaspage-nodelabel, .ew-atlaspage-nodebtn:focus-visible .ew-atlaspage-nodelabel{color:var(--ew-foil);}
-.ew-atlaspage-nodebtn[aria-current="true"] .ew-atlaspage-nodelabel{color:var(--ew-foil);}
-.ew-atlaspage-nodekind{flex:none;color:var(--ew-dust);}
-.ew-atlaspage-empty{margin-top:10px;}
-@media (min-width: 1024px){ .ew-atlaspage-grid{grid-template-columns:minmax(0,1fr) 320px;grid-template-rows:auto minmax(0,1fr);}
-.ew-atlaspage-skywrap{grid-column:1;grid-row:1;}
-.ew-atlaspage-panel{grid-column:2;grid-row:1 / span 2;border-left:1px solid var(--ew-rule);padding-left:26px;min-width:0;}
-.ew-atlaspage-list{grid-column:1;grid-row:2;}
+/* Mobile band — appended outside @layer (Tailwind v3 drop gremlin). One-line rules. */
+:root { --ew-rule-2: rgba(232, 223, 208, 0.18); }
+:root[data-atmosphere="day"] { --ew-rule-2: rgba(26, 22, 18, 0.18); }
+.ew-band-nav { display: none; }
+.ew-horizon-kicker { display: none; }
+.ew-home-seek { flex: none; margin: 14px 32px 0; }
+.ew-home-seek .ew-theater-rail { width: 100%; min-height: 48px; }
+.ew-home-seek .ew-theater-rail .rp-intent { width: 100%; max-width: none; min-height: 48px; }
+@media (max-width: 960px) {
+.ew-band-nav { position: fixed; z-index: 41; right: 0; bottom: 0; left: 0; display: grid; grid-template-columns: repeat(4, 1fr); height: calc(44px + env(safe-area-inset-bottom, 0px)); padding-bottom: env(safe-area-inset-bottom, 0px); border-top: 1px solid var(--ew-rule); background: var(--ew-dock); }
+.ew-band-nav-slot { display: grid; place-items: center; min-height: 44px; border: 0; background: transparent; padding: 0; color: var(--ew-dust); font: 500 9px/1 "Azeret Mono", monospace; letter-spacing: .16em; text-transform: uppercase; text-decoration: none; cursor: pointer; }
+.ew-band-nav-slot.is-current { color: var(--ew-foil); box-shadow: inset 0 -1px 0 var(--ew-foil); }
+.ew-band-nav-slot.is-disabled { color: rgba(154,143,128,.4); cursor: default; pointer-events: none; }
+:root[data-atmosphere="day"] .ew-band-nav-slot.is-disabled { color: rgba(111,103,92,.4); }
+.ew-site-room { display: none; }
+.ew-home-seek { margin: 14px 16px 0; }
+.ew-home-seek .rp-surprise { border: 0; border-left: 1px solid var(--ew-rule-2); min-height: 48px; padding: 0 12px; }
+.rp-dock { bottom: calc(44px + env(safe-area-inset-bottom, 0px)); min-height: 64px; height: 64px; padding: 8px 10px; }
+.rp-dock-art { width: 44px; height: 44px; }
+.rp-dock-play { width: 48px; height: 48px; }
+.rp-dock .rp-dock-control, .rp-dock .rp-dock-heart, .rp-dock .ew-stamp-ring, .rp-dock .ew-dock-track { display: none; }
+.rp-dock .rp-theater-link { display: none !important; }
+.rp-dock .ew-dock-sub { display: block; }
+.ew-hours { display: grid; grid-template-columns: repeat(4, 1fr); flex: 1 1 auto; max-width: none; border: 0; border-top: 1px solid var(--ew-rule); border-bottom: 1px solid var(--ew-rule); border-radius: 0; background: transparent; padding: 0; }
+.ew-hours::after, .ew-hours-cursor { display: none; }
+.ew-hour { border-right: 1px solid var(--ew-rule); min-height: 44px; padding: 8px 0; }
+.ew-hour:last-of-type { border-right: 0; }
+.ew-horizon > .ew-atlas { display: none; }
+.rp-horizon-row { position: relative; top: auto; right: auto; left: auto; z-index: 4; width: 100%; min-height: 44px; margin: 0; }
+.ew-atmosphere--split { display: flex; width: 100%; min-height: 44px; justify-content: space-between; }
+.ew-horizon-kicker { display: inline-flex; align-items: center; min-height: 44px; color: var(--ew-dust); font: 500 9px/1 "Azeret Mono", monospace; letter-spacing: .16em; text-transform: uppercase; }
+.ew-atmosphere button { min-height: 44px; }
 }
 
 /* Theater knowledge layer — DOM buttons over the sky; keep one-line rules. */

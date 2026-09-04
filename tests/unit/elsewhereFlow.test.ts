@@ -11,7 +11,10 @@ import {
   describeAtlasEmpty,
   describeCoverEmpty,
   findCityFromPassport,
+  atlasRequested,
+  homeWithAtlasHref,
   homeWithPassportHref,
+  openAtlasNow,
   openPassportNow,
   intentPath,
   looksLikeIntentSentence,
@@ -534,6 +537,18 @@ describe("Icons that look live must land somewhere", () => {
       }),
     ).toBe("route");
     expect(routed).toBe(true);
+    expect(atlasRequested("?atlas=1")).toBe(true);
+    expect(atlasRequested("atlas=1")).toBe(true);
+    expect(atlasRequested("")).toBe(false);
+    expect(homeWithAtlasHref()).toBe("/?atlas=1");
+    expect(openAtlasNow("/", () => undefined)).toBe("event");
+    let atlasRouted = false;
+    expect(
+      openAtlasNow("/about", () => {
+        atlasRouted = true;
+      }),
+    ).toBe("route");
+    expect(atlasRouted).toBe(true);
   });
 
   it("makes Room and the wordmark real routes home or to the room", () => {

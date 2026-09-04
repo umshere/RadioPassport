@@ -672,10 +672,15 @@ describe("theater lock", () => {
       new URL("../../app/components/SiteBar.tsx", import.meta.url),
       "utf8",
     );
+    const home = readFileSync(
+      new URL("../../app/routes/_index.tsx", import.meta.url),
+      "utf8",
+    );
     expect(listen).not.toContain("TheaterSeek");
     expect(listen).not.toContain("ew-theater-back");
     expect(siteBar).toContain("TheaterSeek");
-    expect(siteBar).toContain("SiteSeekRail");
+    expect(siteBar).not.toContain("SiteSeekRail");
+    expect(home).toContain("SiteSeekRail");
     const siteSeek = readFileSync(
       new URL("../../app/components/radio-passport/SiteSeek.tsx", import.meta.url),
       "utf8",
@@ -721,10 +726,6 @@ describe("theater lock", () => {
     expect(well).toContain("fieldDust");
     expect(listen).toContain("focusId");
     expect(well).toContain("fieldBirthRipple");
-    const home = readFileSync(
-      new URL("../../app/routes/_index.tsx", import.meta.url),
-      "utf8",
-    );
     expect(home).not.toContain("useNowPlayingMetadata(");
     expect(home).toContain("useRoomStore");
     expect(home).not.toContain("useTrackTrivia(");

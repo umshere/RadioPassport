@@ -1,6 +1,5 @@
 import { Link, useLocation, useNavigate } from "@remix-run/react";
 import { SignalWordmark } from "~/components/radio-passport/SignalMark";
-import { SiteSeekRail } from "~/components/radio-passport/SiteSeek";
 import { TheaterSeek } from "~/components/radio-passport/TheaterSeek";
 import {
   homeWithPassportHref,
@@ -16,16 +15,17 @@ export default function SiteBar() {
   const stamps = useJourneyStore((state) => state.stamps);
   const count = mounted ? stamps.length : 0;
   const onTheater = location.pathname === "/listen";
-  const onHome = location.pathname === "/";
 
   return (
-    <header
-      className={`ew-site-bar${onTheater ? " is-theater" : ""}${onHome ? " is-home" : ""}`}
-    >
+    <header className={`ew-site-bar${onTheater ? " is-theater" : ""}`}>
       <SignalWordmark compact />
-      {onTheater ? <TheaterSeek /> : onHome ? <SiteSeekRail /> : null}
+      {onTheater ? <TheaterSeek /> : null}
       <nav className="ew-site-bar-side" aria-label="Site">
-        <Link to="/about" className="rp-eyebrow text-dust" prefetch="intent">
+        <Link
+          to="/about"
+          className="rp-eyebrow text-dust ew-site-room"
+          prefetch="intent"
+        >
           Room
         </Link>
         <button

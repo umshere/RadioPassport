@@ -134,7 +134,7 @@ export default function PlayerDock() {
       const mobile = window.matchMedia("(max-width: 960px)").matches;
       document.documentElement.style.setProperty(
         "--player-dock-clearance",
-        mobile ? "124px" : "88px"
+        mobile ? "108px" : "88px"
       );
     };
     apply();
@@ -172,11 +172,10 @@ export default function PlayerDock() {
       </Link>
       <div className="min-w-0 flex-1">
         <strong className="block truncate">{nowPlaying.name}</strong>
-        <span className="rp-telemetry block truncate">
-          <span className="hidden sm:inline">{city} · </span>
-          LIVE
+        <span className="ew-dock-sub rp-telemetry mt-0.5 block truncate">
+          LIVE · {city}
         </span>
-        <span className="ew-dock-sub mt-0.5 block truncate text-[12px] text-dust">
+        <span className="ew-dock-track mt-0.5 block truncate text-[12px] text-dust">
           {trackLine ||
             room.caption?.localLabel ||
             `Live from ${city}. No track title from this station.`}
@@ -210,7 +209,7 @@ export default function PlayerDock() {
           toggleFavorite(nowPlaying.uuid, nowPlaying)
         }
         disabled={!canMutateJourney(hydrated)}
-        className={`grid h-11 w-11 place-items-center rounded-full text-lg ${favorites.includes(nowPlaying.uuid) ? "text-foil" : "text-dust"
+        className={`rp-dock-heart grid h-11 w-11 place-items-center rounded-full text-lg ${favorites.includes(nowPlaying.uuid) ? "text-foil" : "text-dust"
           }`}
         aria-label="Toggle favorite"
       >
