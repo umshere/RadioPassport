@@ -68,7 +68,7 @@ function Document({
         <meta charSet="utf-8" />
         <meta
           name="viewport"
-          content="width=device-width, initial-scale=1, viewport-fit=cover"
+          content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content"
         />
         <meta name="theme-color" content={ATMOSPHERE_THEME_COLOR.night} />
         <script
@@ -185,8 +185,11 @@ export default function App() {
           </div>
         )}
 
+        {/* No key={pathname} here on purpose: keying the Outlet wrapper
+            unmounts the whole page on every home/theater crossing, wiping
+            globe spin, scroll, and intent state (felt as a page refresh).
+            Arrive animations own their own per-element keys instead. */}
         <div
-          key={location.pathname}
           className={`ew-page w-full${onTheater ? " is-theater" : ""}${onHome ? " is-home" : ""}`}
           style={{
             paddingBottom: onTheater
@@ -247,7 +250,7 @@ export function ErrorBoundary() {
   return (
     <Document title={`${title} | Elsewhere`}>
       <div className="min-h-screen bg-ink px-6 py-10 text-bone">
-        <div className="mx-auto flex min-h-[calc(100vh-5rem)] max-w-3xl items-center">
+        <div className="mx-auto flex min-h-[calc(100dvh-5rem)] max-w-3xl items-center">
           <div className="w-full">
             <p className="rp-eyebrow text-foil">{statusLabel}</p>
             <h1 className="ew-coverline mt-6">{title}</h1>
@@ -292,7 +295,7 @@ function NotFoundEasterEgg({
   return (
     <main className="not-found-easter-egg relative min-h-screen overflow-hidden px-6 py-10 text-bone">
       <div className="not-found-easter-egg__pattern" aria-hidden="true" />
-      <section className="relative z-10 mx-auto flex min-h-[calc(100vh-5rem)] w-full max-w-3xl flex-col items-start justify-center">
+      <section className="relative z-10 mx-auto flex min-h-[calc(100dvh-5rem)] w-full max-w-3xl flex-col items-start justify-center">
         <p className="rp-eyebrow text-foil">Lost</p>
         <h1 className="ew-coverline mt-4">{title}</h1>
         <p className="rp-lede mt-4 max-w-xl">{message}</p>

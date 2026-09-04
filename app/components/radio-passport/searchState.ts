@@ -170,6 +170,61 @@ export function parseInitialQuery(url: string | URL): string {
   return parsed.searchParams.get("q")?.trim() ?? "";
 }
 
+const INTENT_HOURS = ["Dawn", "Midday", "Dusk", "Night"] as const;
+
+export type HomeIntent = {
+  query: string;
+  hour: string | null;
+  place: string | null;
+};
+
+/**
+ * Full home intent from a URL: typed query plus leftover hour/place.
+ * Unknown hour values are dropped (a shared link must never wedge a filter).
+ */
+export function parseInitialIntent(url: string | URL): HomeIntent {
+  const parsed = typeof url === "string" ? new URL(url) : url;
+  const rawHour = parsed.searchParams.get("hour")?.trim() ?? "";
+  return {
+    query: parsed.searchParams.get("q")?.trim() ?? "",
+    hour: (INTENT_HOURS as readonly string[]).includes(rawHour)
+      ? rawHour
+      : null,
+    place: parsed.searchParams.get("place")?.trim() || null,
+  };
+}
+
+/**
+ * Canonical search string for a home intent, preserving unrelated params
+ * (e.g. passport). "" when the intent is empty. Written with
+ * history.replaceState so the URL mirrors the board without pushing history
+ * entries or tripping Remix loader revalidation.
+ */
+export function intentSearchString(
+  currentSearch: string,
+  intent: HomeIntent
+): string {
+  const params = new URLSearchParams(currentSearch);
+  const query = intent.query.trim();
+  if (query) {
+    params.set("q", query);
+  } else {
+    params.delete("q");
+  }
+  if (intent.hour) {
+    params.set("hour", intent.hour);
+  } else {
+    params.delete("hour");
+  }
+  if (intent.place) {
+    params.set("place", intent.place);
+  } else {
+    params.delete("place");
+  }
+  const serialized = params.toString();
+  return serialized ? `?${serialized}` : "";
+}
+
 export function nextQueryHref(
   current: { pathname: string; search: string; hash: string },
   query: string

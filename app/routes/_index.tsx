@@ -41,12 +41,15 @@ import { applyAiPreviewPool } from "~/components/radio-passport/aiPreview";
 import {
   catalogRequestState,
   hourTapNextState,
+  intentSearchString,
+  parseInitialIntent,
   parseInitialQuery,
   playFromAtlasNextState,
   shouldClearBrowsingFilters,
   surpriseTapNextState,
 } from "~/components/radio-passport/searchState";
 import { IntentBar } from "~/components/radio-passport/IntentBar";
+import { HourRail } from "~/components/radio-passport/HourRail";
 import { SiteSeekPortal } from "~/components/radio-passport/SiteSeek";
 import {
   resolveCoverArrival,
@@ -84,6 +87,23 @@ export const meta = () => [
   { property: "og:url", content: "https://elsewheremusic.com/" },
 ];
 
+/**
+ * Home ↔ theater crossings reuse the board: skip the 240-row refetch unless
+ * the intent (search string) actually changed. Document loads always run.
+ */
+export function shouldRevalidate({
+  currentUrl,
+  nextUrl,
+  defaultShouldRevalidate,
+}: {
+  currentUrl: URL;
+  nextUrl: URL;
+  defaultShouldRevalidate: boolean;
+}) {
+  if (!defaultShouldRevalidate) return false;
+  return currentUrl.search !== nextUrl.search;
+}
+
 export async function loader(_: LoaderFunctionArgs) {
   try {
     const [countriesRaw, stationsRaw] = await Promise.all([
@@ -104,8 +124,6 @@ export async function loader(_: LoaderFunctionArgs) {
     return json({ countries: [], stations: [] });
   }
 }
-
-const HOURS: SolarHour[] = ["Dawn", "Midday", "Dusk", "Night"];
 
 function tokens(value: string | null | undefined) {
   return (value || "").toLowerCase();
@@ -147,11 +165,39 @@ export default function Index() {
   const listening = useListeningMode();
   const storedRoom = useRoomStore((state) => state.room);
   const room = roomForStation(storedRoom, nowPlaying?.uuid);
-  const [hour, setHour] = useState<SolarHour | null>(null);
-  const [place, setPlace] = useState<string | null>(null);
+  const [hour, setHour] = useState<SolarHour | null>(
+    () =>
+      parseInitialIntent(`https://radio.example/?${searchParams.toString()}`)
+        .hour as SolarHour | null
+  );
+  const [place, setPlace] = useState<string | null>(
+    () =>
+      parseInitialIntent(`https://radio.example/?${searchParams.toString()}`)
+        .place
+  );
   const [query, setQuery] = useState(() =>
     parseInitialQuery(`https://radio.example/?${searchParams.toString()}`)
   );
+  // The board mirrors itself in the URL (replace, never push): theater trips
+  // and reloads land on the same intent. replaceState skips Remix loader
+  // revalidation; unrelated params (e.g. passport) are preserved.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const next = intentSearchString(window.location.search, {
+      query,
+      hour,
+      place,
+    });
+    if (window.location.search === next) return;
+    // Carry history.state through: React Router keeps { usr, key, idx } there,
+    // and nulling it collapses this entry's ScrollRestoration key to "default"
+    // and resets the router's stack index.
+    window.history.replaceState(
+      window.history.state,
+      "",
+      `${window.location.pathname}${next}${window.location.hash}`
+    );
+  }, [query, hour, place]);
   const [catalog, setCatalog] = useState<Station[]>([]);
   const [catalogLoading, setCatalogLoading] = useState(false);
   // True only when the live catalog could not be reached — never when it
@@ -689,28 +735,15 @@ export default function Index() {
             ) : null}
           </div>
           <div className="ew-horizon">
-            <div className="ew-hours">
-              <i className="ew-horizon-line" aria-hidden="true" />
-              {HOURS.map((item) => (
-                <button
-                  type="button"
-                  className={`ew-hour${hour === item ? " on" : ""}`}
-                  data-hour={item.toLowerCase()}
-                  aria-pressed={hour === item}
-                  title={`Cities where it is ${item.toLowerCase()} now`}
-                  onClick={() => {
-                    const next = hourTapNextState(hour, item, query);
-                    setHour(next.hour as SolarHour | null);
-                    setPlace(next.place);
-                    if (next.query !== query) setQuery(next.query);
-                  }}
-                  key={item}
-                >
-                  {item}
-                  <i aria-hidden="true" />
-                </button>
-              ))}
-            </div>
+            <HourRail
+              hour={hour}
+              onTap={(item) => {
+                const next = hourTapNextState(hour, item, query);
+                setHour(next.hour as SolarHour | null);
+                setPlace(next.place);
+                if (next.query !== query) setQuery(next.query);
+              }}
+            />
             <button
               type="button"
               className="ew-atlas"
@@ -775,7 +808,10 @@ export default function Index() {
               </div>
             )}
             <div className="rp-station-list" aria-busy={catalogLoading}>
-              {catalogLoading && isSeeking
+              {/* Skeletons only when there is nothing to show yet: a refetch
+                  must never flash over rows we already have (aria-busy on the
+                  list carries the pending state instead). */}
+              {catalogLoading && isSeeking && liveFiltered.length === 0
                 ? [0, 1, 2].map((slot) => (
                   <div
                     key={`pending-${slot}`}
