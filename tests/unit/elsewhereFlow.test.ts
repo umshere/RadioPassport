@@ -28,6 +28,7 @@ import {
   seekingBoardLabel,
   seekingStatus,
   meridianKind,
+  meridianDomain,
   theaterDossierFacts,
   theaterIntelligence,
   theaterRoomGate,
@@ -761,5 +762,12 @@ describe("A stamp is a next city, not a souvenir", () => {
     expect(
       meridianKind("https://en.wikipedia.org/wiki/Evening_Star", "Wiki"),
     ).toBe("wiki");
+    expect(meridianDomain("https://www.youtube.com/watch?v=abc")).toBe(
+      "youtube.com",
+    );
+    expect(meridianDomain("https://en.wikipedia.org/wiki/Amalia")).toBe(
+      "en.wikipedia.org",
+    );
+    expect(meridianDomain("not-a-url")).toBe("");
   });
 });

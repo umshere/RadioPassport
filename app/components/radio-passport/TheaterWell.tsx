@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
+  meridianDomain,
   meridianKind,
   type MeridianKind,
   type TheaterFact,
@@ -1095,6 +1096,7 @@ export function TheaterWell({
   imageUrl,
   links,
   track,
+  catalog,
 }: {
   phase: TheaterPhase;
   dispatchBody: string | null;
@@ -1104,6 +1106,12 @@ export function TheaterWell({
   imageUrl?: string | null;
   links?: TheaterLink[];
   track?: string | null;
+  catalog?: {
+    land?: string | null;
+    city?: string | null;
+    spoken?: string | null;
+    signal?: string | null;
+  };
 }) {
   const aria = theaterWellAria(phase);
   const plate = sanitizeArtworkUrl(imageUrl);
@@ -1116,19 +1124,45 @@ export function TheaterWell({
       const url = safeExternalUrl(link.url);
       if (!url) return null;
       const label = link.label.trim();
-      return { label, url, kind: meridianKind(url, label) };
+      const host = meridianDomain(url);
+      return { label, url, kind: meridianKind(url, label), host };
     })
     .filter(
-      (link): link is { label: string; url: string; kind: MeridianKind } =>
-        Boolean(link),
+      (
+        link,
+      ): link is {
+        label: string;
+        url: string;
+        kind: MeridianKind;
+        host: string;
+      } => Boolean(link),
     );
   const coverTitle = track?.trim() || null;
   const showPlate = Boolean(plate && !plateFailed);
+  const icy = Boolean(coverTitle);
+  const filed = phase === "filed";
   const showCover =
-    phase === "filed" && Boolean(showPlate || summary || coverTitle);
+    (filed || phase === "locking") &&
+    Boolean(showPlate || summary || coverTitle);
+  const catalogRows: Array<[string, string]> = [];
+  for (const [label, value] of [
+    ["Land", catalog?.land],
+    ["City", catalog?.city],
+    ["Spoken", catalog?.spoken],
+    ["Signal", catalog?.signal],
+  ] as const) {
+    const text = value?.trim();
+    if (text) catalogRows.push([label, text]);
+  }
+  const catalogLine = catalogRows.map(([, value]) => value).join(" · ");
+  const waiting = icy
+    ? phase === "locking"
+      ? "Reading the live title"
+      : null
+    : "No title on the air yet";
   return (
     <div
-      className={`ew-theater-well${phase === "filed" ? " is-filed" : ""}`}
+      className={`ew-theater-well${filed ? " is-filed" : ""}`}
       data-phase={phase}
       role={aria ? "status" : undefined}
       aria-live={aria ? "polite" : undefined}
@@ -1138,7 +1172,28 @@ export function TheaterWell({
       {dispatchBody ? (
         <TheaterLetter text={dispatchBody} signed={deskSigned} />
       ) : null}
-      {phase === "filed" ? (
+      {!filed && !icy && catalogRows.length > 0 ? (
+        <section className="ew-known">
+          <p className="rp-eyebrow ew-known-lab">Known on landing</p>
+          {catalogRows.map(([label, value]) => (
+            <div className="ew-krow" key={label}>
+              <span className="ew-krow-key">{label}</span>
+              <b className="ew-krow-value">{value}</b>
+              <span className="ew-krow-prov">Catalog</span>
+            </div>
+          ))}
+        </section>
+      ) : null}
+      {!filed && icy && catalogLine ? (
+        <p className="ew-known-line">{catalogLine}</p>
+      ) : null}
+      {waiting && phase !== "locking" ? (
+        <p className="ew-waiting">
+          <i className="ew-waiting-dot" aria-hidden="true" />
+          {waiting}
+        </p>
+      ) : null}
+      {filed || phase === "locking" ? (
         <>
           {showCover ? (
             <div className={`ew-cover-row${showPlate ? "" : " is-bare"}`}>
@@ -1156,11 +1211,17 @@ export function TheaterWell({
               ) : null}
               <div>
                 {coverTitle ? <p className="ew-cover-title">{coverTitle}</p> : null}
-                {summary ? <TheaterLetter text={summary} /> : null}
+                {filed && summary ? <TheaterLetter text={summary} /> : null}
               </div>
             </div>
           ) : null}
-          {facts.length > 0 ? (
+          {waiting ? (
+            <p className="ew-waiting">
+              <i className="ew-waiting-dot" aria-hidden="true" />
+              {waiting}
+            </p>
+          ) : null}
+          {filed && facts.length > 0 ? (
             <div className="ew-journey-wrap">
               {deskSigned ? (
                 <p className="rp-eyebrow text-ether ew-desk-label">
@@ -1176,9 +1237,12 @@ export function TheaterWell({
                   </li>
                 ))}
               </ol>
+              <p className="ew-desk-verified">
+                MusicBrainz · verified relations
+              </p>
             </div>
           ) : null}
-          {meridians.length > 0 ? (
+          {filed && meridians.length > 0 ? (
             <p className="ew-meridians">
               {meridians.map((link) => (
                 <a
@@ -1189,6 +1253,9 @@ export function TheaterWell({
                 >
                   <MeridianIcon kind={link.kind} />
                   {link.label}
+                  {link.host ? (
+                    <em className="ew-meridian-host">{link.host}</em>
+                  ) : null}
                 </a>
               ))}
             </p>

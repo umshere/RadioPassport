@@ -223,6 +223,21 @@ export default function ListeningPage() {
   const selectedKnowledgeNode: KnowledgeNode | null = selectedId
     ? knowledge.graph.nodes.find((entry) => entry.id === selectedId) ?? null
     : null;
+  const figureSiblings = selectedId
+    ? knowledgeNodes.filter((node) => node.id !== selectedId).slice(0, 6)
+    : [];
+  const followId = selectedId
+    ? knowledge.graph.edges
+        .map((edge) =>
+          edge.from === selectedId
+            ? edge.to
+            : edge.to === selectedId
+              ? edge.from
+              : null,
+        )
+        .find((id) => typeof id === "string" && knowledge.awake.has(id)) ??
+      null
+    : null;
 
   const phase = room.phase;
   const factKey = intelligence.facts
@@ -378,6 +393,32 @@ export default function ListeningPage() {
                     <p>Filing the signal…</p>
                   );
                 })()
+              ) : followId ? (
+                <button
+                  type="button"
+                  className="ew-knode-tune"
+                  onClick={() => handleNodeSelect(followId)}
+                >
+                  Follow this star
+                </button>
+              ) : null}
+              {figureSiblings.length > 0 ? (
+                <section className="ew-knode-also">
+                  <p className="rp-eyebrow">Also on this figure</p>
+                  <div className="ew-knode-chips">
+                    {figureSiblings.map((node) => (
+                      <button
+                        type="button"
+                        key={node.id}
+                        className="ew-knode-chip"
+                        data-kind={node.kind}
+                        onClick={() => handleNodeSelect(node.id)}
+                      >
+                        {node.label}
+                      </button>
+                    ))}
+                  </div>
+                </section>
               ) : null}
             </div>
           ) : null}
@@ -389,6 +430,12 @@ export default function ListeningPage() {
             imageUrl={intelligence.imageUrl}
             links={intelligence.links}
             track={rawTrackLine}
+            catalog={{
+              land: nowPlaying.country,
+              city,
+              spoken: nowPlaying.language,
+              signal: nowPlaying.name,
+            }}
           />
         </div>
       </div>

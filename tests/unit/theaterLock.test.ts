@@ -725,6 +725,14 @@ describe("theater lock", () => {
     expect(well).toContain("fieldKnowledgeEdges");
     expect(well).toContain("fieldDust");
     expect(listen).toContain("focusId");
+    expect(listen).toContain("Follow this star");
+    expect(listen).toContain("catalog=");
+    expect(well).toContain("No title on the air yet");
+    expect(well).toContain("Reading the live title");
+    expect(well).toContain("MusicBrainz · verified relations");
+    expect(well).toContain("meridianDomain");
+    expect(well).not.toContain("skeleton");
+    expect(well).not.toContain("spinner");
     expect(well).toContain("fieldBirthRipple");
     expect(home).not.toContain("useNowPlayingMetadata(");
     expect(home).toContain("useRoomStore");

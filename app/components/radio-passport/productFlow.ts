@@ -713,6 +713,15 @@ const MERIDIAN_RANK: Record<MeridianKind, number> = {
   link: 3,
 };
 
+/** Hostname a meridian can wear. Drops `www.` so the chip stays short. */
+export function meridianDomain(url: string): string {
+  try {
+    return new URL(url).hostname.replace(/^www\./i, "");
+  } catch {
+    return "";
+  }
+}
+
 export function meridianKind(url: string, label = ""): MeridianKind {
   const href = url.toLowerCase();
   const name = label.toLowerCase();
