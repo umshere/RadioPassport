@@ -178,6 +178,27 @@ describe("discovery filter state transitions", () => {
     expect(
       intentSearchString("?passport=1", { query: "", hour: null, place: null })
     ).toBe("?passport=1");
+    // Whitespace-only values are absent values, not filters.
+    expect(
+      parseInitialIntent("https://radio.example/?q=%20%20&place=%20%20")
+    ).toEqual({ query: "", hour: null, place: null });
+    // A wedged hour does not just fail to apply — the sync strips it back out.
+    expect(
+      intentSearchString("?hour=brunch", {
+        query: "",
+        hour: null,
+        place: null,
+      })
+    ).toBe("");
+    // Values that could break out of the query string are encoded, and the
+    // hash is never folded into a param.
+    expect(
+      intentSearchString("", {
+        query: "",
+        hour: null,
+        place: "Cote #1 & co",
+      })
+    ).toBe("?place=Cote+%231+%26+co");
   });
 
   it("recovers from a modest prefix typo without broad fuzzy matching", () => {

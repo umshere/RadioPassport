@@ -29,6 +29,13 @@
     --ew-foil: #C6A56A;
     --ew-ether: #7EB8B4;
     --ew-rule: rgba(232, 223, 208, 0.10);
+    /* Ember hues for the horizon rail. Re-declared per atmosphere: the night
+       embers wash out to nothing on paper (midday hit 1.07:1), so day gets
+       ink-side equivalents that keep the family and clear 4.5:1. */
+    --ew-hour-dawn: #E3B76B;
+    --ew-hour-midday: #EFE3CE;
+    --ew-hour-dusk: #E07840;
+    --ew-hour-night: #A79BEC;
     --ew-on-lacquer: #E8DFD0;
     --ew-on-ink: #E8DFD0;
     --ew-header: rgba(26, 20, 16, .88);
@@ -74,6 +81,10 @@
     --ew-foil: #8A6E3A;
     --ew-ether: #3F7A76;
     --ew-rule: rgba(26, 22, 18, 0.12);
+    --ew-hour-dawn: #8A5A12;
+    --ew-hour-midday: #5F5030;
+    --ew-hour-dusk: #A8461A;
+    --ew-hour-night: #4B3FA0;
     --ew-on-lacquer: #E8DFD0;
     --ew-on-ink: #E8DFD0;
     --ew-header: rgba(242, 235, 225, .90);
@@ -169,8 +180,9 @@
     outline: 0;
     background: transparent;
     color: var(--ew-bone);
-    /* 16px floor: iOS Safari force-zooms any focused input below 16px.
-       Visual size stays put via tighter padding (44px row keeps its height). */
+    /* 16px floor: iOS Safari force-zooms any focused input below 16px. The
+       type reads a little larger than the old 13px; tighter padding keeps the
+       row within a couple of px of its old height. */
     font: 400 16px/1.3 "Schibsted Grotesk", sans-serif;
     padding: 8px 0;
   }
@@ -427,10 +439,10 @@
     background: var(--ew-foil-line);
     opacity: .55;
   }
-  .ew-hours[data-active="0"] { --hour-hue: #E3B76B; }
-  .ew-hours[data-active="1"] { --hour-hue: #EFE3CE; }
-  .ew-hours[data-active="2"] { --hour-hue: #E07840; }
-  .ew-hours[data-active="3"] { --hour-hue: #A79BEC; }
+  .ew-hours[data-active="0"] { --hour-hue: var(--ew-hour-dawn); }
+  .ew-hours[data-active="1"] { --hour-hue: var(--ew-hour-midday); }
+  .ew-hours[data-active="2"] { --hour-hue: var(--ew-hour-dusk); }
+  .ew-hours[data-active="3"] { --hour-hue: var(--ew-hour-night); }
   .ew-hour {
     position: relative;
     flex: 1 1 0%;
@@ -465,10 +477,10 @@
     background: transparent;
     transition: background .3s, border-color .3s, box-shadow .3s;
   }
-  .ew-hour[data-hour="dawn"].on { --hour-hue: #E3B76B; }
-  .ew-hour[data-hour="midday"].on { --hour-hue: #EFE3CE; }
-  .ew-hour[data-hour="dusk"].on { --hour-hue: #E07840; }
-  .ew-hour[data-hour="night"].on { --hour-hue: #A79BEC; }
+  .ew-hour[data-hour="dawn"].on { --hour-hue: var(--ew-hour-dawn); }
+  .ew-hour[data-hour="midday"].on { --hour-hue: var(--ew-hour-midday); }
+  .ew-hour[data-hour="dusk"].on { --hour-hue: var(--ew-hour-dusk); }
+  .ew-hour[data-hour="night"].on { --hour-hue: var(--ew-hour-night); }
   .ew-hour:hover { color: var(--ew-bone); }
   .ew-hour:hover .ew-hour-icon { opacity: 1; }
   .ew-hour.on { color: var(--hour-hue); }
@@ -513,6 +525,12 @@
   .ew-hours[data-active="1"] .ew-hours-cursor { left: calc(6px + (100% - 12px) * 0.375); opacity: 1; }
   .ew-hours[data-active="2"] .ew-hours-cursor { left: calc(6px + (100% - 12px) * 0.625); opacity: 1; }
   .ew-hours[data-active="3"] .ew-hours-cursor { left: calc(6px + (100% - 12px) * 0.875); opacity: 1; }
+  /* A glow is a night effect: on paper it reads as a smudge, so day keeps the
+     hue (which alone clears 4.5:1) and drops the bloom. */
+  :root[data-atmosphere="day"] .ew-hour.on .ew-hour-icon { filter: none; }
+  :root[data-atmosphere="day"] .ew-hour.on .ew-hour-dot,
+  :root[data-atmosphere="day"] .ew-hours-cursor,
+  :root[data-atmosphere="day"] .ew-hours-cursor::before { box-shadow: none; }
   /* Atlas is not a fifth hour: the globe glyph denotes the doorway. */
   .ew-atlas-globe {
     position: relative;
@@ -877,9 +895,10 @@
     pointer-events: none;
   }
   .rp-globe-wrap { position: absolute; inset: 0; z-index: 1; }
-  /* pan-y: vertical page scroll stays with the browser, every other
-     gesture belongs to the globe — the drag never fights the page. */
-  .rp-globe-hit { position: absolute; inset: 0; touch-action: pan-y; }
+  /* Vertical page scroll stays with the browser and pinch-zoom stays with the
+     user (WCAG 1.4.4); every other gesture belongs to the globe, so the aim
+     never fights the page. */
+  .rp-globe-hit { position: absolute; inset: 0; touch-action: pan-y pinch-zoom; }
   .rp-globe { width: 100%; height: 100%; cursor: crosshair; }
   .rp-globe.is-aimed { cursor: pointer; }
   .ew-globe-tip {

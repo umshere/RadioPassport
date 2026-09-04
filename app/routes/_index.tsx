@@ -189,8 +189,11 @@ export default function Index() {
       place,
     });
     if (window.location.search === next) return;
+    // Carry history.state through: React Router keeps { usr, key, idx } there,
+    // and nulling it collapses this entry's ScrollRestoration key to "default"
+    // and resets the router's stack index.
     window.history.replaceState(
-      null,
+      window.history.state,
       "",
       `${window.location.pathname}${next}${window.location.hash}`
     );
@@ -805,9 +808,9 @@ export default function Index() {
               </div>
             )}
             <div className="rp-station-list" aria-busy={catalogLoading}>
-              {/* Skeletons only when there is nothing to show yet: with the
-                  board preserved across theater trips, a refetch must never
-                  flash over rows we already have. */}
+              {/* Skeletons only when there is nothing to show yet: a refetch
+                  must never flash over rows we already have (aria-busy on the
+                  list carries the pending state instead). */}
               {catalogLoading && isSeeking && liveFiltered.length === 0
                 ? [0, 1, 2].map((slot) => (
                   <div
