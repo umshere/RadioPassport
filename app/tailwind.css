@@ -104,7 +104,7 @@
 
   @media (max-width: 960px) {
     :root {
-      --player-dock-clearance: 108px;
+      --player-dock-clearance: 44px;
     }
   }
 
@@ -1433,7 +1433,7 @@
 
   @media (max-width: 960px) {
     .rp-home {
-      --player-dock-clearance: 108px;
+      --player-dock-clearance: 44px;
       padding-bottom: calc(var(--player-dock-clearance) + env(safe-area-inset-bottom, 0px));
     }
     .rp-home-header {
@@ -1928,6 +1928,23 @@ html, body {
 .ew-atmosphere--split { display: flex; width: 100%; min-height: 44px; justify-content: space-between; }
 .ew-horizon-kicker { display: inline-flex; align-items: center; min-height: 44px; color: var(--ew-dust); font: 500 9px/1 "Azeret Mono", monospace; letter-spacing: .16em; text-transform: uppercase; }
 .ew-atmosphere button { min-height: 44px; }
+}
+
+/* Band clearance follows the dock. The band is a 44px nav on its own; the dock's
+   64px is reserved only while something is playing, so an idle page does not hold
+   open a strip for a dock that is not there. */
+@media (max-width: 960px) {
+:root:has(.rp-dock) { --player-dock-clearance: 108px; }
+:root:has(.rp-dock) .rp-home { --player-dock-clearance: 108px; }
+}
+
+/* Day nav ink. The shared dust and foil land at 4.25:1 and 3.66:1 on the day dock
+   ground — under AA for 9px type, and the active slot was the worse of the two.
+   These are the same two hues walked down until they clear 4.5:1 (4.81 and 5.15);
+   night already passes at 5.78 and 7.85 and keeps the shared tokens. */
+@media (max-width: 960px) {
+:root[data-atmosphere="day"] .ew-band-nav-slot { color: #665F55; }
+:root[data-atmosphere="day"] .ew-band-nav-slot.is-current { color: #6F582D; }
 }
 
 /* Theater knowledge layer — DOM buttons over the sky; keep one-line rules. */

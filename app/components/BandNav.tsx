@@ -57,7 +57,9 @@ export default function BandNav() {
           );
         }
 
-        if (slot.id === "theater" && theaterEmpty) {
+        // Current wins over empty: standing on /listen with a quiet room must
+        // still show Theater as the page you are on, not as an inert label.
+        if (slot.id === "theater" && theaterEmpty && !isCurrent) {
           return (
             <span
               key={slot.id}
