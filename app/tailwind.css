@@ -123,6 +123,7 @@
   .rp-home {
     --player-dock-clearance: 88px;
     min-height: 100svh;
+    min-height: 100dvh;
     background: var(--ew-ink);
     color: var(--ew-bone);
     font-family: "Schibsted Grotesk", "Sora", sans-serif;
@@ -168,8 +169,10 @@
     outline: 0;
     background: transparent;
     color: var(--ew-bone);
-    font: 400 13px/1.3 "Schibsted Grotesk", sans-serif;
-    padding: 11px 0;
+    /* 16px floor: iOS Safari force-zooms any focused input below 16px.
+       Visual size stays put via tighter padding (44px row keeps its height). */
+    font: 400 16px/1.3 "Schibsted Grotesk", sans-serif;
+    padding: 8px 0;
   }
   .rp-intent input::placeholder { color: var(--ew-dust); }
   .rp-intent-status {
@@ -251,6 +254,7 @@
     grid-template-columns: minmax(340px, 400px) 1fr;
     grid-template-rows: minmax(0, 1fr);
     min-height: calc(100svh - 56px);
+    min-height: calc(100dvh - 56px);
     max-width: 1440px;
     width: 100%;
     margin: 0 auto;
@@ -391,9 +395,9 @@
     border-color: var(--ew-foil);
     color: var(--ew-foil);
   }
-  /* The horizon: the four hours are stops on one foil line, and the sun's height
-     tells the time — above the line at midday, on it at dawn and dusk, below it
-     at night. Same grammar as the Day/Night pin on the horizon row above. */
+  /* The horizon as one pill rail: four icon stops, one glowing cursor.
+     Each hour owns an ember hue; the lit stop glows in its own color while
+     the cursor dot rides the track below. */
   .ew-horizon {
     display: flex;
     align-items: flex-end;
@@ -401,58 +405,114 @@
     margin-top: 26px;
   }
   .ew-hours {
+    --hour-hue: var(--ew-foil);
     position: relative;
     display: flex;
     flex: 1 1 auto;
     min-width: 0;
     max-width: 26rem;
+    border: 1px solid var(--ew-rule);
+    border-radius: 999px;
+    background: var(--ew-ink);
+    background: color-mix(in srgb, var(--ew-ink) 88%, transparent);
+    padding: 12px 6px 18px;
   }
-  .ew-horizon-line {
+  .ew-hours::after {
+    content: "";
     position: absolute;
-    left: 0;
-    right: 0;
-    bottom: 21px;
+    left: 26px;
+    right: 26px;
+    bottom: 8px;
     height: 1px;
     background: var(--ew-foil-line);
+    opacity: .55;
   }
+  .ew-hours[data-active="0"] { --hour-hue: #E3B76B; }
+  .ew-hours[data-active="1"] { --hour-hue: #EFE3CE; }
+  .ew-hours[data-active="2"] { --hour-hue: #E07840; }
+  .ew-hours[data-active="3"] { --hour-hue: #A79BEC; }
   .ew-hour {
     position: relative;
-    flex: 1;
+    flex: 1 1 0%;
     min-width: 0;
-    height: 64px;
+    min-height: 44px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 7px;
     border: 0;
     background: transparent;
-    padding: 0 0 34px;
+    padding: 0;
     font: 500 10px/1 "Azeret Mono", monospace;
     letter-spacing: .18em;
     text-transform: uppercase;
     color: var(--ew-dust);
+    cursor: pointer;
     transition: color .3s;
   }
-  .ew-hour i {
-    position: absolute;
-    left: 50%;
-    width: 7px;
-    height: 7px;
+  .ew-hour-icon {
+    width: 24px;
+    height: 24px;
+    opacity: .75;
+    transition: opacity .3s;
+  }
+  .ew-hour-label { transform: translateX(.09em); }
+  .ew-hour-dot {
+    width: 5px;
+    height: 5px;
     border-radius: 50%;
     border: 1px solid var(--ew-foil-line);
     background: transparent;
-    transform: translateX(-50%);
-    transition: background .3s, border-color .3s;
+    transition: background .3s, border-color .3s, box-shadow .3s;
   }
-  .ew-hour[data-hour="dawn"] i,
-  .ew-hour[data-hour="dusk"] i { bottom: 18px; }
-  .ew-hour[data-hour="midday"] i { bottom: 38px; }
-  .ew-hour[data-hour="night"] i { bottom: 2px; }
-  .ew-hour:hover, .ew-hour.on { color: var(--ew-bone); }
-  .ew-hour.on i {
-    border-color: var(--ew-foil);
-    background: var(--ew-foil);
+  .ew-hour[data-hour="dawn"].on { --hour-hue: #E3B76B; }
+  .ew-hour[data-hour="midday"].on { --hour-hue: #EFE3CE; }
+  .ew-hour[data-hour="dusk"].on { --hour-hue: #E07840; }
+  .ew-hour[data-hour="night"].on { --hour-hue: #A79BEC; }
+  .ew-hour:hover { color: var(--ew-bone); }
+  .ew-hour:hover .ew-hour-icon { opacity: 1; }
+  .ew-hour.on { color: var(--hour-hue); }
+  .ew-hour.on .ew-hour-icon {
+    opacity: 1;
+    filter: drop-shadow(0 0 6px var(--hour-hue));
+  }
+  .ew-hour.on .ew-hour-dot {
+    border-color: var(--hour-hue);
+    background: var(--hour-hue);
+    box-shadow: 0 0 8px 1px var(--hour-hue);
   }
   .ew-hour:focus-visible {
     outline: 1px solid var(--ew-foil);
     outline-offset: 2px;
   }
+  .ew-hours-cursor {
+    position: absolute;
+    bottom: 8px;
+    width: 40px;
+    height: 1px;
+    margin-left: -20px;
+    background: linear-gradient(90deg, transparent, var(--hour-hue), transparent);
+    box-shadow: 0 0 8px var(--hour-hue);
+    opacity: 0;
+    transition: left .35s ease, opacity .3s;
+    pointer-events: none;
+  }
+  .ew-hours-cursor::before {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    background: var(--hour-hue);
+    box-shadow: 0 0 10px 2px var(--hour-hue);
+  }
+  .ew-hours[data-active="0"] .ew-hours-cursor { left: calc(6px + (100% - 12px) * 0.125); opacity: 1; }
+  .ew-hours[data-active="1"] .ew-hours-cursor { left: calc(6px + (100% - 12px) * 0.375); opacity: 1; }
+  .ew-hours[data-active="2"] .ew-hours-cursor { left: calc(6px + (100% - 12px) * 0.625); opacity: 1; }
+  .ew-hours[data-active="3"] .ew-hours-cursor { left: calc(6px + (100% - 12px) * 0.875); opacity: 1; }
   /* Atlas is not a fifth hour: the globe glyph denotes the doorway. */
   .ew-atlas-globe {
     position: relative;
@@ -817,7 +877,9 @@
     pointer-events: none;
   }
   .rp-globe-wrap { position: absolute; inset: 0; z-index: 1; }
-  .rp-globe-hit { position: absolute; inset: 0; }
+  /* pan-y: vertical page scroll stays with the browser, every other
+     gesture belongs to the globe — the drag never fights the page. */
+  .rp-globe-hit { position: absolute; inset: 0; touch-action: pan-y; }
   .rp-globe { width: 100%; height: 100%; cursor: crosshair; }
   .rp-globe.is-aimed { cursor: pointer; }
   .ew-globe-tip {
@@ -1422,10 +1484,9 @@
       height: 148px;
       min-height: 148px;
     }
-    .rp-home.is-seeking .rp-globe-wrap {
-      height: 120px;
-      min-height: 120px;
-    }
+    /* The globe keeps one height while seeking: swapping 148px to 120px
+       on every keystroke resized the canvas mid-gesture (app-feel killer).
+       Seeking intent shows in the coverline, not in globe height. */
     .rp-home.is-seeking #live-board {
       scroll-margin-top: 0;
     }
@@ -1512,7 +1573,7 @@
     .rp-dock .ew-stamp-ring::after { content: ""; position: absolute; inset: -8px; border-radius: 50%; } /* Invisible halo lifts the tap target to 40x40; the 8px reach ends where the dock gaps end, so neighbors stay clear. */
     .rp-dock-play { width: 44px; height: 44px; }
     .rp-theater-link { display: inline !important; font-size: 8px; letter-spacing: .1em; }
-    .rp-toast { right: 14px; left: 14px; bottom: calc(88px + env(safe-area-inset-bottom, 0px)); min-width: 0; }
+    .rp-toast { right: 14px; left: 14px; bottom: calc(var(--player-dock-clearance, 124px) + env(safe-area-inset-bottom, 0px)); min-width: 0; }
     .rp-player-notice { width: calc(100vw - 20px); font-size: 10px; }
     .ew-theater {
       padding: 0;
@@ -1570,7 +1631,7 @@
     .rp-chip, .rp-station, .rp-dock-play { transition: none; }
     .rp-dock-play::before { animation: none; }
     .ew-land, .ew-atlas::after, .ew-theater-back::after { transition: none; }
-    .ew-hour, .ew-hour i { transition: none; }
+    .ew-hour, .ew-hour-icon, .ew-hour-dot, .ew-hours-cursor { transition: none; }
     body, .rp-home, .rp-globe-side, .rp-dock, .ew-theater { transition: none; }
     ::view-transition-group(*),
     ::view-transition-old(*),
@@ -1687,6 +1748,18 @@
   text-transform: uppercase;
   min-height: 44px;
   cursor: pointer;
+}
+
+/* App-shell touch behavior — outside @layer with the site bar (same drop
+   gremlin). manipulation kills double-tap zoom but keeps pinch + pan;
+   overscroll none on the document stops rubber-band page bounce while inner
+   panes keep their own `contain` scrollers. */
+html {
+  touch-action: manipulation;
+  -webkit-text-size-adjust: 100%;
+}
+html, body {
+  overscroll-behavior-y: none;
 }
 
 /* Site bar — kept outside @layer on purpose: the Tailwind layer pipeline
@@ -1843,7 +1916,7 @@
 }
 
 /* Atlas page — appended; keep the one-line rule format. */
-.ew-atlaspage{max-width:1360px;margin:0 auto;min-height:100svh;padding:34px clamp(20px,4vw,48px) calc(var(--player-dock-clearance, 0px) + 3rem);background:var(--ew-ink);color:var(--ew-bone);font-family:"Schibsted Grotesk","Sora",sans-serif;}
+.ew-atlaspage{max-width:1360px;margin:0 auto;min-height:100svh;min-height:100dvh;padding:34px clamp(20px,4vw,48px) calc(var(--player-dock-clearance, 0px) + 3rem);background:var(--ew-ink);color:var(--ew-bone);font-family:"Schibsted Grotesk","Sora",sans-serif;}
 .ew-atlaspage-toprow{display:flex;align-items:center;justify-content:space-between;gap:16px;}
 .ew-atlaspage-home{color:var(--ew-dust);text-decoration:none;}
 .ew-atlaspage-home:hover,.ew-atlaspage-home:focus-visible{color:var(--ew-foil);}

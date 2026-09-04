@@ -10,6 +10,8 @@ import {
   describeEmptyResults,
   nextQueryHref,
   parseInitialQuery,
+  parseInitialIntent,
+  intentSearchString,
   hourTapNextState,
   shouldClearBrowsingFilters,
   surpriseTapNextState,
@@ -147,6 +149,35 @@ describe("discovery filter state transitions", () => {
     expect(
       nextQueryHref({ pathname: "/", search: "?other=1", hash: "#top" }, "jazz")
     ).toBe("/?other=1&q=jazz#top");
+  });
+
+  it("hydrates the full home intent (query, hour, place) from the URL", () => {
+    expect(
+      parseInitialIntent("https://radio.example/?q=kochi&hour=Dusk&place=Kochi")
+    ).toEqual({ query: "kochi", hour: "Dusk", place: "Kochi" });
+    expect(parseInitialIntent("https://radio.example/")).toEqual({
+      query: "",
+      hour: null,
+      place: null,
+    });
+    // Unknown hour values never wedge a filter.
+    expect(
+      parseInitialIntent("https://radio.example/?hour=brunch")
+    ).toEqual({ query: "", hour: null, place: null });
+    expect(
+      intentSearchString("", { query: "kochi", hour: "Dusk", place: null })
+    ).toBe("?q=kochi&hour=Dusk");
+    expect(
+      intentSearchString("?q=kochi&hour=Dusk", {
+        query: "",
+        hour: null,
+        place: null,
+      })
+    ).toBe("");
+    // Unrelated params (e.g. passport) survive the sync.
+    expect(
+      intentSearchString("?passport=1", { query: "", hour: null, place: null })
+    ).toBe("?passport=1");
   });
 
   it("recovers from a modest prefix typo without broad fuzzy matching", () => {

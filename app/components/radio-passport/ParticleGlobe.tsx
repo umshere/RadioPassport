@@ -222,8 +222,14 @@ export function ParticleGlobe({
       const rect = canvas.getBoundingClientRect(),
         dpr = Math.min(window.devicePixelRatio || 1, 2),
         size = Math.min(rect.width, rect.height);
-      canvas.width = Math.floor(rect.width * dpr);
-      canvas.height = Math.floor(rect.height * dpr);
+      // Resetting canvas.width clears the bitmap and forces layout: only do
+      // it when the box actually moved, not on every animation frame.
+      const nextWidth = Math.floor(rect.width * dpr);
+      const nextHeight = Math.floor(rect.height * dpr);
+      if (canvas.width !== nextWidth || canvas.height !== nextHeight) {
+        canvas.width = nextWidth;
+        canvas.height = nextHeight;
+      }
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, rect.width, rect.height);
       const cx = rect.width / 2,
