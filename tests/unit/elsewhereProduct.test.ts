@@ -643,10 +643,53 @@ describe("home cover panes", () => {
     expect(home).toContain("is-landed");
     expect(home).not.toContain("{arrival.headline}");
     expect(home).toContain('className="ew-coverline ew-arrive"');
+    expect(home).toContain("CoverStrip");
+    expect(home).toMatch(/className="rp-stage"[\s\S]*SiteSeekRail/);
     expect(home).not.toContain("scrollIntoView");
     expect(home).toMatch(
       /className=\{`ew-cover\$\{arrivalCity \? " ew-seam-city" : ""\}`\}\s*>/
     );
+  });
+});
+
+describe("mobile cover strip", () => {
+  it("condenses the home coverline with IntersectionObserver, never on theater or room", () => {
+    const strip = readFileSync(
+      new URL("../../app/components/CoverStrip.tsx", import.meta.url),
+      "utf8",
+    );
+    const css = readFileSync(new URL("../../app/tailwind.css", import.meta.url), "utf8");
+    const home = readFileSync(
+      new URL("../../app/routes/_index.tsx", import.meta.url),
+      "utf8",
+    );
+    const listen = readFileSync(
+      new URL("../../app/routes/listen.tsx", import.meta.url),
+      "utf8",
+    );
+    const about = readFileSync(
+      new URL("../../app/routes/about.tsx", import.meta.url),
+      "utf8",
+    );
+    const layerIndex = css.indexOf("@layer components");
+    const stripCss = css.indexOf(".ew-cover-strip {");
+    expect(strip).toContain("IntersectionObserver");
+    expect(strip).toContain('root: null');
+    expect(strip).toContain('const ROOT_MARGIN = "-52px 0px 0px 0px"');
+    expect(strip).toContain("rootMargin: ROOT_MARGIN");
+    expect(strip).toContain(".rp-home .ew-coverline");
+    expect(strip).toContain("overlay");
+    expect(strip).not.toContain("addEventListener(\"scroll\"");
+    expect(home).toContain("CoverStrip");
+    expect(home).toContain("overlay={atlas || Boolean(country) || passport}");
+    expect(listen).not.toContain("CoverStrip");
+    expect(about).not.toContain("CoverStrip");
+    expect(stripCss).toBeGreaterThan(layerIndex);
+    expect(css).toContain("top: calc(52px + env(safe-area-inset-top, 0px))");
+    expect(css).toContain(":root[data-atmosphere=\"day\"] .ew-cover-strip-land { color: #6F582D; }");
+    expect(css).toContain(":root[data-atmosphere=\"day\"] .ew-cover-strip-dot { background: #35635F; }");
+    expect(css).toContain("@media (max-width: 960px) and (prefers-reduced-motion: reduce)");
+    expect(css).toContain(".rp-globe-side { position: relative; top: auto; z-index: auto; }");
   });
 });
 

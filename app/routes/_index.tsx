@@ -50,6 +50,7 @@ import {
 } from "~/components/radio-passport/searchState";
 import { IntentBar } from "~/components/radio-passport/IntentBar";
 import { HourRail } from "~/components/radio-passport/HourRail";
+import { CoverStrip } from "~/components/CoverStrip";
 import { SiteSeekPortal, SiteSeekRail } from "~/components/radio-passport/SiteSeek";
 import {
   resolveCoverArrival,
@@ -670,9 +671,6 @@ export default function Index() {
         nowPlaying ? " is-landed" : ""
       }`}
     >
-      <div className="ew-home-seek">
-        <SiteSeekRail />
-      </div>
       <SiteSeekPortal>
         <IntentBar
           value={query}
@@ -697,7 +695,17 @@ export default function Index() {
           statusTone={seek.tone === "unreachable" ? "empty" : seek.tone}
         />
       </SiteSeekPortal>
+      <CoverStrip
+        land={arrivalCity}
+        live={arrival.live}
+        clock={localNow ? formatClock(localNow) : null}
+        overlay={atlas || Boolean(country) || passport}
+        coverKey={seekingCover ? "seeking" : arrivalStation?.uuid ?? arrivalCity}
+      />
       <div className="rp-stage">
+        <div className="ew-home-seek">
+          <SiteSeekRail />
+        </div>
         <section className="rp-intro">
           {/* The horizon row: the room-hour pin stands on the same line as the
               local-time readout it answers, directly above the four-hour

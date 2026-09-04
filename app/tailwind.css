@@ -1901,9 +1901,11 @@ html, body {
 :root[data-atmosphere="day"] { --ew-rule-2: rgba(26, 22, 18, 0.18); }
 .ew-band-nav { display: none; }
 .ew-horizon-kicker { display: none; }
-.ew-home-seek { flex: none; margin: 14px 32px 0; }
+.ew-home-seek { flex: none; grid-column: 1 / -1; margin: 14px 32px 0; }
 .ew-home-seek .ew-theater-rail { width: 100%; min-height: 48px; }
 .ew-home-seek .ew-theater-rail .rp-intent { width: 100%; max-width: none; min-height: 48px; }
+.rp-stage { grid-template-rows: auto minmax(0, 1fr); }
+.ew-cover-strip { display: none; }
 @media (max-width: 960px) {
 .ew-band-nav { position: fixed; z-index: 41; right: 0; bottom: 0; left: 0; display: grid; grid-template-columns: repeat(4, 1fr); height: calc(44px + env(safe-area-inset-bottom, 0px)); padding-bottom: env(safe-area-inset-bottom, 0px); border-top: 1px solid var(--ew-rule); background: var(--ew-dock); }
 .ew-band-nav-slot { display: grid; place-items: center; min-height: 44px; border: 0; background: transparent; padding: 0; color: var(--ew-dust); font: 500 9px/1 "Azeret Mono", monospace; letter-spacing: .16em; text-transform: uppercase; text-decoration: none; cursor: pointer; }
@@ -1911,8 +1913,15 @@ html, body {
 .ew-band-nav-slot.is-disabled { color: rgba(154,143,128,.4); cursor: default; pointer-events: none; }
 :root[data-atmosphere="day"] .ew-band-nav-slot.is-disabled { color: rgba(111,103,92,.4); }
 .ew-site-room { display: none; }
-.ew-home-seek { margin: 14px 16px 0; }
+.ew-home-seek { order: -2; margin: 14px 16px 0; }
 .ew-home-seek .rp-surprise { border: 0; border-left: 1px solid var(--ew-rule-2); min-height: 48px; padding: 0 12px; }
+.rp-globe-side { position: relative; top: auto; z-index: auto; }
+.ew-cover-strip { position: fixed; z-index: 50; top: calc(52px + env(safe-area-inset-top, 0px)); right: 0; left: 0; display: flex; align-items: center; gap: 9px; height: 44px; padding: 0 16px; border-bottom: 1px solid var(--ew-rule); background: var(--ew-ink); opacity: 0; visibility: hidden; pointer-events: none; transition: opacity .18s ease, visibility 0s linear .18s; }
+.ew-cover-strip.is-on { opacity: 1; visibility: visible; pointer-events: auto; transition: opacity .18s ease, visibility 0s linear 0s; }
+.ew-cover-strip-dot { display: block; flex: none; width: 7px; height: 7px; border-radius: 50%; background: var(--ew-ether); }
+.ew-cover-strip-land { margin: 0; overflow: hidden; color: var(--ew-foil); font: 500 10px/1.35 "Azeret Mono", monospace; letter-spacing: .18em; text-transform: uppercase; text-overflow: ellipsis; white-space: nowrap; }
+.ew-cover-strip-meta { margin: 0; flex: none; color: var(--ew-dust); font: 500 10px/1.35 "Azeret Mono", monospace; letter-spacing: .18em; text-transform: uppercase; white-space: nowrap; }
+.ew-cover-strip-seek { display: grid; flex: none; width: 44px; height: 44px; margin-left: auto; place-items: center; border: 0; background: transparent; padding: 0; color: var(--ew-dust); }
 .rp-dock { bottom: calc(44px + env(safe-area-inset-bottom, 0px)); min-height: 64px; height: 64px; padding: 8px 10px; }
 .rp-dock-art { width: 44px; height: 44px; }
 .rp-dock-play { width: 48px; height: 48px; }
@@ -1949,6 +1958,11 @@ html, body {
 @media (max-width: 960px) {
 :root[data-atmosphere="day"] .ew-band-nav-slot { color: #665F55; }
 :root[data-atmosphere="day"] .ew-band-nav-slot.is-current { color: #6F582D; }
+:root[data-atmosphere="day"] .ew-cover-strip-land { color: #6F582D; }
+:root[data-atmosphere="day"] .ew-cover-strip-dot { background: #35635F; }
+}
+@media (max-width: 960px) and (prefers-reduced-motion: reduce) {
+.ew-cover-strip, .ew-cover-strip.is-on { transition: none; }
 }
 
 /* Under 360px the dock cannot seat both arrows and a readable title. Prev yields
@@ -1997,3 +2011,24 @@ html, body {
 .ew-knode-detail p { margin: 4px 0 0; color: var(--ew-dust); font-size: 13px; }
 .ew-knode-detail .ew-knode-tune { margin-top: 10px; display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--ew-foil); border-radius: 999px; padding: 6px 14px; background: none; color: var(--ew-foil); font: 500 12px/1 "Azeret Mono", monospace; letter-spacing: 0.14em; text-transform: uppercase; cursor: pointer; }
 .ew-knode-detail .ew-knode-tune:hover { background: color-mix(in srgb, var(--ew-foil) 12%, transparent); }
+.ew-known { margin-top: 16px; border-top: 1px solid var(--ew-rule); padding-top: 12px; }
+.ew-known-lab { color: var(--ew-dust); }
+.ew-krow { display: flex; align-items: baseline; gap: 12px; min-height: 44px; border-bottom: 1px solid var(--ew-rule); padding: 7px 0; }
+.ew-krow-key { flex: none; width: 62px; color: var(--ew-dust); font: 500 9px/1.35 "Azeret Mono", monospace; letter-spacing: .16em; text-transform: uppercase; }
+.ew-krow-value { font-size: 15px; font-weight: 500; color: var(--ew-bone); }
+.ew-krow-prov { display: inline-flex; align-items: center; margin: 0 0 0 auto; color: var(--ew-dust); font: 500 9px/1.35 "Azeret Mono", monospace; letter-spacing: .14em; text-transform: uppercase; }
+.ew-known-line { margin: 14px 0 0; color: var(--ew-dust); font: 500 10px/1.35 "Azeret Mono", monospace; letter-spacing: .16em; text-transform: uppercase; }
+.ew-waiting { display: flex; align-items: center; gap: 9px; margin: 14px 0 0; color: var(--ew-dust); font: 500 10px/1.35 "Azeret Mono", monospace; letter-spacing: .16em; text-transform: uppercase; }
+.ew-waiting-dot { display: block; flex: none; width: 7px; height: 7px; border-radius: 50%; background: var(--ew-ether); }
+.ew-desk-verified { margin: 12px 0 0; color: var(--ew-foil); font: 500 9px/1.35 "Azeret Mono", monospace; letter-spacing: .14em; text-transform: uppercase; }
+.ew-meridian-host { margin-left: 8px; color: var(--ew-dust); font-style: normal; letter-spacing: .06em; text-transform: none; }
+.ew-knode-also { margin-top: 18px; border-top: 1px solid var(--ew-rule); padding-top: 12px; }
+.ew-knode-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 9px; }
+.ew-knode-chip { display: inline-flex; align-items: center; min-height: 40px; border: 1px solid var(--ew-rule); background: transparent; padding: 0 12px; color: var(--ew-bone); font: 500 10px/1 "Azeret Mono", monospace; letter-spacing: .1em; text-transform: uppercase; cursor: pointer; }
+.ew-knode-chip[data-kind="country"], .ew-knode-chip[data-kind="artist"], .ew-knode-chip[data-kind="album"] { color: var(--ew-foil); }
+.ew-knode-chip[data-kind="language"], .ew-knode-chip[data-kind="year"], .ew-knode-chip[data-kind="genre"], .ew-knode-chip[data-kind="city"], .ew-knode-chip[data-kind="place"] { color: var(--ew-ether); }
+.ew-knode-chip[data-kind="event"] { color: var(--ew-lacquer); }
+@media (max-width: 960px) {
+:root[data-atmosphere="day"] .ew-meridian-host { color: #665F55; }
+:root[data-atmosphere="day"] .ew-krow-key, :root[data-atmosphere="day"] .ew-krow-prov, :root[data-atmosphere="day"] .ew-waiting, :root[data-atmosphere="day"] .ew-known-line { color: #665F55; }
+}
