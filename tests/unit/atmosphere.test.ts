@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   applyAtmosphere,
   ATMOSPHERE_BOOT_SCRIPT,
+  ATMOSPHERE_SHIFT_CLASS,
   ATMOSPHERE_STORAGE_KEY,
   ATMOSPHERE_THEME_COLOR,
   atmosphereThemeColor,
@@ -57,13 +58,36 @@ describe("Atmosphere", () => {
         if (name === "content") meta.content = value;
       },
     };
+    // The swap is only correct if the shift class is held while the attribute
+    // moves and released after: a transitioned property that reads a custom
+    // property does not re-resolve mid-transition, so a live swap without the
+    // suspension leaves the old room painted on. `trace` records the order.
+    const trace: string[] = [];
+    const classes = new Set<string>();
     const documentElement = {
       style: { colorScheme: "dark" },
+      classList: {
+        add: (name: string) => {
+          classes.add(name);
+          trace.push(`+${name}`);
+        },
+        remove: (name: string) => {
+          classes.delete(name);
+          trace.push(`-${name}`);
+        },
+      },
+      get offsetHeight() {
+        trace.push("flush");
+        return 0;
+      },
+      getAttribute: (name: string) => attrs.get(name) ?? null,
       setAttribute: (name: string, value: string) => {
         attrs.set(name, value);
+        trace.push(`set:${name}`);
       },
       removeAttribute: (name: string) => {
         attrs.delete(name);
+        trace.push(`unset:${name}`);
       },
     };
     const previousWindow = globalThis.window;
@@ -94,10 +118,31 @@ describe("Atmosphere", () => {
       expect(attrs.get("data-atmosphere")).toBe("day");
       expect(documentElement.style.colorScheme).toBe("light");
       expect(meta.content).toBe(ATMOSPHERE_THEME_COLOR.day);
+      expect(trace).toEqual([
+        `+${ATMOSPHERE_SHIFT_CLASS}`,
+        "set:data-atmosphere",
+        "flush",
+        `-${ATMOSPHERE_SHIFT_CLASS}`,
+      ]);
+      expect(classes.has(ATMOSPHERE_SHIFT_CLASS)).toBe(false);
+
+      // Re-applying the room already on the document changes nothing, so it
+      // never pays for a forced layout.
+      trace.length = 0;
+      expect(applyAtmosphere("day")).toBe("day");
+      expect(trace).toEqual([]);
+
       expect(applyAtmosphere("night")).toBe("night");
       expect(attrs.has("data-atmosphere")).toBe(false);
       expect(documentElement.style.colorScheme).toBe("dark");
       expect(meta.content).toBe(ATMOSPHERE_THEME_COLOR.night);
+      expect(trace).toEqual([
+        `+${ATMOSPHERE_SHIFT_CLASS}`,
+        "unset:data-atmosphere",
+        "flush",
+        `-${ATMOSPHERE_SHIFT_CLASS}`,
+      ]);
+      expect(classes.has(ATMOSPHERE_SHIFT_CLASS)).toBe(false);
     } finally {
       Object.defineProperty(globalThis, "window", {
         configurable: true,

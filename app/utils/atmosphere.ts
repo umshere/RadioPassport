@@ -21,15 +21,36 @@ export function atmosphereThemeColor(atmosphere: Atmosphere) {
   return ATMOSPHERE_THEME_COLOR[parseAtmosphere(atmosphere)];
 }
 
+/** Class that silences every transition for the length of a room swap. */
+export const ATMOSPHERE_SHIFT_CLASS = "ew-atmosphere-shift";
+
 export function applyAtmosphere(atmosphere: Atmosphere) {
   if (typeof document === "undefined") return parseAtmosphere(atmosphere);
   const next = parseAtmosphere(atmosphere);
-  if (next === "day") {
-    document.documentElement.setAttribute("data-atmosphere", "day");
-  } else {
-    document.documentElement.removeAttribute("data-atmosphere");
+  const root = document.documentElement;
+  const current = root.getAttribute("data-atmosphere") === "day" ? "day" : "night";
+
+  if (current !== next) {
+    // Swap the room with transitions suspended. A transitioned property whose
+    // value reads a custom property is not re-resolved when that property
+    // changes, so a live swap left the old room's colors painted on: the page
+    // kept night ink, and the lit hour kept its night ember. Silencing the
+    // transitions lets the new values resolve, which makes a room change a cut
+    // rather than a fade — the fade never actually ran.
+    root.classList.add(ATMOSPHERE_SHIFT_CLASS);
+    if (next === "day") {
+      root.setAttribute("data-atmosphere", "day");
+    } else {
+      root.removeAttribute("data-atmosphere");
+    }
+    // Commit the transition-free style before transitions come back. Reading a
+    // layout property is the flush; rAF is not an option here because it never
+    // fires in a hidden tab, which would strand the page with no transitions.
+    void root.offsetHeight;
+    root.classList.remove(ATMOSPHERE_SHIFT_CLASS);
   }
-  document.documentElement.style.colorScheme = next === "day" ? "light" : "dark";
+
+  root.style.colorScheme = next === "day" ? "light" : "dark";
   const meta = document.querySelector('meta[name="theme-color"]');
   if (meta) meta.setAttribute("content", ATMOSPHERE_THEME_COLOR[next]);
   return next;

@@ -1769,6 +1769,14 @@
   cursor: pointer;
 }
 
+/* Held for the length of a room swap (see applyAtmosphere). Unlayered so it
+   outranks every transition it silences. */
+html.ew-atmosphere-shift *,
+html.ew-atmosphere-shift *::before,
+html.ew-atmosphere-shift *::after {
+  transition: none !important;
+}
+
 /* App-shell touch behavior — outside @layer with the site bar (same drop
    gremlin). manipulation kills double-tap zoom but keeps pinch + pan;
    overscroll none on the document stops rubber-band page bounce while inner
