@@ -1,0 +1,1202 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Scrolling home</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Azeret+Mono:wght@400;500&family=Newsreader:ital,wght@0,400;1,400&family=Schibsted+Grotesk:wght@400;500;600&display=swap">
+<style>
+/* Board frame. The design itself begins below this rule. */
+html { background: #0C0B09; }
+body { display: flex; justify-content: center; padding: 32px 16px; }
+@media (max-width: 700px) { body { padding: 0; } }
+:root{
+  --ink:#0C0B09; --leather:#1A1410; --hide:#241C16;
+  --bone:#E8DFD0; --dust:#9A8F80; --lacquer:#C73A3A; --foil:#C6A56A; --ether:#7EB8B4;
+  --rule:rgba(232,223,208,0.10); --rule-2:rgba(232,223,208,0.18);
+  --foil-line:rgba(198,165,106,.45); --foil-wash:rgba(198,165,106,.06);
+  --dawn:#E3B76B; --midday:#EFE3CE; --dusk:#E07840; --night:#A79BEC;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ink);color:var(--bone);
+  font-family:"Schibsted Grotesk","Sora",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:var(--foil);text-decoration:none}
+a:hover{color:var(--bone)}
+.mono{font-family:"Azeret Mono","IBM Plex Mono",ui-monospace,monospace;font-size:10px;font-weight:500;
+  letter-spacing:.18em;text-transform:uppercase;line-height:1.35;margin:0}
+.serif{font-family:"Newsreader","Iowan Old Style","Palatino Linotype",serif;font-style:italic;font-weight:400;margin:0}
+.phone{position:relative;display:flex;flex-direction:column;width:390px;height:844px;overflow:hidden;background:var(--ink)}
+.bar{display:flex;flex:none;align-items:center;justify-content:space-between;gap:12px;
+  height:52px;padding:0 16px;border-bottom:1px solid var(--rule);background:var(--ink)}
+.mark{display:flex;align-items:center;gap:9px}
+.mark-lines{display:flex;flex-direction:column;gap:1px}
+.mark-kicker{font-family:"Azeret Mono",monospace;font-size:8px;font-weight:500;letter-spacing:.22em;
+  text-transform:uppercase;color:var(--foil)}
+.mark-name{font-family:"Newsreader",serif;font-style:italic;font-size:19px;line-height:1;color:var(--bone)}
+.passport{display:inline-flex;align-items:center;height:36px;padding:0 12px;border:1px solid var(--foil-line);
+  background:transparent;color:var(--bone);font-family:"Azeret Mono",monospace;font-size:10px;font-weight:500;
+  letter-spacing:.16em;text-transform:uppercase}
+.passport b{color:var(--foil);margin-left:7px}
+.body{display:flex;flex:1 1 auto;flex-direction:column;min-height:0;overflow:hidden}
+.band{flex:none;border-top:1px solid var(--rule-2);background:rgba(26,20,16,.94)}
+.dock{display:flex;align-items:center;gap:12px;height:64px;padding:0 10px}
+.dock-art{display:grid;flex:none;width:44px;height:44px;place-items:center;overflow:hidden;
+  border:1px solid rgba(198,165,106,.28);background:#0C0B09}
+.dock-copy{display:flex;flex-direction:column;gap:3px;min-width:0;flex:1 1 auto}
+.dock-title{overflow:hidden;font-size:14px;font-weight:500;text-overflow:ellipsis;white-space:nowrap;color:var(--bone)}
+.dock-play{display:grid;flex:none;width:48px;height:48px;place-items:center;border:1.5px solid var(--foil);
+  border-radius:50%;background:var(--lacquer);color:var(--bone)}
+.nav{display:grid;grid-template-columns:repeat(4,1fr);height:44px;border-top:1px solid var(--rule)}
+.nav a{display:grid;place-items:center;height:100%;font-family:"Azeret Mono",monospace;font-size:9px;
+  font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:var(--dust)}
+.nav a[aria-current="page"]{color:var(--foil);box-shadow:inset 0 -1px 0 var(--foil)}
+.nav a.off{color:rgba(154,143,128,.4)}
+.seek{display:flex;align-items:center;gap:10px;height:48px;margin:14px 16px 0;padding:0 4px 0 12px;
+  border:1px solid var(--rule-2);background:var(--ink)}
+.seek input{flex:1 1 auto;min-width:0;border:0;outline:0;background:transparent;color:var(--bone);
+  font:400 16px/1.3 "Schibsted Grotesk",sans-serif}
+.seek input::placeholder{color:var(--dust)}
+.seek .divider{flex:none;width:1px;height:24px;background:var(--rule-2)}
+.seek button{flex:none;height:44px;border:0;background:transparent;padding:0 12px;color:var(--foil);
+  font-family:"Azeret Mono",monospace;font-size:10px;font-weight:500;letter-spacing:.14em;text-transform:uppercase}
+.globe{position:relative;flex:none;height:174px;margin-top:10px;overflow:hidden}
+.cover{flex:none;padding:0 16px}
+.cover-rule{display:block;width:24px;height:1px;margin-bottom:10px;background:var(--foil)}
+.coverline{font-size:44px;line-height:.96;letter-spacing:-.02em}
+.telemetry{margin-top:9px;color:var(--dust)}
+.stamp{display:inline-flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:5px;
+  position:relative;min-height:54px;margin:16px 16px 0;align-self:flex-start;border:0;
+  background:var(--lacquer);padding:10px 20px;color:var(--bone);text-align:left}
+.stamp::after{content:"";position:absolute;inset:4px;border:1px solid rgba(232,223,208,.35)}
+.stamp .kicker{font-family:"Azeret Mono",monospace;font-size:9px;font-weight:500;letter-spacing:.22em;
+  text-transform:uppercase;color:rgba(232,223,208,.8)}
+.stamp .city{font-family:"Newsreader",serif;font-style:italic;font-size:17px;line-height:1.2}
+.horizon{flex:none;margin-top:16px;padding:0 16px}
+.horizon-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+.horizon-head .mono{color:var(--dust)}
+.atmo{border:0;background:transparent;padding:0;color:var(--foil);font-family:"Azeret Mono",monospace;
+  font-size:10px;font-weight:500;letter-spacing:.16em;text-transform:uppercase}
+.atmo span{color:var(--dust)}
+.hours{display:grid;grid-template-columns:repeat(4,1fr);margin-top:10px;border-top:1px solid var(--rule);
+  border-bottom:1px solid var(--rule)}
+.hour{display:flex;flex-direction:column;align-items:center;gap:7px;min-height:62px;justify-content:center;
+  border:0;border-right:1px solid var(--rule);background:transparent;padding:0;color:var(--dust);
+  font-family:"Azeret Mono",monospace;font-size:9px;font-weight:500;letter-spacing:.16em;text-transform:uppercase}
+.hour:last-child{border-right:0}
+.hour svg{width:20px;height:20px;opacity:.7}
+.hour i{display:block;width:5px;height:5px;border:1px solid var(--foil-line);border-radius:50%}
+.hour.on{color:var(--dusk)}
+.hour.on svg{opacity:1;filter:drop-shadow(0 0 6px var(--dusk))}
+.hour.on i{border-color:var(--dusk);background:var(--dusk);box-shadow:0 0 8px 1px var(--dusk)}
+.board{display:flex;flex:1 1 auto;flex-direction:column;min-height:0;margin-top:20px;padding:0 16px}
+.board-head{display:flex;align-items:center;gap:9px;color:var(--bone)}
+.board-head .count{margin-left:auto;color:var(--dust)}
+.dot{display:block;width:7px;height:7px;border-radius:50%;background:var(--ether)}
+.rows{display:flex;flex-direction:column;margin-top:10px}
+.row{display:flex;align-items:center;gap:12px;min-height:66px;border-bottom:1px solid var(--rule);padding:8px 0}
+.art{display:grid;flex:none;width:48px;height:48px;place-items:center;overflow:hidden;
+  border:1px solid rgba(198,165,106,.28);background:#0C0B09;color:var(--foil)}
+.row-copy{display:flex;flex-direction:column;gap:4px;min-width:0;flex:1 1 auto}
+.row-title{overflow:hidden;font-size:15px;font-weight:500;text-overflow:ellipsis;white-space:nowrap}
+.row-meta{color:var(--dust)}
+.heart{display:grid;flex:none;width:44px;height:44px;place-items:center;border:0;background:transparent;color:var(--dust)}
+.dock-ctl{display:grid;flex:none;width:44px;height:44px;place-items:center;border:0;background:transparent;color:var(--dust)}
+.stage{width:1330px;padding:44px 48px 48px;background:var(--ink)}
+.stage-head{border-bottom:1px solid var(--rule-2);padding-bottom:22px;margin-bottom:30px}
+.stage-head h1{margin:8px 0 0;font-family:"Newsreader",serif;font-style:italic;font-weight:400;
+  font-size:46px;line-height:1;letter-spacing:-.02em}
+.stage-head p{max-width:74ch;margin:12px 0 0;color:var(--dust);font-size:15px;line-height:1.6}
+.beats{display:flex;gap:44px;align-items:flex-start}
+.beat{margin:0;display:flex;flex-direction:column;gap:14px;width:390px}
+.beat figcaption{display:flex;flex-direction:column;gap:7px;min-height:104px}
+.step{color:var(--foil)}
+.step b{color:var(--dust);margin-right:8px;font-weight:500}
+.note{margin:0;color:var(--dust);font-size:13px;line-height:1.55}
+.frame{position:relative;width:390px;height:844px;overflow:hidden;background:var(--ink);
+  border:1px solid var(--rule-2)}
+.col{position:absolute;top:52px;left:0;width:390px;display:flex;flex-direction:column}
+.frame > .bar{position:absolute;top:0;left:0;right:0;z-index:3}
+.frame > .band{position:absolute;bottom:0;left:0;right:0;z-index:3}
+.strip{position:absolute;top:52px;left:0;right:0;z-index:2;display:flex;align-items:center;gap:9px;
+  height:44px;padding:0 16px;border-bottom:1px solid var(--rule);background:var(--ink)}
+.strip .mono{white-space:nowrap}
+.strip-seek{display:grid;flex:none;width:44px;height:44px;margin-left:auto;place-items:center;border:0;
+  background:transparent;color:var(--dust)}
+.measure{display:flex;flex-wrap:wrap;gap:0 40px;margin-top:34px;border-top:1px solid var(--rule);padding-top:18px}
+.measure div{display:flex;align-items:baseline;gap:10px;padding:7px 0}
+.measure b{color:var(--foil);font-family:"Azeret Mono",monospace;font-size:10px;font-weight:500;
+  letter-spacing:.14em;text-transform:uppercase}
+.measure span{color:var(--dust);font-size:13px}
+</style>
+</head>
+<body>
+<div class="stage">
+  <header class="stage-head">
+    <p class="mono" style="color:var(--foil)">Elsewhere &middot; Mobile</p>
+    <h1>Scrolling home</h1>
+    <p>Home is one page, not a stack of panels. The 52px bar and the bottom band are fixed and never
+      change; everything between them is a single scrolling column. One thing transforms, once: when
+      the land name leaves the top, it comes back as a 44px strip.</p>
+  </header>
+  <div class="beats">
+    <figure class="beat">
+      <figcaption>
+        <p class="mono step"><b>01</b> At rest</p>
+        <p class="note">The whole cover is above the fold: seek, globe, the land name, the stamp, the horizon. The list starts at the fold on purpose &mdash; it reads as something to scroll into.</p>
+      </figcaption>
+      <div class="frame">
+        <div class="col" style="transform:translateY(-0px)">
+
+    <div class="seek">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9A8F80" stroke-width="1.4"
+           stroke-linecap="round" aria-hidden="true">
+        <rect x="9" y="3" width="6" height="11" rx="3"></rect>
+        <path d="M5 11a7 7 0 0 0 14 0M12 18v3"></path>
+      </svg>
+      <input type="text" placeholder="Lisbon at dusk" readonly>
+      <span class="divider"></span>
+      <button type="button">Surprise</button>
+    </div>
+
+    <div class="globe">
+      <svg width="390" height="174" viewBox="0 0 390 174" aria-hidden="true">
+        <defs>
+          <pattern id="halftone" width="8" height="8" patternUnits="userSpaceOnUse">
+            <circle cx="1.8" cy="1.8" r="1.15" fill="#E8DFD0" fill-opacity="0.34"></circle>
+          </pattern>
+          <clipPath id="ball"><circle cx="195" cy="87" r="70"></circle></clipPath>
+        </defs>
+        <circle cx="195" cy="87" r="70" fill="#0C0B09"></circle>
+        <g clip-path="url(#ball)">
+          <rect x="125" y="17" width="140" height="140" fill="url(#halftone)"></rect>
+          <path d="M152 40c13 9 20 19 24 31 4 13 1 24-6 35" fill="none" stroke="#7EB8B4"
+                stroke-opacity="0.30" stroke-width="1"></path>
+          <path d="M226 30c-8 15-10 31-6 46 5 15 15 28 29 37" fill="none" stroke="#7EB8B4"
+                stroke-opacity="0.30" stroke-width="1"></path>
+        </g>
+        <circle cx="195" cy="87" r="70" fill="none" stroke="#C6A56A" stroke-opacity="0.28"></circle>
+        <line x1="195" y1="17" x2="195" y2="157" stroke="#C6A56A" stroke-opacity="0.22"></line>
+        <g>
+          <circle cx="170" cy="58" r="9" fill="#C73A3A" fill-opacity="0.16"></circle>
+          <circle cx="170" cy="58" r="4" fill="#C73A3A"></circle>
+        </g>
+        <g stroke="#E8DFD0" stroke-opacity="0.22" stroke-width="1">
+          <path d="M42 36h8M46 32v8"></path><path d="M336 120h6M339 117v6"></path>
+          <path d="M64 140h6M67 137v6"></path><path d="M318 40h6M321 37v6"></path>
+        </g>
+      </svg>
+    </div>
+
+    <div class="cover">
+      <span class="cover-rule"></span>
+      <h1 class="serif coverline">California</h1>
+      <p class="mono telemetry">128 &middot; California &middot; Live &middot; 13:48</p>
+    </div>
+
+    <button type="button" class="stamp">
+      <span class="kicker">EW &middot; Arrival</span>
+      <span class="city">Land here</span>
+    </button>
+
+    <section class="horizon">
+      <div class="horizon-head">
+        <p class="mono">Horizon</p>
+        <button type="button" class="atmo">Night <span>/ Day</span></button>
+      </div>
+      <div class="hours">
+        <button type="button" class="hour">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round">
+            <path d="M3 18h18M7.5 18a4.5 4.5 0 0 1 9 0M12 6.5V4M6.4 8.4 4.9 6.9M17.6 8.4l1.5-1.5"></path>
+          </svg>
+          <span>Dawn</span><i></i>
+        </button>
+        <button type="button" class="hour">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round">
+            <circle cx="12" cy="12" r="4.4"></circle>
+            <path d="M12 3v2.2M12 18.8V21M3 12h2.2M18.8 12H21M5.6 5.6l1.6 1.6M16.8 16.8l1.6 1.6M18.4 5.6l-1.6 1.6M7.2 16.8l-1.6 1.6"></path>
+          </svg>
+          <span>Midday</span><i></i>
+        </button>
+        <button type="button" class="hour on">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round">
+            <path d="M3 18h18M7.5 18a4.5 4.5 0 0 1 9 0M12 4v2.5M5.6 7.2l1.7 1.7M18.4 7.2l-1.7 1.7"></path>
+          </svg>
+          <span>Dusk</span><i></i>
+        </button>
+        <button type="button" class="hour">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round">
+            <path d="M19 14.8A8 8 0 0 1 9.2 5a8.4 8.4 0 1 0 9.8 9.8Z"></path>
+          </svg>
+          <span>Night</span><i></i>
+        </button>
+      </div>
+    </section>
+
+
+    <section class="board">
+      <div class="board-head">
+        <span class="dot"></span>
+        <p class="mono">Live now</p>
+        <p class="mono count">24 lands</p>
+      </div>
+      <div class="rows">
+        <div class="row">
+          <span class="art">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+              <circle cx="12" cy="12" r="8.5"></circle>
+              <circle cx="12" cy="12" r="2.6" fill="#C73A3A" stroke="none"></circle>
+            </svg>
+          </span>
+          <span class="row-copy">
+            <span class="row-title">SomaFM Secret Agent</span>
+            <span class="mono row-meta">California &middot; 128k</span>
+          </span>
+          <button type="button" class="heart" aria-label="Keep">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3">
+              <path d="M12 20s-7.5-4.7-7.5-9.6A4.4 4.4 0 0 1 12 7.5a4.4 4.4 0 0 1 7.5 2.9C19.5 15.3 12 20 12 20Z"></path>
+            </svg>
+          </button>
+        </div>
+        <div class="row">
+          <span class="art">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+              <circle cx="12" cy="12" r="8.5"></circle>
+              <circle cx="12" cy="12" r="2.6" fill="#C73A3A" stroke="none"></circle>
+            </svg>
+          </span>
+          <span class="row-copy">
+            <span class="row-title">SomaFM Groove Salad</span>
+            <span class="mono row-meta">California &middot; 128k</span>
+          </span>
+          <button type="button" class="heart" aria-label="Keep">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3">
+              <path d="M12 20s-7.5-4.7-7.5-9.6A4.4 4.4 0 0 1 12 7.5a4.4 4.4 0 0 1 7.5 2.9C19.5 15.3 12 20 12 20Z"></path>
+            </svg>
+          </button>
+        </div>
+
+        <div class="row">
+          <span class="art">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+              <circle cx="12" cy="12" r="8.5"></circle>
+              <circle cx="12" cy="12" r="2.6" fill="#C73A3A" stroke="none"></circle>
+            </svg>
+          </span>
+          <span class="row-copy">
+            <span class="row-title">Intense Radio &middot; Dance</span>
+            <span class="mono row-meta">Netherlands &middot; 192k</span>
+          </span>
+          <button type="button" class="heart" aria-label="Keep">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3">
+              <path d="M12 20s-7.5-4.7-7.5-9.6A4.4 4.4 0 0 1 12 7.5a4.4 4.4 0 0 1 7.5 2.9C19.5 15.3 12 20 12 20Z"></path>
+            </svg>
+          </button>
+        </div>
+
+        <div class="row">
+          <span class="art">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+              <circle cx="12" cy="12" r="8.5"></circle>
+              <circle cx="12" cy="12" r="2.6" fill="#C73A3A" stroke="none"></circle>
+            </svg>
+          </span>
+          <span class="row-copy">
+            <span class="row-title">Intense Radio &middot; Dance</span>
+            <span class="mono row-meta">Netherlands &middot; 192k</span>
+          </span>
+          <button type="button" class="heart" aria-label="Keep">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3">
+              <path d="M12 20s-7.5-4.7-7.5-9.6A4.4 4.4 0 0 1 12 7.5a4.4 4.4 0 0 1 7.5 2.9C19.5 15.3 12 20 12 20Z"></path>
+            </svg>
+          </button>
+        </div>
+        <div class="row">
+          <span class="art">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+              <circle cx="12" cy="12" r="8.5"></circle>
+              <circle cx="12" cy="12" r="2.6" fill="#C73A3A" stroke="none"></circle>
+            </svg>
+          </span>
+          <span class="row-copy">
+            <span class="row-title">KEXP 90.3</span>
+            <span class="mono row-meta">Seattle &middot; 128k</span>
+          </span>
+          <button type="button" class="heart" aria-label="Keep">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3">
+              <path d="M12 20s-7.5-4.7-7.5-9.6A4.4 4.4 0 0 1 12 7.5a4.4 4.4 0 0 1 7.5 2.9C19.5 15.3 12 20 12 20Z"></path>
+            </svg>
+          </button>
+        </div>
+        <div class="row">
+          <span class="art">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+              <circle cx="12" cy="12" r="8.5"></circle>
+              <circle cx="12" cy="12" r="2.6" fill="#C73A3A" stroke="none"></circle>
+            </svg>
+          </span>
+          <span class="row-copy">
+            <span class="row-title">Radio Caroline</span>
+            <span class="mono row-meta">Kent &middot; 128k</span>
+          </span>
+          <button type="button" class="heart" aria-label="Keep">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3">
+              <path d="M12 20s-7.5-4.7-7.5-9.6A4.4 4.4 0 0 1 12 7.5a4.4 4.4 0 0 1 7.5 2.9C19.5 15.3 12 20 12 20Z"></path>
+            </svg>
+          </button>
+        </div>
+        <div class="row">
+          <span class="art">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+              <circle cx="12" cy="12" r="8.5"></circle>
+              <circle cx="12" cy="12" r="2.6" fill="#C73A3A" stroke="none"></circle>
+            </svg>
+          </span>
+          <span class="row-copy">
+            <span class="row-title">NTS Radio 1</span>
+            <span class="mono row-meta">London &middot; 128k</span>
+          </span>
+          <button type="button" class="heart" aria-label="Keep">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3">
+              <path d="M12 20s-7.5-4.7-7.5-9.6A4.4 4.4 0 0 1 12 7.5a4.4 4.4 0 0 1 7.5 2.9C19.5 15.3 12 20 12 20Z"></path>
+            </svg>
+          </button>
+        </div>
+        <div class="row">
+          <span class="art">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+              <circle cx="12" cy="12" r="8.5"></circle>
+              <circle cx="12" cy="12" r="2.6" fill="#C73A3A" stroke="none"></circle>
+            </svg>
+          </span>
+          <span class="row-copy">
+            <span class="row-title">Worldwide FM</span>
+            <span class="mono row-meta">London &middot; 128k</span>
+          </span>
+          <button type="button" class="heart" aria-label="Keep">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3">
+              <path d="M12 20s-7.5-4.7-7.5-9.6A4.4 4.4 0 0 1 12 7.5a4.4 4.4 0 0 1 7.5 2.9C19.5 15.3 12 20 12 20Z"></path>
+            </svg>
+          </button>
+        </div>
+        <div class="row">
+          <span class="art">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+              <circle cx="12" cy="12" r="8.5"></circle>
+              <circle cx="12" cy="12" r="2.6" fill="#C73A3A" stroke="none"></circle>
+            </svg>
+          </span>
+          <span class="row-copy">
+            <span class="row-title">Rinse FM</span>
+            <span class="mono row-meta">London &middot; 128k</span>
+          </span>
+          <button type="button" class="heart" aria-label="Keep">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3">
+              <path d="M12 20s-7.5-4.7-7.5-9.6A4.4 4.4 0 0 1 12 7.5a4.4 4.4 0 0 1 7.5 2.9C19.5 15.3 12 20 12 20Z"></path>
+            </svg>
+          </button>
+        </div>
+        <div class="row">
+          <span class="art">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+              <circle cx="12" cy="12" r="8.5"></circle>
+              <circle cx="12" cy="12" r="2.6" fill="#C73A3A" stroke="none"></circle>
+            </svg>
+          </span>
+          <span class="row-copy">
+            <span class="row-title">Radio Nova</span>
+            <span class="mono row-meta">Paris &middot; 128k</span>
+          </span>
+          <button type="button" class="heart" aria-label="Keep">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3">
+              <path d="M12 20s-7.5-4.7-7.5-9.6A4.4 4.4 0 0 1 12 7.5a4.4 4.4 0 0 1 7.5 2.9C19.5 15.3 12 20 12 20Z"></path>
+            </svg>
+          </button>
+        </div>
+        <div class="row">
+          <span class="art">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+              <circle cx="12" cy="12" r="8.5"></circle>
+              <circle cx="12" cy="12" r="2.6" fill="#C73A3A" stroke="none"></circle>
+            </svg>
+          </span>
+          <span class="row-copy">
+            <span class="row-title">Byte FM</span>
+            <span class="mono row-meta">Hamburg &middot; 128k</span>
+          </span>
+          <button type="button" class="heart" aria-label="Keep">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3">
+              <path d="M12 20s-7.5-4.7-7.5-9.6A4.4 4.4 0 0 1 12 7.5a4.4 4.4 0 0 1 7.5 2.9C19.5 15.3 12 20 12 20Z"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </section>
+
+  
+        </div>
+        <header class="bar">
+    <span class="mark">
+      <svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true">
+        <rect x="0.5" y="0.5" width="29" height="29" rx="2" fill="none" stroke="#C6A56A" stroke-opacity="0.55"></rect>
+        <circle cx="15" cy="15" r="8" fill="none" stroke="#C6A56A" stroke-opacity="0.5"></circle>
+        <circle cx="15" cy="15" r="4.5" fill="#C73A3A"></circle>
+      </svg>
+      <span class="mark-lines">
+        <span class="mark-kicker">Live radio</span>
+        <span class="mark-name">Elsewhere</span>
+      </span>
+    </span>
+    <button type="button" class="passport">Passport <b>04</b></button>
+        </header>
+        <div class="band">
+    <div class="dock">
+      <span class="dock-art">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#C6A56A" stroke-width="1.2">
+          <circle cx="12" cy="12" r="8.5"></circle>
+          <circle cx="12" cy="12" r="2.6" fill="#C73A3A" stroke="none"></circle>
+        </svg>
+      </span>
+      <span class="dock-copy">
+        <span class="dock-title">SomaFM Secret Agent</span>
+        <span class="mono" style="color:var(--ether)">Live &middot; California</span>
+      </span>
+      <button type="button" class="dock-ctl" aria-label="Previous station">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M18 5.5v13L9 12l9-6.5Z"></path><rect x="5.5" y="5.5" width="2.4" height="13" rx="1"></rect>
+          </svg>
+        </button>
+        <button type="button" class="dock-play" aria-label="Pause">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+          <rect x="6.5" y="4.5" width="4" height="15" rx="1"></rect>
+          <rect x="13.5" y="4.5" width="4" height="15" rx="1"></rect>
+        </svg>
+      </button>
+        <button type="button" class="dock-ctl" aria-label="Next station">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M6 5.5v13L15 12 6 5.5Z"></path><rect x="16.1" y="5.5" width="2.4" height="13" rx="1"></rect>
+          </svg>
+        </button>
+    </div>
+    <nav class="nav" aria-label="Elsewhere">
+      <a href="#home" aria-current="page">Elsewhere</a>
+      <a href="#atlas">Atlas</a>
+      <a href="#theater">Theater</a>
+      <a href="#room">Room</a>
+    </nav>
+        </div>
+      </div>
+    </figure>
+    <figure class="beat">
+      <figcaption>
+        <p class="mono step"><b>02</b> Cover leaving</p>
+        <p class="note">Only the column moves. The globe goes first, because once you have landed it has done its job. The land name and the horizon are still with you.</p>
+      </figcaption>
+      <div class="frame">
+        <div class="col" style="transform:translateY(-200px)">
+
+    <div class="seek">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9A8F80" stroke-width="1.4"
+           stroke-linecap="round" aria-hidden="true">
+        <rect x="9" y="3" width="6" height="11" rx="3"></rect>
+        <path d="M5 11a7 7 0 0 0 14 0M12 18v3"></path>
+      </svg>
+      <input type="text" placeholder="Lisbon at dusk" readonly>
+      <span class="divider"></span>
+      <button type="button">Surprise</button>
+    </div>
+
+    <div class="globe">
+      <svg width="390" height="174" viewBox="0 0 390 174" aria-hidden="true">
+        <defs>
+          <pattern id="halftone" width="8" height="8" patternUnits="userSpaceOnUse">
+            <circle cx="1.8" cy="1.8" r="1.15" fill="#E8DFD0" fill-opacity="0.34"></circle>
+          </pattern>
+          <clipPath id="ball"><circle cx="195" cy="87" r="70"></circle></clipPath>
+        </defs>
+        <circle cx="195" cy="87" r="70" fill="#0C0B09"></circle>
+        <g clip-path="url(#ball)">
+          <rect x="125" y="17" width="140" height="140" fill="url(#halftone)"></rect>
+          <path d="M152 40c13 9 20 19 24 31 4 13 1 24-6 35" fill="none" stroke="#7EB8B4"
+                stroke-opacity="0.30" stroke-width="1"></path>
+          <path d="M226 30c-8 15-10 31-6 46 5 15 15 28 29 37" fill="none" stroke="#7EB8B4"
+                stroke-opacity="0.30" stroke-width="1"></path>
+        </g>
+        <circle cx="195" cy="87" r="70" fill="none" stroke="#C6A56A" stroke-opacity="0.28"></circle>
+        <line x1="195" y1="17" x2="195" y2="157" stroke="#C6A56A" stroke-opacity="0.22"></line>
+        <g>
+          <circle cx="170" cy="58" r="9" fill="#C73A3A" fill-opacity="0.16"></circle>
+          <circle cx="170" cy="58" r="4" fill="#C73A3A"></circle>
+        </g>
+        <g stroke="#E8DFD0" stroke-opacity="0.22" stroke-width="1">
+          <path d="M42 36h8M46 32v8"></path><path d="M336 120h6M339 117v6"></path>
+          <path d="M64 140h6M67 137v6"></path><path d="M318 40h6M321 37v6"></path>
+        </g>
+      </svg>
+    </div>
+
+    <div class="cover">
+      <span class="cover-rule"></span>
+      <h1 class="serif coverline">California</h1>
+      <p class="mono telemetry">128 &middot; California &middot; Live &middot; 13:48</p>
+    </div>
+
+    <button type="button" class="stamp">
+      <span class="kicker">EW &middot; Arrival</span>
+      <span class="city">Land here</span>
+    </button>
+
+    <section class="horizon">
+      <div class="horizon-head">
+        <p class="mono">Horizon</p>
+        <button type="button" class="atmo">Night <span>/ Day</span></button>
+      </div>
+      <div class="hours">
+        <button type="button" class="hour">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round">
+            <path d="M3 18h18M7.5 18a4.5 4.5 0 0 1 9 0M12 6.5V4M6.4 8.4 4.9 6.9M17.6 8.4l1.5-1.5"></path>
+          </svg>
+          <span>Dawn</span><i></i>
+        </button>
+        <button type="button" class="hour">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round">
+            <circle cx="12" cy="12" r="4.4"></circle>
+            <path d="M12 3v2.2M12 18.8V21M3 12h2.2M18.8 12H21M5.6 5.6l1.6 1.6M16.8 16.8l1.6 1.6M18.4 5.6l-1.6 1.6M7.2 16.8l-1.6 1.6"></path>
+          </svg>
+          <span>Midday</span><i></i>
+        </button>
+        <button type="button" class="hour on">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round">
+            <path d="M3 18h18M7.5 18a4.5 4.5 0 0 1 9 0M12 4v2.5M5.6 7.2l1.7 1.7M18.4 7.2l-1.7 1.7"></path>
+          </svg>
+          <span>Dusk</span><i></i>
+        </button>
+        <button type="button" class="hour">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round">
+            <path d="M19 14.8A8 8 0 0 1 9.2 5a8.4 8.4 0 1 0 9.8 9.8Z"></path>
+          </svg>
+          <span>Night</span><i></i>
+        </button>
+      </div>
+    </section>
+
+
+    <section class="board">
+      <div class="board-head">
+        <span class="dot"></span>
+        <p class="mono">Live now</p>
+        <p class="mono count">24 lands</p>
+      </div>
+      <div class="rows">
+        <div class="row">
+          <span class="art">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+              <circle cx="12" cy="12" r="8.5"></circle>
+              <circle cx="12" cy="12" r="2.6" fill="#C73A3A" stroke="none"></circle>
+            </svg>
+          </span>
+          <span class="row-copy">
+            <span class="row-title">SomaFM Secret Agent</span>
+            <span class="mono row-meta">California &middot; 128k</span>
+          </span>
+          <button type="button" class="heart" aria-label="Keep">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3">
+              <path d="M12 20s-7.5-4.7-7.5-9.6A4.4 4.4 0 0 1 12 7.5a4.4 4.4 0 0 1 7.5 2.9C19.5 15.3 12 20 12 20Z"></path>
+            </svg>
+          </button>
+        </div>
+        <div class="row">
+          <span class="art">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+              <circle cx="12" cy="12" r="8.5"></circle>
+              <circle cx="12" cy="12" r="2.6" fill="#C73A3A" stroke="none"></circle>
+            </svg>
+          </span>
+          <span class="row-copy">
+            <span class="row-title">SomaFM Groove Salad</span>
+            <span class="mono row-meta">California &middot; 128k</span>
+          </span>
+          <button type="button" class="heart" aria-label="Keep">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3">
+              <path d="M12 20s-7.5-4.7-7.5-9.6A4.4 4.4 0 0 1 12 7.5a4.4 4.4 0 0 1 7.5 2.9C19.5 15.3 12 20 12 20Z"></path>
+            </svg>
+          </button>
+        </div>
+
+        <div class="row">
+          <span class="art">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+              <circle cx="12" cy="12" r="8.5"></circle>
+              <circle cx="12" cy="12" r="2.6" fill="#C73A3A" stroke="none"></circle>
+            </svg>
+          </span>
+          <span class="row-copy">
+            <span class="row-title">Intense Radio &middot; Dance</span>
+            <span class="mono row-meta">Netherlands &middot; 192k</span>
+          </span>
+          <button type="button" class="heart" aria-label="Keep">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3">
+              <path d="M12 20s-7.5-4.7-7.5-9.6A4.4 4.4 0 0 1 12 7.5a4.4 4.4 0 0 1 7.5 2.9C19.5 15.3 12 20 12 20Z"></path>
+            </svg>
+          </button>
+        </div>
+
+        <div class="row">
+          <span class="art">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+              <circle cx="12" cy="12" r="8.5"></circle>
+              <circle cx="12" cy="12" r="2.6" fill="#C73A3A" stroke="none"></circle>
+            </svg>
+          </span>
+          <span class="row-copy">
+            <span class="row-title">Intense Radio &middot; Dance</span>
+            <span class="mono row-meta">Netherlands &middot; 192k</span>
+          </span>
+          <button type="button" class="heart" aria-label="Keep">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3">
+              <path d="M12 20s-7.5-4.7-7.5-9.6A4.4 4.4 0 0 1 12 7.5a4.4 4.4 0 0 1 7.5 2.9C19.5 15.3 12 20 12 20Z"></path>
+            </svg>
+          </button>
+        </div>
+        <div class="row">
+          <span class="art">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+              <circle cx="12" cy="12" r="8.5"></circle>
+              <circle cx="12" cy="12" r="2.6" fill="#C73A3A" stroke="none"></circle>
+            </svg>
+          </span>
+          <span class="row-copy">
+            <span class="row-title">KEXP 90.3</span>
+            <span class="mono row-meta">Seattle &middot; 128k</span>
+          </span>
+          <button type="button" class="heart" aria-label="Keep">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3">
+              <path d="M12 20s-7.5-4.7-7.5-9.6A4.4 4.4 0 0 1 12 7.5a4.4 4.4 0 0 1 7.5 2.9C19.5 15.3 12 20 12 20Z"></path>
+            </svg>
+          </button>
+        </div>
+        <div class="row">
+          <span class="art">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+              <circle cx="12" cy="12" r="8.5"></circle>
+              <circle cx="12" cy="12" r="2.6" fill="#C73A3A" stroke="none"></circle>
+            </svg>
+          </span>
+          <span class="row-copy">
+            <span class="row-title">Radio Caroline</span>
+            <span class="mono row-meta">Kent &middot; 128k</span>
+          </span>
+          <button type="button" class="heart" aria-label="Keep">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3">
+              <path d="M12 20s-7.5-4.7-7.5-9.6A4.4 4.4 0 0 1 12 7.5a4.4 4.4 0 0 1 7.5 2.9C19.5 15.3 12 20 12 20Z"></path>
+            </svg>
+          </button>
+        </div>
+        <div class="row">
+          <span class="art">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+              <circle cx="12" cy="12" r="8.5"></circle>
+              <circle cx="12" cy="12" r="2.6" fill="#C73A3A" stroke="none"></circle>
+            </svg>
+          </span>
+          <span class="row-copy">
+            <span class="row-title">NTS Radio 1</span>
+            <span class="mono row-meta">London &middot; 128k</span>
+          </span>
+          <button type="button" class="heart" aria-label="Keep">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3">
+              <path d="M12 20s-7.5-4.7-7.5-9.6A4.4 4.4 0 0 1 12 7.5a4.4 4.4 0 0 1 7.5 2.9C19.5 15.3 12 20 12 20Z"></path>
+            </svg>
+          </button>
+        </div>
+        <div class="row">
+          <span class="art">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+              <circle cx="12" cy="12" r="8.5"></circle>
+              <circle cx="12" cy="12" r="2.6" fill="#C73A3A" stroke="none"></circle>
+            </svg>
+          </span>
+          <span class="row-copy">
+            <span class="row-title">Worldwide FM</span>
+            <span class="mono row-meta">London &middot; 128k</span>
+          </span>
+          <button type="button" class="heart" aria-label="Keep">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3">
+              <path d="M12 20s-7.5-4.7-7.5-9.6A4.4 4.4 0 0 1 12 7.5a4.4 4.4 0 0 1 7.5 2.9C19.5 15.3 12 20 12 20Z"></path>
+            </svg>
+          </button>
+        </div>
+        <div class="row">
+          <span class="art">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+              <circle cx="12" cy="12" r="8.5"></circle>
+              <circle cx="12" cy="12" r="2.6" fill="#C73A3A" stroke="none"></circle>
+            </svg>
+          </span>
+          <span class="row-copy">
+            <span class="row-title">Rinse FM</span>
+            <span class="mono row-meta">London &middot; 128k</span>
+          </span>
+          <button type="button" class="heart" aria-label="Keep">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3">
+              <path d="M12 20s-7.5-4.7-7.5-9.6A4.4 4.4 0 0 1 12 7.5a4.4 4.4 0 0 1 7.5 2.9C19.5 15.3 12 20 12 20Z"></path>
+            </svg>
+          </button>
+        </div>
+        <div class="row">
+          <span class="art">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+              <circle cx="12" cy="12" r="8.5"></circle>
+              <circle cx="12" cy="12" r="2.6" fill="#C73A3A" stroke="none"></circle>
+            </svg>
+          </span>
+          <span class="row-copy">
+            <span class="row-title">Radio Nova</span>
+            <span class="mono row-meta">Paris &middot; 128k</span>
+          </span>
+          <button type="button" class="heart" aria-label="Keep">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3">
+              <path d="M12 20s-7.5-4.7-7.5-9.6A4.4 4.4 0 0 1 12 7.5a4.4 4.4 0 0 1 7.5 2.9C19.5 15.3 12 20 12 20Z"></path>
+            </svg>
+          </button>
+        </div>
+        <div class="row">
+          <span class="art">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+              <circle cx="12" cy="12" r="8.5"></circle>
+              <circle cx="12" cy="12" r="2.6" fill="#C73A3A" stroke="none"></circle>
+            </svg>
+          </span>
+          <span class="row-copy">
+            <span class="row-title">Byte FM</span>
+            <span class="mono row-meta">Hamburg &middot; 128k</span>
+          </span>
+          <button type="button" class="heart" aria-label="Keep">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3">
+              <path d="M12 20s-7.5-4.7-7.5-9.6A4.4 4.4 0 0 1 12 7.5a4.4 4.4 0 0 1 7.5 2.9C19.5 15.3 12 20 12 20Z"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </section>
+
+  
+        </div>
+        <header class="bar">
+    <span class="mark">
+      <svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true">
+        <rect x="0.5" y="0.5" width="29" height="29" rx="2" fill="none" stroke="#C6A56A" stroke-opacity="0.55"></rect>
+        <circle cx="15" cy="15" r="8" fill="none" stroke="#C6A56A" stroke-opacity="0.5"></circle>
+        <circle cx="15" cy="15" r="4.5" fill="#C73A3A"></circle>
+      </svg>
+      <span class="mark-lines">
+        <span class="mark-kicker">Live radio</span>
+        <span class="mark-name">Elsewhere</span>
+      </span>
+    </span>
+    <button type="button" class="passport">Passport <b>04</b></button>
+        </header>
+        <div class="band">
+    <div class="dock">
+      <span class="dock-art">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#C6A56A" stroke-width="1.2">
+          <circle cx="12" cy="12" r="8.5"></circle>
+          <circle cx="12" cy="12" r="2.6" fill="#C73A3A" stroke="none"></circle>
+        </svg>
+      </span>
+      <span class="dock-copy">
+        <span class="dock-title">SomaFM Secret Agent</span>
+        <span class="mono" style="color:var(--ether)">Live &middot; California</span>
+      </span>
+      <button type="button" class="dock-ctl" aria-label="Previous station">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M18 5.5v13L9 12l9-6.5Z"></path><rect x="5.5" y="5.5" width="2.4" height="13" rx="1"></rect>
+          </svg>
+        </button>
+        <button type="button" class="dock-play" aria-label="Pause">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+          <rect x="6.5" y="4.5" width="4" height="15" rx="1"></rect>
+          <rect x="13.5" y="4.5" width="4" height="15" rx="1"></rect>
+        </svg>
+      </button>
+        <button type="button" class="dock-ctl" aria-label="Next station">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M6 5.5v13L15 12 6 5.5Z"></path><rect x="16.1" y="5.5" width="2.4" height="13" rx="1"></rect>
+          </svg>
+        </button>
+    </div>
+    <nav class="nav" aria-label="Elsewhere">
+      <a href="#home" aria-current="page">Elsewhere</a>
+      <a href="#atlas">Atlas</a>
+      <a href="#theater">Theater</a>
+      <a href="#room">Room</a>
+    </nav>
+        </div>
+      </div>
+    </figure>
+    <figure class="beat">
+      <figcaption>
+        <p class="mono step"><b>03</b> In the list</p>
+        <p class="note">The bottom of the list &mdash; about 585px of travel. The land name has condensed into a 44px strip under the bar, so you never lose track of where you are, and seek is one tap away.</p>
+      </figcaption>
+      <div class="frame">
+        <div class="col" style="transform:translateY(-586px)">
+
+    <div class="seek">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9A8F80" stroke-width="1.4"
+           stroke-linecap="round" aria-hidden="true">
+        <rect x="9" y="3" width="6" height="11" rx="3"></rect>
+        <path d="M5 11a7 7 0 0 0 14 0M12 18v3"></path>
+      </svg>
+      <input type="text" placeholder="Lisbon at dusk" readonly>
+      <span class="divider"></span>
+      <button type="button">Surprise</button>
+    </div>
+
+    <div class="globe">
+      <svg width="390" height="174" viewBox="0 0 390 174" aria-hidden="true">
+        <defs>
+          <pattern id="halftone" width="8" height="8" patternUnits="userSpaceOnUse">
+            <circle cx="1.8" cy="1.8" r="1.15" fill="#E8DFD0" fill-opacity="0.34"></circle>
+          </pattern>
+          <clipPath id="ball"><circle cx="195" cy="87" r="70"></circle></clipPath>
+        </defs>
+        <circle cx="195" cy="87" r="70" fill="#0C0B09"></circle>
+        <g clip-path="url(#ball)">
+          <rect x="125" y="17" width="140" height="140" fill="url(#halftone)"></rect>
+          <path d="M152 40c13 9 20 19 24 31 4 13 1 24-6 35" fill="none" stroke="#7EB8B4"
+                stroke-opacity="0.30" stroke-width="1"></path>
+          <path d="M226 30c-8 15-10 31-6 46 5 15 15 28 29 37" fill="none" stroke="#7EB8B4"
+                stroke-opacity="0.30" stroke-width="1"></path>
+        </g>
+        <circle cx="195" cy="87" r="70" fill="none" stroke="#C6A56A" stroke-opacity="0.28"></circle>
+        <line x1="195" y1="17" x2="195" y2="157" stroke="#C6A56A" stroke-opacity="0.22"></line>
+        <g>
+          <circle cx="170" cy="58" r="9" fill="#C73A3A" fill-opacity="0.16"></circle>
+          <circle cx="170" cy="58" r="4" fill="#C73A3A"></circle>
+        </g>
+        <g stroke="#E8DFD0" stroke-opacity="0.22" stroke-width="1">
+          <path d="M42 36h8M46 32v8"></path><path d="M336 120h6M339 117v6"></path>
+          <path d="M64 140h6M67 137v6"></path><path d="M318 40h6M321 37v6"></path>
+        </g>
+      </svg>
+    </div>
+
+    <div class="cover">
+      <span class="cover-rule"></span>
+      <h1 class="serif coverline">California</h1>
+      <p class="mono telemetry">128 &middot; California &middot; Live &middot; 13:48</p>
+    </div>
+
+    <button type="button" class="stamp">
+      <span class="kicker">EW &middot; Arrival</span>
+      <span class="city">Land here</span>
+    </button>
+
+    <section class="horizon">
+      <div class="horizon-head">
+        <p class="mono">Horizon</p>
+        <button type="button" class="atmo">Night <span>/ Day</span></button>
+      </div>
+      <div class="hours">
+        <button type="button" class="hour">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round">
+            <path d="M3 18h18M7.5 18a4.5 4.5 0 0 1 9 0M12 6.5V4M6.4 8.4 4.9 6.9M17.6 8.4l1.5-1.5"></path>
+          </svg>
+          <span>Dawn</span><i></i>
+        </button>
+        <button type="button" class="hour">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round">
+            <circle cx="12" cy="12" r="4.4"></circle>
+            <path d="M12 3v2.2M12 18.8V21M3 12h2.2M18.8 12H21M5.6 5.6l1.6 1.6M16.8 16.8l1.6 1.6M18.4 5.6l-1.6 1.6M7.2 16.8l-1.6 1.6"></path>
+          </svg>
+          <span>Midday</span><i></i>
+        </button>
+        <button type="button" class="hour on">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round">
+            <path d="M3 18h18M7.5 18a4.5 4.5 0 0 1 9 0M12 4v2.5M5.6 7.2l1.7 1.7M18.4 7.2l-1.7 1.7"></path>
+          </svg>
+          <span>Dusk</span><i></i>
+        </button>
+        <button type="button" class="hour">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round">
+            <path d="M19 14.8A8 8 0 0 1 9.2 5a8.4 8.4 0 1 0 9.8 9.8Z"></path>
+          </svg>
+          <span>Night</span><i></i>
+        </button>
+      </div>
+    </section>
+
+
+    <section class="board">
+      <div class="board-head">
+        <span class="dot"></span>
+        <p class="mono">Live now</p>
+        <p class="mono count">24 lands</p>
+      </div>
+      <div class="rows">
+        <div class="row">
+          <span class="art">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+              <circle cx="12" cy="12" r="8.5"></circle>
+              <circle cx="12" cy="12" r="2.6" fill="#C73A3A" stroke="none"></circle>
+            </svg>
+          </span>
+          <span class="row-copy">
+            <span class="row-title">SomaFM Secret Agent</span>
+            <span class="mono row-meta">California &middot; 128k</span>
+          </span>
+          <button type="button" class="heart" aria-label="Keep">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3">
+              <path d="M12 20s-7.5-4.7-7.5-9.6A4.4 4.4 0 0 1 12 7.5a4.4 4.4 0 0 1 7.5 2.9C19.5 15.3 12 20 12 20Z"></path>
+            </svg>
+          </button>
+        </div>
+        <div class="row">
+          <span class="art">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+              <circle cx="12" cy="12" r="8.5"></circle>
+              <circle cx="12" cy="12" r="2.6" fill="#C73A3A" stroke="none"></circle>
+            </svg>
+          </span>
+          <span class="row-copy">
+            <span class="row-title">SomaFM Groove Salad</span>
+            <span class="mono row-meta">California &middot; 128k</span>
+          </span>
+          <button type="button" class="heart" aria-label="Keep">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3">
+              <path d="M12 20s-7.5-4.7-7.5-9.6A4.4 4.4 0 0 1 12 7.5a4.4 4.4 0 0 1 7.5 2.9C19.5 15.3 12 20 12 20Z"></path>
+            </svg>
+          </button>
+        </div>
+
+        <div class="row">
+          <span class="art">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+              <circle cx="12" cy="12" r="8.5"></circle>
+              <circle cx="12" cy="12" r="2.6" fill="#C73A3A" stroke="none"></circle>
+            </svg>
+          </span>
+          <span class="row-copy">
+            <span class="row-title">Intense Radio &middot; Dance</span>
+            <span class="mono row-meta">Netherlands &middot; 192k</span>
+          </span>
+          <button type="button" class="heart" aria-label="Keep">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3">
+              <path d="M12 20s-7.5-4.7-7.5-9.6A4.4 4.4 0 0 1 12 7.5a4.4 4.4 0 0 1 7.5 2.9C19.5 15.3 12 20 12 20Z"></path>
+            </svg>
+          </button>
+        </div>
+
+        <div class="row">
+          <span class="art">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+              <circle cx="12" cy="12" r="8.5"></circle>
+              <circle cx="12" cy="12" r="2.6" fill="#C73A3A" stroke="none"></circle>
+            </svg>
+          </span>
+          <span class="row-copy">
+            <span class="row-title">Intense Radio &middot; Dance</span>
+            <span class="mono row-meta">Netherlands &middot; 192k</span>
+          </span>
+          <button type="button" class="heart" aria-label="Keep">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3">
+              <path d="M12 20s-7.5-4.7-7.5-9.6A4.4 4.4 0 0 1 12 7.5a4.4 4.4 0 0 1 7.5 2.9C19.5 15.3 12 20 12 20Z"></path>
+            </svg>
+          </button>
+        </div>
+        <div class="row">
+          <span class="art">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+              <circle cx="12" cy="12" r="8.5"></circle>
+              <circle cx="12" cy="12" r="2.6" fill="#C73A3A" stroke="none"></circle>
+            </svg>
+          </span>
+          <span class="row-copy">
+            <span class="row-title">KEXP 90.3</span>
+            <span class="mono row-meta">Seattle &middot; 128k</span>
+          </span>
+          <button type="button" class="heart" aria-label="Keep">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3">
+              <path d="M12 20s-7.5-4.7-7.5-9.6A4.4 4.4 0 0 1 12 7.5a4.4 4.4 0 0 1 7.5 2.9C19.5 15.3 12 20 12 20Z"></path>
+            </svg>
+          </button>
+        </div>
+        <div class="row">
+          <span class="art">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+              <circle cx="12" cy="12" r="8.5"></circle>
+              <circle cx="12" cy="12" r="2.6" fill="#C73A3A" stroke="none"></circle>
+            </svg>
+          </span>
+          <span class="row-copy">
+            <span class="row-title">Radio Caroline</span>
+            <span class="mono row-meta">Kent &middot; 128k</span>
+          </span>
+          <button type="button" class="heart" aria-label="Keep">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3">
+              <path d="M12 20s-7.5-4.7-7.5-9.6A4.4 4.4 0 0 1 12 7.5a4.4 4.4 0 0 1 7.5 2.9C19.5 15.3 12 20 12 20Z"></path>
+            </svg>
+          </button>
+        </div>
+        <div class="row">
+          <span class="art">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+              <circle cx="12" cy="12" r="8.5"></circle>
+              <circle cx="12" cy="12" r="2.6" fill="#C73A3A" stroke="none"></circle>
+            </svg>
+          </span>
+          <span class="row-copy">
+            <span class="row-title">NTS Radio 1</span>
+            <span class="mono row-meta">London &middot; 128k</span>
+          </span>
+          <button type="button" class="heart" aria-label="Keep">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3">
+              <path d="M12 20s-7.5-4.7-7.5-9.6A4.4 4.4 0 0 1 12 7.5a4.4 4.4 0 0 1 7.5 2.9C19.5 15.3 12 20 12 20Z"></path>
+            </svg>
+          </button>
+        </div>
+        <div class="row">
+          <span class="art">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+              <circle cx="12" cy="12" r="8.5"></circle>
+              <circle cx="12" cy="12" r="2.6" fill="#C73A3A" stroke="none"></circle>
+            </svg>
+          </span>
+          <span class="row-copy">
+            <span class="row-title">Worldwide FM</span>
+            <span class="mono row-meta">London &middot; 128k</span>
+          </span>
+          <button type="button" class="heart" aria-label="Keep">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3">
+              <path d="M12 20s-7.5-4.7-7.5-9.6A4.4 4.4 0 0 1 12 7.5a4.4 4.4 0 0 1 7.5 2.9C19.5 15.3 12 20 12 20Z"></path>
+            </svg>
+          </button>
+        </div>
+        <div class="row">
+          <span class="art">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+              <circle cx="12" cy="12" r="8.5"></circle>
+              <circle cx="12" cy="12" r="2.6" fill="#C73A3A" stroke="none"></circle>
+            </svg>
+          </span>
+          <span class="row-copy">
+            <span class="row-title">Rinse FM</span>
+            <span class="mono row-meta">London &middot; 128k</span>
+          </span>
+          <button type="button" class="heart" aria-label="Keep">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3">
+              <path d="M12 20s-7.5-4.7-7.5-9.6A4.4 4.4 0 0 1 12 7.5a4.4 4.4 0 0 1 7.5 2.9C19.5 15.3 12 20 12 20Z"></path>
+            </svg>
+          </button>
+        </div>
+        <div class="row">
+          <span class="art">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+              <circle cx="12" cy="12" r="8.5"></circle>
+              <circle cx="12" cy="12" r="2.6" fill="#C73A3A" stroke="none"></circle>
+            </svg>
+          </span>
+          <span class="row-copy">
+            <span class="row-title">Radio Nova</span>
+            <span class="mono row-meta">Paris &middot; 128k</span>
+          </span>
+          <button type="button" class="heart" aria-label="Keep">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3">
+              <path d="M12 20s-7.5-4.7-7.5-9.6A4.4 4.4 0 0 1 12 7.5a4.4 4.4 0 0 1 7.5 2.9C19.5 15.3 12 20 12 20Z"></path>
+            </svg>
+          </button>
+        </div>
+        <div class="row">
+          <span class="art">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+              <circle cx="12" cy="12" r="8.5"></circle>
+              <circle cx="12" cy="12" r="2.6" fill="#C73A3A" stroke="none"></circle>
+            </svg>
+          </span>
+          <span class="row-copy">
+            <span class="row-title">Byte FM</span>
+            <span class="mono row-meta">Hamburg &middot; 128k</span>
+          </span>
+          <button type="button" class="heart" aria-label="Keep">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3">
+              <path d="M12 20s-7.5-4.7-7.5-9.6A4.4 4.4 0 0 1 12 7.5a4.4 4.4 0 0 1 7.5 2.9C19.5 15.3 12 20 12 20Z"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </section>
+
+  
+        </div>
+        <header class="bar">
+    <span class="mark">
+      <svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true">
+        <rect x="0.5" y="0.5" width="29" height="29" rx="2" fill="none" stroke="#C6A56A" stroke-opacity="0.55"></rect>
+        <circle cx="15" cy="15" r="8" fill="none" stroke="#C6A56A" stroke-opacity="0.5"></circle>
+        <circle cx="15" cy="15" r="4.5" fill="#C73A3A"></circle>
+      </svg>
+      <span class="mark-lines">
+        <span class="mark-kicker">Live radio</span>
+        <span class="mark-name">Elsewhere</span>
+      </span>
+    </span>
+    <button type="button" class="passport">Passport <b>04</b></button>
+        </header>
+        <div class="strip">
+          <span class="dot"></span>
+          <p class="mono" style="color:var(--foil)">California</p>
+          <p class="mono" style="color:var(--dust)">&middot; Live &middot; 13:48</p>
+          <button type="button" class="strip-seek" aria-label="Search">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"
+                 stroke-linecap="round"><circle cx="11" cy="11" r="6.5"></circle><path d="M16 16l4.5 4.5"></path></svg>
+          </button>
+        </div>
+        <div class="band">
+    <div class="dock">
+      <span class="dock-art">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#C6A56A" stroke-width="1.2">
+          <circle cx="12" cy="12" r="8.5"></circle>
+          <circle cx="12" cy="12" r="2.6" fill="#C73A3A" stroke="none"></circle>
+        </svg>
+      </span>
+      <span class="dock-copy">
+        <span class="dock-title">SomaFM Secret Agent</span>
+        <span class="mono" style="color:var(--ether)">Live &middot; California</span>
+      </span>
+      <button type="button" class="dock-ctl" aria-label="Previous station">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M18 5.5v13L9 12l9-6.5Z"></path><rect x="5.5" y="5.5" width="2.4" height="13" rx="1"></rect>
+          </svg>
+        </button>
+        <button type="button" class="dock-play" aria-label="Pause">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+          <rect x="6.5" y="4.5" width="4" height="15" rx="1"></rect>
+          <rect x="13.5" y="4.5" width="4" height="15" rx="1"></rect>
+        </svg>
+      </button>
+        <button type="button" class="dock-ctl" aria-label="Next station">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M6 5.5v13L15 12 6 5.5Z"></path><rect x="16.1" y="5.5" width="2.4" height="13" rx="1"></rect>
+          </svg>
+        </button>
+    </div>
+    <nav class="nav" aria-label="Elsewhere">
+      <a href="#home" aria-current="page">Elsewhere</a>
+      <a href="#atlas">Atlas</a>
+      <a href="#theater">Theater</a>
+      <a href="#room">Room</a>
+    </nav>
+        </div>
+      </div>
+    </figure>
+  </div>
+  <div class="measure">
+    <div><b>Column</b><span>~1,270px as drawn; longer with a full list</span></div>
+    <div><b>Window</b><span>684px &mdash; 844 less the bar and the band</span></div>
+    <div><b>Travel</b><span>~585px to the last row</span></div>
+    <div><b>Always fixed</b><span>bar 52 &middot; nav 44 &middot; dock 64 while playing</span></div>
+    <div><b>Condenses</b><span>the cover, into a 44px strip</span></div>
+  </div>
+</div>
+</body>
+</html>

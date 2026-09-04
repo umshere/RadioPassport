@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Room</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Azeret+Mono:wght@400;500&family=Newsreader:ital,wght@0,400;1,400&family=Schibsted+Grotesk:wght@400;500;600&display=swap">
+<style>
+/* Board frame. The design itself begins below this rule. */
+html { background: #0C0B09; }
+body { display: flex; justify-content: center; padding: 32px 16px; }
+@media (max-width: 700px) { body { padding: 0; } }
+:root{
+  --ink:#0C0B09; --leather:#1A1410; --hide:#241C16;
+  --bone:#E8DFD0; --dust:#9A8F80; --lacquer:#C73A3A; --foil:#C6A56A; --ether:#7EB8B4;
+  --rule:rgba(232,223,208,0.10); --rule-2:rgba(232,223,208,0.18);
+  --foil-line:rgba(198,165,106,.45); --foil-wash:rgba(198,165,106,.06);
+  --dawn:#E3B76B; --midday:#EFE3CE; --dusk:#E07840; --night:#A79BEC;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ink);color:var(--bone);
+  font-family:"Schibsted Grotesk","Sora",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:var(--foil);text-decoration:none}
+a:hover{color:var(--bone)}
+.mono{font-family:"Azeret Mono","IBM Plex Mono",ui-monospace,monospace;font-size:10px;font-weight:500;
+  letter-spacing:.18em;text-transform:uppercase;line-height:1.35;margin:0}
+.serif{font-family:"Newsreader","Iowan Old Style","Palatino Linotype",serif;font-style:italic;font-weight:400;margin:0}
+.phone{position:relative;display:flex;flex-direction:column;width:390px;height:844px;overflow:hidden;background:var(--ink)}
+.bar{display:flex;flex:none;align-items:center;justify-content:space-between;gap:12px;
+  height:52px;padding:0 16px;border-bottom:1px solid var(--rule);background:var(--ink)}
+.mark{display:flex;align-items:center;gap:9px}
+.mark-lines{display:flex;flex-direction:column;gap:1px}
+.mark-kicker{font-family:"Azeret Mono",monospace;font-size:8px;font-weight:500;letter-spacing:.22em;
+  text-transform:uppercase;color:var(--foil)}
+.mark-name{font-family:"Newsreader",serif;font-style:italic;font-size:19px;line-height:1;color:var(--bone)}
+.passport{display:inline-flex;align-items:center;height:36px;padding:0 12px;border:1px solid var(--foil-line);
+  background:transparent;color:var(--bone);font-family:"Azeret Mono",monospace;font-size:10px;font-weight:500;
+  letter-spacing:.16em;text-transform:uppercase}
+.passport b{color:var(--foil);margin-left:7px}
+.body{display:flex;flex:1 1 auto;flex-direction:column;min-height:0;overflow:hidden}
+.band{flex:none;border-top:1px solid var(--rule-2);background:rgba(26,20,16,.94)}
+.dock{display:flex;align-items:center;gap:12px;height:64px;padding:0 10px}
+.dock-art{display:grid;flex:none;width:44px;height:44px;place-items:center;overflow:hidden;
+  border:1px solid rgba(198,165,106,.28);background:#0C0B09}
+.dock-copy{display:flex;flex-direction:column;gap:3px;min-width:0;flex:1 1 auto}
+.dock-title{overflow:hidden;font-size:14px;font-weight:500;text-overflow:ellipsis;white-space:nowrap;color:var(--bone)}
+.dock-play{display:grid;flex:none;width:48px;height:48px;place-items:center;border:1.5px solid var(--foil);
+  border-radius:50%;background:var(--lacquer);color:var(--bone)}
+.nav{display:grid;grid-template-columns:repeat(4,1fr);height:44px;border-top:1px solid var(--rule)}
+.nav a{display:grid;place-items:center;height:100%;font-family:"Azeret Mono",monospace;font-size:9px;
+  font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:var(--dust)}
+.nav a[aria-current="page"]{color:var(--foil);box-shadow:inset 0 -1px 0 var(--foil)}
+.nav a.off{color:rgba(154,143,128,.4)}
+.wrap{display:flex;flex:1 1 auto;flex-direction:column;min-height:0;padding:20px 16px 0}
+.eyebrow{color:var(--foil)}
+.coverline{margin-top:10px;font-size:40px;line-height:.98;letter-spacing:-.02em}
+.lede{margin:14px 0 0;color:var(--dust);font-size:15px;line-height:1.6}
+.figure{position:relative;flex:none;height:184px;margin-top:20px;overflow:hidden;border:1px solid var(--rule)}
+.section{margin-top:22px;border-top:1px solid var(--rule);padding-top:16px}
+.section p{margin:8px 0 0;color:var(--dust);font-size:14px;line-height:1.6}
+.laws{display:flex;flex-direction:column;margin-top:6px}
+.law{display:flex;align-items:baseline;gap:12px;min-height:40px;border-bottom:1px solid var(--rule);padding:9px 0}
+.law span{flex:none;color:var(--foil);font-family:"Azeret Mono",monospace;font-size:10px;font-weight:500;letter-spacing:.16em}
+.law b{font-size:14px;font-weight:400;color:var(--bone);line-height:1.4}
+</style>
+</head>
+<body>
+<div class="phone">
+
+  <header class="bar">
+    <span class="mark">
+      <svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true">
+        <rect x="0.5" y="0.5" width="29" height="29" rx="2" fill="none" stroke="#C6A56A" stroke-opacity="0.55"></rect>
+        <circle cx="15" cy="15" r="8" fill="none" stroke="#C6A56A" stroke-opacity="0.5"></circle>
+        <circle cx="15" cy="15" r="4.5" fill="#C73A3A"></circle>
+      </svg>
+      <span class="mark-lines">
+        <span class="mark-kicker">Live radio</span>
+        <span class="mark-name">Elsewhere</span>
+      </span>
+    </span>
+    <button type="button" class="passport">Passport <b>04</b></button>
+  </header>
+
+  <main class="body">
+    <div class="wrap">
+      <p class="mono eyebrow">The room</p>
+      <h1 class="serif coverline">You are not here.</h1>
+      <p class="lede">Elsewhere is a listening room for live radio. A city, an hour,
+        a station that is actually on the air. Stay long enough to be stamped.</p>
+
+      <div class="figure">
+        <svg width="356" height="182" viewBox="0 0 356 182" aria-hidden="true">
+          <rect width="356" height="182" fill="#12100D"></rect>
+          <g fill="#E8DFD0" fill-opacity="0.03">
+            <rect x="0" y="0" width="356" height="182"></rect>
+          </g>
+          <circle cx="178" cy="74" r="13" fill="#C73A3A"></circle>
+          <circle cx="173" cy="69" r="4" fill="#E8DFD0" fill-opacity="0.22"></circle>
+          <rect x="118" y="108" width="120" height="7" fill="#C6A56A"></rect>
+        </svg>
+      </div>
+
+      <section class="section">
+        <p class="mono eyebrow">The cover</p>
+        <p>The globe is a locator, not the product. The cover is the product:
+          local time, the live line, one caption.</p>
+      </section>
+
+      <section class="section">
+        <p class="mono eyebrow">House rules</p>
+        <div class="laws">
+          <div class="law"><span>01</span><b>Never charge to hear radio.</b></div>
+          <div class="law"><span>02</span><b>Never invent a song when the station is quiet.</b></div>
+          <div class="law"><span>03</span><b>Never put a machine on the audio path.</b></div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <div class="band">
+    <nav class="nav" aria-label="Elsewhere">
+      <a href="#home">Elsewhere</a>
+      <a href="#atlas">Atlas</a>
+      <a href="#theater" class="off">Theater</a>
+      <a href="#room" aria-current="page">Room</a>
+    </nav>
+  </div>
+
+</div>
+</body>
+</html>

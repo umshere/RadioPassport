@@ -1,0 +1,337 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The band — mobile system</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Azeret+Mono:wght@400;500&family=Newsreader:ital,wght@0,400;1,400&family=Schibsted+Grotesk:wght@400;500;600&display=swap">
+<style>
+/* Board frame. The design itself begins below this rule. */
+html { background: #0C0B09; }
+body { display: flex; justify-content: center; padding: 32px 16px; }
+@media (max-width: 700px) { body { padding: 0; } }
+:root{
+  --ink:#0C0B09; --leather:#1A1410; --hide:#241C16;
+  --bone:#E8DFD0; --dust:#9A8F80; --lacquer:#C73A3A; --foil:#C6A56A; --ether:#7EB8B4;
+  --rule:rgba(232,223,208,0.10); --rule-2:rgba(232,223,208,0.18);
+  --foil-line:rgba(198,165,106,.45); --foil-wash:rgba(198,165,106,.06);
+  --dawn:#E3B76B; --midday:#EFE3CE; --dusk:#E07840; --night:#A79BEC;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ink);color:var(--bone);
+  font-family:"Schibsted Grotesk","Sora",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:var(--foil);text-decoration:none}
+a:hover{color:var(--bone)}
+.mono{font-family:"Azeret Mono","IBM Plex Mono",ui-monospace,monospace;font-size:10px;font-weight:500;
+  letter-spacing:.18em;text-transform:uppercase;line-height:1.35;margin:0}
+.serif{font-family:"Newsreader","Iowan Old Style","Palatino Linotype",serif;font-style:italic;font-weight:400;margin:0}
+.phone{position:relative;display:flex;flex-direction:column;width:390px;height:844px;overflow:hidden;background:var(--ink)}
+.bar{display:flex;flex:none;align-items:center;justify-content:space-between;gap:12px;
+  height:52px;padding:0 16px;border-bottom:1px solid var(--rule);background:var(--ink)}
+.mark{display:flex;align-items:center;gap:9px}
+.mark-lines{display:flex;flex-direction:column;gap:1px}
+.mark-kicker{font-family:"Azeret Mono",monospace;font-size:8px;font-weight:500;letter-spacing:.22em;
+  text-transform:uppercase;color:var(--foil)}
+.mark-name{font-family:"Newsreader",serif;font-style:italic;font-size:19px;line-height:1;color:var(--bone)}
+.passport{display:inline-flex;align-items:center;height:36px;padding:0 12px;border:1px solid var(--foil-line);
+  background:transparent;color:var(--bone);font-family:"Azeret Mono",monospace;font-size:10px;font-weight:500;
+  letter-spacing:.16em;text-transform:uppercase}
+.passport b{color:var(--foil);margin-left:7px}
+.body{display:flex;flex:1 1 auto;flex-direction:column;min-height:0;overflow:hidden}
+.band{flex:none;border-top:1px solid var(--rule-2);background:rgba(26,20,16,.94)}
+.dock{display:flex;align-items:center;gap:12px;height:64px;padding:0 10px}
+.dock-art{display:grid;flex:none;width:44px;height:44px;place-items:center;overflow:hidden;
+  border:1px solid rgba(198,165,106,.28);background:#0C0B09}
+.dock-copy{display:flex;flex-direction:column;gap:3px;min-width:0;flex:1 1 auto}
+.dock-title{overflow:hidden;font-size:14px;font-weight:500;text-overflow:ellipsis;white-space:nowrap;color:var(--bone)}
+.dock-play{display:grid;flex:none;width:48px;height:48px;place-items:center;border:1.5px solid var(--foil);
+  border-radius:50%;background:var(--lacquer);color:var(--bone)}
+.nav{display:grid;grid-template-columns:repeat(4,1fr);height:44px;border-top:1px solid var(--rule)}
+.nav a{display:grid;place-items:center;height:100%;font-family:"Azeret Mono",monospace;font-size:9px;
+  font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:var(--dust)}
+.nav a[aria-current="page"]{color:var(--foil);box-shadow:inset 0 -1px 0 var(--foil)}
+.nav a.off{color:rgba(154,143,128,.4)}
+.sheet{width:920px;min-height:1960px;padding:44px 48px 52px;background:var(--ink)}
+.sheet-head{border-bottom:1px solid var(--rule-2);padding-bottom:24px}
+.sheet-head h1{margin:8px 0 0;font-family:"Newsreader",serif;font-style:italic;font-weight:400;
+  font-size:54px;line-height:1;letter-spacing:-.02em}
+.sheet-head p{max-width:60ch;margin:12px 0 0;color:var(--dust);font-size:15px;line-height:1.6}
+.sec{margin-top:34px}
+.sec > .mono{color:var(--foil);margin-bottom:14px}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:36px}
+.ink-note{max-width:78ch;margin:16px 0 0;color:var(--dust);font-size:13px;line-height:1.6}
+.ink-note b{color:var(--bone);font-family:"Azeret Mono",monospace;font-size:12px;font-weight:500}
+.swatches{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+.sw{border:1px solid var(--rule)}
+.sw i{display:block;height:56px}
+.sw b{display:block;padding:8px 10px 2px;font-family:"Azeret Mono",monospace;font-size:10px;font-weight:500;
+  letter-spacing:.14em;text-transform:uppercase;color:var(--bone)}
+.sw em{display:block;padding:0 10px 9px;font-family:"Azeret Mono",monospace;font-size:10px;font-style:normal;
+  color:var(--dust)}
+.ramp{display:flex;flex-direction:column;border-top:1px solid var(--rule)}
+.ramp div{display:flex;align-items:baseline;justify-content:space-between;gap:24px;
+  border-bottom:1px solid var(--rule);padding:14px 0}
+.ramp .spec{flex:none;font-family:"Azeret Mono",monospace;font-size:10px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--dust)}
+.anat-pair{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}
+.anat-cap{margin:0 0 8px;color:var(--dust)}
+.anat .z.nav em{font-style:normal;color:rgba(198,165,106,.4)}
+.anat{display:flex;flex-direction:column;width:100%;border:1px solid var(--rule-2)}
+.anat .z{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 14px;
+  font-family:"Azeret Mono",monospace;font-size:9px;font-weight:500;letter-spacing:.1em;text-transform:uppercase}
+.anat .z.top{height:52px;border-bottom:1px solid var(--rule);color:var(--bone)}
+.anat .z.mid{height:230px;align-items:flex-start;padding-top:14px;color:var(--dust);
+  background:repeating-linear-gradient(180deg,transparent 0 23px,var(--rule) 23px 24px)}
+.anat .z.dock{height:64px;border-top:1px solid var(--rule-2);color:var(--bone);background:rgba(26,20,16,.94)}
+.anat .z.nav{height:44px;border-top:1px solid var(--rule);color:var(--foil);background:rgba(26,20,16,.94)}
+.anat .z span{color:var(--dust)}
+.notes{display:flex;flex-direction:column;gap:0}
+.note{display:flex;align-items:baseline;gap:14px;border-bottom:1px solid var(--rule);padding:12px 0}
+.note b{flex:none;width:26px;color:var(--foil);font-family:"Azeret Mono",monospace;font-size:10px;
+  font-weight:500;letter-spacing:.14em}
+.note p{margin:0;font-size:14px;line-height:1.55;color:var(--bone)}
+.note p i{font-style:normal;color:var(--dust)}
+.parts{display:flex;flex-wrap:wrap;align-items:flex-end;gap:26px 30px}
+.part{display:flex;flex-direction:column;gap:9px}
+.part > .mono{color:var(--dust)}
+.seek{display:flex;align-items:center;gap:10px;width:300px;height:48px;padding:0 4px 0 12px;
+  border:1px solid var(--rule-2)}
+.seek input{flex:1 1 auto;min-width:0;border:0;outline:0;background:transparent;color:var(--dust);
+  font:400 16px/1.3 "Schibsted Grotesk",sans-serif}
+.seek .divider{width:1px;height:24px;background:var(--rule-2)}
+.seek button{height:44px;border:0;background:transparent;padding:0 12px;color:var(--foil);
+  font-family:"Azeret Mono",monospace;font-size:10px;font-weight:500;letter-spacing:.14em;text-transform:uppercase}
+.stamp{position:relative;display:inline-flex;flex-direction:column;align-items:flex-start;justify-content:center;
+  gap:5px;min-height:54px;border:0;background:var(--lacquer);padding:10px 20px;color:var(--bone);text-align:left}
+.stamp::after{content:"";position:absolute;inset:4px;border:1px solid rgba(232,223,208,.35)}
+.stamp .kicker{font-family:"Azeret Mono",monospace;font-size:9px;font-weight:500;letter-spacing:.22em;
+  text-transform:uppercase;color:rgba(232,223,208,.8)}
+.stamp .city{font-family:"Newsreader",serif;font-style:italic;font-size:17px;line-height:1.2}
+.hours{display:grid;grid-template-columns:repeat(4,68px);border-top:1px solid var(--rule);
+  border-bottom:1px solid var(--rule)}
+.hour{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;min-height:62px;
+  border:0;border-right:1px solid var(--rule);background:transparent;color:var(--dust);
+  font-family:"Azeret Mono",monospace;font-size:9px;font-weight:500;letter-spacing:.16em;text-transform:uppercase}
+.hour:last-child{border-right:0}
+.hour svg{width:20px;height:20px;opacity:.7}
+.hour i{display:block;width:5px;height:5px;border:1px solid var(--foil-line);border-radius:50%}
+.hour.on{color:var(--dusk)}
+.hour.on svg{opacity:1;filter:drop-shadow(0 0 6px var(--dusk))}
+.hour.on i{border-color:var(--dusk);background:var(--dusk);box-shadow:0 0 8px 1px var(--dusk)}
+.srow{display:flex;align-items:center;gap:12px;width:300px;min-height:66px;
+  border-bottom:1px solid var(--rule);padding:8px 0}
+.art{display:grid;flex:none;width:48px;height:48px;place-items:center;border:1px solid rgba(198,165,106,.28);
+  background:#0C0B09;color:var(--foil)}
+.srow-copy{display:flex;flex-direction:column;gap:4px;min-width:0;flex:1 1 auto}
+.srow-copy b{font-size:15px;font-weight:500}
+.srow-copy .mono{color:var(--dust)}
+.wayline{display:flex;align-items:center;gap:9px;width:300px;height:44px;border-bottom:1px solid var(--rule);
+  color:var(--foil);font-family:"Azeret Mono",monospace;font-size:10px;font-weight:500;letter-spacing:.16em;
+  text-transform:uppercase}
+.wayline .arrow{margin-left:auto}
+.playdisc{display:grid;width:48px;height:48px;place-items:center;border:1.5px solid var(--foil);
+  border-radius:50%;background:var(--lacquer);color:var(--bone)}
+.killed{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 30px}
+.kill{display:flex;align-items:baseline;gap:12px;border-bottom:1px solid var(--rule);padding:11px 0}
+.kill s{flex:none;color:var(--lacquer);text-decoration:none;font-family:"Azeret Mono",monospace;font-size:10px;
+  font-weight:500;letter-spacing:.14em;text-transform:uppercase}
+.kill p{margin:0;font-size:13px;line-height:1.5;color:var(--dust)}
+.kill p b{color:var(--bone);font-weight:500}
+</style>
+</head>
+<body>
+<div class="sheet">
+
+  <header class="sheet-head">
+    <p class="mono" style="color:var(--foil)">Elsewhere &middot; Mobile</p>
+    <h1>The band</h1>
+    <p>One frame carries every page: a 52px bar on top, a bottom band that holds the
+      room and the four destinations, and a single 16px column between them. Nothing
+      else is fixed, nothing else floats. Pages change what is in the column — never
+      the frame around it.</p>
+  </header>
+
+  <div class="grid2 sec">
+    <section>
+      <p class="mono">Anatomy &middot; 390 &times; 844</p>
+      <div class="anat-pair">
+        <div>
+          <p class="mono anat-cap">Playing &middot; 108</p>
+          <div class="anat">
+            <div class="z top">Wordmark <span>Passport 00</span></div>
+            <div class="z mid">Column &middot; 16px gutter <span>scrolls</span></div>
+            <div class="z dock">The room <span>64</span></div>
+            <div class="z nav">Elsewhere &middot; Atlas &middot; Theater &middot; Room<span>44</span></div>
+          </div>
+        </div>
+        <div>
+          <p class="mono anat-cap">Quiet &middot; 44</p>
+          <div class="anat">
+            <div class="z top">Wordmark <span>Passport 00</span></div>
+            <div class="z mid" style="height:294px">Column &middot; the page keeps the room&rsquo;s 64px <span>scrolls</span></div>
+            <div class="z nav">Elsewhere &middot; Atlas &middot; <em>Theater</em> &middot; Room<span>44</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <p class="mono">Laws</p>
+      <div class="notes">
+        <div class="note"><b>01</b><p>The bar carries the wordmark and the passport. Nothing else.
+          <i>Search belongs to the page, not the chrome.</i></p></div>
+        <div class="note"><b>02</b><p>Corners are square. The two exceptions are artwork (2px) and
+          the play disc. <i>No pills, no rounded cards.</i></p></div>
+        <div class="note"><b>03</b><p>Sections are separated by a hairline, never by a box.
+          <i>rgba(232,223,208,.10)</i></p></div>
+        <div class="note"><b>04</b><p>Lacquer is the landing color, and it appears once per screen.
+          <i>Foil is wayfinding, ether is live, dust is everything said quietly.</i></p></div>
+        <div class="note"><b>05</b><p>Every tap target is at least 44px, and the ones that matter
+          sit above the fold. <i>Cover, then act, then browse.</i></p></div>
+        <div class="note"><b>06</b><p>One element condenses on scroll: the cover, into a 44px strip
+          under the bar. <i>Nothing else in the frame moves, ever.</i></p></div>
+        <div class="note"><b>07</b><p>The band is the 44px nav; the dock&rsquo;s 64px is reserved only
+          while something plays. <i>A quiet room holds open no empty strip, and Theater greys out.</i></p></div>
+      </div>
+    </section>
+  </div>
+
+  <section class="sec">
+    <p class="mono">Ink</p>
+    <div class="swatches">
+      <span class="sw"><i style="background:#0C0B09"></i><b>Ink</b><em>#0C0B09</em></span>
+      <span class="sw"><i style="background:#1A1410"></i><b>Leather</b><em>#1A1410</em></span>
+      <span class="sw"><i style="background:#E8DFD0"></i><b>Bone</b><em>#E8DFD0</em></span>
+      <span class="sw"><i style="background:#9A8F80"></i><b>Dust</b><em>#9A8F80</em></span>
+      <span class="sw"><i style="background:#C73A3A"></i><b>Lacquer &middot; land</b><em>#C73A3A</em></span>
+      <span class="sw"><i style="background:#C6A56A"></i><b>Foil &middot; wayfinding</b><em>#C6A56A</em></span>
+      <span class="sw"><i style="background:#7EB8B4"></i><b>Ether &middot; live</b><em>#7EB8B4</em></span>
+      <span class="sw"><i style="background:linear-gradient(90deg,#E3B76B,#EFE3CE,#E07840,#A79BEC)"></i>
+        <b>Hours</b><em>dawn &rarr; night</em></span>
+    </div>
+    <p class="ink-note">Day nav ink is the exception. On the day dock ground the shared dust and foil
+      read 4.25:1 and 3.66:1 — under AA for 9px type, with the active slot the worse of the two. The nav
+      walks the same two hues down to <b>#665F55</b> (4.81) and <b>#6F582D</b> (5.15). Night passes on the
+      shared tokens at 5.78 and 7.85 and is left alone.</p>
+  </section>
+
+  <section class="sec">
+    <p class="mono">Voice</p>
+    <div class="ramp">
+      <div>
+        <span class="serif" style="font-size:44px;line-height:1">Lisboa</span>
+        <span class="spec">Newsreader italic &middot; 40&ndash;44 / .96 / -.02em</span>
+      </div>
+      <div>
+        <span style="font-size:15px;line-height:1.6">A city, an hour, a station that is actually on the air.</span>
+        <span class="spec">Schibsted Grotesk &middot; 15 / 1.6</span>
+      </div>
+      <div>
+        <span class="mono" style="font-size:11px;color:var(--dust)">128 &middot; California &middot; Live &middot; 13:48</span>
+        <span class="spec">Azeret Mono &middot; 10 / .18em / caps</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <p class="mono">Parts</p>
+    <div class="parts">
+      <span class="part">
+        <span class="mono">Seek</span>
+        <span class="seek">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9A8F80" stroke-width="1.4"
+               stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"></rect>
+            <path d="M5 11a7 7 0 0 0 14 0M12 18v3"></path></svg>
+          <input type="text" value="Lisbon at dusk" readonly>
+          <span class="divider"></span>
+          <button type="button">Surprise</button>
+        </span>
+      </span>
+
+      <span class="part">
+        <span class="mono">Land</span>
+        <button type="button" class="stamp">
+          <span class="kicker">EW &middot; Arrival</span>
+          <span class="city">Land here</span>
+        </button>
+      </span>
+
+      <span class="part">
+        <span class="mono">Play</span>
+        <span class="playdisc">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+            <rect x="6.5" y="4.5" width="4" height="15" rx="1"></rect>
+            <rect x="13.5" y="4.5" width="4" height="15" rx="1"></rect></svg>
+        </span>
+      </span>
+
+      <span class="part">
+        <span class="mono">Horizon</span>
+        <span class="hours">
+          <button type="button" class="hour">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round">
+              <path d="M3 18h18M7.5 18a4.5 4.5 0 0 1 9 0M12 6.5V4M6.4 8.4 4.9 6.9M17.6 8.4l1.5-1.5"></path></svg>
+            <span>Dawn</span><i></i></button>
+          <button type="button" class="hour">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round">
+              <circle cx="12" cy="12" r="4.4"></circle>
+              <path d="M12 3v2.2M12 18.8V21M3 12h2.2M18.8 12H21M5.6 5.6l1.6 1.6M16.8 16.8l1.6 1.6M18.4 5.6l-1.6 1.6M7.2 16.8l-1.6 1.6"></path></svg>
+            <span>Midday</span><i></i></button>
+          <button type="button" class="hour on">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round">
+              <path d="M3 18h18M7.5 18a4.5 4.5 0 0 1 9 0M12 4v2.5M5.6 7.2l1.7 1.7M18.4 7.2l-1.7 1.7"></path></svg>
+            <span>Dusk</span><i></i></button>
+          <button type="button" class="hour">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round">
+              <path d="M19 14.8A8 8 0 0 1 9.2 5a8.4 8.4 0 1 0 9.8 9.8Z"></path></svg>
+            <span>Night</span><i></i></button>
+        </span>
+      </span>
+
+      <span class="part">
+        <span class="mono">Station</span>
+        <span class="srow">
+          <span class="art">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+              <circle cx="12" cy="12" r="8.5"></circle>
+              <circle cx="12" cy="12" r="2.6" fill="#C73A3A" stroke="none"></circle></svg>
+          </span>
+          <span class="srow-copy">
+            <b>SomaFM Secret Agent</b>
+            <span class="mono">California &middot; 128k</span>
+          </span>
+        </span>
+      </span>
+
+      <span class="part">
+        <span class="mono">Condensed cover</span>
+        <span class="wayline">
+          <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><circle cx="5" cy="5" r="3.5" fill="#7EB8B4"></circle></svg>
+          California <span style="color:var(--dust)">&middot; Live &middot; 13:48</span>
+          <span class="arrow" style="color:var(--dust)">&#8981;</span>
+        </span>
+      </span>
+    </div>
+  </section>
+
+  <section class="sec">
+    <p class="mono">Retired on the phone</p>
+    <div class="killed">
+      <div class="kill"><s>Cut</s><p><b>The pill horizon rail.</b> A 999px capsule in a square
+        design. Now four stops on a hairline, full width.</p></div>
+      <div class="kill"><s>Cut</s><p><b>The floating atmosphere box.</b> It sat over the globe with
+        no label. Now a mono Night / Day control on the horizon line.</p></div>
+      <div class="kill"><s>Cut</s><p><b>The Atlas line.</b> Atlas is a permanent destination in the
+        band, so a 50px row on home repeated it. Home gains a station instead.</p></div>
+      <div class="kill"><s>Cut</s><p><b>The seven-control dock.</b> Prev, next, heart and the stamp
+        ring move to the theater. The dock keeps cover, room and play.</p></div>
+      <div class="kill"><s>Cut</s><p><b>The wrapping header.</b> Search dropped to its own row and
+        pushed the fold down. Search now lives in the page.</p></div>
+      <div class="kill"><s>Cut</s><p><b>MobileTabBar.tsx.</b> An unused neumorphic light-grey tab bar
+        from an older era, still in the tree.</p></div>
+    </div>
+  </section>
+
+</div>
+</body>
+</html>

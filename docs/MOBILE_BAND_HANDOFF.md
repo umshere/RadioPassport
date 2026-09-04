@@ -1,10 +1,11 @@
 # Mobile band handoff — one frame on every page
 
-Design canvas: <https://claude.ai/code/artifact/0e0a7981-9692-41c7-abb0-95c476a0de85>
-
-Boards on it: **The band** (the system sheet — read this first), four phone
-screens (home, theater, atlas, room), **Scrolling home** (three scroll beats),
-**Theater — what the desk knows** (four enrichment states).
+The boards live in this repo, as standalone HTML you can open with no login,
+no server and no build: **`docs/design/mobile-band/`** (see its README). Start
+with `System.html`. There is also a canvas at
+<https://claude.ai/code/artifact/0e0a7981-9692-41c7-abb0-95c476a0de85>, but it
+needs a logged-in session — if you cannot open it, the committed boards and
+this document are the whole spec and nothing is missing from them.
 
 The problem this fixes: on a phone the header wraps, the globe is a 148px grey
 sliver, the horizon rail is a 999px pill in an otherwise square design with
@@ -133,18 +134,43 @@ only consumer. Also delete the orphaned `.ew-atlaspage-*` block in
 
 ## Phase 2 — scrolling home
 
-Home is one column between the two fixed bars: 844 − 52 − 108 = **684px** of
-window, ~1,200px of content with 24 stations, ~520px of travel.
+Board: `docs/design/mobile-band/Scroll.html` — three beats at 390×844.
 
-One element condenses, once. When the coverline scrolls under the bar, a 44px
-strip appears beneath it: an ether dot, `CALIFORNIA` in foil, `· LIVE · 13:48`
-in dust, and a 44px search glyph on the right that returns to the seek field.
-Use an `IntersectionObserver` on the coverline, not a scroll handler. It hides
-again when the coverline comes back.
+Home is one column between the two fixed bars. At 844 the window is 844 − 52 −
+108 = **684px** while something plays, 748 when the room is quiet. The column
+as drawn is ~1,270px, so there is roughly 585px of travel to the last row.
 
-Nothing else moves — no shrinking bar, no collapsing dock.
+**One element condenses, once.** When the coverline leaves the top, a 44px
+strip appears directly beneath the bar carrying, left to right: a 7px ether
+dot, the land in mono foil, `· LIVE · 13:48` in mono dust, and a 44px search
+glyph pushed right that returns to the seek field. It hides again when the
+coverline comes back. Nothing else moves — no shrinking bar, no collapsing
+dock, no parallax.
+
+Implementation notes, each one a thing that will bite:
+
+- Use an `IntersectionObserver` on `.ew-coverline`, not a scroll handler.
+  Keep `root: null` and set `rootMargin: "-52px 0px 0px 0px"` so it fires on
+  the bar's bottom edge rather than the viewport's top. Do **not** observe
+  against `.rp-stage` as the root: on mobile `.rp-stage` is the scroller (the
+  document itself does not scroll — `scrollHeight` equals the viewport), and
+  wiring the root to it makes the margin mean something different.
+- Home only. The strip must not appear on `/listen`, `/about` or over an
+  overlay.
+- Position it at `top: calc(52px + env(safe-area-inset-top, 0px))` with a
+  z-index below the overlays (they are 100/120/200) and above the column.
+- The list scrolls *under* the strip; do not add a mask or a fade.
+- Respect `prefers-reduced-motion`: appear and disappear with no transition.
+
+Day-atmosphere ink, for the same reason Phase 1 needed it: on the day ink
+ground the land name in foil reads **4.06:1** and the ether dot 4.17:1 — under
+AA for 10px type. Use `#6F582D` for the land (5.71:1) and `#35635F` for the
+dot (5.72:1) under `[data-atmosphere="day"]`. Night passes on the shared
+tokens at 8.42 and 8.81 and is left alone.
 
 ## Phase 3 — theater enrichment states
+
+Board: `docs/design/mobile-band/Knowledge.html` — the four states at 390×844.
 
 `KnowledgeEvents` in `app/types/knowledge.ts` already stages this
 (`landed` → `icy` → `enrichment` → `evidence`), and `TheaterPhase` in
