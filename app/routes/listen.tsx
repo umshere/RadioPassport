@@ -26,7 +26,9 @@ import {
   theaterReleases,
   theaterTrackCopy,
 } from "~/components/radio-passport/theaterLock";
-import { formatLocalLabel, localDateAtLongitude } from "~/utils/localTime";
+import { TheaterQueue } from "~/components/radio-passport/TheaterQueue";
+import { TheaterTransport } from "~/components/radio-passport/TheaterTransport";
+import { formatClock, formatLocalLabel, localDateAtLongitude } from "~/utils/localTime";
 import {
   theaterIntelligenceFromRoom,
   theaterRoomGate,
@@ -333,14 +335,21 @@ export default function ListeningPage() {
             }}
           />
         </aside>
-        <div className="ew-theater-folio">
-          <p className="rp-eyebrow text-ether ew-arrive">
+        <div
+          className={`ew-theater-folio${selectedKnowledgeNode ? " is-star" : ""}`}
+        >
+          <i className="ew-cover-rule ew-theater-folio-rule" />
+          <p className="rp-eyebrow text-ether ew-arrive ew-theater-desk-live">
             <i className="rp-live-dot" />
             {local ? formatLocalLabel(city, local) : "LIVE"} ·{" "}
             {stationTelemetry(nowPlaying)}
           </p>
           <h1 className="ew-coverline mt-3 ew-arrive ew-arrive-2">{city}</h1>
-          <p className="rp-lede mt-2 ew-arrive ew-arrive-3">
+          <p className="rp-eyebrow ew-theater-telemetry">
+            {nowPlaying.name} · Live
+            {local ? ` · ${formatClock(local)} local` : ""}
+          </p>
+          <p className="rp-lede mt-2 ew-arrive ew-arrive-3 ew-theater-lede">
             {nowPlaying.name} · {nowPlaying.country}
             {nowPlaying.language ? ` · ${nowPlaying.language}` : ""}
           </p>
@@ -350,20 +359,39 @@ export default function ListeningPage() {
             </p>
           ) : null}
           <UpNextRow />
-          {trail.length > 1 ? (
+          <TheaterWell
+            phase={phase}
+            dispatchBody={intelligence.dispatchBody}
+            summary={intelligence.summary}
+            facts={intelligence.facts}
+            imageUrl={intelligence.imageUrl}
+            links={intelligence.links}
+            track={rawTrackLine}
+            catalog={{
+              land: nowPlaying.country,
+              city,
+              spoken: nowPlaying.language,
+              signal: nowPlaying.name,
+            }}
+          >
+            <TheaterTransport />
+          </TheaterWell>
+          {phase === "locking" || phase === "filed" ? <TheaterQueue /> : null}
+          {selectedKnowledgeNode && trail.length > 0 ? (
             <nav className="ew-ktrail" aria-label="Knowledge trail">
               {trail.map((crumb, index) => (
-                <button
-                  key={crumb.id}
-                  type="button"
-                  aria-current={index === trail.length - 1 || undefined}
-                  onClick={() => {
-                    handleNodeSelect(crumb.id);
-                  }}
-                >
-                  {index > 0 ? "· " : ""}
-                  {crumb.label}
-                </button>
+                <span key={crumb.id}>
+                  {index > 0 ? <span aria-hidden="true"> / </span> : null}
+                  <button
+                    type="button"
+                    aria-current={index === trail.length - 1 || undefined}
+                    onClick={() => {
+                      handleNodeSelect(crumb.id);
+                    }}
+                  >
+                    {crumb.label}
+                  </button>
+                </span>
               ))}
             </nav>
           ) : null}
@@ -393,15 +421,17 @@ export default function ListeningPage() {
                     <p>Filing the signal…</p>
                   );
                 })()
-              ) : followId ? (
+              ) : (
                 <button
                   type="button"
                   className="ew-knode-tune"
-                  onClick={() => handleNodeSelect(followId)}
+                  onClick={() =>
+                    handleNodeSelect(followId ?? figureSiblings[0]?.id ?? selectedKnowledgeNode.id)
+                  }
                 >
                   Follow this star
                 </button>
-              ) : null}
+              )}
               {figureSiblings.length > 0 ? (
                 <section className="ew-knode-also">
                   <p className="rp-eyebrow">Also on this figure</p>
@@ -422,21 +452,6 @@ export default function ListeningPage() {
               ) : null}
             </div>
           ) : null}
-          <TheaterWell
-            phase={phase}
-            dispatchBody={intelligence.dispatchBody}
-            summary={intelligence.summary}
-            facts={intelligence.facts}
-            imageUrl={intelligence.imageUrl}
-            links={intelligence.links}
-            track={rawTrackLine}
-            catalog={{
-              land: nowPlaying.country,
-              city,
-              spoken: nowPlaying.language,
-              signal: nowPlaying.name,
-            }}
-          />
         </div>
       </div>
     </main>

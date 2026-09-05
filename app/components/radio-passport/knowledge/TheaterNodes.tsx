@@ -201,9 +201,8 @@ const KnodeButton = memo(function KnodeButton({
       aria-pressed={focused ? true : undefined}
       onClick={() => onSelect(node.id)}
     >
-      {TYPOGRAPHIC_KINDS.has(node.kind) ? (
-        <span className={KNODE_CLASS.mark} aria-hidden="true" />
-      ) : node.imagery ? (
+      <span className={KNODE_CLASS.mark} aria-hidden="true" />
+      {TYPOGRAPHIC_KINDS.has(node.kind) ? null : node.imagery ? (
         <KnodeImagery imagery={node.imagery} label={node.label} />
       ) : (
         <span className={KNODE_CLASS.imagery} aria-hidden="true">

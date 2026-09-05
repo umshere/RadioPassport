@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   meridianDomain,
   meridianKind,
@@ -94,6 +94,43 @@ function paletteOf(element: HTMLElement) {
 
 function rgba(rgb: [number, number, number], alpha: number) {
   return `rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, ${alpha})`;
+}
+
+/** Phone sky from Theater.html: three foil meridians, a handful of dust grains. */
+function drawBoardSky(
+  context: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+  palette: { foil: [number, number, number]; bone: [number, number, number] },
+  grains: Array<{ x: number; y: number; size: number; depth: number }>,
+) {
+  context.save();
+  context.scale(width / 390, height / 236);
+  context.strokeStyle = rgba(palette.foil, 0.16);
+  context.lineWidth = 1;
+  context.beginPath();
+  context.moveTo(0, 60);
+  context.bezierCurveTo(70, 86, 150, 94, 220, 82);
+  context.bezierCurveTo(290, 70, 340, 42, 390, 16);
+  context.stroke();
+  context.beginPath();
+  context.moveTo(0, 132);
+  context.bezierCurveTo(60, 166, 140, 180, 214, 168);
+  context.bezierCurveTo(286, 154, 336, 126, 390, 96);
+  context.stroke();
+  context.beginPath();
+  context.moveTo(0, 196);
+  context.bezierCurveTo(66, 218, 148, 222, 216, 206);
+  context.bezierCurveTo(284, 190, 338, 168, 390, 142);
+  context.stroke();
+  context.restore();
+  grains.slice(0, 12).forEach((grain, index) => {
+    if (index % 2) return;
+    context.fillStyle = rgba(palette.bone, 0.28);
+    context.beginPath();
+    context.arc(grain.x * width, grain.y * height, 1.05, 0, Math.PI * 2);
+    context.fill();
+  });
 }
 
 function paintSkyLabel(
@@ -374,6 +411,12 @@ export function TheaterField({
       const mark = compact ? 1.22 : 1.08;
 
       context.clearRect(0, 0, width, height);
+
+      if (width <= 960) {
+        drawBoardSky(context, width, height, palette, dustRef.current);
+        frame = 0;
+        return;
+      }
 
       const sky = bandRef.current;
       {
@@ -1097,6 +1140,7 @@ export function TheaterWell({
   links,
   track,
   catalog,
+  children,
 }: {
   phase: TheaterPhase;
   dispatchBody: string | null;
@@ -1112,6 +1156,7 @@ export function TheaterWell({
     spoken?: string | null;
     signal?: string | null;
   };
+  children?: ReactNode;
 }) {
   const aria = theaterWellAria(phase);
   const plate = sanitizeArtworkUrl(imageUrl);
@@ -1141,9 +1186,13 @@ export function TheaterWell({
   const showPlate = Boolean(plate && !plateFailed);
   const icy = Boolean(coverTitle);
   const filed = phase === "filed";
-  const showCover =
-    (filed || phase === "locking") &&
-    Boolean(showPlate || summary || coverTitle);
+  const titleParts = coverTitle
+    ? coverTitle.split(/\s+[—–-]\s+/)
+    : [];
+  const trackArtist = titleParts.length > 1 ? titleParts[0] : null;
+  const trackName =
+    titleParts.length > 1 ? titleParts.slice(1).join(" — ") : coverTitle;
+  const showCover = icy && (filed || phase === "locking");
   const catalogRows: Array<[string, string]> = [];
   for (const [label, value] of [
     ["Land", catalog?.land],
@@ -1184,7 +1233,7 @@ export function TheaterWell({
           ))}
         </section>
       ) : null}
-      {!filed && icy && catalogLine ? (
+      {!filed && icy && !showCover && catalogLine ? (
         <p className="ew-known-line">{catalogLine}</p>
       ) : null}
       {waiting && phase !== "locking" ? (
@@ -1196,9 +1245,9 @@ export function TheaterWell({
       {filed || phase === "locking" ? (
         <>
           {showCover ? (
-            <div className={`ew-cover-row${showPlate ? "" : " is-bare"}`}>
-              {showPlate ? (
-                <figure className="ew-plate">
+            <div className="ew-cover-row">
+              <figure className="ew-plate">
+                {showPlate ? (
                   <img
                     src={plate!}
                     alt=""
@@ -1207,11 +1256,22 @@ export function TheaterWell({
                       setPlateFailed(true);
                     }}
                   />
-                </figure>
-              ) : null}
-              <div>
-                {coverTitle ? <p className="ew-cover-title">{coverTitle}</p> : null}
-                {filed && summary ? <TheaterLetter text={summary} /> : null}
+                ) : null}
+                <span className="ew-plate-mark" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.1">
+                    <circle cx="12" cy="12" r="8.5" />
+                    <circle cx="12" cy="12" r="2.6" fill="#C73A3A" stroke="none" />
+                  </svg>
+                </span>
+              </figure>
+              <div className="ew-plate-copy">
+                {trackName ? <p className="ew-cover-title">{trackName}</p> : null}
+                {phase === "locking" && catalogLine ? (
+                  <p className="ew-known-line">{catalogLine}</p>
+                ) : null}
+                {filed && trackArtist ? (
+                  <p className="ew-known-line">{trackArtist}</p>
+                ) : null}
               </div>
             </div>
           ) : null}
@@ -1221,6 +1281,11 @@ export function TheaterWell({
               {waiting}
             </p>
           ) : null}
+        </>
+      ) : null}
+      {children}
+      {filed ? (
+        <>
           {filed && facts.length > 0 ? (
             <div className="ew-journey-wrap">
               {deskSigned ? (
@@ -1243,6 +1308,8 @@ export function TheaterWell({
             </div>
           ) : null}
           {filed && meridians.length > 0 ? (
+            <>
+            <p className="rp-eyebrow ew-meridian-lab">Read it elsewhere</p>
             <p className="ew-meridians">
               {meridians.map((link) => (
                 <a
@@ -1259,6 +1326,7 @@ export function TheaterWell({
                 </a>
               ))}
             </p>
+            </>
           ) : null}
         </>
       ) : null}
