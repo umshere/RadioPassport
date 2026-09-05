@@ -775,6 +775,7 @@ describe("theater lock", () => {
     expect(listen).toContain("Follow this star");
     expect(listen).toContain("catalog=");
     expect(listen).toContain("TheaterTransport");
+    expect(listen).toContain("UpNextRow");
     expect(listen).toContain("TheaterQueue");
     expect(well).toContain("No title on the air yet");
     expect(well).toContain("Reading the live title");

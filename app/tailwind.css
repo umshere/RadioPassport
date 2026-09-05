@@ -738,6 +738,9 @@
     margin-top: 18px;
   }
   .ew-cover-row.is-bare { grid-template-columns: minmax(0, 1fr); }
+  /* The cover caption carries the dispatch once the plate block stands —
+     the desk letter above it would read the same words twice. */
+  .ew-theater-well:has(.ew-cover-row) .ew-letter-desk { display: none; }
   .ew-cover-title {
     margin: 0;
     color: var(--ew-bone);
@@ -1412,16 +1415,35 @@
   }
   .ew-upnext {
     display: flex;
-    flex-wrap: wrap;
-    align-items: baseline;
-    gap: 6px 10px;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
     margin-top: 16px;
+    border-top: 1px solid var(--ew-rule);
+    border-bottom: 1px solid var(--ew-rule);
+    background: none;
+    padding: 10px 0;
+    text-align: left;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
   }
-  .ew-upnext-line {
-    font: 11px/1.5 "Azeret Mono", monospace;
-    letter-spacing: 0.04em;
-    color: var(--ew-dust);
+  .ew-upnext-art {
+    position: relative;
+    flex: none;
+    width: 40px;
+    height: 40px;
+    overflow: hidden;
+    border: 1px solid var(--ew-rule);
+    background: #0C0B09;
+    color: var(--ew-foil);
   }
+  .ew-upnext-art img { display: block; width: 100%; height: 100%; object-fit: cover; }
+  .ew-upnext-art svg { position: absolute; inset: 0; width: 20px; height: 20px; margin: auto; }
+  .ew-upnext-copy { display: flex; min-width: 0; flex: 1; flex-direction: column; gap: 3px; }
+  .ew-upnext-name { overflow: hidden; color: var(--ew-bone); font-size: 15px; font-weight: 500; text-overflow: ellipsis; white-space: nowrap; }
+  .ew-upnext-sub { overflow: hidden; color: var(--ew-dust); font: 11px/1.5 "Azeret Mono", monospace; letter-spacing: .04em; text-overflow: ellipsis; white-space: nowrap; }
+  .ew-upnext-go { flex: none; color: var(--ew-foil); }
 
   @keyframes rp-pulse { 50% { opacity: .55; } }
   @keyframes rp-eq { to { transform: scaleY(.45); } }
@@ -2096,7 +2118,7 @@ html, body {
 .ew-plate-mark svg { display: block; width: 34px; height: 34px; }
 .ew-plate-copy { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 .ew-plate-caption { display: block; margin: 0; color: var(--ew-dust); font-family: "Newsreader", "Iowan Old Style", "Palatino Linotype", serif; font-style: italic; font-size: 13px; line-height: 1.5; }
-.ew-theater-transport { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 18px; border-top: 1px solid var(--ew-rule); border-bottom: 1px solid var(--ew-rule); padding: 10px 0; }
+.ew-theater-transport { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 0; border-bottom: 1px solid var(--ew-rule); padding: 10px 0; }
 .ew-theater-tbtn { display: grid; width: 44px; height: 44px; place-items: center; border: 0; background: transparent; color: var(--ew-dust); }
 .ew-theater-tbtn.is-on { color: var(--ew-foil); }
 .ew-theater-tplay { display: grid; width: 56px; height: 56px; place-items: center; border: 1.5px solid var(--ew-foil); border-radius: 50%; background: var(--ew-lacquer); color: var(--ew-bone); }

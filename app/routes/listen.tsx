@@ -373,6 +373,7 @@ export default function ListeningPage() {
           ref={folioRef}
           className={`ew-theater-folio${selectedKnowledgeNode ? " is-star" : ""}`}
         >
+          <TheaterTransport />
           <i className="ew-cover-rule ew-theater-folio-rule" />
           <p className="rp-eyebrow text-ether ew-arrive ew-theater-desk-live">
             <i className="rp-live-dot" />
@@ -385,7 +386,7 @@ export default function ListeningPage() {
             {local ? ` · ${formatClock(local)} local` : ""}
           </p>
           <p className="rp-lede mt-2 ew-arrive ew-arrive-3 ew-theater-lede">
-            {nowPlaying.name} · {nowPlaying.country}
+            {nowPlaying.country}
             {nowPlaying.language ? ` · ${nowPlaying.language}` : ""}
           </p>
           {trackLine && phase !== "filed" ? (
@@ -411,9 +412,7 @@ export default function ListeningPage() {
               spoken: nowPlaying.language,
               signal: nowPlaying.name,
             }}
-          >
-            <TheaterTransport />
-          </TheaterWell>
+          />
           <TheaterQueue />
           {selectedKnowledgeNode && trail.length > 0 ? (
             <nav className="ew-ktrail" aria-label="Knowledge trail">
