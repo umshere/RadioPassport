@@ -50,10 +50,15 @@ import {
   theaterLockLines,
   theaterLockLive,
   theaterSkyLive,
+  theaterBeat,
+  theaterBeatSky,
   theaterPhase,
   theaterReleases,
   theaterTrackCopy,
   theaterWellAria,
+  THEATER_SKY_EVIDENCE,
+  THEATER_SKY_FILED,
+  THEATER_SKY_LANDED,
 } from "~/components/radio-passport/theaterLock";
 import type { TriviaGraph } from "~/types/trivia";
 
@@ -99,6 +104,36 @@ describe("theater lock", () => {
         triviaStatus: "idle",
       }),
     ).toBe("quiet");
+  });
+
+  it("maps Knowledge beats: 01/02 share 236, 04 only on a tapped star", () => {
+    expect(
+      theaterBeat({ phase: "quiet", hasTrack: false, selectedId: null }),
+    ).toBe("landed");
+    expect(
+      theaterBeat({ phase: "reading", hasTrack: false, selectedId: null }),
+    ).toBe("landed");
+    expect(
+      theaterBeat({ phase: "locking", hasTrack: true, selectedId: null }),
+    ).toBe("reading");
+    expect(
+      theaterBeat({ phase: "quiet", hasTrack: true, selectedId: null }),
+    ).toBe("reading");
+    expect(
+      theaterBeat({ phase: "filed", hasTrack: true, selectedId: null }),
+    ).toBe("filed");
+    expect(
+      theaterBeat({
+        phase: "filed",
+        hasTrack: true,
+        selectedId: "artist:amalia",
+      }),
+    ).toBe("evidence");
+    expect(theaterBeatSky("landed")).toBe(THEATER_SKY_LANDED);
+    expect(theaterBeatSky("reading")).toBe(THEATER_SKY_LANDED);
+    expect(theaterBeatSky("filed")).toBe(THEATER_SKY_FILED);
+    expect(theaterBeatSky("evidence")).toBe(THEATER_SKY_EVIDENCE);
+    expect(theaterBeatSky("landed")).toBe(theaterBeatSky("reading"));
   });
 
   it("does not claim a silent station while the title is still being read", () => {
@@ -700,7 +735,18 @@ describe("theater lock", () => {
     );
     expect(well).toContain("const showCover = icy");
     expect(well).toContain("theaterSkyLive");
+    expect(well).toContain('matchMedia("(max-width: 960px)")');
+    expect(well).toContain("wakingIds");
     expect(well).toContain("fieldStandingLabel");
+    const nodes = readFileSync(
+      new URL(
+        "../../app/components/radio-passport/knowledge/TheaterNodes.tsx",
+        import.meta.url,
+      ),
+      "utf8",
+    );
+    expect(nodes).toContain("wakingIds");
+    expect(nodes).toContain('data-motion={reducedMotion || !waking ? "still" : "wake"}');
     expect(well).toContain("fieldSpanEdges");
     expect(well).toContain("fieldTourSpans");
     expect(well).toContain("fieldTravelerInTransit");
@@ -742,12 +788,24 @@ describe("theater lock", () => {
     expect(home).not.toContain("useTrackTrivia(");
     expect(home).toContain("GalaxyBackdrop");
     expect(listen).not.toContain("theaterSkyShrink");
+    expect(listen).toContain("data-beat");
+    expect(listen).toContain("theaterBeat");
+    expect(listen).not.toContain("key={trackLine}");
     const stylesheet = readFileSync(
       new URL("../../app/tailwind.css", import.meta.url),
       "utf8",
     );
     expect(stylesheet).toContain(".ew-galaxy");
-    expect(stylesheet).toContain(".ew-page.is-theater");
+    expect(stylesheet).toContain("--ew-theater-sky");
+    expect(stylesheet).toContain("grid-template-rows: var(--ew-theater-sky, 236px) minmax(0, 1fr)");
+    expect(stylesheet).toContain(".ew-plate-caption");
+    expect(stylesheet).toContain(".ew-theater-folio.is-star .ew-letter-phone");
+    expect(stylesheet).toContain(".ew-known.is-collapsed");
+    expect(stylesheet).not.toMatch(/\.ew-known,\s*\.ew-waiting/);
+    expect(listen).toContain("deskSigned");
+    expect(well).toContain("The desk found");
+    expect(stylesheet).not.toContain('.ew-theater[data-beat="filed"]');
+    expect(stylesheet).not.toContain('--ew-theater-sky: 96px');
     expect(stylesheet).not.toContain("--ew-sky-shrink");
     expect(stylesheet).not.toContain("--ew-sky-fold");
     expect(stylesheet).toContain(".ew-letter-more");

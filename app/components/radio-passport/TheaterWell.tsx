@@ -252,6 +252,7 @@ export type TheaterKnowledgeLayer = {
   edges: KnowledgeEdge[];
   awakeIds: Set<string>;
   firing: Array<{ from: string; to: string }>;
+  wakingIds?: readonly string[];
   focusId: string | null;
   tunedId?: string | null;
   onSelect: (id: string) => void;
@@ -355,6 +356,7 @@ export function TheaterField({
       canvas.style.width = `${rect.width}px`;
       canvas.style.height = `${rect.height}px`;
       context.setTransform(dpr, 0, 0, dpr, 0, 0);
+      if (!frame) frame = window.requestAnimationFrame(draw);
     };
 
     const draw = (now: number) => {
@@ -412,7 +414,8 @@ export function TheaterField({
 
       context.clearRect(0, 0, width, height);
 
-      if (width <= 960) {
+      const boardSky = window.matchMedia("(max-width: 960px)").matches;
+      if (boardSky) {
         drawBoardSky(context, width, height, palette, dustRef.current);
         frame = 0;
         return;
@@ -1035,6 +1038,7 @@ export function TheaterField({
           nodes={knowledge.nodes}
           focusId={knowledge.focusId}
           tunedId={knowledge.tunedId ?? null}
+          wakingIds={knowledge.wakingIds}
           reducedMotion={reduced.current}
           onSelect={knowledge.onSelect}
         />
@@ -1192,9 +1196,6 @@ export function TheaterWell({
   const trackArtist = titleParts.length > 1 ? titleParts[0] : null;
   const trackName =
     titleParts.length > 1 ? titleParts.slice(1).join(" — ") : coverTitle;
-  // Knowledge 02 seats the plate as soon as a title exists. trivia empty/error
-  // keeps theaterPhase at quiet — the desk still shows the cover, it never
-  // invents facts.
   const showCover = icy;
   const catalogRows: Array<[string, string]> = [];
   for (const [label, value] of [
@@ -1220,12 +1221,17 @@ export function TheaterWell({
       aria-live={aria ? "polite" : undefined}
       aria-label={aria}
     >
-      <i className="ew-cover-rule" />
       {dispatchBody ? (
-        <TheaterLetter text={dispatchBody} signed={deskSigned} />
+        <div className="ew-letter-desk">
+          <TheaterLetter text={dispatchBody} signed={deskSigned} />
+        </div>
       ) : null}
-      {!filed && !icy && catalogRows.length > 0 ? (
-        <section className="ew-known">
+      <div className="ew-theater-desk">
+        <div className="ew-theater-layer">
+      <i className="ew-cover-rule" />
+      {catalogRows.length > 0 ? (
+        <section className={`ew-known${icy ? " is-collapsed" : ""}`}>
+          <div className="ew-theater-layer">
           <p className="rp-eyebrow ew-known-lab">Known on landing</p>
           {catalogRows.map(([label, value]) => (
             <div className="ew-krow" key={label}>
@@ -1234,6 +1240,7 @@ export function TheaterWell({
               <span className="ew-krow-prov">Catalog</span>
             </div>
           ))}
+          </div>
         </section>
       ) : null}
       {waiting && !icy ? (
@@ -1270,6 +1277,9 @@ export function TheaterWell({
             {filed && trackArtist ? (
               <p className="ew-known-line">{trackArtist}</p>
             ) : null}
+            {dispatchBody || summary ? (
+              <p className="ew-plate-caption">{dispatchBody || summary}</p>
+            ) : null}
           </div>
         </div>
       ) : null}
@@ -1280,15 +1290,11 @@ export function TheaterWell({
         </p>
       ) : null}
       {children}
-      {filed ? (
-        <>
-          {filed && facts.length > 0 ? (
+      {filed && facts.length > 0 ? (
             <div className="ew-journey-wrap">
-              {deskSigned ? (
-                <p className="rp-eyebrow text-ether ew-desk-label">
-                  the desk found
-                </p>
-              ) : null}
+              <p className="rp-eyebrow text-ether ew-desk-label">
+                The desk found
+              </p>
               <ol className="ew-journey">
                 {facts.map((item) => (
                   <li key={`${item.label}:${item.value}`}>
@@ -1302,8 +1308,17 @@ export function TheaterWell({
                 MusicBrainz · verified relations
               </p>
             </div>
-          ) : null}
-          {filed && meridians.length > 0 ? (
+      ) : null}
+        </div>
+      </div>
+      <div className="ew-theater-star">
+        <div className="ew-theater-layer">
+      {dispatchBody ? (
+        <div className="ew-letter-phone">
+          <TheaterLetter text={dispatchBody} signed={deskSigned} />
+        </div>
+      ) : null}
+          {meridians.length > 0 ? (
             <>
             <p className="rp-eyebrow ew-meridian-lab">Read it elsewhere</p>
             <p className="ew-meridians">
@@ -1324,8 +1339,8 @@ export function TheaterWell({
             </p>
             </>
           ) : null}
-        </>
-      ) : null}
+        </div>
+      </div>
     </div>
   );
 }

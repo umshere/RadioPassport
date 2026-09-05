@@ -1,5 +1,5 @@
 import { Link } from "@remix-run/react";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useHydrated } from "~/hooks/useHydrated";
 import { usePlayerStore } from "~/state/playerStore";
 import { roomForStation, useRoomStore } from "~/state/roomStore";
@@ -23,6 +23,7 @@ import UpNextRow from "~/components/radio-passport/UpNextRow";
 import {
   lockSeed,
   splitFieldTokens,
+  theaterBeat,
   theaterReleases,
   theaterTrackCopy,
 } from "~/components/radio-passport/theaterLock";
@@ -93,11 +94,25 @@ export default function ListeningPage() {
   );
   const seatsRef = useRef<Map<string, { x: number; y: number }>>(new Map());
   const awakeRef = useRef<Set<string>>(new Set());
+  const roomKeyRef = useRef<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [trail, setTrail] = useState<Array<{ id: string; label: string }>>([]);
+  const folioRef = useRef<HTMLDivElement>(null);
   const [stationByUuid, setStationByUuid] = useState<Record<string, Station>>(
     () => ({}),
   );
+
+  useEffect(() => {
+    setSelectedId(null);
+    setTrail([]);
+    setExpansions([]);
+    setExpandedFocuses(new Set());
+    setStationByUuid({});
+  }, [storedNowPlaying?.uuid]);
+
+  useEffect(() => {
+    folioRef.current?.scrollTo({ top: 0 });
+  }, [selectedId]);
 
   const knowledgeGraph: KnowledgeGraph = useMemo(
     () =>
@@ -115,6 +130,12 @@ export default function ListeningPage() {
     [intelligence.graph],
   );
   const knowledge = useMemo(() => {
+    const roomKey = storedNowPlaying?.uuid ?? null;
+    if (roomKeyRef.current !== roomKey) {
+      roomKeyRef.current = roomKey;
+      seatsRef.current = new Map();
+      awakeRef.current = new Set();
+    }
     const cap = typeof window !== "undefined" && window.innerWidth < 720 ? 10 : 18;
     const seats = seatTheaterKnowledge({
       graph: knowledgeGraph,
@@ -123,10 +144,11 @@ export default function ListeningPage() {
       seed: lockSeed([storedNowPlaying?.uuid ?? "elsewhere"]),
     });
     seatsRef.current = seats;
+    const prevAwake = awakeRef.current;
     const model = wakeTheaterKnowledge({
       graph: knowledgeGraph,
       seats,
-      awake: awakeRef.current,
+      awake: prevAwake,
       events: {
         landed: Boolean(hydrated && storedNowPlaying),
         icy: Boolean(room.signal.track),
@@ -136,8 +158,9 @@ export default function ListeningPage() {
       focusId: selectedId,
       cap,
     });
+    const wakingIds = [...model.awake].filter((id) => !prevAwake.has(id));
     awakeRef.current = model.awake;
-    return model;
+    return { ...model, wakingIds };
   }, [
     evidenceArrived,
     hydrated,
@@ -168,6 +191,10 @@ export default function ListeningPage() {
     (id: string) => {
       const node = knowledgeGraph.nodes.find((entry) => entry.id === id);
       if (!node) return;
+      if (selectedId === id) {
+        setSelectedId(null);
+        return;
+      }
       setSelectedId(id);
       setTrail((current) => {
         const seenAt = current.findIndex((crumb) => crumb.id === id);
@@ -220,7 +247,7 @@ export default function ListeningPage() {
           });
       }
     },
-    [expandedFocuses, knowledgeGraph.nodes],
+    [expandedFocuses, knowledgeGraph.nodes, selectedId],
   );
 
   const selectedKnowledgeNode: KnowledgeNode | null = selectedId
@@ -243,6 +270,11 @@ export default function ListeningPage() {
     : null;
 
   const phase = room.phase;
+  const beat = theaterBeat({
+    phase,
+    hasTrack: Boolean(rawTrackLine),
+    selectedId,
+  });
   const factKey = intelligence.facts
     .map((fact) => `${fact.label}:${fact.value}`)
     .join("|");
@@ -313,7 +345,7 @@ export default function ListeningPage() {
   }
 
   return (
-    <main className="ew-theater" data-phase={phase}>
+    <main className="ew-theater" data-phase={phase} data-beat={beat}>
       <div className="ew-theater-room" key={nowPlaying.uuid}>
         <aside className="ew-theater-sky">
           <TheaterField
@@ -328,6 +360,7 @@ export default function ListeningPage() {
               edges: knowledge.graph.edges,
               awakeIds: knowledge.awake,
               firing: knowledge.firing,
+              wakingIds: knowledge.wakingIds,
               focusId: selectedId,
               tunedId: storedNowPlaying
                 ? `station:${storedNowPlaying.uuid}`
@@ -337,6 +370,7 @@ export default function ListeningPage() {
           />
         </aside>
         <div
+          ref={folioRef}
           className={`ew-theater-folio${selectedKnowledgeNode ? " is-star" : ""}`}
         >
           <i className="ew-cover-rule ew-theater-folio-rule" />
@@ -355,7 +389,7 @@ export default function ListeningPage() {
             {nowPlaying.language ? ` · ${nowPlaying.language}` : ""}
           </p>
           {trackLine && phase !== "filed" ? (
-            <p className="ew-track ew-arrive ew-arrive-4" key={trackLine}>
+            <p className="ew-track ew-arrive ew-arrive-4">
               {trackLine}
             </p>
           ) : null}
@@ -363,6 +397,7 @@ export default function ListeningPage() {
           <TheaterWell
             phase={phase}
             dispatchBody={intelligence.dispatchBody}
+            deskSigned={room.captionSource === "ai"}
             summary={intelligence.summary}
             facts={intelligence.facts}
             imageUrl={intelligence.imageUrl}
@@ -377,9 +412,7 @@ export default function ListeningPage() {
           >
             <TheaterTransport />
           </TheaterWell>
-          {phase === "locking" || phase === "filed" || Boolean(rawTrackLine) ? (
-            <TheaterQueue />
-          ) : null}
+          <TheaterQueue />
           {selectedKnowledgeNode && trail.length > 0 ? (
             <nav className="ew-ktrail" aria-label="Knowledge trail">
               {trail.map((crumb, index) => (
@@ -432,7 +465,7 @@ export default function ListeningPage() {
                     handleNodeSelect(followId ?? figureSiblings[0]?.id ?? selectedKnowledgeNode.id)
                   }
                 >
-                  Follow this star
+                  Follow this star →
                 </button>
               )}
               {figureSiblings.length > 0 ? (

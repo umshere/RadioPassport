@@ -815,6 +815,30 @@ export function theaterPhase(input: {
   return "quiet";
 }
 
+/** Phone Knowledge beats. Passage is a new room; a beat is knowledge in this one. */
+export type TheaterBeat = "landed" | "reading" | "filed" | "evidence";
+
+export const THEATER_SKY_LANDED = 236;
+export const THEATER_SKY_FILED = 150;
+export const THEATER_SKY_EVIDENCE = 96;
+
+export function theaterBeat(input: {
+  phase: TheaterPhase;
+  hasTrack: boolean;
+  selectedId: string | null;
+}): TheaterBeat {
+  if (input.selectedId) return "evidence";
+  if (input.phase === "filed") return "filed";
+  if (input.hasTrack) return "reading";
+  return "landed";
+}
+
+export function theaterBeatSky(beat: TheaterBeat): number {
+  if (beat === "evidence") return THEATER_SKY_EVIDENCE;
+  if (beat === "filed") return THEATER_SKY_FILED;
+  return THEATER_SKY_LANDED;
+}
+
 export function theaterTrackCopy(input: {
   isPlaying: boolean;
   metadataStatus: "idle" | "loading" | "ready" | "empty" | "error";

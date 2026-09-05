@@ -1998,9 +1998,13 @@ html, body {
   .ew-knode:focus-visible .ew-knode-label { display: inline; }
 }
 .ew-knode[data-kind="country"] .ew-knode-label, .ew-knode[data-kind="language"] .ew-knode-label { font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; }
-.ew-knode[data-motion="wake"] { animation: ew-knode-wake 0.4s ease both; }
+.ew-knode[data-motion="wake"] { animation: ew-knode-wake .56s var(--ew-settle) both; }
 @keyframes ew-knode-wake { from { opacity: 0; } to { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .ew-knode[data-motion="wake"] { animation: none; } }
+.ew-letter-phone { display: none; }
+.ew-plate-caption { display: none; }
+.ew-theater-desk, .ew-theater-star { display: grid; grid-template-rows: 1fr; min-height: 0; }
+.ew-theater-layer { overflow: hidden; min-height: 0; }
 /* Theater folio — selected node details + trail. */
 .ew-ktrail { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 10px 0 2px; }
 .ew-ktrail button { border: 0; background: none; padding: 2px 0; cursor: pointer; color: var(--ew-dust); font: 500 11px/1.4 "Azeret Mono", monospace; letter-spacing: 0.1em; text-transform: uppercase; }
@@ -2040,59 +2044,65 @@ html, body {
 .ew-theater-transport, .ew-theater-queue, .ew-theater-telemetry, .ew-theater-folio-rule { display: none; }
 @media (max-width: 960px) {
 .ew-site-bar.is-theater .ew-theater-rail { display: none; }
-.ew-theater-room { grid-template-rows: 236px minmax(0, 1fr); }
-.ew-theater[data-phase="filed"] .ew-theater-room { grid-template-rows: 150px minmax(0, 1fr); }
+.ew-theater { --ew-theater-sky: 236px; }
+.ew-theater-room { grid-template-rows: var(--ew-theater-sky, 236px) minmax(0, 1fr); }
 .ew-theater-sky { height: 100%; border-bottom: 1px solid var(--ew-rule); background: var(--ew-ink); }
 .ew-theater-field { opacity: 1; }
-.ew-theater-sky::after { height: 28px; }
-.ew-theater-sky .ew-knode, .ew-theater-sky .ew-knode[data-anchor="w"], .ew-theater-sky .ew-knode[data-anchor="n"], .ew-theater-sky .ew-knode[data-anchor="s"] { flex-direction: row; gap: 6px; min-width: 0; padding: 0; border-radius: 0; background: transparent; font-size: 10px; letter-spacing: .08em; }
+.ew-theater-sky::after { height: 40px; }
+.ew-theater-sky .ew-knode, .ew-theater-sky .ew-knode[data-anchor="w"], .ew-theater-sky .ew-knode[data-anchor="n"], .ew-theater-sky .ew-knode[data-anchor="s"] { flex-direction: row; gap: 6px; min-width: 0; padding: 3px 8px 3px 4px; border-radius: 999px; background: rgba(12, 11, 9, .78); font-size: 10px; letter-spacing: .08em; }
 .ew-theater-sky .ew-knode-imagery { display: none; }
 .ew-theater-sky .ew-knode-mark { display: block; width: 7px; height: 7px; box-shadow: 0 0 7px currentColor; }
 .ew-theater-sky .ew-knode-label, .ew-theater-sky .ew-knode[data-kind="country"] .ew-knode-label, .ew-theater-sky .ew-knode[data-kind="language"] .ew-knode-label { display: inline; max-width: 14em; font-weight: 500; letter-spacing: .08em; text-transform: none; }
-.ew-theater-folio { min-height: 0; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; padding: 14px 16px calc(var(--player-dock-clearance) + env(safe-area-inset-bottom, 0px) + 16px); }
+.ew-theater-folio { min-height: 0; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; padding: 14px 16px 16px; display: flex; flex-direction: column; align-items: stretch; }
 .ew-theater-folio-rule { display: block; width: 24px; height: 1px; margin-bottom: 9px; }
 .ew-theater .ew-coverline { margin-top: 0; font-size: 42px; line-height: .96; letter-spacing: -.02em; }
 .ew-theater-telemetry { display: block; margin-top: 8px; color: var(--ew-dust); }
 .ew-theater-desk-live, .ew-theater-lede, .ew-theater-folio .ew-track, .ew-theater-folio .ew-upnext { display: none; }
-.ew-theater-folio { display: flex; flex-direction: column; align-items: stretch; }
 .ew-theater-folio > * { flex: none; }
 .ew-theater-well { flex: none; min-height: 0; max-width: none; margin-top: 0; overflow: visible; }
-.ew-page.is-theater, .ew-theater .ew-arrive, .ew-theater .ew-arrive-2, .ew-theater .ew-arrive-3, .ew-theater .ew-arrive-4, .ew-theater-well.is-filed .ew-cover-row, .ew-theater-well.is-filed .ew-journey li, .ew-theater-well.is-filed .ew-meridians, .ew-theater-well.is-filed .ew-caption, .ew-theater .ew-knode[data-motion="wake"] { animation: none; }
-.ew-theater-well .ew-cover-rule, .ew-theater-folio .ew-letter, .ew-theater-folio .ew-caption { display: none; }
-.ew-theater-folio .ew-cover-row { margin-top: 14px; border-top: 1px solid var(--ew-rule); padding-top: 13px; }
-.ew-theater-folio .ew-cover-title { font-family: "Schibsted Grotesk", sans-serif; font-size: 18px; font-style: normal; font-weight: 500; }
+.ew-theater-well .ew-cover-rule, .ew-letter-desk { display: none; }
+.ew-theater-star { display: none; }
+.ew-theater-folio.is-star .ew-theater-folio-rule, .ew-theater-folio.is-star .ew-coverline, .ew-theater-folio.is-star .ew-theater-telemetry, .ew-theater-folio.is-star .ew-theater-desk, .ew-theater-folio.is-star .ew-theater-queue { display: none; }
+.ew-theater-folio.is-star .ew-theater-star { display: grid; }
+.ew-theater-folio.is-star .ew-theater-layer { overflow: visible; }
+.ew-theater-folio.is-star .ew-letter-phone { display: block; margin-top: 0; }
+.ew-theater-folio.is-star .ew-letter-phone .ew-caption { margin: 0; max-width: none; color: var(--ew-bone); font-family: "Schibsted Grotesk", sans-serif; font-size: 14px; font-style: normal; line-height: 1.6; }
+.ew-theater-folio.is-star .ew-letter-more { text-transform: uppercase; letter-spacing: .16em; }
+.ew-theater-folio.is-star .ew-meridians { display: flex; flex-direction: column; align-items: stretch; gap: 8px; }
+.ew-theater-folio.is-star .ew-meridians a { display: flex; width: 100%; min-height: 40px; border: 1px solid var(--ew-rule); padding: 0 11px; }
+.ew-theater-folio.is-star .ew-knode-detail { margin-top: 18px; }
+.ew-theater-folio.is-star .ew-knode-detail h2 { font-size: 16px; font-weight: 500; }
+.ew-theater-folio.is-star .ew-knode-tune { min-height: 44px; margin-top: 12px; }
+.ew-known.is-collapsed { display: none; }
+.ew-krow-prov::before { content: ""; display: inline-block; width: 5px; height: 5px; margin-right: 6px; border-radius: 50%; background: currentColor; opacity: .8; vertical-align: middle; }
+.ew-theater-folio .ew-journey { margin: 8px 0 0; padding: 0; max-width: none; }
+.ew-theater-folio .ew-journey::before { display: none; }
+.ew-theater-folio .ew-journey li { display: flex; align-items: baseline; gap: 11px; min-height: 44px; margin: 0; border-bottom: 1px solid var(--ew-rule); padding: 7px 0; }
+.ew-theater-folio .ew-journey-star { position: static; width: 5px; height: 5px; border-radius: 0; transform: rotate(45deg); box-shadow: none; flex: none; top: auto; left: auto; }
+.ew-theater-folio .ew-journey-value { font-family: "Schibsted Grotesk", sans-serif; font-size: 15px; font-style: normal; font-weight: 500; }
+.ew-theater-folio .ew-journey-label { margin-left: auto; color: var(--ew-dust); }
+.ew-meridian-lab { margin: 16px 0 8px; }
+.ew-theater-folio .ew-meridians { margin: 0; gap: 8px; }
+.ew-theater-folio .ew-meridians a { border: 1px solid var(--ew-rule); padding: 0 11px; }
+.ew-theater-folio .ew-cover-row { display: grid; grid-template-columns: 72px minmax(0, 1fr); gap: 12px; margin-top: 16px; border-top: 1px solid var(--ew-rule); padding-top: 14px; }
+.ew-theater-folio .ew-cover-title { font-family: "Schibsted Grotesk", sans-serif; font-size: 18px; font-style: normal; font-weight: 500; line-height: 1.25; }
 .ew-theater-folio .ew-plate { display: grid; width: 72px; height: 72px; place-items: center; overflow: hidden; border: 1px solid rgba(198,165,106,.28); background: #0C0B09; color: var(--ew-foil); }
 .ew-theater-folio .ew-plate img { display: block; width: 100%; height: 100%; object-fit: cover; }
 .ew-theater-folio .ew-plate:has(img) .ew-plate-mark { display: none; }
-.ew-theater-folio .ew-plate:not(:has(img)) .ew-plate-mark { display: grid; width: 30px; height: 30px; place-items: center; color: var(--ew-foil); }
-.ew-plate-mark svg { display: block; width: 30px; height: 30px; }
-.ew-theater-folio .ew-known-line { margin-top: 7px; }
-.ew-theater-transport { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 14px; border-top: 1px solid var(--ew-rule); border-bottom: 1px solid var(--ew-rule); padding: 9px 0; }
+.ew-theater-folio .ew-plate:not(:has(img)) .ew-plate-mark { display: grid; width: 34px; height: 34px; place-items: center; color: var(--ew-foil); }
+.ew-plate-mark svg { display: block; width: 34px; height: 34px; }
+.ew-plate-copy { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.ew-plate-caption { display: block; margin: 0; color: var(--ew-dust); font-family: "Newsreader", "Iowan Old Style", "Palatino Linotype", serif; font-style: italic; font-size: 13px; line-height: 1.5; }
+.ew-theater-transport { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 18px; border-top: 1px solid var(--ew-rule); border-bottom: 1px solid var(--ew-rule); padding: 10px 0; }
 .ew-theater-tbtn { display: grid; width: 44px; height: 44px; place-items: center; border: 0; background: transparent; color: var(--ew-dust); }
 .ew-theater-tbtn.is-on { color: var(--ew-foil); }
-.ew-theater-tplay { display: grid; width: 52px; height: 52px; place-items: center; border: 1.5px solid var(--ew-foil); border-radius: 50%; background: var(--ew-lacquer); color: var(--ew-bone); }
+.ew-theater-tplay { display: grid; width: 56px; height: 56px; place-items: center; border: 1.5px solid var(--ew-foil); border-radius: 50%; background: var(--ew-lacquer); color: var(--ew-bone); }
 .ew-theater-ring { position: relative; display: grid; width: 36px; height: 36px; place-items: center; border: 0; border-radius: 50%; background: conic-gradient(var(--ew-lacquer) calc(var(--stamp-ink, 0) * 100%), transparent 0); padding: 0; }
 .ew-theater-ring span { display: grid; width: 30px; height: 30px; place-items: center; border-radius: 50%; background: var(--ew-ink); color: var(--ew-foil); font: 500 9px/1 "Azeret Mono", monospace; }
 .ew-theater-ring.is-stamped { background: var(--ew-foil); }
 .ew-theater-queue { display: flex; flex-direction: column; margin-top: 16px; }
+.ew-theater-queue > .rp-eyebrow { color: var(--ew-dust); }
 .ew-theater-qrow { display: flex; align-items: baseline; justify-content: space-between; gap: 14px; min-height: 44px; border: 0; border-bottom: 1px solid var(--ew-rule); background: transparent; padding: 8px 0; text-align: left; color: var(--ew-bone); cursor: pointer; }
 .ew-theater-qrow b { overflow: hidden; font-size: 14px; font-weight: 500; text-overflow: ellipsis; white-space: nowrap; }
 .ew-theater-qrow .rp-eyebrow { flex: none; color: var(--ew-dust); }
-.ew-theater-folio .ew-journey { margin-top: 8px; padding: 0; max-width: none; }
-.ew-theater-folio .ew-journey::before { display: none; }
-.ew-theater-folio .ew-journey li { display: flex; align-items: baseline; gap: 11px; min-height: 44px; margin: 0; border-bottom: 1px solid var(--ew-rule); padding: 7px 0; }
-.ew-theater-folio .ew-journey-star { position: static; left: auto; top: auto; flex: none; width: 5px; height: 5px; border-radius: 0; background: var(--ew-foil); box-shadow: none; transform: rotate(45deg); }
-.ew-theater-folio .ew-journey-value { font-family: "Schibsted Grotesk", sans-serif; font-size: 15px; font-style: normal; font-weight: 500; }
-.ew-theater-folio .ew-journey-label { margin-left: auto; color: var(--ew-dust); }
-.ew-theater-folio .ew-meridians { flex-direction: column; align-items: stretch; gap: 8px; }
-.ew-theater-folio .ew-meridian-lab { display: none; }
-.ew-theater-folio .ew-meridians a { min-height: 40px; border: 1px solid var(--ew-rule); padding: 0 11px; letter-spacing: .1em; }
-.ew-theater-folio:not(.is-star) .ew-meridians { display: none; }
-.ew-theater-folio.is-star .ew-theater-folio-rule, .ew-theater-folio.is-star .ew-coverline, .ew-theater-folio.is-star .ew-theater-telemetry, .ew-theater-folio.is-star .ew-cover-row, .ew-theater-folio.is-star .ew-theater-transport, .ew-theater-folio.is-star .ew-theater-queue, .ew-theater-folio.is-star .ew-known, .ew-theater-folio.is-star .ew-waiting, .ew-theater-folio.is-star .ew-journey-wrap, .ew-theater-folio.is-star .ew-desk-verified { display: none; }
-.ew-theater-folio.is-star .ew-letter, .ew-theater-folio.is-star .ew-caption { display: block; }
-.ew-theater-folio.is-star .ew-meridians { display: flex; }
-.ew-theater-folio.is-star .ew-meridian-lab { display: block; margin: 16px 0 8px; color: var(--ew-dust); }
-.ew-theater[data-phase="filed"]:has(.is-star) .ew-theater-room { grid-template-rows: 96px minmax(0, 1fr); }
-.ew-ktrail { text-transform: uppercase; }
-.ew-desk-label { letter-spacing: .16em; text-transform: uppercase; }
 }

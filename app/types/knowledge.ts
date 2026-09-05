@@ -137,6 +137,8 @@ export type TheaterNodesProps = {
   focusId: string | null;
   /** Namespaced id of the station currently on the air, if any. */
   tunedId?: string | null;
+  /** Ids that entered `awake` this tick — only these opacity-wake. */
+  wakingIds?: readonly string[];
   reducedMotion: boolean;
   onSelect: (id: string) => void;
 };

@@ -151,10 +151,15 @@ const KnodeImagery = memo(function KnodeImagery({
   );
 });
 
+const WAKE_STEP_MS = 70;
+const WAKE_STEP_CAP = 3;
+
 type KnodeButtonProps = {
   node: PositionedKnowledgeNode;
   focused: boolean;
   tuned: boolean;
+  waking: boolean;
+  wakeDelay: number;
   reducedMotion: boolean;
   onSelect: (id: string) => void;
 };
@@ -164,6 +169,8 @@ const KnodeButton = memo(function KnodeButton({
   node,
   focused,
   tuned,
+  waking,
+  wakeDelay,
   reducedMotion,
   onSelect,
 }: KnodeButtonProps) {
@@ -176,6 +183,7 @@ const KnodeButton = memo(function KnodeButton({
     translate: "-50% -50%",
     minWidth: "28px",
     minHeight: "28px",
+    animationDelay: waking && wakeDelay ? `${wakeDelay}ms` : undefined,
   };
 
   const tunedStation = tuned && node.kind === "station";
@@ -193,7 +201,7 @@ const KnodeButton = memo(function KnodeButton({
       style={seatStyle}
       data-kind={node.kind}
       data-anchor={anchor}
-      data-motion={reducedMotion ? "still" : "wake"}
+      data-motion={reducedMotion || !waking ? "still" : "wake"}
       data-focused={focused ? "true" : undefined}
       data-tuned={tunedStation ? "true" : undefined}
       title={caption && caption !== node.label ? node.label : undefined}
@@ -223,6 +231,7 @@ function TheaterNodesImpl({
   nodes,
   focusId,
   tunedId = null,
+  wakingIds = [],
   reducedMotion,
   onSelect,
 }: TheaterNodesProps) {
@@ -235,16 +244,21 @@ function TheaterNodesImpl({
         pointerEvents: "none",
       }}
     >
-      {nodes.map((node) => (
+      {nodes.map((node) => {
+        const wakeIndex = wakingIds.indexOf(node.id);
+        return (
         <KnodeButton
           key={node.id}
           node={node}
           focused={node.id === focusId}
           tuned={node.id === tunedId}
+          waking={wakeIndex >= 0}
+          wakeDelay={Math.min(Math.max(wakeIndex, 0), WAKE_STEP_CAP) * WAKE_STEP_MS}
           reducedMotion={reducedMotion}
           onSelect={onSelect}
         />
-      ))}
+        );
+      })}
     </div>
   );
 }
