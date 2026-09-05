@@ -2112,17 +2112,14 @@ html, body {
 .ew-flap { position: relative; display: inline-grid; flex: none; width: 0.7em; height: 1.2em; place-items: center; overflow: hidden; margin-left: 1px; background: color-mix(in srgb, var(--ew-leather, #1A1410) 88%, #000); color: inherit; font-size: 13px; text-transform: uppercase; border-radius: 1px; perspective: 80px; transform-style: preserve-3d; }
 .ew-flap:first-child { margin-left: 0; }
 .ew-flap::after { content: ""; position: absolute; inset: 50% 0 auto; height: 1px; background: rgba(12, 11, 9, .5); z-index: 3; pointer-events: none; }
-.ew-flap-from, .ew-flap-to { grid-area: 1 / 1; display: grid; place-items: center; width: 100%; height: 100%; backface-visibility: hidden; }
-.ew-flap-to { transform: rotateX(-90deg); }
-.ew-flap.is-flip .ew-flap-from { animation: ew-flap-out .28s var(--ew-settle, cubic-bezier(.2,.8,.2,1)) both; animation-delay: inherit; }
-.ew-flap.is-flip .ew-flap-to { animation: ew-flap-in .28s var(--ew-settle, cubic-bezier(.2,.8,.2,1)) both; animation-delay: inherit; }
-@keyframes ew-flap-out { from { transform: rotateX(0deg); } to { transform: rotateX(90deg); } }
+.ew-flap-to { grid-area: 1 / 1; display: grid; place-items: center; width: 100%; height: 100%; backface-visibility: hidden; transform: rotateX(-90deg); }
+.ew-flap:not(.is-flip) .ew-flap-to { transform: none; animation: none; }
+.ew-flap.is-flip .ew-flap-to { animation: ew-flap-in .12s var(--ew-settle, cubic-bezier(.2,.8,.2,1)) both; }
 @keyframes ew-flap-in { from { transform: rotateX(-90deg); } to { transform: rotateX(0deg); } }
 .ew-flap-line.is-meta .ew-flap { height: 1.05em; background: transparent; font-size: 10px; letter-spacing: .04em; color: var(--ew-dust); }
 .ew-flap-line.is-meta .ew-flap::after { opacity: .4; }
 @media (prefers-reduced-motion: reduce) {
-.ew-flap.is-flip .ew-flap-from, .ew-flap.is-flip .ew-flap-to { animation: none; }
-.ew-flap-from { visibility: hidden; }
+.ew-flap.is-flip .ew-flap-to { animation: none; }
 .ew-flap-to { transform: none; }
 }
 :root[data-atmosphere="day"] .ew-flap { background: color-mix(in srgb, #EFE3CE 70%, #C6A56A); color: #2A241C; }

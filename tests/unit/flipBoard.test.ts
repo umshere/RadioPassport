@@ -2,8 +2,14 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
   boardShift,
+  COL_STAGGER_MS,
+  DRUM,
+  drumSteps,
+  FLIP_MS,
   flapSlots,
-  FLAP_STEP_MS,
+  flipGlyph,
+  flipLive,
+  flipPlan,
 } from "~/components/radio-passport/FlipBoard";
 
 describe("flip board", () => {
@@ -22,7 +28,44 @@ describe("flip board", () => {
     expect(boardShift(rows, -1)).toEqual(["d", "a", "b", "c"]);
   });
 
-  it("staggers letters on the home board and refetches the catalog", () => {
+  it("spins the drum forward only, like hardware", () => {
+    expect(drumSteps("A", "C")).toBe(2);
+    expect(drumSteps(" ", "A")).toBe(1);
+    expect(drumSteps("A", "A")).toBe(0);
+    // Wraps around instead of spinning backward.
+    expect(drumSteps("C", "A")).toBe(DRUM.length - 2);
+    // Unknown glyphs park at blank.
+    expect(drumSteps("é", " ")).toBe(0);
+  });
+
+  it("churns each cell through the drum with a left-to-right ripple", () => {
+    const plan = flipPlan("A", "C", 0);
+    expect(plan.cells).toHaveLength(1);
+    expect(plan.cells[0]!.steps).toBe(2);
+    expect(plan.cells[0]!.startMs).toBe(0);
+    expect(plan.totalMs).toBe(2 * FLIP_MS);
+
+    const ripple = flipPlan("AB", "AB", 0);
+    // Identical text parks every drum.
+    expect(ripple.totalMs).toBe(0);
+    expect(ripple.cells.every((cell) => cell.steps === 0)).toBe(true);
+
+    const stagger = flipPlan("AB", "CD", 0);
+    expect(stagger.cells[1]!.startMs - stagger.cells[0]!.startMs).toBe(
+      COL_STAGGER_MS,
+    );
+
+    // Glyph journey for A -> C at 140ms steps: A, B, then lands on C.
+    const cell = plan.cells[0]!;
+    expect(flipGlyph(cell, -1)).toBe("A");
+    expect(flipGlyph(cell, 0)).toBe("B");
+    expect(flipGlyph(cell, FLIP_MS)).toBe("C");
+    expect(flipGlyph(cell, FLIP_MS * 4)).toBe("C");
+    expect(flipLive(cell, 0)).toBe(true);
+    expect(flipLive(cell, FLIP_MS * 2)).toBe(false);
+  });
+
+  it("staggers rows on the home board and refetches the catalog", () => {
     const home = readFileSync(
       new URL("../../app/routes/_index.tsx", import.meta.url),
       "utf8",
@@ -35,7 +78,8 @@ describe("flip board", () => {
       new URL("../../app/tailwind.css", import.meta.url),
       "utf8",
     );
-    expect(FLAP_STEP_MS).toBe(32);
+    expect(FLIP_MS).toBe(140);
+    expect(COL_STAGGER_MS).toBe(40);
     expect(home).toContain("boardShift");
     expect(home).toContain("boardSeed");
     expect(home).toContain("boardShift(filtered.slice");
