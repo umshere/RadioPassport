@@ -203,6 +203,24 @@ describe("buildTheaterKnowledge", () => {
     ]);
   });
 
+  it("files the live title as a catalog track star the moment ICY names it", () => {
+    const graph = buildTheaterKnowledge({
+      station: makeStation(),
+      track: { artist: "Ravi Kale", title: "Night Ferry" },
+    });
+    expect(graph.nodes.some((node) => node.id.startsWith("track:") && node.kind === "track")).toBe(
+      true,
+    );
+    expect(
+      graph.edges.some(
+        (edge) =>
+          edge.from === "station:st-1" &&
+          edge.relation === "currently airing" &&
+          edge.provenance === "catalog",
+      ),
+    ).toBe(true);
+  });
+
   it("keeps earlier node ids and array positions forever as sources grow", () => {
     const before = buildTheaterKnowledge({ station: makeStation() });
     const grown = buildTheaterKnowledge({

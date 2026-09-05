@@ -105,8 +105,9 @@ export default function ListeningPage() {
         station: hydrated ? storedNowPlaying : null,
         roomGraph: intelligence.graph,
         expansions,
+        track: room.signal.track,
       }),
-    [expansions, hydrated, storedNowPlaying, intelligence.graph],
+    [expansions, hydrated, storedNowPlaying, intelligence.graph, room.signal.track],
   );
 
   const evidenceArrived = useMemo(
@@ -376,7 +377,9 @@ export default function ListeningPage() {
           >
             <TheaterTransport />
           </TheaterWell>
-          {phase === "locking" || phase === "filed" ? <TheaterQueue /> : null}
+          {phase === "locking" || phase === "filed" || Boolean(rawTrackLine) ? (
+            <TheaterQueue />
+          ) : null}
           {selectedKnowledgeNode && trail.length > 0 ? (
             <nav className="ew-ktrail" aria-label="Knowledge trail">
               {trail.map((crumb, index) => (
@@ -444,6 +447,7 @@ export default function ListeningPage() {
                         data-kind={node.kind}
                         onClick={() => handleNodeSelect(node.id)}
                       >
+                        <i aria-hidden="true" />
                         {node.label}
                       </button>
                     ))}

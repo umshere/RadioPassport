@@ -2007,7 +2007,7 @@ html, body {
 .ew-ktrail button:hover { color: var(--ew-foil); }
 .ew-ktrail [aria-current="true"] { color: var(--ew-foil); }
 .ew-knode-detail { margin-top: 12px; border-top: 1px solid var(--ew-rule); padding-top: 12px; }
-.ew-knode-detail h2 { margin: 0; font-size: 15px; color: var(--ew-bone); }
+.ew-knode-detail h2 { margin: 0; font-size: 22px; line-height: 1.15; color: var(--ew-bone); }
 .ew-knode-detail p { margin: 4px 0 0; color: var(--ew-dust); font-size: 13px; }
 .ew-knode-detail .ew-knode-tune { margin-top: 10px; display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--ew-foil); border-radius: 999px; padding: 6px 14px; background: none; color: var(--ew-foil); font: 500 12px/1 "Azeret Mono", monospace; letter-spacing: 0.14em; text-transform: uppercase; cursor: pointer; }
 .ew-knode-detail .ew-knode-tune:hover { background: color-mix(in srgb, var(--ew-foil) 12%, transparent); }
@@ -2024,7 +2024,8 @@ html, body {
 .ew-meridian-host { margin-left: 8px; color: var(--ew-dust); font-style: normal; letter-spacing: .06em; text-transform: none; }
 .ew-knode-also { margin-top: 18px; border-top: 1px solid var(--ew-rule); padding-top: 12px; }
 .ew-knode-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 9px; }
-.ew-knode-chip { display: inline-flex; align-items: center; min-height: 40px; border: 1px solid var(--ew-rule); background: transparent; padding: 0 12px; color: var(--ew-bone); font: 500 10px/1 "Azeret Mono", monospace; letter-spacing: .1em; text-transform: uppercase; cursor: pointer; }
+.ew-knode-chip { display: inline-flex; align-items: center; gap: 8px; min-height: 40px; border: 1px solid var(--ew-rule); background: transparent; padding: 0 12px; color: var(--ew-bone); font: 500 10px/1 "Azeret Mono", monospace; letter-spacing: .1em; text-transform: uppercase; cursor: pointer; }
+.ew-knode-chip i { display: block; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
 .ew-knode-chip[data-kind="country"], .ew-knode-chip[data-kind="artist"], .ew-knode-chip[data-kind="album"] { color: var(--ew-foil); }
 .ew-knode-chip[data-kind="language"], .ew-knode-chip[data-kind="year"], .ew-knode-chip[data-kind="genre"], .ew-knode-chip[data-kind="city"], .ew-knode-chip[data-kind="place"] { color: var(--ew-ether); }
 .ew-knode-chip[data-kind="event"] { color: var(--ew-lacquer); }

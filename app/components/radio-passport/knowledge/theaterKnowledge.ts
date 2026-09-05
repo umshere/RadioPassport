@@ -178,6 +178,8 @@ export function buildTheaterKnowledge(input: {
   station: Station | null;
   roomGraph?: TriviaGraphLike | null;
   expansions?: ExpandedNeighborhood[];
+  /** Live ICY identity. Never invented — omit it when the station is quiet. */
+  track?: { artist?: string | null; title?: string | null } | null;
 }): KnowledgeGraph {
   const nodes: KnowledgeNode[] = [];
   const edges: KnowledgeEdge[] = [];
@@ -290,6 +292,24 @@ export function buildTheaterKnowledge(input: {
     }
     if (stationId && cityId) {
       addEdge(stationId, cityId, "in city", "catalog");
+    }
+  }
+
+  // ICY title — never invented. Lights the track star the moment the station
+  // names what is on the air, before MusicBrainz has filed.
+  const icyTitle = input.track?.title?.trim() ?? "";
+  const icyArtist = input.track?.artist?.trim() ?? "";
+  if (stationId && icyTitle) {
+    const icyTail = fieldSlug([icyArtist, icyTitle].filter(Boolean).join(" "));
+    if (icyTail) {
+      const icyId = `track:${icyTail}`;
+      fileNode({
+        id: icyId,
+        kind: "track",
+        label: icyArtist ? `${icyArtist} — ${icyTitle}` : icyTitle,
+        provenance: "catalog",
+      });
+      addEdge(stationId, icyId, "currently airing", "catalog");
     }
   }
 

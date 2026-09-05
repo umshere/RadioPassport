@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "@remix-run/react";
 import {
   homeWithPassportHref,
@@ -20,6 +21,24 @@ export function TheaterTransport() {
   const hydrated = useJourneyStore((state) => state.hydrated);
   const toggleFavorite = useJourneyStore((state) => state.toggleFavorite);
   const stamps = useJourneyStore((state) => state.stamps);
+  const [ink, setInk] = useState<number | null>(null);
+
+  useEffect(() => {
+    const read = () => {
+      const raw = getComputedStyle(document.documentElement)
+        .getPropertyValue("--stamp-ink")
+        .trim();
+      if (!raw) {
+        setInk(null);
+        return;
+      }
+      const next = Number(raw);
+      setInk(Number.isFinite(next) ? Math.min(1, Math.max(0, next)) : null);
+    };
+    read();
+    const timer = window.setInterval(read, 1000);
+    return () => window.clearInterval(timer);
+  }, [nowPlaying?.uuid, isPlaying, stamps.length]);
 
   if (!nowPlaying) return null;
 
@@ -109,7 +128,13 @@ export function TheaterTransport() {
           stamped ? "Open passport — this city is stamped" : "Open passport"
         }
       >
-        <span>{stamped ? "EW" : ""}</span>
+        <span>
+          {stamped
+            ? "EW"
+            : ink === null
+              ? ""
+              : `${Math.max(0, Math.ceil((1 - ink) * 60))}s`}
+        </span>
       </button>
     </div>
   );

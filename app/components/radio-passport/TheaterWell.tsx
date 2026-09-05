@@ -1192,7 +1192,10 @@ export function TheaterWell({
   const trackArtist = titleParts.length > 1 ? titleParts[0] : null;
   const trackName =
     titleParts.length > 1 ? titleParts.slice(1).join(" — ") : coverTitle;
-  const showCover = icy && (filed || phase === "locking");
+  // Knowledge 02 seats the plate as soon as a title exists. trivia empty/error
+  // keeps theaterPhase at quiet — the desk still shows the cover, it never
+  // invents facts.
+  const showCover = icy;
   const catalogRows: Array<[string, string]> = [];
   for (const [label, value] of [
     ["Land", catalog?.land],
@@ -1233,55 +1236,48 @@ export function TheaterWell({
           ))}
         </section>
       ) : null}
-      {!filed && icy && !showCover && catalogLine ? (
-        <p className="ew-known-line">{catalogLine}</p>
-      ) : null}
-      {waiting && phase !== "locking" ? (
+      {waiting && !icy ? (
         <p className="ew-waiting">
           <i className="ew-waiting-dot" aria-hidden="true" />
           {waiting}
         </p>
       ) : null}
-      {filed || phase === "locking" ? (
-        <>
-          {showCover ? (
-            <div className="ew-cover-row">
-              <figure className="ew-plate">
-                {showPlate ? (
-                  <img
-                    src={plate!}
-                    alt=""
-                    onError={() => {
-                      markArtworkUrlFailed(plate!);
-                      setPlateFailed(true);
-                    }}
-                  />
-                ) : null}
-                <span className="ew-plate-mark" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.1">
-                    <circle cx="12" cy="12" r="8.5" />
-                    <circle cx="12" cy="12" r="2.6" fill="#C73A3A" stroke="none" />
-                  </svg>
-                </span>
-              </figure>
-              <div className="ew-plate-copy">
-                {trackName ? <p className="ew-cover-title">{trackName}</p> : null}
-                {phase === "locking" && catalogLine ? (
-                  <p className="ew-known-line">{catalogLine}</p>
-                ) : null}
-                {filed && trackArtist ? (
-                  <p className="ew-known-line">{trackArtist}</p>
-                ) : null}
-              </div>
-            </div>
-          ) : null}
-          {waiting ? (
-            <p className="ew-waiting">
-              <i className="ew-waiting-dot" aria-hidden="true" />
-              {waiting}
-            </p>
-          ) : null}
-        </>
+      {showCover ? (
+        <div className="ew-cover-row">
+          <figure className="ew-plate">
+            {showPlate ? (
+              <img
+                src={plate!}
+                alt=""
+                onError={() => {
+                  markArtworkUrlFailed(plate!);
+                  setPlateFailed(true);
+                }}
+              />
+            ) : null}
+            <span className="ew-plate-mark" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.1">
+                <circle cx="12" cy="12" r="8.5" />
+                <circle cx="12" cy="12" r="2.6" fill="#C73A3A" stroke="none" />
+              </svg>
+            </span>
+          </figure>
+          <div className="ew-plate-copy">
+            {trackName ? <p className="ew-cover-title">{trackName}</p> : null}
+            {!filed && catalogLine ? (
+              <p className="ew-known-line">{catalogLine}</p>
+            ) : null}
+            {filed && trackArtist ? (
+              <p className="ew-known-line">{trackArtist}</p>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
+      {waiting && icy ? (
+        <p className="ew-waiting">
+          <i className="ew-waiting-dot" aria-hidden="true" />
+          {waiting}
+        </p>
       ) : null}
       {children}
       {filed ? (

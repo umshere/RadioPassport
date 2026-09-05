@@ -100,6 +100,7 @@ export type TheaterKnowledgeModel = {
  *   station: Station | null;
  *   roomGraph?: TriviaGraphLike;   // MB + citation-filtered web, merged
  *   expansions?: ExpandedNeighborhood[];
+ *   track?: { artist?: string | null; title?: string | null } | null;
  * }): KnowledgeGraph
  *   — addition-only merge; nodes already filed keep their array position.
  *

@@ -698,6 +698,7 @@ describe("theater lock", () => {
       ),
       "utf8",
     );
+    expect(well).toContain("const showCover = icy");
     expect(well).toContain("theaterSkyLive");
     expect(well).toContain("fieldStandingLabel");
     expect(well).toContain("fieldSpanEdges");
