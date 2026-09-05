@@ -733,7 +733,7 @@ describe("theater lock", () => {
       ),
       "utf8",
     );
-    expect(well).toContain("const showCover = icy");
+    expect(well).toContain("const showCover = icy || showPlate");
     expect(well).toContain("theaterSkyLive");
     expect(well).toContain('matchMedia("(max-width: 960px)")');
     expect(well).toContain("wakingIds");

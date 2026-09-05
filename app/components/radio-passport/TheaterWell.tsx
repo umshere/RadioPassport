@@ -1143,6 +1143,8 @@ export function TheaterWell({
   imageUrl,
   links,
   track,
+  artwork,
+  stationName,
   catalog,
   children,
 }: {
@@ -1154,6 +1156,10 @@ export function TheaterWell({
   imageUrl?: string | null;
   links?: TheaterLink[];
   track?: string | null;
+  /** Station favicon fallback so the plate shows without a live ICY title. */
+  artwork?: string | null;
+  /** Station name, to drop a SIGNAL row that only repeats it. */
+  stationName?: string | null;
   catalog?: {
     land?: string | null;
     city?: string | null;
@@ -1163,7 +1169,8 @@ export function TheaterWell({
   children?: ReactNode;
 }) {
   const aria = theaterWellAria(phase);
-  const plate = sanitizeArtworkUrl(imageUrl);
+  const plate =
+    sanitizeArtworkUrl(imageUrl) ?? sanitizeArtworkUrl(artwork ?? null);
   const [plateFailed, setPlateFailed] = useState(false);
   useEffect(() => {
     setPlateFailed(false);
@@ -1196,8 +1203,9 @@ export function TheaterWell({
   const trackArtist = titleParts.length > 1 ? titleParts[0] : null;
   const trackName =
     titleParts.length > 1 ? titleParts.slice(1).join(" — ") : coverTitle;
-  const showCover = icy;
+  const showCover = icy || showPlate;
   const catalogRows: Array<[string, string]> = [];
+  const tuned = stationName?.trim().toLowerCase() ?? null;
   for (const [label, value] of [
     ["Land", catalog?.land],
     ["City", catalog?.city],
@@ -1205,7 +1213,11 @@ export function TheaterWell({
     ["Signal", catalog?.signal],
   ] as const) {
     const text = value?.trim();
-    if (text) catalogRows.push([label, text]);
+    if (!text) continue;
+    // SIGNAL repeats the tuned station name verbatim — the lede and the
+    // telemetry line already carry it. Drop the echo, keep the row rhythm.
+    if (label === "Signal" && tuned && text.toLowerCase() === tuned) continue;
+    catalogRows.push([label, text]);
   }
   const catalogLine = catalogRows.map(([, value]) => value).join(" · ");
   const waiting = icy

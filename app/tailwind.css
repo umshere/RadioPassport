@@ -2022,7 +2022,7 @@ html, body {
 .ew-known-lab { color: var(--ew-dust); }
 .ew-krow { display: flex; align-items: baseline; gap: 12px; min-height: 44px; border-bottom: 1px solid var(--ew-rule); padding: 7px 0; }
 .ew-krow-key { flex: none; width: 62px; color: var(--ew-dust); font: 500 9px/1.35 "Azeret Mono", monospace; letter-spacing: .16em; text-transform: uppercase; }
-.ew-krow-value { font-size: 15px; font-weight: 500; color: var(--ew-bone); }
+.ew-krow-value { min-width: 0; font-size: 15px; font-weight: 500; color: var(--ew-bone); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 .ew-krow-prov { display: inline-flex; align-items: center; margin: 0 0 0 auto; color: var(--ew-dust); font: 500 9px/1.35 "Azeret Mono", monospace; letter-spacing: .14em; text-transform: uppercase; }
 .ew-known-line { margin: 14px 0 0; color: var(--ew-dust); font: 500 10px/1.35 "Azeret Mono", monospace; letter-spacing: .16em; text-transform: uppercase; }
 .ew-waiting { display: flex; align-items: center; gap: 9px; margin: 14px 0 0; color: var(--ew-dust); font: 500 10px/1.35 "Azeret Mono", monospace; letter-spacing: .16em; text-transform: uppercase; }

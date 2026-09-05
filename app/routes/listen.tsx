@@ -403,6 +403,8 @@ export default function ListeningPage() {
             imageUrl={intelligence.imageUrl}
             links={intelligence.links}
             track={rawTrackLine}
+            artwork={nowPlaying.favicon}
+            stationName={nowPlaying.name}
             catalog={{
               land: nowPlaying.country,
               city,
