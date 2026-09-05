@@ -869,7 +869,19 @@ export default function Index() {
                     aria-label="Show fresh stations"
                     title="Fresh stations"
                   >
-                    ↻
+                    <svg
+                      width="13"
+                      height="13"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                      aria-hidden="true"
+                    >
+                      <path d="M20 12a8 8 0 1 1-2.34-5.66" />
+                      <path d="M20 3v4h-4" />
+                    </svg>
                   </button>
                 ) : null}
               </span>
