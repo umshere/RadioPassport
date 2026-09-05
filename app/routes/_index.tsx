@@ -601,11 +601,13 @@ export default function Index() {
         : "the world";
   const arrivalStation = nowPlaying || continueStation || featured;
   const isSeeking = query.trim().length >= 2;
+  // Manual reshuffle: a fresh idle window from the loaded pool, no refetch.
+  const [shuffle, setShuffle] = useState(0);
   const boardRows = useMemo(() => {
     const cap = isSeeking ? 32 : 8;
     const ordered = isSeeking
       ? filtered
-      : boardShift(filtered.slice(0, Math.max(cap, 36)), boardSeed);
+      : boardShift(filtered.slice(0, Math.max(cap, 36)), boardSeed + shuffle);
     const ids = ordered.slice(0, cap).map((station) => station.uuid);
     const live = new Map(
       liveFiltered.map((station) => [station.uuid, station]),
@@ -613,7 +615,7 @@ export default function Index() {
     return ids.map(
       (id) => live.get(id) ?? ordered.find((station) => station.uuid === id)!,
     );
-  }, [boardSeed, filtered, isSeeking, liveFiltered]);
+  }, [boardSeed, filtered, isSeeking, liveFiltered, shuffle]);
   const locatorShrunk = isSeeking || Boolean(hour);
   const seekingCover = isSeeking && !isPlaying;
   const arrival = resolveCoverArrival({
@@ -851,12 +853,25 @@ export default function Index() {
               className="mt-7 flex items-center justify-between"
               id="live-board"
             >
-              <span
-                className={`rp-eyebrow ${isSeeking ? "text-ether" : ""}`}
-                role="status"
-                aria-live="polite"
-              >
-                <i className="rp-live-dot" /> {boardLabel}
+              <span className="flex items-center gap-2">
+                <span
+                  className={`rp-eyebrow ${isSeeking ? "text-ether" : ""}`}
+                  role="status"
+                  aria-live="polite"
+                >
+                  <i className="rp-live-dot" /> {boardLabel}
+                </span>
+                {!isSeeking ? (
+                  <button
+                    type="button"
+                    className="rp-board-shuffle"
+                    onClick={() => setShuffle((value) => value + 1)}
+                    aria-label="Show fresh stations"
+                    title="Fresh stations"
+                  >
+                    ↻
+                  </button>
+                ) : null}
               </span>
               {mixLabel ? (
                 <span className="rp-eyebrow text-foil">{mixLabel}</span>

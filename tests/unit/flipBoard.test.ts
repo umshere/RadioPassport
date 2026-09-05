@@ -99,6 +99,8 @@ describe("flip board", () => {
     expect(home).toContain('cache: "no-store"');
     expect(row).toContain("FlipBoard");
     expect(row).toContain("delayMs={beat}");
+    expect(home).toContain("Show fresh stations");
+    expect(home).toContain("setShuffle");
     expect(css).toContain(".ew-flap-line");
     expect(css).toContain("@keyframes ew-flap-in");
     expect(css).toContain("prefers-reduced-motion: reduce");
