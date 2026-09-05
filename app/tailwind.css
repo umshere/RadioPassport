@@ -960,13 +960,16 @@
   .rp-overlay {
     position: fixed;
     inset: 0;
-    z-index: 100;
+    /* The veil sits below the chrome — header 60, cover strip 50, band 41,
+       dock 40 — so one header stands over every surface, Atlas included. */
+    z-index: 39;
     overflow: auto;
     overflow-x: hidden;
     background: var(--ew-veil);
     color: var(--ew-bone);
     backdrop-filter: blur(18px);
     padding: clamp(20px, 5vw, 64px);
+    padding-bottom: 96px;
     animation: ew-veil .3s ease both;
   }
   .rp-overlay-inner {
@@ -1561,7 +1564,7 @@
     .rp-station-list { max-height: none; overflow: visible; }
     .rp-station { min-height: 64px; }
     .rp-overlay {
-      padding: calc(56px + env(safe-area-inset-top, 0px)) 16px calc(24px + env(safe-area-inset-bottom, 0px));
+      padding: calc(56px + env(safe-area-inset-top, 0px)) 16px calc(132px + env(safe-area-inset-bottom, 0px));
     }
     .rp-overlay-head { align-items: flex-start; margin-bottom: 24px; padding-right: 0; flex-direction: column; }
     .rp-overlay-head input { width: 100%; max-width: 100%; }

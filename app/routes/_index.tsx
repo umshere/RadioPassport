@@ -60,6 +60,7 @@ import {
   sameHourPillLabel,
   OPEN_ATLAS_EVENT,
   OPEN_PASSPORT_EVENT,
+  announceAtlas,
   atlasRequested,
   passportRequested,
   resolveStampReplay,
@@ -590,6 +591,7 @@ export default function Index() {
       "",
       `${window.location.pathname}${search}${window.location.hash}`,
     );
+    announceAtlas(atlas);
   }, [atlas]);
 
   const arrivalCity = nowPlaying

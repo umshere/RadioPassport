@@ -1,5 +1,7 @@
 import { Link, useLocation, useNavigate } from "@remix-run/react";
+import { useEffect, useState } from "react";
 import {
+  ATLAS_SYNC_EVENT,
   atlasRequested,
   homeWithAtlasHref,
   openAtlasNow,
@@ -19,7 +21,21 @@ export default function BandNav() {
   const navigate = useNavigate();
   const mounted = useHydrated();
   const nowPlaying = usePlayerStore((state) => state.nowPlaying);
-  const atlasOpen = atlasRequested(location.search);
+  // Same-URL atlas flips never reach useLocation (home syncs through
+  // history.replaceState), so the page announces them and the tabs pin the
+  // last announcement until Remix actually navigates again.
+  const [atlasPin, setAtlasPin] = useState<boolean | null>(null);
+  useEffect(() => {
+    setAtlasPin(null);
+  }, [location.key]);
+  useEffect(() => {
+    const sync = (event: Event) => {
+      setAtlasPin((event as CustomEvent<boolean>).detail === true);
+    };
+    window.addEventListener(ATLAS_SYNC_EVENT, sync);
+    return () => window.removeEventListener(ATLAS_SYNC_EVENT, sync);
+  }, []);
+  const atlasOpen = atlasPin ?? atlasRequested(location.search);
   const theaterEmpty = mounted && !nowPlaying;
 
   const current =

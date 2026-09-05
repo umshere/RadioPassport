@@ -130,6 +130,16 @@ export function openAtlasNow(pathname: string, goHome: () => void) {
   return "route";
 }
 
+// Home syncs ?atlas=1 through history.replaceState, which Remix never hears —
+// BandNav would keep Elsewhere lit while Atlas stands open. The page announces
+// every atlas flip on this event so the tabs can track the same truth.
+export const ATLAS_SYNC_EVENT = "elsewhere:atlas-sync";
+
+export function announceAtlas(open: boolean) {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new CustomEvent(ATLAS_SYNC_EVENT, { detail: open }));
+}
+
 /** The live product surface. If it is shown, it must do this. */
 export const SURFACE_CONNECTIONS: SurfaceConnection[] = [
   {

@@ -575,6 +575,7 @@ describe("live stylesheet", () => {
     expect(css).toContain(".ew-horizon-kicker");
     expect(css).toContain(".ew-band-nav");
     expect(css).toContain("@media (min-width: 961px)");
+    expect(css).toMatch(/\.rp-overlay \{[^}]*z-index: 39/);
     expect(css).toContain(".ew-atlas");
     expect(css).toContain(".ew-theater-back");
     expect(css).toContain(".ew-theater-field");
@@ -642,6 +643,16 @@ describe("home cover panes", () => {
     expect(band).toContain("aria-disabled");
     expect(band).toContain("homeWithAtlasHref");
     expect(band).not.toContain("/atlas");
+    expect(band).toContain("ATLAS_SYNC_EVENT");
+    expect(home).toContain("announceAtlas");
+    const overlays = readFileSync(
+      new URL(
+        "../../app/components/radio-passport/Overlays.tsx",
+        import.meta.url,
+      ),
+      "utf8",
+    );
+    expect(overlays).toContain('<Overlay close={close} label="Atlas" hideClose>');
     expect(home).toContain('className="rp-intro-board"');
     expect(home).toContain('className="rp-intro-copy"');
     expect(home).toContain('className="rp-land-slot"');

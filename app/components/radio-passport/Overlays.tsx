@@ -19,10 +19,13 @@ function Overlay({
   children,
   close,
   label,
+  hideClose,
 }: {
   children: React.ReactNode;
   close: () => void;
   label: string;
+  /** Atlas is a tab destination now — the tabs dismiss it, so it needs no ×. */
+  hideClose?: boolean;
 }) {
   const dialogRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLElement | null>(null);
@@ -91,14 +94,16 @@ function Overlay({
         onKeyDown={trapFocus}
       >
         {children}
-        <button
-          type="button"
-          className="rp-close"
-          onClick={close}
-          aria-label={`Close ${label}`}
-        >
-          ×
-        </button>
+        {!hideClose ? (
+          <button
+            type="button"
+            className="rp-close"
+            onClick={close}
+            aria-label={`Close ${label}`}
+          >
+            ×
+          </button>
+        ) : null}
       </div>
     </div>
   );
@@ -143,7 +148,7 @@ export function AtlasOverlay({
     )
   );
   return (
-    <Overlay close={close} label="Atlas">
+    <Overlay close={close} label="Atlas" hideClose>
       <header className="rp-overlay-head">
         <div>
           <h2>Atlas</h2>
