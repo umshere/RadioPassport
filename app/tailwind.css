@@ -1925,7 +1925,10 @@ html, body {
 .rp-dock { bottom: calc(44px + env(safe-area-inset-bottom, 0px)); min-height: 64px; height: 64px; padding: 8px 10px; }
 .rp-dock-art { width: 44px; height: 44px; }
 .rp-dock-play { width: 48px; height: 48px; }
-.rp-dock .rp-dock-heart, .rp-dock .ew-stamp-ring, .rp-dock .ew-dock-track { display: none; }
+.rp-dock .rp-dock-heart, .rp-dock .ew-dock-track { display: none; }
+/* The stamp ring stays: it restores the phone rule above ("Phone reaches the
+   book through the dock ring") that this band block would otherwise stomp. */
+.rp-dock .ew-stamp-ring { display: block; position: relative; flex: none; width: 24px; height: 24px; }
 /* Prev and next stay. They are the loop's closing step ("next" in ELSEWHERE_LOOP,
    carried by dock-prev / dock-next in productFlow) and the dock is the only place
    a phone can reach it — hiding them left the loop with no way to close. */
