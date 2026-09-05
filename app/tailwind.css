@@ -2114,7 +2114,7 @@ html, body {
 .ew-flap::after { content: ""; position: absolute; inset: 50% 0 auto; height: 1px; background: rgba(12, 11, 9, .5); z-index: 3; pointer-events: none; }
 .ew-flap-to { grid-area: 1 / 1; display: grid; place-items: center; width: 100%; height: 100%; backface-visibility: hidden; transform: rotateX(-90deg); }
 .ew-flap:not(.is-flip) .ew-flap-to { transform: none; animation: none; }
-.ew-flap.is-flip .ew-flap-to { animation: ew-flap-in .12s var(--ew-settle, cubic-bezier(.2,.8,.2,1)) both; }
+.ew-flap.is-flip .ew-flap-to { animation: ew-flap-in 70ms var(--ew-settle, cubic-bezier(.2,.8,.2,1)) both; }
 @keyframes ew-flap-in { from { transform: rotateX(-90deg); } to { transform: rotateX(0deg); } }
 .ew-flap-line.is-meta .ew-flap { height: 1.05em; background: transparent; font-size: 10px; letter-spacing: .04em; color: var(--ew-dust); }
 .ew-flap-line.is-meta .ew-flap::after { opacity: .4; }

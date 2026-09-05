@@ -7,7 +7,10 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
  * step. Columns ripple left-to-right; cells that don't change stay parked.
  */
 export const DRUM = " ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.,:;!?-'’&()";
-export const FLIP_MS = 140;
+export const FLIP_MS = 80;
+/** Worst-case churn per cell: 10 steps ≈ 0.8s. Full-drum spins are honest
+    but keep the board unreadable for seconds on long names. */
+export const MAX_SPIN = 10;
 export const COL_STAGGER_MS = 40;
 
 export function drumIndex(value: string): number {
@@ -39,8 +42,10 @@ export function boardShift<T>(items: readonly T[], seed: number): T[] {
 export type FlipCell = {
   from: string;
   to: string;
-  /** Drum steps this cell must churn (0 = parked). */
+  /** Drum steps this cell must churn (0 = parked, capped at MAX_SPIN). */
   steps: number;
+  /** Drum index the visible churn starts from. */
+  startIdx: number;
   /** Ms timestamp at which this cell starts, for the left-to-right ripple. */
   startMs: number;
 };
@@ -52,11 +57,15 @@ export function flipPlan(
   delayMs = 0,
 ): { cells: FlipCell[]; totalMs: number } {
   const cells = flapSlots(from, to).map((slot, index) => {
-    if (slot.from === slot.to) return { ...slot, steps: 0, startMs: 0 };
+    if (slot.from === slot.to)
+      return { ...slot, steps: 0, startIdx: drumIndex(slot.from), startMs: 0 };
     const dist = drumSteps(slot.from, slot.to);
+    const steps = Math.max(Math.min(dist, MAX_SPIN), 1);
     return {
       ...slot,
-      steps: Math.max(dist, 1),
+      steps,
+      startIdx:
+        (drumIndex(slot.to) - steps + DRUM.length * 2) % DRUM.length,
       startMs: delayMs + index * COL_STAGGER_MS,
     };
   });
@@ -76,7 +85,7 @@ export function flipGlyph(cell: FlipCell, nowMs: number): string {
   if (step >= cell.steps) return cell.to;
   // Out-of-drum glyphs (é, →, …) have no drum path: hop straight over.
   if (drumSteps(cell.from, cell.to) === 0) return cell.to;
-  return DRUM[(drumIndex(cell.from) + step + 1) % DRUM.length] ?? " ";
+  return DRUM[(cell.startIdx + step + 1) % DRUM.length] ?? " ";
 }
 
 /** True while a cell is mid-churn at a timestamp. */

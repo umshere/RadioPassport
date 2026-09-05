@@ -10,6 +10,7 @@ import {
   flipGlyph,
   flipLive,
   flipPlan,
+  MAX_SPIN,
 } from "~/components/radio-passport/FlipBoard";
 
 describe("flip board", () => {
@@ -55,7 +56,7 @@ describe("flip board", () => {
       COL_STAGGER_MS,
     );
 
-    // Glyph journey for A -> C at 140ms steps: A, B, then lands on C.
+    // Glyph journey for A -> C at 80ms steps: A, B, then lands on C.
     const cell = plan.cells[0]!;
     expect(flipGlyph(cell, -1)).toBe("A");
     expect(flipGlyph(cell, 0)).toBe("B");
@@ -63,6 +64,17 @@ describe("flip board", () => {
     expect(flipGlyph(cell, FLIP_MS * 4)).toBe("C");
     expect(flipLive(cell, 0)).toBe(true);
     expect(flipLive(cell, FLIP_MS * 2)).toBe(false);
+  });
+
+  it("caps long spins so the board settles fast", () => {
+    // Blank to "(" is 47 drum steps — capped at MAX_SPIN from "." onward.
+    const plan = flipPlan(" ", "(", 0);
+    const [cell] = [plan.cells[0]!];
+    expect(cell.steps).toBe(MAX_SPIN);
+    expect(DRUM[cell.startIdx]).toBe(".");
+    expect(flipGlyph(cell, 0)).toBe(",");
+    expect(flipGlyph(cell, plan.totalMs)).toBe("(");
+    expect(plan.totalMs).toBe(MAX_SPIN * FLIP_MS);
   });
 
   it("staggers rows on the home board and refetches the catalog", () => {
@@ -78,7 +90,7 @@ describe("flip board", () => {
       new URL("../../app/tailwind.css", import.meta.url),
       "utf8",
     );
-    expect(FLIP_MS).toBe(140);
+    expect(FLIP_MS).toBe(80);
     expect(COL_STAGGER_MS).toBe(40);
     expect(home).toContain("boardShift");
     expect(home).toContain("boardSeed");
