@@ -96,7 +96,9 @@ function rgba(rgb: [number, number, number], alpha: number) {
   return `rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, ${alpha})`;
 }
 
-/** Phone sky from Theater.html: three foil meridians, a handful of dust grains. */
+/** The ring installation — three foil meridians and a handful of dust grains,
+ * drawn from Theater.html. This is the sky on every surface now: the phone
+ * installation, scaled to the room. */
 function drawBoardSky(
   context: CanvasRenderingContext2D,
   width: number,
@@ -414,7 +416,10 @@ export function TheaterField({
 
       context.clearRect(0, 0, width, height);
 
-      const boardSky = window.matchMedia("(max-width: 960px)").matches;
+      // The ring installation stands on every viewport — phone meridians,
+      // scaled to the room. (Typed boolean, not a literal, so the dormant
+      // dotted field below stays reachable to the compiler until it is cut.)
+      const boardSky: boolean = true;
       if (boardSky) {
         drawBoardSky(context, width, height, palette, dustRef.current);
         frame = 0;

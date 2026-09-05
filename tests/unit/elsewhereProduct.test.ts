@@ -574,6 +574,7 @@ describe("live stylesheet", () => {
     expect(css).toContain(".ew-atmosphere");
     expect(css).toContain(".ew-horizon-kicker");
     expect(css).toContain(".ew-band-nav");
+    expect(css).toContain("@media (min-width: 961px)");
     expect(css).toContain(".ew-atlas");
     expect(css).toContain(".ew-theater-back");
     expect(css).toContain(".ew-theater-field");
@@ -623,8 +624,13 @@ describe("home cover panes", () => {
     );
     expect(root).toContain("is-home-frame");
     expect(root).toContain("is-home");
-    expect(root).toContain("BandNav");
+    expect(root).not.toContain("BandNav");
     expect(root).toContain("PlayerDock");
+    const siteBar = readFileSync(
+      new URL("../../app/components/SiteBar.tsx", import.meta.url),
+      "utf8",
+    );
+    expect(siteBar).toContain("BandNav");
     const band = readFileSync(
       new URL("../../app/components/BandNav.tsx", import.meta.url),
       "utf8",

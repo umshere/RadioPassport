@@ -27,7 +27,6 @@ import {
 } from "~/utils/playbackRecovery";
 import { playbackNoticeCopy } from "~/utils/playbackNoticeCopy";
 import stylesheet from "./tailwind.css?url";
-import BandNav from "~/components/BandNav";
 import PlayerDock from "~/components/PlayerDock";
 import SiteBar from "~/components/SiteBar";
 import { SiteSeekProvider } from "~/components/radio-passport/SiteSeek";
@@ -206,7 +205,6 @@ export default function App() {
         </SiteSeekProvider>
 
         <PlayerDock />
-        <BandNav />
         <JourneyBridge />
         <AtmosphereBridge />
         <GlobalAudioBridge />

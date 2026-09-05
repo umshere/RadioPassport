@@ -1,6 +1,7 @@
 import { Link, useLocation, useNavigate } from "@remix-run/react";
 import { SignalWordmark } from "~/components/radio-passport/SignalMark";
 import { TheaterSeek } from "~/components/radio-passport/TheaterSeek";
+import BandNav from "~/components/BandNav";
 import {
   homeWithPassportHref,
   openPassportNow,
@@ -20,6 +21,7 @@ export default function SiteBar() {
     <header className={`ew-site-bar${onTheater ? " is-theater" : ""}`}>
       <SignalWordmark compact />
       {onTheater ? <TheaterSeek /> : null}
+      <BandNav />
       <nav className="ew-site-bar-side" aria-label="Site">
         <Link
           to="/about"
