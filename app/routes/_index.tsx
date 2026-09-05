@@ -51,6 +51,7 @@ import {
 import { IntentBar } from "~/components/radio-passport/IntentBar";
 import { HourRail } from "~/components/radio-passport/HourRail";
 import { CoverStrip } from "~/components/CoverStrip";
+import { boardShift } from "~/components/radio-passport/FlipBoard";
 import { SiteSeekPortal, SiteSeekRail } from "~/components/radio-passport/SiteSeek";
 import {
   resolveCoverArrival,
@@ -107,24 +108,35 @@ export function shouldRevalidate({
   return currentUrl.search !== nextUrl.search;
 }
 
+const HOME_NO_STORE = { "Cache-Control": "private, no-store" } as const;
+const RB_NO_STORE = { cache: "no-store" as RequestCache };
+
 export async function loader(_: LoaderFunctionArgs) {
+  const boardSeed = Date.now();
   try {
     const [countriesRaw, stationsRaw] = await Promise.all([
-      rbFetchJson<Country[]>("/json/countries", undefined, { softFail: true }),
+      rbFetchJson<Country[]>("/json/countries", RB_NO_STORE, { softFail: true }),
       rbFetchJson<unknown>(
         "/json/stations/search?limit=240&hidebroken=true&order=clickcount&reverse=true&has_geo_info=true",
-        undefined,
+        RB_NO_STORE,
         { softFail: true }
       ),
     ]);
-    return json({
-      countries: Array.isArray(countriesRaw) ? countriesRaw : [],
-      stations: applyLiveCatalog(
-        normalizeStations(Array.isArray(stationsRaw) ? stationsRaw : [])
-      ),
-    });
+    return json(
+      {
+        countries: Array.isArray(countriesRaw) ? countriesRaw : [],
+        stations: applyLiveCatalog(
+          normalizeStations(Array.isArray(stationsRaw) ? stationsRaw : [])
+        ),
+        boardSeed,
+      },
+      { headers: HOME_NO_STORE },
+    );
   } catch {
-    return json({ countries: [], stations: [] });
+    return json(
+      { countries: [], stations: [], boardSeed },
+      { headers: HOME_NO_STORE },
+    );
   }
 }
 
@@ -150,8 +162,11 @@ function stationMatches(station: Station, query: string) {
 }
 
 export default function Index() {
-  const { countries, stations: initialStations } =
-    useLoaderData<typeof loader>();
+  const {
+    countries,
+    stations: initialStations,
+    boardSeed = 0,
+  } = useLoaderData<typeof loader>();
   const [searchParams] = useSearchParams();
   const nowPlaying = usePlayerStore((state) => state.nowPlaying);
   const isPlaying = usePlayerStore((state) => state.isPlaying);
@@ -586,6 +601,19 @@ export default function Index() {
         : "the world";
   const arrivalStation = nowPlaying || continueStation || featured;
   const isSeeking = query.trim().length >= 2;
+  const boardRows = useMemo(() => {
+    const cap = isSeeking ? 32 : 8;
+    const ordered = isSeeking
+      ? filtered
+      : boardShift(filtered.slice(0, Math.max(cap, 36)), boardSeed);
+    const ids = ordered.slice(0, cap).map((station) => station.uuid);
+    const live = new Map(
+      liveFiltered.map((station) => [station.uuid, station]),
+    );
+    return ids.map(
+      (id) => live.get(id) ?? ordered.find((station) => station.uuid === id)!,
+    );
+  }, [boardSeed, filtered, isSeeking, liveFiltered]);
   const locatorShrunk = isSeeking || Boolean(hour);
   const seekingCover = isSeeking && !isPlaying;
   const arrival = resolveCoverArrival({
@@ -862,14 +890,13 @@ export default function Index() {
                     aria-hidden="true"
                   />
                 ))
-                : liveFiltered
-                  .slice(0, isSeeking ? 32 : 8)
-                  .map((station) => (
+                : boardRows.map((station, index) => (
                     <StationRow
                       key={station.uuid}
                       station={station}
                       active={nowPlaying?.uuid === station.uuid && isPlaying}
                       favorite={favorites.includes(station.uuid)}
+                      beat={index * 70}
                       onPlay={() => play(station)}
                       onFavorite={() => toggleFavorite(station.uuid, station)}
                     />

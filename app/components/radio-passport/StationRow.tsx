@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import type { Station } from "~/types/radio";
+import { FlipBoard } from "~/components/radio-passport/FlipBoard";
 import { markArtworkUrlFailed, sanitizeArtworkUrl } from "~/utils/stations";
 
 function tidyPlace(value: string) {
@@ -108,12 +109,14 @@ export function StationRow({
   favorite,
   onPlay,
   onFavorite,
+  beat = 0,
 }: {
   station: Station;
   active: boolean;
   favorite: boolean;
   onPlay: () => void;
   onFavorite?: () => void;
+  beat?: number;
 }) {
   const location = stationLocation(station);
   return (
@@ -125,11 +128,15 @@ export function StationRow({
         className="min-w-0 flex-1 text-left"
         aria-label={`Play ${station.name} from ${location}`}
       >
-        <strong className="block truncate text-[15px] font-medium text-bone">
-          {station.name}
+        <strong className="block min-w-0 text-bone">
+          <FlipBoard text={station.name} delayMs={beat} />
         </strong>
-        <span className="block truncate text-[12px] text-dust">
-          {stationPlaceLine(station)}
+        <span className="mt-1 block min-w-0 text-dust">
+          <FlipBoard
+            text={stationPlaceLine(station)}
+            className="is-meta"
+            delayMs={beat + 40}
+          />
         </span>
       </button>
       <span className="rp-telemetry hidden shrink-0 sm:block">
