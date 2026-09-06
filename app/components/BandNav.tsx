@@ -115,6 +115,14 @@ export default function BandNav() {
             aria-current={isCurrent ? "page" : undefined}
             prefetch="intent"
             preventScrollReset
+            // Home overlays (Atlas, country drilldown) sync through
+            // history.replaceState, which Remix never hears — a bare Link to
+            // "/" would navigate nowhere and strand them open. Ask to close.
+            onClick={
+              slot.id === "elsewhere" && location.pathname === "/"
+                ? () => requestCloseAtlas()
+                : undefined
+            }
           >
             {slot.label}
           </Link>

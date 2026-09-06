@@ -321,7 +321,7 @@ export function CountryOverlay({
     grouped.set(key, [...current, station]);
   });
   return (
-    <Overlay close={close} label={`${country} stations`}>
+    <Overlay close={close} label={`${country} stations`} hideClose>
       <button type="button" className="rp-text-button" onClick={onBack}>
         ← Atlas
       </button>
