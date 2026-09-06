@@ -26,6 +26,7 @@ import {
   resolveStampReplay,
   searchKeepsPlayback,
   hourBoardLabel,
+  hourTravelHead,
   intentEchoFromInterpret,
   seekingBoardLabel,
   seekingStatus,
@@ -562,8 +563,7 @@ describe("Icons that look live must land somewhere", () => {
     expect(() => requestCloseAtlas()).not.toThrow();
   });
 
-  it("re-bases home on the country when play starts from a drilldown", () => {
-    // Blanking the intent strands the board on the old world pool while the
+  it("re-bases home on the country when play starts from a drilldown", () => {    // Blanking the intent strands the board on the old world pool while the
     // queue walks the country. Landing carries the country home instead, so
     // the search box, board, cover, and next all agree on where you are.
     expect(playFromCountryNextState("Belgium")).toEqual({
@@ -573,6 +573,17 @@ describe("Icons that look live must land somewhere", () => {
       mixLabel: null,
     });
     expect(playFromCountryNextState("  Belgium  ").query).toBe("Belgium");
+  });
+
+  it("sends the idle cover where the hour board went", () => {
+    const rows = ["dusk-a", "dusk-b"];
+    // Time travel offers the head of the hour rows it can see.
+    expect(hourTravelHead("Dusk", null, rows)).toBe("dusk-a");
+    // Playing keeps its own truth; resume is not an hour city.
+    expect(hourTravelHead("Dusk", { uuid: "x" }, rows)).toBeNull();
+    // No hour, no travel; empty pool, nowhere to go.
+    expect(hourTravelHead(null, null, rows)).toBeNull();
+    expect(hourTravelHead("Dusk", null, [])).toBeNull();
   });
 
   it("makes Room and the wordmark real routes home or to the room", () => {

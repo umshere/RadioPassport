@@ -70,6 +70,7 @@ import {
   OPEN_PASSPORT_EVENT,
   announceAtlas,
   atlasRequested,
+  hourTravelHead,
   passportRequested,
   resolveStampReplay,
   looksLikeIntentSentence,
@@ -672,14 +673,6 @@ export default function Index() {
     announceAtlas(atlas);
   }, [atlas]);
 
-  const arrivalCity = nowPlaying
-    ? stationLocation(nowPlaying)
-    : continueStation
-      ? stationLocation(continueStation)
-      : featured
-        ? stationLocation(featured)
-        : "the world";
-  const arrivalStation = nowPlaying || continueStation || featured;
   const isSeeking = query.trim().length >= 2;
   // Manual reshuffle: a fresh idle window from the loaded pool, no refetch.
   // A real deal, not a rotation — rotating slides the window one slot and
@@ -698,12 +691,27 @@ export default function Index() {
       (id) => live.get(id) ?? ordered.find((station) => station.uuid === id)!,
     );
   }, [boardSeed, filtered, isSeeking, liveFiltered, shuffle]);
+  // Time travel lands after the deal: the cover offers the head of the hour
+  // rows it can see. Suspended resume returns when the hour is cleared.
+  const hourHead = hourTravelHead(hour, nowPlaying, boardRows);
+  const arrivalCity = nowPlaying
+    ? stationLocation(nowPlaying)
+    : hourHead
+      ? stationLocation(hourHead)
+      : continueStation
+        ? stationLocation(continueStation)
+        : featured
+          ? stationLocation(featured)
+          : "the world";
+  const arrivalStation = nowPlaying || hourHead || continueStation || featured;
   const locatorShrunk = isSeeking || Boolean(hour);
   const seekingCover = isSeeking && !isPlaying;
   const arrival = resolveCoverArrival({
     isPlaying,
     hasNowPlaying: Boolean(nowPlaying),
-    hasContinue: Boolean(continueStation),
+    // Hour travel suspends resume: "Continue in {hour city}" must never
+    // resume a different city. Clearing the hour brings resume back.
+    hasContinue: Boolean(continueStation) && !hourHead,
     city: arrivalCity,
     query,
     count: liveFiltered.length,
@@ -873,8 +881,11 @@ export default function Index() {
                 type="button"
                 className="ew-land"
                 onClick={() =>
+                  // The button always plays the city it names: the arrival
+                  // station already resolves playing → hour travel → resume →
+                  // featured, in that order.
                   play(
-                    nowPlaying || continueStation || arrivalStation,
+                    arrivalStation,
                     selectedPool,
                     arrival.ctaKind === "continue" ? "Continue" : "Land here"
                   )

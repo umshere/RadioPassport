@@ -970,6 +970,20 @@ export function coverWhileSeeking(input: {
   };
 }
 
+/**
+ * An hour tap is time travel: idle, the cover goes where the board went —
+ * the head of the visible hour rows — so the city offered, its hour, its
+ * flag, and the rows all agree. Playing or resuming keeps its own truth.
+ */
+export function hourTravelHead<Row>(
+  hour: string | null,
+  nowPlaying: unknown,
+  rows: readonly Row[]
+): Row | null {
+  if (!hour || nowPlaying || rows.length === 0) return null;
+  return rows[0] ?? null;
+}
+
 /** Playing keeps the inhabited city. Seeking only owns the cover when idle. */
 export function resolveCoverArrival(input: {
   isPlaying: boolean;
