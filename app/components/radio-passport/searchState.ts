@@ -55,6 +55,23 @@ export function playFromAtlasNextState(): {
   return { ...surpriseTapNextState(), mixLabel: null };
 }
 
+/**
+ * Play from a country drilldown lands there for real: home re-bases on the
+ * country name so the search box, the board, the cover, and next/prev all
+ * agree on where you are. Blanking the intent instead strands the board on
+ * the old world pool while the queue walks the country — a split brain where
+ * the visible rows never match what next plays. The lock stays visible (the
+ * search box reads the country) and escapable (Clear search).
+ */
+export function playFromCountryNextState(country: string): {
+  query: string;
+  hour: null;
+  place: null;
+  mixLabel: null;
+} {
+  return { query: country.trim(), hour: null, place: null, mixLabel: null };
+}
+
 /** Wordmark on `/` clears leftover intent; playback stays. */
 export function wordmarkHomeNextState(): {
   query: string;

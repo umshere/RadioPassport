@@ -45,6 +45,7 @@ import {
   parseInitialIntent,
   parseInitialQuery,
   playFromAtlasNextState,
+  playFromCountryNextState,
   shouldClearBrowsingFilters,
   surpriseTapNextState,
 } from "~/components/radio-passport/searchState";
@@ -1119,7 +1120,7 @@ export default function Index() {
               station,
               countryStations,
               `Country: ${country}`,
-              playFromAtlasNextState()
+              playFromCountryNextState(country)
             );
             setCountry(null);
           }}

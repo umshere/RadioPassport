@@ -657,6 +657,7 @@ describe("home cover panes", () => {
     expect(home).toContain("CLOSE_ATLAS_EVENT");
     expect(home).toContain("CountryFlag");
     expect(home).toContain("ew-coverline-flag");
+    expect(home).toContain("playFromCountryNextState");
     const overlays = readFileSync(
       new URL(
         "../../app/components/radio-passport/Overlays.tsx",
@@ -665,6 +666,7 @@ describe("home cover panes", () => {
       "utf8",
     );
     expect(overlays).toContain('<Overlay close={close} label="Atlas" hideClose>');
+    expect(overlays).toContain("CountryFlag");
     expect(home).toContain('className="rp-intro-board"');
     expect(home).toContain('className="rp-intro-copy"');
     expect(home).toContain('className="rp-land-slot"');

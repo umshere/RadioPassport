@@ -44,6 +44,7 @@ import {
   shouldClearBrowsingFilters,
   surpriseTapNextState,
   playFromAtlasNextState,
+  playFromCountryNextState,
   wordmarkHomeNextState,
 } from "~/components/radio-passport/searchState";
 import {
@@ -554,12 +555,24 @@ describe("Icons that look live must land somewhere", () => {
     expect(atlasRouted).toBe(true);
   });
 
-  it("asks to close Atlas over an event the home route hears", () => {
-    // Home syncs ?atlas=1 through history.replaceState, which Remix never
+  it("asks to close Atlas over an event the home route hears", () => {    // Home syncs ?atlas=1 through history.replaceState, which Remix never
     // hears — a Link to "/" from an open Atlas navigates nowhere. Tabs and
     // the wordmark ask to close instead. Server-safe: no window, no throw.
     expect(CLOSE_ATLAS_EVENT).toBe("elsewhere:close-atlas");
     expect(() => requestCloseAtlas()).not.toThrow();
+  });
+
+  it("re-bases home on the country when play starts from a drilldown", () => {
+    // Blanking the intent strands the board on the old world pool while the
+    // queue walks the country. Landing carries the country home instead, so
+    // the search box, board, cover, and next all agree on where you are.
+    expect(playFromCountryNextState("Belgium")).toEqual({
+      query: "Belgium",
+      hour: null,
+      place: null,
+      mixLabel: null,
+    });
+    expect(playFromCountryNextState("  Belgium  ").query).toBe("Belgium");
   });
 
   it("makes Room and the wordmark real routes home or to the room", () => {

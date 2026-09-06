@@ -10,6 +10,7 @@ import {
   stationSpeaksLanguage,
 } from "./countryData";
 import { SignalWordmark } from "./SignalMark";
+import { CountryFlag } from "~/components/CountryFlag";
 import { StationRow, stationLocation } from "./StationRow";
 import { describeAtlasEmpty } from "./productFlow";
 import { useShelfProbe } from "~/hooks/useShelfProbe";
@@ -198,6 +199,14 @@ export function AtlasOverlay({
                       }`}
                     disabled={!country.stationcount}
                   >
+                    {/^[A-Za-z]{2}$/.test(country.iso_3166_1 || "") ? (
+                      <CountryFlag
+                        iso={country.iso_3166_1}
+                        size={30}
+                        title={country.name}
+                        className="shrink-0"
+                      />
+                    ) : null}
                     <span className="rp-telemetry">
                       {country.iso_3166_1 || "--"}
                     </span>
@@ -295,6 +304,16 @@ export function CountryOverlay({
   const grouped = new Map<string, Station[]>();
   const maxGroups = languageFilter ? Number.POSITIVE_INFINITY : 16;
   const maxPerGroup = languageFilter ? Number.POSITIVE_INFINITY : 8;
+  // The flag rides the place it names — from a real ISO code, never invented.
+  const countryFlagIso =
+    stations
+      .map((station) => station.countryCode)
+      .find(
+        (code): code is string =>
+          Boolean(code && code.trim().length === 2)
+      )
+      ?.trim()
+      .toUpperCase() ?? null;
   liveStations.forEach((station) => {
     const key = stationLocation(station);
     const current = grouped.get(key) || [];
@@ -307,7 +326,17 @@ export function CountryOverlay({
         ← Atlas
       </button>
       <header className="mt-6">
-        <h2>{country}</h2>
+        <h2>
+          {countryFlagIso ? (
+            <CountryFlag
+              iso={countryFlagIso}
+              size={30}
+              title={country}
+              className="mr-2"
+            />
+          ) : null}
+          {country}
+        </h2>
         <p className="rp-eyebrow">
           {drilldown?.status === "loading" || languageStatus === "loading"
             ? "LOADING LIVE STATIONS"
