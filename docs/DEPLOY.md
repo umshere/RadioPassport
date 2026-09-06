@@ -36,7 +36,7 @@ Trigger: user says **make it live**, **deploy**, **ship**, **push prod**.
    npm run ship
    ```
 
-   That is `node scripts/ship.mjs`: push `main` as **umshere**, then `npx --yes --cache <writable> vercel --prod --yes`. GitHub may also build; the CLI deploy is the known-good path used in this repo.
+    That is `node scripts/ship.mjs`: push `main` as **umshere**, then wait for Vercel's Git auto-deploy of that commit (`vercel ls -m githubCommitSha=<sha>` until `● Ready`). One push, one build — never `vercel --prod` after a push; that double-builds the same commit and the two production promotions race.
 
 4. Verify (use `--tlsv1.2` if LibreSSL fails the handshake):
 
@@ -63,8 +63,10 @@ If getaddrinfo cannot resolve `elsewheremusic.com` but `dig` can, Tailscale DNS 
 export NPM_CACHE="${TMPDIR:-/tmp}/elsewhere-npm-cache"
 GIT_TERMINAL_PROMPT=0 GH_TOKEN="$(gh auth token -u umshere)" \
   git -c credential.helper= -c credential.https://github.com.helper= push origin main
-npx --yes --cache "$NPM_CACHE" vercel --prod --yes
+# Then watch the single Git-triggered build — do NOT vercel --prod after a push:
+npx --yes --cache "$NPM_CACHE" vercel ls -m githubCommitSha="$(git rev-parse HEAD)"
 ```
+(`vercel --prod --yes` is only for redeploys with no push, e.g. after dashboard env changes — with no push there is no Git trigger, so the CLI build is the single deploy.)
 
 ## After env changes
 

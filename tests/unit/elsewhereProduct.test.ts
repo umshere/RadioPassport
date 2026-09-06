@@ -781,10 +781,15 @@ describe("ship command", () => {
     expect(ship).toContain('["auth", "token", "-u", "umshere"]');
     expect(ship).toContain("username=umshere");
     expect(ship).toContain("vercel");
-    expect(ship).toContain("--prod");
     expect(ship).toContain("elsewhere-npm-cache");
     expect(ship).not.toContain("username=heuristicsai");
+    // One push, one build: ship waits for the Git auto-deploy of the pushed
+    // commit instead of firing a second CLI build after the push.
+    expect(ship).toContain("githubCommitSha");
+    expect(ship).toContain("waitForGitDeploy");
     expect(deploy).toContain("npm run ship");
     expect(deploy).toContain("gh auth token -u umshere");
+    expect(deploy).toContain("vercel ls -m githubCommitSha");
+    expect(deploy).toContain("never `vercel --prod` after a push");
   });
 });

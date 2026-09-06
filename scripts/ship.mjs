@@ -1,14 +1,21 @@
 #!/usr/bin/env node
-// ship.mjs — push main as umshere, then vercel --prod.
+// ship.mjs — push main as umshere, then ride the Git auto-deploy.
+//
+// One push, one build: pushing main already triggers Vercel's Git
+// auto-deploy, so ship waits for that deployment to go Ready instead of
+// firing `vercel --prod` too (that double-built the same commit and the two
+// production promotions raced). The only path that still uses the CLI
+// deploy is --skip-push: with no push there is no Git trigger, so the CLI
+// build is the single deploy (env-change redeploys use this).
+//
+// Usage: npm run ship
+//        node scripts/ship.mjs --skip-push     (redeploy current main via CLI)
+//        node scripts/ship.mjs --skip-vercel   (push only, do not wait)
 //
 // This machine has more than one `gh` login. The active account is often
 // heuristicsai, which 403s on umshere/RadioPassport. `gh auth switch` can
 // fail on the macOS keyring. SSH is not a fallback (no key).
 // ~/.npm is also often root-owned here; npx/npm must use a writable cache.
-//
-// Usage: npm run ship
-//        node scripts/ship.mjs --skip-push
-//        node scripts/ship.mjs --skip-vercel
 
 import { spawnSync } from "node:child_process";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
@@ -113,23 +120,77 @@ if (!skipPush) {
 }
 
 if (!skipVercel) {
-  console.log(`Vercel prod (npm cache ${npmCache})…`);
-  const vercel = spawnSync(
-    "npx",
-    ["--yes", "--cache", npmCache, "vercel", "--prod", "--yes"],
-    {
-      cwd: repoRoot,
-      encoding: "utf8",
-      stdio: "inherit",
-      env: {
-        ...process.env,
-        npm_config_cache: npmCache,
+  if (!skipPush) {
+    // The push above fired Vercel's Git auto-deploy for this exact commit.
+    // Wait for it to go Ready instead of starting a second build.
+    const sha = git(["rev-parse", "HEAD"]);
+    const url = waitForGitDeploy(sha);
+    console.log(`Production: ${url}`);
+  } else {
+    // No push, so no Git trigger: the CLI build is the single deploy.
+    console.log(`Vercel prod, no push (npm cache ${npmCache})…`);
+    const vercel = spawnSync(
+      "npx",
+      ["--yes", "--cache", npmCache, "vercel", "--prod", "--yes"],
+      {
+        cwd: repoRoot,
+        encoding: "utf8",
+        stdio: "inherit",
+        env: {
+          ...process.env,
+          npm_config_cache: npmCache,
+        },
       },
-    },
-  );
-  if (vercel.status !== 0) {
-    fail("npx vercel --prod --yes failed.");
+    );
+    if (vercel.status !== 0) {
+      fail("npx vercel --prod --yes failed.");
+    }
   }
+}
+
+/**
+ * Poll `vercel ls` for the Git-triggered deployment of `sha` until it is
+ * Ready. Returns its URL. Fails on Error/Canceled or after ~10 minutes —
+ * the deploy may still finish on its own; check the dashboard.
+ */
+function waitForGitDeploy(sha) {
+  const tries = 40;
+  for (let attempt = 1; attempt <= tries; attempt++) {
+    const listing = run(
+      "npx",
+      [
+        "--yes",
+        "--cache",
+        npmCache,
+        "vercel",
+        "ls",
+        "-m",
+        `githubCommitSha=${sha}`,
+      ],
+      { env: { ...process.env, npm_config_cache: npmCache } },
+    );
+    const match = listing.match(/https:\/\/\S+\s+●\s+(\S+)/);
+    if (match) {
+      const status = match[1];
+      const url = match[0].split(/\s+/)[0];
+      if (status === "Ready") return url;
+      if (status === "Error" || status === "Canceled" || status === "Cancelled") {
+        fail(`Git deploy for ${sha} ended ${status}: ${url}`);
+      }
+    }
+    if (attempt < tries) {
+      if (attempt % 4 === 1) console.log(`…waiting on the Git deploy (${statusOf(match)})`);
+      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 15000);
+    }
+  }
+  fail(
+    `No Ready Git deploy for ${sha} after ~10 minutes. ` +
+      `Check the Vercel dashboard for umsheres-projects/radio-passport.`,
+  );
+}
+
+function statusOf(match) {
+  return match ? match[1] : "not listed yet";
 }
 
 console.log("Ship commands finished. Verify elsewheremusic.com before calling it live.");
