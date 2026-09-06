@@ -75,3 +75,43 @@ describe("playerStore applySceneDescriptor", () => {
     expect(usePlayerStore.getState().queue[0]?.uuid).toBe("queue-only");
   });
 });
+
+describe("playerStore recordLastTrack", () => {
+  it("remembers the last aired title per station and ignores repeats", () => {
+    const store = usePlayerStore.getState();
+    const track = { artist: "The Beatles", title: "Revolution" };
+    store.recordLastTrack("ontario", track as never);
+    expect(
+      usePlayerStore.getState().lastTrackByStation["ontario"]?.track,
+    ).toMatchObject(track);
+
+    const before = usePlayerStore.getState().lastTrackByStation["ontario"];
+    store.recordLastTrack("ontario", { ...track } as never);
+    expect(usePlayerStore.getState().lastTrackByStation["ontario"]).toBe(
+      before,
+    );
+
+    store.recordLastTrack("ontario", {
+      artist: "The Beatles",
+      title: "Come Together",
+    } as never);
+    expect(
+      usePlayerStore.getState().lastTrackByStation["ontario"]?.track.title,
+    ).toBe("Come Together");
+  });
+
+  it("caps remembered stations instead of archiving storage", () => {
+    const store = usePlayerStore.getState();
+    for (let index = 0; index < 25; index += 1) {
+      store.recordLastTrack(`station-${index}`, {
+        artist: "A",
+        title: `T${index}`,
+      } as never);
+    }
+    const remembered = Object.keys(
+      usePlayerStore.getState().lastTrackByStation,
+    );
+    expect(remembered.length).toBeLessThanOrEqual(20);
+    expect(remembered).toContain("station-24");
+  });
+});

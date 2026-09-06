@@ -23,6 +23,7 @@ import type { NowPlayingTrack } from "~/types/nowPlaying";
 import UpNextRow from "~/components/radio-passport/UpNextRow";
 import {
   lockSeed,
+  LAST_TRACK_FRESH_MS,
   splitFieldTokens,
   theaterBeat,
   theaterReleases,
@@ -71,11 +72,16 @@ export default function ListeningPage() {
       : null;
   // Pause freezes the folio: the hook reports track:null the instant playback
   // stops, which would collapse the whole folio into its no-track layout and
-  // reflow it again on resume. The last aired title stays on display instead.
+  // reflow it again on resume. The last aired title stays on display instead —
+  // seeded from storage so a fresh mount opens on the same frame, never on a
+  // half-second of no-track that collapses away when the live title lands.
   const liveTrack = room.signal.track;
+  const lastTrackByStation = usePlayerStore((state) => state.lastTrackByStation);
   if (!nowPlaying || lastTrackStationRef.current !== nowPlaying.uuid) {
     lastTrackStationRef.current = nowPlaying?.uuid ?? null;
-    lastTrackRef.current = null;
+    const saved = nowPlaying ? lastTrackByStation[nowPlaying.uuid] : undefined;
+    lastTrackRef.current =
+      saved && Date.now() - saved.at < LAST_TRACK_FRESH_MS ? saved.track : null;
   }
   if (liveTrack) lastTrackRef.current = liveTrack;
   const displayTrack = liveTrack ?? lastTrackRef.current;

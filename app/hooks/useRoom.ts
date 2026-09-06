@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useNowPlayingMetadata } from "~/hooks/useNowPlayingMetadata";
 import { requestTrackTrivia } from "~/hooks/useTrackTrivia";
 import { useNowPlayingMetadataStore } from "~/state/nowPlayingMetadataStore";
+import { usePlayerStore } from "~/state/playerStore";
 import {
   dispatchRequestFor,
   useRoomStore,
@@ -54,6 +55,7 @@ export function useRoom(nowPlaying: Station | null, isPlaying: boolean) {
   const setSignal = useRoomStore((state) => state.setSignal);
   const setCaption = useRoomStore((state) => state.setCaption);
   const setDossier = useRoomStore((state) => state.setDossier);
+  const recordLastTrack = usePlayerStore((state) => state.recordLastTrack);
 
   const stationId = nowPlaying?.uuid ?? null;
 
@@ -84,7 +86,12 @@ export function useRoom(nowPlaying: Station | null, isPlaying: boolean) {
       track: metadata.track,
       message: metadata.message,
     });
-  }, [metadata.message, metadata.status, metadata.track, setSignal, stationId]);
+    // Every aired title is remembered per station — the theater seeds its
+    // frozen folio from this across remounts instead of flashing no-track.
+    if (metadata.track && (metadata.track.title || metadata.track.artist)) {
+      recordLastTrack(stationId, metadata.track);
+    }
+  }, [metadata.message, metadata.status, metadata.track, recordLastTrack, setSignal, stationId]);
 
   useEffect(() => {
     if (!nowPlaying || !isPlaying) return;

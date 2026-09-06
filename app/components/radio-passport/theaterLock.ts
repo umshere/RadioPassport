@@ -9,6 +9,9 @@ import { EMPTY_GRAPH } from "~/types/trivia";
 
 export type TheaterPhase = "reading" | "locking" | "filed" | "quiet";
 
+/** A remembered title older than this never seeds the frozen folio. */
+export const LAST_TRACK_FRESH_MS = 30 * 60 * 1000;
+
 export type LockKind = "foil" | "ether" | "bone";
 
 export type FieldFamily =

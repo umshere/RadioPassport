@@ -1,5 +1,6 @@
 import { create, persist } from "~/utils/zustand-lite";
 import type { SceneDescriptor } from "~/scenes/types";
+import type { NowPlayingTrack } from "~/types/nowPlaying";
 import type {
   QueueSession,
   QueueSourceContext,
@@ -16,6 +17,9 @@ const INVALID_STREAM_TOKENS = new Set([
   "-",
   "0",
 ]);
+
+// How many stations keep a last-aired title in storage.
+const LAST_TRACK_STATIONS = 20;
 
 function hasValidStreamUrl(url?: string | null): boolean {
   if (!url) return false;
@@ -65,6 +69,9 @@ type PlayerState = {
   currentStationIndex: number;
   skippedStationIds: string[];
   volume: number;
+  /** Last aired title per station — seeds the theater freeze across remounts. */
+  lastTrackByStation: Record<string, { track: NowPlayingTrack; at: number }>;
+  recordLastTrack: (stationUuid: string, track: NowPlayingTrack) => void;
   setAudioElement: (element: HTMLAudioElement | null) => void;
   setAudioLevel: (level: number) => void;
   setShuffleMode: (value: boolean | ((prev: boolean) => boolean)) => void;
@@ -174,6 +181,7 @@ export const usePlayerStore = create<PlayerState>(
       currentStationIndex: 0,
       skippedStationIds: [],
       volume: 1,
+      lastTrackByStation: {},
       setAudioElement: (element: HTMLAudioElement | null) => {
         set({ audioElement: element });
       },
@@ -259,6 +267,37 @@ export const usePlayerStore = create<PlayerState>(
             ...state.skippedStationIds.filter((id) => id !== stationId),
           ].slice(0, 20),
         }));
+      },
+      recordLastTrack: (stationUuid: string, track: NowPlayingTrack) => {
+        if (!stationUuid) return;
+        const current = get().lastTrackByStation[stationUuid];
+        // Same title on repeat polls: no write, no render, no storage churn.
+        if (
+          current &&
+          current.track.artist === track.artist &&
+          current.track.title === track.title
+        ) {
+          return;
+        }
+        set((state) => {
+          const next = {
+            ...state.lastTrackByStation,
+            [stationUuid]: { track, at: Date.now() },
+          };
+          const keys = Object.keys(next);
+          // LocalStorage is not an archive — keep the freshest stations.
+          if (keys.length > LAST_TRACK_STATIONS) {
+            const ordered = keys.sort(
+              (a, b) => next[a]!.at - next[b]!.at,
+            );
+            for (
+              const key of ordered.slice(0, keys.length - LAST_TRACK_STATIONS)
+            ) {
+              delete next[key];
+            }
+          }
+          return { lastTrackByStation: next };
+        });
       },
       applySceneDescriptor: (descriptor: SceneDescriptor) => {
         const stations = Array.isArray(descriptor.stations)
@@ -405,6 +444,7 @@ export const usePlayerStore = create<PlayerState>(
         shuffleMode: state.shuffleMode,
         currentStationIndex: state.currentStationIndex,
         volume: state.volume,
+        lastTrackByStation: state.lastTrackByStation,
       }),
     },
   ),
