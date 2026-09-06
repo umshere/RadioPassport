@@ -97,6 +97,8 @@ describe("flip board", () => {
     expect(home).toContain("boardShift(filtered.slice");
     expect(home).toContain('Cache-Control": "private, no-store"');
     expect(home).toContain('cache: "no-store"');
+    expect(home).toContain("HOME_CATALOG_TTL_MS");
+    expect(home).toContain("homeCatalogCache");
     expect(row).toContain("FlipBoard");
     expect(row).toContain("delayMs={beat}");
     expect(home).toContain("Show fresh stations");

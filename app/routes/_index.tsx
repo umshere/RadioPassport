@@ -112,8 +112,35 @@ export function shouldRevalidate({
 const HOME_NO_STORE = { "Cache-Control": "private, no-store" } as const;
 const RB_NO_STORE = { cache: "no-store" as RequestCache };
 
+// The countries + top-240 barely move within minutes, but every tab crossing
+// back home paid two external round trips for them. Short server-side cache:
+// browsers still get no-store and the board seed stays fresh per load, while
+// repeat visits answer from memory. Only full answers are kept — outages
+// serve the last good board instead of an empty one, and never poison it.
+const HOME_CATALOG_TTL_MS = 5 * 60 * 1000;
+let homeCatalogCache: {
+  at: number;
+  countries: Country[];
+  stations: Station[];
+} | null = null;
+
 export async function loader(_: LoaderFunctionArgs) {
   const boardSeed = Date.now();
+  const cached =
+    homeCatalogCache &&
+    Date.now() - homeCatalogCache.at < HOME_CATALOG_TTL_MS
+      ? homeCatalogCache
+      : null;
+  if (cached) {
+    return json(
+      {
+        countries: cached.countries,
+        stations: cached.stations,
+        boardSeed,
+      },
+      { headers: HOME_NO_STORE },
+    );
+  }
   try {
     const [countriesRaw, stationsRaw] = await Promise.all([
       rbFetchJson<Country[]>("/json/countries", RB_NO_STORE, { softFail: true }),
@@ -123,17 +150,32 @@ export async function loader(_: LoaderFunctionArgs) {
         { softFail: true }
       ),
     ]);
+    const countries = Array.isArray(countriesRaw) ? countriesRaw : [];
+    const stations = applyLiveCatalog(
+      normalizeStations(Array.isArray(stationsRaw) ? stationsRaw : [])
+    );
+    if (countries.length > 0 && stations.length > 0) {
+      homeCatalogCache = { at: Date.now(), countries, stations };
+    }
     return json(
       {
-        countries: Array.isArray(countriesRaw) ? countriesRaw : [],
-        stations: applyLiveCatalog(
-          normalizeStations(Array.isArray(stationsRaw) ? stationsRaw : [])
-        ),
+        countries,
+        stations,
         boardSeed,
       },
       { headers: HOME_NO_STORE },
     );
   } catch {
+    if (homeCatalogCache) {
+      return json(
+        {
+          countries: homeCatalogCache.countries,
+          stations: homeCatalogCache.stations,
+          boardSeed,
+        },
+        { headers: HOME_NO_STORE },
+      );
+    }
     return json(
       { countries: [], stations: [], boardSeed },
       { headers: HOME_NO_STORE },
