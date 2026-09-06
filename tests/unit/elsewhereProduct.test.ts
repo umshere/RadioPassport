@@ -658,6 +658,7 @@ describe("home cover panes", () => {
     expect(home).toContain("CountryFlag");
     expect(home).toContain("ew-coverline-flag");
     expect(home).toContain("playFromCountryNextState");
+    expect(home).toContain("seekingInstantPool");
     const overlays = readFileSync(
       new URL(
         "../../app/components/radio-passport/Overlays.tsx",

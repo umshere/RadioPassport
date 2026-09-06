@@ -35,6 +35,7 @@ import {
   countryCacheKey,
   countryCacheWith,
   fetchCountryDrilldown,
+  mergeStationLists,
   type CountryDrilldownState,
 } from "~/components/radio-passport/countryData";
 import { applyAiPreviewPool } from "~/components/radio-passport/aiPreview";
@@ -358,9 +359,25 @@ export default function Index() {
     );
   }, [catalog, initialStations, journeyReady, played]);
 
+  // Landing from a country drilldown already holds that country's stations:
+  // deal them as the instant board instead of searching from zero while the
+  // catalog fetch flies. The catalog merges in behind (instant rows stay
+  // parked), so the board fills at once and refines. A hand-typed query that
+  // matches a visited country gets the same head start.
+  const seekingInstantPool = useMemo(
+    () =>
+      query.trim().length >= 2
+        ? countryCache[countryCacheKey(query)]?.stations ?? []
+        : [],
+    [countryCache, query]
+  );
+  const seekingBase = useMemo(
+    () => mergeStationLists(seekingInstantPool, catalog),
+    [seekingInstantPool, catalog]
+  );
   const baseStations =
     query.trim().length >= 2
-      ? catalog
+      ? seekingBase
       : listening.listeningMode === "world" && listening.exploreStations.length
         ? listening.exploreStations
         : initialStations;
