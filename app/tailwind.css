@@ -1799,7 +1799,9 @@ html, body {
   min-height: calc(52px + env(safe-area-inset-top, 0px));
   padding: env(safe-area-inset-top, 0px) 20px 0;
   background: var(--ew-ink);
-  backdrop-filter: blur(10px);
+  /* No backdrop-filter here on purpose: the ink is opaque so a blur would
+     paint nothing — but it would become the containing block for fixed
+     descendants and pin the phone band to the header instead of the viewport. */
 }
 .ew-site-bar > a {
   flex: none;
