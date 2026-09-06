@@ -960,8 +960,9 @@
   .rp-overlay {
     position: fixed;
     inset: 0;
-    /* The veil sits below the chrome — header 60, cover strip 50, band 41,
-       dock 40 — so one header stands over every surface, Atlas included. */
+    /* The veil sits below the chrome — header 60 (the cover strip rides
+       inside it now), band 41, dock 40 — so one header stands over every
+       surface, Atlas included. */
     z-index: 39;
     overflow: auto;
     overflow-x: hidden;
@@ -1107,7 +1108,10 @@
     background: var(--ew-dock);
     padding: 10px max(20px, calc((100vw - 1360px) / 2));
     box-shadow: var(--ew-lift);
-    backdrop-filter: blur(20px);
+    /* No backdrop-filter here on purpose: the dock ink is 94% opaque so a
+       blur paints nothing — but on mobile Safari the filter drags the
+       neighboring fixed phone band through a compositing path where it stops
+       painting while still hit-testing: an invisible band you can still tap. */
   }
   .rp-dock-art { width: 48px; height: 48px; flex: none; border-radius: 2px; }
   .rp-dock strong { font-size: 15px; font-weight: 500; }
@@ -1940,7 +1944,10 @@ html, body {
 .rp-stage { grid-template-rows: auto minmax(0, 1fr); }
 .ew-cover-strip { display: none; }
 @media (max-width: 960px) {
-.ew-band-nav { position: fixed; z-index: 41; right: 0; bottom: 0; left: 0; display: grid; grid-template-columns: repeat(4, 1fr); height: calc(44px + env(safe-area-inset-bottom, 0px)); padding-bottom: env(safe-area-inset-bottom, 0px); border-top: 1px solid var(--ew-rule); background: var(--ew-dock); }
+.ew-band-nav { position: fixed; z-index: 41; right: 0; bottom: 0; left: 0; display: grid; grid-template-columns: repeat(4, 1fr); height: calc(44px + env(safe-area-inset-bottom, 0px)); padding-bottom: env(safe-area-inset-bottom, 0px); border-top: 1px solid var(--ew-rule); background: var(--ew-dock); transform: translateZ(0); }
+/* Own compositing layer: mobile Safari has dropped this fixed band's paint
+   (while keeping its hit-testing) whenever a neighboring fixed surface —
+   the dock's old backdrop blur — pulled it through the wrong path. */
 .ew-band-nav-slot { display: grid; place-items: center; min-height: 44px; border: 0; background: transparent; padding: 0; color: var(--ew-dust); font: 500 9px/1 "Azeret Mono", monospace; letter-spacing: .16em; text-transform: uppercase; text-decoration: none; cursor: pointer; }
 .ew-band-nav-slot.is-current { color: var(--ew-foil); box-shadow: inset 0 -1px 0 var(--ew-foil); }
 .ew-band-nav-slot.is-disabled { color: rgba(154,143,128,.4); cursor: default; pointer-events: none; }
@@ -1949,8 +1956,12 @@ html, body {
 .ew-home-seek { order: -2; margin: 14px 16px 0; }
 .ew-home-seek .rp-surprise { border: 0; border-left: 1px solid var(--ew-rule-2); min-height: 48px; padding: 0 12px; }
 .rp-globe-side { position: relative; top: auto; z-index: auto; }
-.ew-cover-strip { position: fixed; z-index: 50; top: calc(52px + env(safe-area-inset-top, 0px)); right: 0; left: 0; display: flex; align-items: center; gap: 9px; height: 44px; padding: 0 16px; border-bottom: 1px solid var(--ew-rule); background: var(--ew-ink); opacity: 0; visibility: hidden; pointer-events: none; transition: opacity .18s ease, visibility 0s linear .18s; }
-.ew-cover-strip.is-on { opacity: 1; visibility: visible; pointer-events: auto; transition: opacity .18s ease, visibility 0s linear 0s; }
+.ew-cover-strip { position: absolute; z-index: 1; top: 100%; right: 0; left: 0; display: flex; align-items: center; gap: 9px; height: 44px; padding: 0 16px; border-bottom: 1px solid var(--ew-rule); background: var(--ew-ink); opacity: 0; visibility: hidden; pointer-events: none; transition: opacity .18s ease, visibility 0s linear .18s; }
+/* The strip is a real child of the sticky site bar, so top: 100% docks it to
+   the header's true bottom edge — no hardcoded 52px, no safe-area math, and
+   no fixed-position layer for mobile Safari to drop. The shadow lands only
+   with the strip, so it reads as chrome instead of a floating glitch. */
+.ew-cover-strip.is-on { opacity: 1; visibility: visible; pointer-events: auto; box-shadow: 0 10px 28px rgba(0, 0, 0, .5); transition: opacity .18s ease, visibility 0s linear 0s; }
 .ew-cover-strip-dot { display: block; flex: none; width: 7px; height: 7px; border-radius: 50%; background: var(--ew-ether); }
 .ew-cover-strip-land { margin: 0; overflow: hidden; color: var(--ew-foil); font: 500 10px/1.35 "Azeret Mono", monospace; letter-spacing: .18em; text-transform: uppercase; text-overflow: ellipsis; white-space: nowrap; }
 .ew-cover-strip-meta { margin: 0; flex: none; color: var(--ew-dust); font: 500 10px/1.35 "Azeret Mono", monospace; letter-spacing: .18em; text-transform: uppercase; white-space: nowrap; }

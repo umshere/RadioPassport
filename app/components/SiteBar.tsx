@@ -1,5 +1,6 @@
 import { Link, useLocation, useNavigate } from "@remix-run/react";
 import { SignalWordmark } from "~/components/radio-passport/SignalMark";
+import { CoverSlotRail } from "~/components/radio-passport/CoverSlot";
 import { TheaterSeek } from "~/components/radio-passport/TheaterSeek";
 import BandNav from "~/components/BandNav";
 import {
@@ -45,6 +46,10 @@ export default function SiteBar() {
           Passport <b>{String(count).padStart(2, "0")}</b>
         </button>
       </nav>
+      {/* The condensed cover strip docks here — a real child of the sticky
+          bar, so it always stands exactly on the header's bottom edge no
+          matter how tall the wordmark stacks or what the safe-area adds. */}
+      <CoverSlotRail />
     </header>
   );
 }

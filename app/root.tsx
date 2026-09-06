@@ -30,6 +30,7 @@ import stylesheet from "./tailwind.css?url";
 import PlayerDock from "~/components/PlayerDock";
 import SiteBar from "~/components/SiteBar";
 import { SiteSeekProvider } from "~/components/radio-passport/SiteSeek";
+import { CoverSlotProvider } from "~/components/radio-passport/CoverSlot";
 import { usePlayerNoticeStore } from "~/state/playerNoticeStore";
 import type { Station } from "~/types/radio";
 import { sanitizeArtworkUrl } from "~/utils/stations";
@@ -171,6 +172,7 @@ export default function App() {
     <Document>
       <>
         <SiteSeekProvider>
+        <CoverSlotProvider>
         <div
           className={
             onShell
@@ -202,6 +204,7 @@ export default function App() {
           <Outlet />
         </div>
         </div>
+        </CoverSlotProvider>
         </SiteSeekProvider>
 
         <PlayerDock />

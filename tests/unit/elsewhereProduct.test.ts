@@ -695,6 +695,18 @@ describe("mobile cover strip", () => {
       new URL("../../app/routes/about.tsx", import.meta.url),
       "utf8",
     );
+    const siteBar = readFileSync(
+      new URL("../../app/components/SiteBar.tsx", import.meta.url),
+      "utf8",
+    );
+    const root = readFileSync(
+      new URL("../../app/root.tsx", import.meta.url),
+      "utf8",
+    );
+    const slot = readFileSync(
+      new URL("../../app/components/radio-passport/CoverSlot.tsx", import.meta.url),
+      "utf8",
+    );
     const layerIndex = css.indexOf("@layer components");
     const stripCss = css.indexOf(".ew-cover-strip {");
     expect(strip).toContain("IntersectionObserver");
@@ -709,7 +721,23 @@ describe("mobile cover strip", () => {
     expect(listen).not.toContain("CoverStrip");
     expect(about).not.toContain("CoverStrip");
     expect(stripCss).toBeGreaterThan(layerIndex);
-    expect(css).toContain("top: calc(52px + env(safe-area-inset-top, 0px))");
+    // The strip docks to the sticky bar as a real child (slot, never a DOM
+    // portal — Safari drops portaled nodes out of sticky headers), so its
+    // edge is the header's true bottom, not a hardcoded 52px guess.
+    expect(siteBar).toContain("CoverSlotRail");
+    expect(root).toContain("CoverSlotProvider");
+    expect(home).toContain("CoverSlotPortal");
+    expect(slot).toContain("useSyncExternalStore");
+    expect(slot).not.toContain("createPortal");
+    expect(css).toContain(".ew-cover-strip { position: absolute;");
+    expect(css).toContain("top: 100%");
+    expect(css).not.toContain("top: calc(52px + env(safe-area-inset-top, 0px))");
+    expect(css).toContain("0 10px 28px rgba(0, 0, 0, .5)");
+    // The dock keeps no backdrop blur: the ink is 94% opaque so the blur
+    // paints nothing, but on mobile Safari it pulled the neighboring fixed
+    // band through a path where it stopped painting yet kept hit-testing.
+    expect(css).not.toMatch(/\.rp-dock \{[^}]*backdrop-filter:/);
+    expect(css).toContain("transform: translateZ(0)");
     expect(css).toContain(":root[data-atmosphere=\"day\"] .ew-cover-strip-land { color: #6F582D; }");
     expect(css).toContain(":root[data-atmosphere=\"day\"] .ew-cover-strip-dot { background: #35635F; }");
     expect(css).toContain("@media (max-width: 960px) and (prefers-reduced-motion: reduce)");

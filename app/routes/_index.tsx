@@ -51,6 +51,7 @@ import {
 import { IntentBar } from "~/components/radio-passport/IntentBar";
 import { HourRail } from "~/components/radio-passport/HourRail";
 import { CoverStrip } from "~/components/CoverStrip";
+import { CoverSlotPortal } from "~/components/radio-passport/CoverSlot";
 import { boardShift } from "~/components/radio-passport/FlipBoard";
 import { SiteSeekPortal, SiteSeekRail } from "~/components/radio-passport/SiteSeek";
 import {
@@ -769,13 +770,15 @@ export default function Index() {
           statusTone={seek.tone === "unreachable" ? "empty" : seek.tone}
         />
       </SiteSeekPortal>
-      <CoverStrip
-        land={arrivalCity}
-        live={arrival.live}
-        clock={localNow ? formatClock(localNow) : null}
-        overlay={atlas || Boolean(country) || passport}
-        coverKey={seekingCover ? "seeking" : arrivalStation?.uuid ?? arrivalCity}
-      />
+      <CoverSlotPortal>
+        <CoverStrip
+          land={arrivalCity}
+          live={arrival.live}
+          clock={localNow ? formatClock(localNow) : null}
+          overlay={atlas || Boolean(country) || passport}
+          coverKey={seekingCover ? "seeking" : arrivalStation?.uuid ?? arrivalCity}
+        />
+      </CoverSlotPortal>
       <div className="rp-stage">
         <div className="ew-home-seek">
           <SiteSeekRail />
