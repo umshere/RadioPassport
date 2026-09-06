@@ -2181,12 +2181,19 @@ html, body {
 .ew-flap { position: relative; display: inline-grid; flex: none; width: 0.7em; height: 1.2em; place-items: center; overflow: hidden; margin-left: 1px; background: color-mix(in srgb, var(--ew-leather, #1A1410) 88%, #000); color: inherit; font-size: 13px; text-transform: uppercase; border-radius: 1px; perspective: 80px; transform-style: preserve-3d; }
 .ew-flap:first-child { margin-left: 0; }
 .ew-flap::after { content: ""; position: absolute; inset: 50% 0 auto; height: 1px; background: rgba(12, 11, 9, .5); z-index: 3; pointer-events: none; }
-.ew-flap-to { grid-area: 1 / 1; display: grid; place-items: center; width: 100%; height: 100%; backface-visibility: hidden; transform: rotateX(-90deg); }
+.ew-flap-to { grid-area: 1 / 1; display: grid; place-items: center; width: 100%; height: 100%; backface-visibility: hidden; transform: rotateX(90deg); transform-origin: 50% 0; }
 .ew-flap:not(.is-flip) .ew-flap-to { transform: none; animation: none; }
 .ew-flap.is-flip .ew-flap-to { animation: ew-flap-in 70ms var(--ew-settle, cubic-bezier(.2,.8,.2,1)) both; }
-@keyframes ew-flap-in { from { transform: rotateX(-90deg); } to { transform: rotateX(0deg); } }
+@keyframes ew-flap-in { from { transform: rotateX(90deg); } to { transform: rotateX(0deg); } }
 .ew-flap-line.is-meta .ew-flap { height: 1.05em; background: transparent; font-size: 10px; letter-spacing: .04em; color: var(--ew-dust); }
 .ew-flap-line.is-meta .ew-flap::after { opacity: .4; }
+/* The cover place-name is the board at headline size: cells inherit the
+   coverline scale so the flip reads across the room, the line stays inline
+   so the flag rides beside it, and the wider perspective keeps the drop
+   gentle at display sizes. */
+.ew-cover .ew-coverline .ew-flap-line { display: inline-flex; max-width: 100%; font-style: normal; vertical-align: -.14em; }
+.ew-cover .ew-coverline .ew-flap { width: .68em; height: 1.04em; margin-left: .03em; font-size: 1em; perspective: 5em; border-radius: .045em; }
+.ew-coverline-flag { margin-right: .18em; vertical-align: -.08em; }
 @media (prefers-reduced-motion: reduce) {
 .ew-flap.is-flip .ew-flap-to { animation: none; }
 .ew-flap-to { transform: none; }

@@ -131,6 +131,16 @@ export function openAtlasNow(pathname: string, goHome: () => void) {
 }
 
 // Home syncs ?atlas=1 through history.replaceState, which Remix never hears —
+// so a Link to "/" from an open Atlas is a no-op navigation and the overlay
+// never closes. Elsewhere tabs and the wordmark ask to close instead.
+export const CLOSE_ATLAS_EVENT = "elsewhere:close-atlas";
+
+export function requestCloseAtlas() {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new CustomEvent(CLOSE_ATLAS_EVENT));
+}
+
+// Home syncs ?atlas=1 through history.replaceState, which Remix never hears —
 // BandNav would keep Elsewhere lit while Atlas stands open. The page announces
 // every atlas flip on this event so the tabs can track the same truth.
 export const ATLAS_SYNC_EVENT = "elsewhere:atlas-sync";

@@ -638,6 +638,7 @@ describe("home cover panes", () => {
     );
     expect(siteBar).toContain("BandNav");
     expect(siteBar).toContain("ew-site-bar-left");
+    expect(siteBar).toContain("requestCloseAtlas");
     const band = readFileSync(
       new URL("../../app/components/BandNav.tsx", import.meta.url),
       "utf8",
@@ -650,8 +651,12 @@ describe("home cover panes", () => {
     expect(band).toContain("homeWithAtlasHref");
     expect(band).not.toContain("/atlas");
     expect(band).toContain("ATLAS_SYNC_EVENT");
+    expect(band).toContain("requestCloseAtlas");
     expect(band).toContain("preventScrollReset");
     expect(home).toContain("announceAtlas");
+    expect(home).toContain("CLOSE_ATLAS_EVENT");
+    expect(home).toContain("CountryFlag");
+    expect(home).toContain("ew-coverline-flag");
     const overlays = readFileSync(
       new URL(
         "../../app/components/radio-passport/Overlays.tsx",

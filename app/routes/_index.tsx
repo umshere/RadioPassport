@@ -52,7 +52,11 @@ import { IntentBar } from "~/components/radio-passport/IntentBar";
 import { HourRail } from "~/components/radio-passport/HourRail";
 import { CoverStrip } from "~/components/CoverStrip";
 import { CoverSlotPortal } from "~/components/radio-passport/CoverSlot";
-import { boardShift } from "~/components/radio-passport/FlipBoard";
+import {
+  FlipBoard,
+  boardShift,
+} from "~/components/radio-passport/FlipBoard";
+import { CountryFlag } from "~/components/CountryFlag";
 import { SiteSeekPortal, SiteSeekRail } from "~/components/radio-passport/SiteSeek";
 import {
   resolveCoverArrival,
@@ -60,6 +64,7 @@ import {
   findCityFromPassport,
   sameHourPillLabel,
   OPEN_ATLAS_EVENT,
+  CLOSE_ATLAS_EVENT,
   OPEN_PASSPORT_EVENT,
   announceAtlas,
   atlasRequested,
@@ -621,6 +626,18 @@ export default function Index() {
     return () => window.removeEventListener(OPEN_ATLAS_EVENT, open);
   }, []);
 
+  // Elsewhere tabs and the wordmark ask to close: their Link to "/" is a
+  // no-op while Atlas stands open (replaceState URL Remix never hears).
+  // Leaving the overlay world drops the country drilldown too.
+  useEffect(() => {
+    const closeAtlas = () => {
+      setCountry(null);
+      setAtlas(false);
+    };
+    window.addEventListener(CLOSE_ATLAS_EVENT, closeAtlas);
+    return () => window.removeEventListener(CLOSE_ATLAS_EVENT, closeAtlas);
+  }, []);
+
   useEffect(() => {
     if (typeof window === "undefined") return;
     const params = new URLSearchParams(window.location.search);
@@ -1024,7 +1041,25 @@ export default function Index() {
               className="ew-coverline ew-arrive"
               key={seekingCover ? "seeking" : arrivalStation?.uuid ?? arrivalCity}
             >
-              {seekingCover ? query.trim() : arrivalCity}
+              {seekingCover ? (
+                <>
+                  <FlipBoard text={query.trim()} />
+                  <span className="sr-only">{query.trim()}</span>
+                </>
+              ) : (
+                <>
+                  {arrivalStation?.countryCode ? (
+                    <CountryFlag
+                      iso={arrivalStation.countryCode}
+                      em={0.72}
+                      title={arrivalStation.country || arrivalCity}
+                      className="ew-coverline-flag"
+                    />
+                  ) : null}
+                  <FlipBoard text={arrivalCity} />
+                  <span className="sr-only">{arrivalCity}</span>
+                </>
+              )}
             </h1>
             <p
               className="rp-eyebrow ew-arrive ew-arrive-2"

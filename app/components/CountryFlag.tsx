@@ -70,12 +70,16 @@ type CountryFlagProps = {
   width?: number;
   height?: number;
   className?: string;
+  /** Size in em of the surrounding type instead of px — the flag rides the
+      headline scale instead of fighting it. */
+  em?: number;
 };
 
-export function CountryFlag({ iso, size = 48, title, width, height, className }: CountryFlagProps) {
-  const flagWidth = width ?? size;
-  const flagHeight = height ?? size;
-  const flagRadius = Math.min(flagWidth, flagHeight) / 6;
+export function CountryFlag({ iso, size = 48, title, width, height, className, em }: CountryFlagProps) {
+  const unit = em != null ? `${em}em` : undefined;
+  const flagWidth = unit ?? width ?? size;
+  const flagHeight = unit ?? height ?? size;
+  const flagRadius = em != null ? `${em / 6}em` : Math.min(Number(flagWidth), Number(flagHeight)) / 6;
 
   if (iso && iso.length === 2) {
     return (
@@ -97,7 +101,7 @@ export function CountryFlag({ iso, size = 48, title, width, height, className }:
 
   return (
     <ThemeIcon
-      size={Math.max(flagWidth, flagHeight)}
+      size={em != null ? size : Math.max(Number(flagWidth), Number(flagHeight))}
       radius="md"
       variant="gradient"
       gradient={{ from: "cyan", to: "violet", deg: 135 }}
@@ -109,7 +113,7 @@ export function CountryFlag({ iso, size = 48, title, width, height, className }:
         minWidth: flagWidth,
       }}
     >
-      <IconBroadcast size={Math.min(flagWidth, flagHeight) * 0.6} stroke={1.5} />
+      <IconBroadcast size={size * 0.6} stroke={1.5} />
     </ThemeIcon>
   );
 }

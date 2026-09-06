@@ -16,6 +16,8 @@ import {
   homeWithPassportHref,
   openAtlasNow,
   openPassportNow,
+  requestCloseAtlas,
+  CLOSE_ATLAS_EVENT,
   intentPath,
   looksLikeIntentSentence,
   nextLoopStep,
@@ -550,6 +552,14 @@ describe("Icons that look live must land somewhere", () => {
       }),
     ).toBe("route");
     expect(atlasRouted).toBe(true);
+  });
+
+  it("asks to close Atlas over an event the home route hears", () => {
+    // Home syncs ?atlas=1 through history.replaceState, which Remix never
+    // hears — a Link to "/" from an open Atlas navigates nowhere. Tabs and
+    // the wordmark ask to close instead. Server-safe: no window, no throw.
+    expect(CLOSE_ATLAS_EVENT).toBe("elsewhere:close-atlas");
+    expect(() => requestCloseAtlas()).not.toThrow();
   });
 
   it("makes Room and the wordmark real routes home or to the room", () => {

@@ -5,6 +5,7 @@ import {
   atlasRequested,
   homeWithAtlasHref,
   openAtlasNow,
+  requestCloseAtlas,
 } from "~/components/radio-passport/productFlow";
 import { useHydrated } from "~/hooks/useHydrated";
 import { usePlayerStore } from "~/state/playerStore";
@@ -54,6 +55,25 @@ export default function BandNav() {
       {SLOTS.map((slot) => {
         const isCurrent = current === slot.id;
         const className = `ew-band-nav-slot${isCurrent ? " is-current" : ""}`;
+
+        // Standing on home with Atlas open, a Link to "/" is a no-op —
+        // home syncs ?atlas=1 through history.replaceState, which Remix never
+        // hears. Ask to close instead, and take the page back to the top.
+        if (slot.id === "elsewhere" && location.pathname === "/" && atlasOpen) {
+          return (
+            <button
+              key={slot.id}
+              type="button"
+              className={className}
+              onClick={() => {
+                requestCloseAtlas();
+                window.scrollTo({ top: 0 });
+              }}
+            >
+              {slot.label}
+            </button>
+          );
+        }
 
         if (slot.id === "atlas") {
           return (

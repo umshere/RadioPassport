@@ -6,6 +6,7 @@ import BandNav from "~/components/BandNav";
 import {
   homeWithPassportHref,
   openPassportNow,
+  requestCloseAtlas,
 } from "~/components/radio-passport/productFlow";
 import { useHydrated } from "~/hooks/useHydrated";
 import { useJourneyStore } from "~/state/journeyStore";
@@ -21,7 +22,16 @@ export default function SiteBar() {
   return (
     <header className={`ew-site-bar${onTheater ? " is-theater" : ""}`}>
       <div className="ew-site-bar-left">
-        <SignalWordmark compact />
+        {/* On home the wordmark Link to "/" is a no-op while Atlas stands open
+            (replaceState URL Remix never hears) — close the overlay and take
+            the page to the top instead. */}
+        <SignalWordmark
+          compact
+          onHome={() => {
+            requestCloseAtlas();
+            window.scrollTo({ top: 0 });
+          }}
+        />
         {onTheater ? <TheaterSeek /> : null}
       </div>
       <BandNav />
