@@ -787,6 +787,9 @@ describe("ship command", () => {
     // commit instead of firing a second CLI build after the push.
     expect(ship).toContain("githubCommitSha");
     expect(ship).toContain("waitForGitDeploy");
+    // `vercel ls` draws its table on stderr when piped — the waiter must
+    // read both streams or it polls blind forever.
+    expect(ship).toContain("probed.stderr");
     expect(deploy).toContain("npm run ship");
     expect(deploy).toContain("gh auth token -u umshere");
     expect(deploy).toContain("vercel ls -m githubCommitSha");

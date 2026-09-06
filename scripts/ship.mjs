@@ -156,7 +156,9 @@ if (!skipVercel) {
 function waitForGitDeploy(sha) {
   const tries = 40;
   for (let attempt = 1; attempt <= tries; attempt++) {
-    const listing = run(
+    // NOTE: `vercel ls` draws its table on stderr when piped — stdout
+    // carries only a bare URL. Parse both streams or the status is blind.
+    const probed = spawnSync(
       "npx",
       [
         "--yes",
@@ -167,8 +169,19 @@ function waitForGitDeploy(sha) {
         "-m",
         `githubCommitSha=${sha}`,
       ],
-      { env: { ...process.env, npm_config_cache: npmCache } },
+      {
+        cwd: repoRoot,
+        encoding: "utf8",
+        env: { ...process.env, npm_config_cache: npmCache },
+      },
     );
+    if (probed.error) fail(`vercel ls: ${probed.error.message}`);
+    if (probed.status !== 0) {
+      fail(
+        `vercel ls failed:\n${((probed.stderr || probed.stdout) || "").trim()}`,
+      );
+    }
+    const listing = `${probed.stdout || ""}\n${probed.stderr || ""}`;
     const match = listing.match(/https:\/\/\S+\s+●\s+(\S+)/);
     if (match) {
       const status = match[1];
@@ -179,7 +192,7 @@ function waitForGitDeploy(sha) {
       }
     }
     if (attempt < tries) {
-      if (attempt % 4 === 1) console.log(`…waiting on the Git deploy (${statusOf(match)})`);
+      console.log(`…waiting on the Git deploy for ${sha} (${statusOf(match)})`);
       Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 15000);
     }
   }
