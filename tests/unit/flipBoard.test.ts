@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
+  boardDeal,
   boardShift,
   COL_STAGGER_MS,
   DRUM,
@@ -27,6 +28,23 @@ describe("flip board", () => {
     expect(boardShift(rows, 1)).toEqual(["b", "c", "d", "a"]);
     expect(boardShift(rows, 5)).toEqual(boardShift(rows, 1));
     expect(boardShift(rows, -1)).toEqual(["d", "a", "b", "c"]);
+  });
+
+  it("deals a fresh window on every reshuffle instead of sliding one slot", () => {
+    const pool = Array.from({ length: 36 }, (_, index) => `s${index}`);
+    const first = boardDeal(pool, 1000).slice(0, 8);
+    const second = boardDeal(pool, 1001).slice(0, 8);
+    // A rotation would keep 7 of 8 rows standing; a deal turns most over.
+    const kept = first.filter((id) => second.includes(id)).length;
+    expect(kept).toBeLessThan(6);
+    // Same seed always deals the same order — server and client agree.
+    expect(boardDeal(pool, 1001).slice(0, 8)).toEqual(second);
+    // A full permutation, never a lossy pick: nothing added, nothing dropped.
+    expect([...boardDeal(pool, 7)].sort()).toEqual([...pool].sort());
+    // The pool itself is untouched.
+    expect(pool).toEqual(Array.from({ length: 36 }, (_, index) => `s${index}`));
+    expect(boardDeal([], 1)).toEqual([]);
+    expect(boardDeal(["a"], 1)).toEqual(["a"]);
   });
 
   it("spins the drum forward only, like hardware", () => {
@@ -92,9 +110,9 @@ describe("flip board", () => {
     );
     expect(FLIP_MS).toBe(80);
     expect(COL_STAGGER_MS).toBe(40);
-    expect(home).toContain("boardShift");
+    expect(home).toContain("boardDeal");
     expect(home).toContain("boardSeed");
-    expect(home).toContain("boardShift(filtered.slice");
+    expect(home).toContain("boardDeal(filtered.slice");
     expect(home).toContain('Cache-Control": "private, no-store"');
     expect(home).toContain('cache: "no-store"');
     expect(home).toContain("HOME_CATALOG_TTL_MS");

@@ -54,7 +54,7 @@ import { CoverStrip } from "~/components/CoverStrip";
 import { CoverSlotPortal } from "~/components/radio-passport/CoverSlot";
 import {
   FlipBoard,
-  boardShift,
+  boardDeal,
 } from "~/components/radio-passport/FlipBoard";
 import { CountryFlag } from "~/components/CountryFlag";
 import { SiteSeekPortal, SiteSeekRail } from "~/components/radio-passport/SiteSeek";
@@ -664,12 +664,14 @@ export default function Index() {
   const arrivalStation = nowPlaying || continueStation || featured;
   const isSeeking = query.trim().length >= 2;
   // Manual reshuffle: a fresh idle window from the loaded pool, no refetch.
+  // A real deal, not a rotation — rotating slides the window one slot and
+  // leaves 7 of 8 rows standing.
   const [shuffle, setShuffle] = useState(0);
   const boardRows = useMemo(() => {
     const cap = isSeeking ? 32 : 8;
     const ordered = isSeeking
       ? filtered
-      : boardShift(filtered.slice(0, Math.max(cap, 36)), boardSeed + shuffle);
+      : boardDeal(filtered.slice(0, Math.max(cap, 36)), boardSeed + shuffle);
     const ids = ordered.slice(0, cap).map((station) => station.uuid);
     const live = new Map(
       liveFiltered.map((station) => [station.uuid, station]),

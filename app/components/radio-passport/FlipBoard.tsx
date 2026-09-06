@@ -39,6 +39,31 @@ export function boardShift<T>(items: readonly T[], seed: number): T[] {
   return [...items.slice(offset), ...items.slice(0, offset)];
 }
 
+/**
+ * A real deal, not a rotation: seeded Fisher-Yates, so every reshuffle deals
+ * a fresh window from the pool. A rotation slides the window one slot and
+ * leaves 7 of 8 rows standing (only the last entry visibly changes). Same
+ * seed always deals the same order, so server and client agree.
+ */
+export function boardDeal<T>(items: readonly T[], seed: number): T[] {
+  const order = [...items];
+  let state = (seed >>> 0) || 0x9e3779b9;
+  const draw = () => {
+    state |= 0;
+    state = (state + 0x6d2b79f5) | 0;
+    let mixed = Math.imul(state ^ (state >>> 15), 1 | state);
+    mixed = (mixed + Math.imul(mixed ^ (mixed >>> 7), 61 | mixed)) ^ mixed;
+    return ((mixed ^ (mixed >>> 14)) >>> 0) / 4294967296;
+  };
+  for (let index = order.length - 1; index > 0; index--) {
+    const pick = Math.floor(draw() * (index + 1));
+    const held = order[index] as T;
+    order[index] = order[pick] as T;
+    order[pick] = held;
+  }
+  return order;
+}
+
 export type FlipCell = {
   from: string;
   to: string;
