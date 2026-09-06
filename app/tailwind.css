@@ -968,7 +968,11 @@
     overflow-x: hidden;
     background: var(--ew-veil);
     color: var(--ew-bone);
-    backdrop-filter: blur(18px);
+    /* No backdrop-filter here on purpose: the veil is 97% opaque so a blur
+       paints nothing — but on mobile Safari the full-screen fixed filter
+       layer pulls the neighboring fixed phone band through a compositing
+       path where it stops painting while still hit-testing: an invisible
+       band you can still tap. Same gremlin as the dock's old blur. */
     padding: clamp(20px, 5vw, 64px);
     padding-bottom: 96px;
     animation: ew-veil .3s ease both;

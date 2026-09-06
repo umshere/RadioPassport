@@ -752,6 +752,10 @@ describe("mobile cover strip", () => {
     // paints nothing, but on mobile Safari it pulled the neighboring fixed
     // band through a path where it stopped painting yet kept hit-testing.
     expect(css).not.toMatch(/\.rp-dock \{[^}]*backdrop-filter:/);
+    // The Atlas veil keeps none either, for the same reason: it is a
+    // full-screen fixed filter layer over the band, 97% opaque, so the blur
+    // painted nothing while the band went invisible-but-tappable on phones.
+    expect(css).not.toMatch(/\.rp-overlay \{[^}]*backdrop-filter:/);
     expect(css).toContain("transform: translateZ(0)");
     expect(css).toContain(":root[data-atmosphere=\"day\"] .ew-cover-strip-land { color: #6F582D; }");
     expect(css).toContain(":root[data-atmosphere=\"day\"] .ew-cover-strip-dot { background: #35635F; }");
