@@ -934,6 +934,8 @@ export default function Index() {
                     title="Fresh stations"
                   >
                     <svg
+                      key={shuffle}
+                      className="rp-board-shuffle-spin"
                       width="13"
                       height="13"
                       viewBox="0 0 24 24"

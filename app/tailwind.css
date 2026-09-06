@@ -2201,8 +2201,11 @@ html, body {
 :root[data-atmosphere="day"] .ew-flap { background: color-mix(in srgb, #EFE3CE 70%, #C6A56A); color: #2A241C; }
 :root[data-atmosphere="day"] .ew-flap::after { background: rgba(42, 36, 28, .28); }
 :root[data-atmosphere="day"] .ew-flap-line.is-meta .ew-flap { background: transparent; color: #665F55; }
-/* Board reshuffle — one ghost glyph beside LIVE NOW. */
+/* Board reshuffle — one ghost glyph beside LIVE NOW. It remounts on every
+   reshuffle (keyed by the shuffle count), so the full spin replays exactly
+   when the board deals fresh stations — not just while held. */
 .rp-board-shuffle { display: inline-grid; place-items: center; width: 28px; height: 28px; margin: -7px -4px -7px 0; border-radius: 50%; color: var(--ew-dust); line-height: 0; }
 .rp-board-shuffle:hover { color: var(--ew-foil); }
-.rp-board-shuffle:active svg { transform: rotate(50deg); }
-.rp-board-shuffle svg { transition: transform .3s var(--ew-settle, cubic-bezier(.2,.8,.2,1)); }
+.rp-board-shuffle-spin { animation: rp-board-spin .55s var(--ew-settle, cubic-bezier(.2,.8,.2,1)); }
+@keyframes rp-board-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .rp-board-shuffle-spin { animation: none; } }
