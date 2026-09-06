@@ -779,6 +779,10 @@ describe("theater lock", () => {
     expect(listen).toContain("catalog=");
     expect(listen).toContain("TheaterTransport");
     expect(listen).toContain("UpNextRow");
+    // Pause must freeze the folio on the last aired title, never collapse it.
+    expect(listen).toContain("lastTrackRef");
+    expect(listen).toContain("displayTrack");
+    expect(listen).toContain('"Paused"');
     expect(listen).toContain("TheaterQueue");
     expect(well).toContain("No title on the air yet");
     expect(well).toContain("Reading the live title");

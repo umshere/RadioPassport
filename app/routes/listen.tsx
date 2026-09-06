@@ -19,6 +19,7 @@ import type {
   KnowledgeNode,
 } from "~/types/knowledge";
 import type { Station } from "~/types/radio";
+import type { NowPlayingTrack } from "~/types/nowPlaying";
 import UpNextRow from "~/components/radio-passport/UpNextRow";
 import {
   lockSeed,
@@ -60,14 +61,26 @@ export default function ListeningPage() {
   const isPlaying = hydrated ? storedIsPlaying : false;
   const storedRoom = useRoomStore((state) => state.room);
   const room = roomForStation(storedRoom, nowPlaying?.uuid);
+  const lastTrackStationRef = useRef<string | null>(null);
+  const lastTrackRef = useRef<NowPlayingTrack | null>(null);
 
   const city = nowPlaying ? stationLocation(nowPlaying) : "";
   const local =
     nowPlaying && typeof nowPlaying.longitude === "number"
       ? localDateAtLongitude(nowPlaying.longitude)
       : null;
-  const rawTrackLine = room.signal.track
-    ? [room.signal.track.artist, room.signal.track.title].filter(Boolean).join(" — ")
+  // Pause freezes the folio: the hook reports track:null the instant playback
+  // stops, which would collapse the whole folio into its no-track layout and
+  // reflow it again on resume. The last aired title stays on display instead.
+  const liveTrack = room.signal.track;
+  if (!nowPlaying || lastTrackStationRef.current !== nowPlaying.uuid) {
+    lastTrackStationRef.current = nowPlaying?.uuid ?? null;
+    lastTrackRef.current = null;
+  }
+  if (liveTrack) lastTrackRef.current = liveTrack;
+  const displayTrack = liveTrack ?? lastTrackRef.current;
+  const rawTrackLine = displayTrack
+    ? [displayTrack.artist, displayTrack.title].filter(Boolean).join(" — ")
     : null;
   const trackLine = theaterTrackCopy({
     isPlaying,
@@ -382,7 +395,7 @@ export default function ListeningPage() {
           </p>
           <h1 className="ew-coverline mt-3 ew-arrive ew-arrive-2">{city}</h1>
           <p className="rp-eyebrow ew-theater-telemetry">
-            {nowPlaying.name} · Live
+            {nowPlaying.name} · {isPlaying ? "Live" : "Paused"}
             {local ? ` · ${formatClock(local)} local` : ""}
           </p>
           <p className="rp-lede mt-2 ew-arrive ew-arrive-3 ew-theater-lede">
