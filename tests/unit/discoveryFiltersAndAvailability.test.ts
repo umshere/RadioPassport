@@ -326,4 +326,27 @@ describe("catalog search payload", () => {
     expect(body.stations.some((entry) => entry.uuid === "malayalam-hit")).toBe(true);
     expect(body.stations.some((entry) => entry.uuid.startsWith("snapshot-"))).toBe(false);
   });
+
+  it("answers a repeated query from the short cache instead of refetching mirrors", async () => {
+    mockedSnapshot.mockResolvedValue({
+      fetchedAt: new Date().toISOString(),
+      stations: [],
+      countries: [],
+      languages: [],
+      tags: [],
+    } as never);
+    mockedRbFetchJson.mockResolvedValue([station({ uuid: "cached-hit" })] as never);
+
+    const url = "https://radio.example/api/radio-catalog?stations=8000&q=shillong";
+    const first = await radioCatalogLoader({ request: new Request(url) } as never);
+    const firstBody = (await first.json()) as { stations: Station[] };
+    expect(firstBody.stations.map((entry) => entry.uuid)).toContain("cached-hit");
+    const callsAfterFirst = mockedRbFetchJson.mock.calls.length;
+    expect(callsAfterFirst).toBeGreaterThan(0);
+
+    const second = await radioCatalogLoader({ request: new Request(url) } as never);
+    const secondBody = (await second.json()) as { stations: Station[] };
+    expect(secondBody.stations.map((entry) => entry.uuid)).toContain("cached-hit");
+    expect(mockedRbFetchJson.mock.calls.length).toBe(callsAfterFirst);
+  });
 });

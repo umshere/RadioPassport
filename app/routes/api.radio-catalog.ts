@@ -38,6 +38,34 @@ async function searchStationsByQuery(query: string, limit: number) {
   return applyLiveCatalog(dedupeStations(merged)).slice(0, searchLimit);
 }
 
+// Focused queries fire five parallel mirror calls per settled keystroke —
+// retypes and back-and-forth edits would repay that in full. Short cache per
+// normalized query; only non-empty answers are kept, so an outage window
+// never reads as "no results" for the TTL.
+const QUERY_CACHE_TTL_MS = 60 * 1000;
+const QUERY_CACHE_MAX = 40;
+const queryCache = new Map<string, { at: number; stations: Station[] }>();
+
+function readQueryCache(query: string): Station[] | null {
+  const hit = queryCache.get(query.toLowerCase());
+  if (!hit) return null;
+  if (Date.now() - hit.at >= QUERY_CACHE_TTL_MS) {
+    queryCache.delete(query.toLowerCase());
+    return null;
+  }
+  return hit.stations;
+}
+
+function writeQueryCache(query: string, stations: Station[]) {
+  if (stations.length === 0) return;
+  const key = query.toLowerCase();
+  if (!queryCache.has(key) && queryCache.size >= QUERY_CACHE_MAX) {
+    const oldest = queryCache.keys().next();
+    if (!oldest.done) queryCache.delete(oldest.value);
+  }
+  queryCache.set(key, { at: Date.now(), stations });
+}
+
 export async function loader({ request }: LoaderFunctionArgs) {
   const url = new URL(request.url);
   const limitParam = url.searchParams.get("stations");
@@ -75,7 +103,9 @@ export async function loader({ request }: LoaderFunctionArgs) {
     });
   }
 
-  const searchedStations = await searchStationsByQuery(query, 200);
+  const searchedStations =
+    readQueryCache(query) ?? (await searchStationsByQuery(query, 200));
+  writeQueryCache(query, searchedStations);
 
   // A focused query already returns bounded, relevant candidates — do not
   // re-attach the full multi-thousand-station snapshot to the response.
