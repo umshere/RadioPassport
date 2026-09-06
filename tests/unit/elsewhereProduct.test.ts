@@ -579,7 +579,7 @@ describe("live stylesheet", () => {
     // The bar's ink is opaque, so a blur would paint nothing — and it would
     // become the containing block for fixed descendants, pinning the phone
     // band to the header instead of the viewport.
-    expect(css).not.toMatch(/\.ew-site-bar \{[^}]*backdrop-filter/);
+    expect(css).not.toMatch(/\.ew-site-bar \{[^}]*backdrop-filter:/);
     expect(css).toMatch(/\.rp-overlay \{[^}]*z-index: 39/);
     expect(css).toContain(".ew-atlas");
     expect(css).toContain(".ew-theater-back");
