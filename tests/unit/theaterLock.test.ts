@@ -786,9 +786,10 @@ describe("theater lock", () => {
       ),
       "utf8",
     );
-    // The stamped ring is the emblem: foil ring, lacquer heart — never initials.
+    // Both stamped rings are the emblem: thin foil ring, lacquer heart.
     expect(transport).toContain("ew-theater-ring-dot");
     expect(transport).not.toContain('"EW"');
+    expect(dock).toContain("ew-stamp-ring-dot");
     // Pause must freeze the folio on the last aired title, never collapse it.
     expect(listen).toContain("lastTrackRef");
     expect(listen).toContain("displayTrack");
@@ -821,6 +822,8 @@ describe("theater lock", () => {
     expect(stylesheet).toContain(".ew-plate-caption");
     expect(stylesheet).toContain(".ew-theater-folio.is-star .ew-letter-phone");
     expect(stylesheet).toContain(".ew-known.is-collapsed");
+    expect(stylesheet).toContain(".ew-stamp-ring-dot");
+    expect(stylesheet).toContain(".ew-theater-ring-dot");
     expect(stylesheet).not.toMatch(/\.ew-known,\s*\.ew-waiting/);
     expect(listen).toContain("deskSigned");
     expect(well).toContain("The desk found");

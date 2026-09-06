@@ -1152,10 +1152,14 @@
     width: 18px;
     height: 18px;
     flex: none;
+    display: grid;
+    place-items: center;
     padding: 0;
     appearance: none;
     cursor: pointer;
   }
+  /* Stamped dock ring carries the same lacquer heart as the theater emblem. */
+  .ew-stamp-ring-dot { display: block; width: 7px; height: 7px; border-radius: 50%; background: var(--ew-lacquer); }
   .rp-toast {
     position: fixed;
     z-index: 120;
@@ -1581,7 +1585,7 @@
     .rp-dock-control { width: 40px; height: 40px; }
     .rp-dock strong { font-size: 13px; }
     .rp-dock .ew-dock-sub { display: none; }
-    .rp-dock .ew-stamp-ring { display: block; position: relative; width: 24px; height: 24px; } /* Phone reaches the book through the dock ring. */
+    .rp-dock .ew-stamp-ring { display: grid; place-items: center; position: relative; width: 24px; height: 24px; } /* Phone reaches the book through the dock ring. */
     .rp-dock .ew-stamp-ring::after { content: ""; position: absolute; inset: -8px; border-radius: 50%; } /* Invisible halo lifts the tap target to 40x40; the 8px reach ends where the dock gaps end, so neighbors stay clear. */
     .rp-dock-play { width: 44px; height: 44px; }
     .rp-theater-link { display: inline !important; font-size: 8px; letter-spacing: .1em; }
@@ -1957,7 +1961,7 @@ html, body {
 .rp-dock .rp-dock-heart, .rp-dock .ew-dock-track { display: none; }
 /* The stamp ring stays: it restores the phone rule above ("Phone reaches the
    book through the dock ring") that this band block would otherwise stomp. */
-.rp-dock .ew-stamp-ring { display: block; position: relative; flex: none; width: 24px; height: 24px; }
+.rp-dock .ew-stamp-ring { display: grid; place-items: center; position: relative; flex: none; width: 24px; height: 24px; }
 /* Prev and next stay. They are the loop's closing step ("next" in ELSEWHERE_LOOP,
    carried by dock-prev / dock-next in productFlow) and the dock is the only place
    a phone can reach it — hiding them left the loop with no way to close. */
@@ -2150,7 +2154,7 @@ html, body {
 .ew-theater-tbtn.is-on { color: var(--ew-foil); }
 .ew-theater-tplay { display: grid; width: 56px; height: 56px; place-items: center; border: 1.5px solid var(--ew-foil); border-radius: 50%; background: var(--ew-lacquer); color: var(--ew-bone); }
 .ew-theater-ring { position: relative; display: grid; width: 36px; height: 36px; place-items: center; border: 0; border-radius: 50%; background: conic-gradient(var(--ew-lacquer) calc(var(--stamp-ink, 0) * 100%), transparent 0); padding: 0; }
-.ew-theater-ring span { display: grid; width: 30px; height: 30px; place-items: center; border-radius: 50%; background: var(--ew-ink); color: var(--ew-foil); font: 500 9px/1 "Azeret Mono", monospace; }
+.ew-theater-ring span { display: grid; width: 32px; height: 32px; place-items: center; border-radius: 50%; background: var(--ew-ink); color: var(--ew-foil); font: 500 9px/1 "Azeret Mono", monospace; }
 .ew-theater-ring.is-stamped { background: var(--ew-foil); }
 /* The stamped ring is the emblem: foil ring, lacquer heart. */
 .ew-theater-ring-dot { display: block; width: 9px; height: 9px; border-radius: 50%; background: var(--ew-lacquer); }

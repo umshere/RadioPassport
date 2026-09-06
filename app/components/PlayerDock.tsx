@@ -201,7 +201,11 @@ export default function PlayerDock() {
           // conic-gradient driven by --stamp-ink, written by JourneyBridge.
           ...(stamped ? { background: "var(--ew-foil-wash-strong)" } : {}),
         }}
-      />
+      >
+        {stamped ? (
+          <i className="ew-stamp-ring-dot" aria-hidden="true" />
+        ) : null}
+      </button>
       <button
         type="button"
         onClick={() =>
