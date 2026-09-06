@@ -129,11 +129,13 @@ export function TheaterTransport() {
         }
       >
         <span>
-          {stamped
-            ? "EW"
-            : ink === null
-              ? ""
-              : `${Math.max(0, Math.ceil((1 - ink) * 60))}s`}
+          {stamped ? (
+            <i className="ew-theater-ring-dot" aria-hidden="true" />
+          ) : ink === null ? (
+            ""
+          ) : (
+            `${Math.max(0, Math.ceil((1 - ink) * 60))}s`
+          )}
         </span>
       </button>
     </div>

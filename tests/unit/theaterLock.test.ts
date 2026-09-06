@@ -779,6 +779,16 @@ describe("theater lock", () => {
     expect(listen).toContain("catalog=");
     expect(listen).toContain("TheaterTransport");
     expect(listen).toContain("UpNextRow");
+    const transport = readFileSync(
+      new URL(
+        "../../app/components/radio-passport/TheaterTransport.tsx",
+        import.meta.url,
+      ),
+      "utf8",
+    );
+    // The stamped ring is the emblem: foil ring, lacquer heart — never initials.
+    expect(transport).toContain("ew-theater-ring-dot");
+    expect(transport).not.toContain('"EW"');
     // Pause must freeze the folio on the last aired title, never collapse it.
     expect(listen).toContain("lastTrackRef");
     expect(listen).toContain("displayTrack");

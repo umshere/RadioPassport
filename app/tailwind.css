@@ -2152,6 +2152,8 @@ html, body {
 .ew-theater-ring { position: relative; display: grid; width: 36px; height: 36px; place-items: center; border: 0; border-radius: 50%; background: conic-gradient(var(--ew-lacquer) calc(var(--stamp-ink, 0) * 100%), transparent 0); padding: 0; }
 .ew-theater-ring span { display: grid; width: 30px; height: 30px; place-items: center; border-radius: 50%; background: var(--ew-ink); color: var(--ew-foil); font: 500 9px/1 "Azeret Mono", monospace; }
 .ew-theater-ring.is-stamped { background: var(--ew-foil); }
+/* The stamped ring is the emblem: foil ring, lacquer heart. */
+.ew-theater-ring-dot { display: block; width: 9px; height: 9px; border-radius: 50%; background: var(--ew-lacquer); }
 .ew-theater-queue { display: flex; flex-direction: column; margin-top: 16px; }
 .ew-theater-queue > .rp-eyebrow { color: var(--ew-dust); }
 .ew-theater-qrow { display: flex; align-items: baseline; justify-content: space-between; gap: 14px; min-height: 44px; border: 0; border-bottom: 1px solid var(--ew-rule); background: transparent; padding: 8px 0; text-align: left; color: var(--ew-bone); cursor: pointer; }
