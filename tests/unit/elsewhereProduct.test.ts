@@ -669,6 +669,9 @@ describe("home cover panes", () => {
     );
     expect(overlays).toContain('<Overlay close={close} label="Atlas" hideClose>');
     expect(overlays).toContain("CountryFlag");
+    // Overlay headers are boards too — Atlas and the country name flip.
+    expect(overlays).toContain("FlipBoard");
+    expect(overlays).toContain('<FlipBoard text="Atlas" />');
     // Atlas and the country drilldown share one way back: no ×, the tabs
     // and ← Atlas dismiss them. (Passport keeps its ×.)
     expect(overlays.match(/<Overlay[^>]*hideClose/g)?.length).toBe(2);

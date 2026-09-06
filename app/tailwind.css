@@ -2194,6 +2194,10 @@ html, body {
 .ew-cover .ew-coverline .ew-flap-line { display: inline-flex; max-width: 100%; font-style: normal; vertical-align: -.14em; }
 .ew-cover .ew-coverline .ew-flap { width: .68em; height: 1.04em; margin-left: .03em; font-size: 1em; perspective: 5em; border-radius: .045em; }
 .ew-coverline-flag { margin-right: .18em; vertical-align: -.08em; }
+/* Overlay headers are boards too: Atlas and the country name flip at the h2
+   scale, upright against the serif italic around them. */
+.rp-overlay h2 .ew-flap-line { display: inline-flex; max-width: 100%; font-style: normal; vertical-align: -.12em; }
+.rp-overlay h2 .ew-flap { width: .68em; height: 1.04em; margin-left: .03em; font-size: 1em; perspective: 5em; border-radius: .05em; }
 @media (prefers-reduced-motion: reduce) {
 .ew-flap.is-flip .ew-flap-to { animation: none; }
 .ew-flap-to { transform: none; }

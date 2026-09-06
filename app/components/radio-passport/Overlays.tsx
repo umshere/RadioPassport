@@ -11,6 +11,7 @@ import {
 } from "./countryData";
 import { SignalWordmark } from "./SignalMark";
 import { CountryFlag } from "~/components/CountryFlag";
+import { FlipBoard } from "~/components/radio-passport/FlipBoard";
 import { StationRow, stationLocation } from "./StationRow";
 import { describeAtlasEmpty } from "./productFlow";
 import { useShelfProbe } from "~/hooks/useShelfProbe";
@@ -152,7 +153,10 @@ export function AtlasOverlay({
     <Overlay close={close} label="Atlas" hideClose>
       <header className="rp-overlay-head">
         <div>
-          <h2>Atlas</h2>
+          <h2>
+            <FlipBoard text="Atlas" />
+            <span className="sr-only">Atlas</span>
+          </h2>
           <p className="rp-eyebrow">
             {countries.length} COUNTRIES · LIVE CATALOG
           </p>
@@ -330,12 +334,13 @@ export function CountryOverlay({
           {countryFlagIso ? (
             <CountryFlag
               iso={countryFlagIso}
-              size={30}
+              em={0.72}
               title={country}
               className="mr-2"
             />
           ) : null}
-          {country}
+          <FlipBoard text={country} key={country} />
+          <span className="sr-only">{country}</span>
         </h2>
         <p className="rp-eyebrow">
           {drilldown?.status === "loading" || languageStatus === "loading"
