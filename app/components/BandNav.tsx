@@ -64,7 +64,7 @@ export default function BandNav() {
               aria-current={isCurrent ? "page" : undefined}
               onClick={() =>
                 openAtlasNow(location.pathname, () =>
-                  navigate(homeWithAtlasHref()),
+                  navigate(homeWithAtlasHref(), { preventScrollReset: true }),
                 )
               }
             >
@@ -94,6 +94,7 @@ export default function BandNav() {
             className={className}
             aria-current={isCurrent ? "page" : undefined}
             prefetch="intent"
+            preventScrollReset
           >
             {slot.label}
           </Link>

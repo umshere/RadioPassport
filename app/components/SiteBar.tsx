@@ -19,8 +19,10 @@ export default function SiteBar() {
 
   return (
     <header className={`ew-site-bar${onTheater ? " is-theater" : ""}`}>
-      <SignalWordmark compact />
-      {onTheater ? <TheaterSeek /> : null}
+      <div className="ew-site-bar-left">
+        <SignalWordmark compact />
+        {onTheater ? <TheaterSeek /> : null}
+      </div>
       <BandNav />
       <nav className="ew-site-bar-side" aria-label="Site">
         <Link

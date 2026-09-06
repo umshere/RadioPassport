@@ -575,6 +575,7 @@ describe("live stylesheet", () => {
     expect(css).toContain(".ew-horizon-kicker");
     expect(css).toContain(".ew-band-nav");
     expect(css).toContain("@media (min-width: 961px)");
+    expect(css).toContain(".ew-site-bar-left");
     expect(css).toMatch(/\.rp-overlay \{[^}]*z-index: 39/);
     expect(css).toContain(".ew-atlas");
     expect(css).toContain(".ew-theater-back");
@@ -632,6 +633,7 @@ describe("home cover panes", () => {
       "utf8",
     );
     expect(siteBar).toContain("BandNav");
+    expect(siteBar).toContain("ew-site-bar-left");
     const band = readFileSync(
       new URL("../../app/components/BandNav.tsx", import.meta.url),
       "utf8",
@@ -644,6 +646,7 @@ describe("home cover panes", () => {
     expect(band).toContain("homeWithAtlasHref");
     expect(band).not.toContain("/atlas");
     expect(band).toContain("ATLAS_SYNC_EVENT");
+    expect(band).toContain("preventScrollReset");
     expect(home).toContain("announceAtlas");
     const overlays = readFileSync(
       new URL(
