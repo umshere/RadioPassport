@@ -27,6 +27,7 @@ import {
   searchKeepsPlayback,
   hourBoardLabel,
   hourTravelHead,
+  homeWelcomeCopy,
   intentEchoFromInterpret,
   seekingBoardLabel,
   seekingStatus,
@@ -672,6 +673,18 @@ describe("Overlays keep a way through", () => {
     expect(empty.message).toMatch(/song lines/i);
     expect(empty.message).toMatch(/stamps/i);
     expect(connectionById("theater-empty")?.step).toBe("land");
+  });
+
+  it("welcomes the front door in one breath, decoder included", () => {
+    const welcome = homeWelcomeCopy();
+    expect(welcome.lede).toMatch(/live radio/i);
+    expect(welcome.lede).toMatch(/tap a row/i);
+    expect(welcome.lede).toMatch(/stamp/i);
+    expect(welcome.hourDecoder).toMatch(/solar time/i);
+    expect(welcome.hourDecoder).toMatch(/pick one/i);
+    const banned = /(discover|seamless|ai-powered|widget|playlist|unlock|explore)/i;
+    expect(welcome.lede).not.toMatch(banned);
+    expect(welcome.hourDecoder).not.toMatch(banned);
   });
 
   it("labels the transport row like a host, not a cockpit", () => {

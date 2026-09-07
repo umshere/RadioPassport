@@ -79,9 +79,9 @@ import {
   seekingBoardLabel,
   seekingStatus,
   theaterIntelligenceFromRoom,
+  homeWelcomeCopy,
 } from "~/components/radio-passport/productFlow";
 import { resolveTypedIntent, solarHourFromWord } from "~/services/ai/intent/promptIntent";
-import { BRAND } from "~/constants/brand";
 import {
   formatClock,
   formatLocalLabel,
@@ -857,7 +857,7 @@ export default function Index() {
                 Live from {arrivalCity}. This station sends no track titles.
               </p>
             ) : (
-              <p className="rp-lede">{BRAND.promise}</p>
+              <p className="rp-lede">{homeWelcomeCopy().lede}</p>
             )}
             <div className="rp-intel-slot">
               {!seekingCover && coverIntel.dispatchBody ? (
@@ -924,6 +924,11 @@ export default function Index() {
             </p>
           ) : sameHour.length > 0 && !isSeeking ? (
             <p className="mt-3 rp-eyebrow text-dust">Also at this hour</p>
+          ) : null}
+          {!hour && !isSeeking ? (
+            <p className="mt-3 rp-eyebrow text-dust">
+              {homeWelcomeCopy().hourDecoder}
+            </p>
           ) : null}
           {sameHour.length > 0 && !isSeeking ? (
             <div className="ew-same-hour">

@@ -746,6 +746,21 @@ export function theaterTransportCopy({
         : `Stamp lands in ${Math.max(0, secondsLeft)}s — stay tuned`,
   };
 }
+/** The front-door welcome: what Elsewhere is, what to do, what to expect.
+ * One breath — the board and the hour rail do the rest. */
+export type HomeWelcomeCopy = {
+  lede: string;
+  hourDecoder: string;
+};
+
+export function homeWelcomeCopy(): HomeWelcomeCopy {
+  return {
+    lede: "Live radio from a city on the air right now. Tap a row, stay a while, take the stamp.",
+    hourDecoder:
+      "Hours are solar time around the world — pick one, land where it's happening.",
+  };
+}
+
 /** Wait until client hydration before declaring the room empty. */
 export function theaterRoomGate(
   hydrated: boolean,
