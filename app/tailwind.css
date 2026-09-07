@@ -896,6 +896,16 @@
     height: 100%;
     pointer-events: none;
   }
+  /* Dotted spirograph field: same bed as the galaxy, same silence. */
+  .ew-tusi {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    display: block;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+  }
   .rp-globe-wrap { position: absolute; inset: 0; z-index: 1; }
   /* Vertical page scroll stays with the browser and pinch-zoom stays with the
      user (WCAG 1.4.4); every other gesture belongs to the globe, so the aim

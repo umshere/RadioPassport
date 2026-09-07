@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useAtmosphereStore } from "~/state/atmosphereStore";
 import { globeAtmospherePaint } from "~/utils/atmosphere";
+import { decayBoost } from "./motionField";
 import { grainRect } from "./halftone";
 
 export type GlobePlace = {
@@ -206,6 +207,9 @@ export function ParticleGlobe({
       raf = 0,
       hidden = document.hidden,
       rotation = rotationRef.current,
+      haloPhase = 0.8,
+      scrollBoost = 0,
+      lastScrollY = window.scrollY,
       lastNow = performance.now();
     const onVisibility = () => {
       hidden = document.hidden;
@@ -215,6 +219,15 @@ export function ParticleGlobe({
       }
     };
     document.addEventListener("visibilitychange", onVisibility);
+    // Scrolling winds the globe: scroll flares the spin, damping settles it.
+    const onScroll = () => {
+      const y = window.scrollY;
+      const dy = y - lastScrollY;
+      lastScrollY = y;
+      if (reduced) return;
+      scrollBoost = Math.min(0.6, scrollBoost + Math.abs(dy) * 0.0012);
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
     const draw = (now: number) => {
       const dt = Math.min(0.05, Math.max(0, (now - lastNow) / 1000));
       lastNow = now;
@@ -245,9 +258,11 @@ export function ParticleGlobe({
         }
         rotationRef.current = rotation;
       } else if (shouldSpinGlobe(hidden, reduced, pointerOverRef.current)) {
-        rotation += GLOBE_SPIN_RAD_PER_SEC * dt;
+        rotation += (GLOBE_SPIN_RAD_PER_SEC + scrollBoost) * dt;
         rotationRef.current = rotation;
       }
+      scrollBoost = decayBoost(scrollBoost, dt);
+      if (!reduced) haloPhase += (0.05 + scrollBoost * 0.4) * dt;
       const playing = livePlaces.find((place) => place.playing);
       const hoverId = hoveredIdRef.current;
       const paint = globeAtmospherePaint(atmosphereRef.current);
@@ -285,6 +300,26 @@ export function ParticleGlobe({
         if (z < -0.2) continue;
         ctx.fillStyle = paint.particle(z);
         ctx.fillRect(cx + x * r, cy - y * r, paint.particleSize, paint.particleSize);
+      }
+      // Dotted halo: the orbit ring. Mostly outline, every sixth dot an
+      // accent — foil aim at rest, the playing hue when a land is on air.
+      for (let i = 0; i < 72; i++) {
+        const angle = (i / 72) * Math.PI * 2 + haloPhase;
+        const accent = i % 6 === 0;
+        ctx.fillStyle = accent
+          ? playing
+            ? paint.playingRing
+            : paint.aim
+          : paint.outline;
+        ctx.beginPath();
+        ctx.arc(
+          cx + Math.cos(angle) * r * 1.16,
+          cy + Math.sin(angle) * r * 1.16,
+          accent ? 2 : 1.2,
+          0,
+          Math.PI * 2
+        );
+        ctx.fill();
       }
       if (playing) {
         const point = projectPlace(playing, rotation, cx, cy, r);
@@ -344,6 +379,7 @@ export function ParticleGlobe({
     return () => {
       cancelAnimationFrame(raf);
       document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("scroll", onScroll);
     };
   }, [atmosphere, reduced]);
 

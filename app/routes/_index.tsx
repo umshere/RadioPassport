@@ -16,6 +16,7 @@ import { roomForStation, useRoomStore } from "~/state/roomStore";
 import { loadWorldDescriptorPreview } from "~/services/aiOrchestrator";
 import { ParticleGlobe } from "~/components/radio-passport/ParticleGlobe";
 import { GalaxyBackdrop } from "~/components/radio-passport/GalaxyBackdrop";
+import { TusiField } from "~/components/radio-passport/TusiField";
 import {
   buildGlobePlaces,
   globeFocusId,
@@ -1059,6 +1060,7 @@ export default function Index() {
         </section>
         <section className="rp-globe-side">
           <GalaxyBackdrop />
+          <TusiField />
           <div className="rp-globe-wrap">
             <ParticleGlobe
               places={places}
