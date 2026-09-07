@@ -4,6 +4,7 @@ import {
   MOTION_SCROLL_GAIN,
   decayBoost,
   dotFalloff,
+  hash01,
   hypotrochoidPoint,
 } from "./motionField";
 import { hexRgb } from "./theaterLock";
@@ -27,12 +28,6 @@ function tintOf(element: HTMLElement) {
 
 function rgba(tint: Tint, alpha: number) {
   return `rgba(${tint[0]}, ${tint[1]}, ${tint[2]}, ${alpha})`;
-}
-
-/** Deterministic shimmer seed per dot — the field breathes, never pulses. */
-function hash01(index: number) {
-  const x = Math.sin(index * 127.1 + 311.7) * 43758.5453;
-  return x - Math.floor(x);
 }
 
 const CURVES = [

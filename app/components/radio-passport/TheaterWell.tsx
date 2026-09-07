@@ -9,6 +9,11 @@ import {
 import { safeExternalUrl } from "./stationInsights";
 import { grainPath } from "./halftone";
 import {
+  cubicPoint,
+  hash01,
+  type Point2,
+} from "./motionField";
+import {
   markArtworkUrlFailed,
   sanitizeArtworkUrl,
 } from "~/utils/stations";
@@ -96,43 +101,190 @@ function rgba(rgb: [number, number, number], alpha: number) {
   return `rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, ${alpha})`;
 }
 
-/** The ring installation — three foil meridians and a handful of dust grains,
- * drawn from Theater.html. This is the sky on every surface now: the phone
- * installation, scaled to the room. */
-function drawBoardSky(
+/** The meridian flows — the same three sweeping curves as the installation,
+ * drawn as dotted streams with travelers journeying along them. The
+ * zoomed-in path feel, alive: dots crawl the curves, lacquer comets run
+ * them, and knowledge threads pulse toward their stars. Seats never move —
+ * the DOM buttons stay exactly where the canvas glows. */
+const MERIDIANS = [
+  {
+    segs: [
+      [[0, 60], [70, 86], [150, 94], [220, 82]],
+      [[220, 82], [290, 70], [340, 42], [390, 16]],
+    ],
+    dots: 96,
+    speed: 0.055,
+  },
+  {
+    segs: [
+      [[0, 132], [60, 166], [140, 180], [214, 168]],
+      [[214, 168], [286, 154], [336, 126], [390, 96]],
+    ],
+    dots: 110,
+    speed: -0.04,
+  },
+  {
+    segs: [
+      [[0, 196], [66, 218], [148, 222], [216, 206]],
+      [[216, 206], [284, 190], [338, 168], [390, 142]],
+    ],
+    dots: 96,
+    speed: 0.07,
+  },
+] as const;
+
+function flowPoint(
+  segs: readonly (readonly (readonly number[])[])[],
+  t: number,
+): Point2 {
+  const wrapped = ((t % 1) + 1) % 1;
+  const half = wrapped * 2;
+  const index = half < 1 ? 0 : 1;
+  const local = half < 1 ? half : half - 1;
+  const seg = segs[index]!;
+  const [p0, p1, p2, p3] = seg as unknown as [Point2, Point2, Point2, Point2];
+  return cubicPoint(p0, p1, p2, p3, local);
+}
+
+function drawOrbitSky(
   context: CanvasRenderingContext2D,
   width: number,
   height: number,
-  palette: { foil: [number, number, number]; bone: [number, number, number] },
+  palette: {
+    foil: [number, number, number];
+    ether: [number, number, number];
+    bone: [number, number, number];
+    lacquer: [number, number, number];
+  },
   grains: Array<{ x: number; y: number; size: number; depth: number }>,
+  opts: {
+    time: number;
+    live: boolean;
+    knowledge: TheaterKnowledgeLayer | null;
+  },
 ) {
-  context.save();
-  context.scale(width / 390, height / 236);
-  context.strokeStyle = rgba(palette.foil, 0.16);
-  context.lineWidth = 1;
-  context.beginPath();
-  context.moveTo(0, 60);
-  context.bezierCurveTo(70, 86, 150, 94, 220, 82);
-  context.bezierCurveTo(290, 70, 340, 42, 390, 16);
-  context.stroke();
-  context.beginPath();
-  context.moveTo(0, 132);
-  context.bezierCurveTo(60, 166, 140, 180, 214, 168);
-  context.bezierCurveTo(286, 154, 336, 126, 390, 96);
-  context.stroke();
-  context.beginPath();
-  context.moveTo(0, 196);
-  context.bezierCurveTo(66, 218, 148, 222, 216, 206);
-  context.bezierCurveTo(284, 190, 338, 168, 390, 142);
-  context.stroke();
-  context.restore();
-  grains.slice(0, 12).forEach((grain, index) => {
-    if (index % 2) return;
-    context.fillStyle = rgba(palette.bone, 0.28);
+  const { time, live, knowledge } = opts;
+  const toX = (x: number) => (x / 390) * width;
+  const toY = (y: number) => (y / 236) * height;
+  context.clearRect(0, 0, width, height);
+
+  grains.forEach((grain) => {
+    context.fillStyle = rgba(palette.bone, 0.2);
     context.beginPath();
     context.arc(grain.x * width, grain.y * height, 1.05, 0, Math.PI * 2);
     context.fill();
   });
+
+  // The three flows: dotted streams crawling their curves.
+  MERIDIANS.forEach((meridian, meridianIndex) => {
+    const drift = live ? time * meridian.speed : 0.31;
+    const accentTint =
+      meridianIndex % 2 === 0 ? palette.ether : palette.foil;
+    for (let i = 0; i < meridian.dots; i++) {
+      const [dx, dy] = flowPoint(meridian.segs, i / meridian.dots + drift);
+      const accent = i % 12 === 0;
+      const shimmer = live
+        ? 0.6 + 0.4 * Math.sin(time * 1.1 + hash01(i * 5 + meridianIndex) * Math.PI * 2)
+        : 0.8;
+      context.fillStyle = accent
+        ? rgba(accentTint, 0.42 * shimmer)
+        : rgba(palette.foil, 0.15 * shimmer);
+      context.beginPath();
+      context.arc(toX(dx), toY(dy), accent ? 1.6 : 1.05, 0, Math.PI * 2);
+      context.fill();
+    }
+    // The traveler: one lacquer comet running each curve, trailing home.
+    const head = live
+      ? (time * meridian.speed * 3 + meridianIndex * 0.37) % 1
+      : 0.62;
+    const direction = meridian.speed >= 0 ? 1 : -1;
+    for (let k = 10; k >= 0; k--) {
+      const [tx, ty] = flowPoint(meridian.segs, head - k * 0.006 * direction);
+      const fade = 1 - k / 11;
+      context.fillStyle = rgba(
+        palette.lacquer,
+        (k === 0 ? 0.95 : 0.4 * fade) * (live ? 1 : 0.7),
+      );
+      context.beginPath();
+      context.arc(toX(tx), toY(ty), k === 0 ? 2.4 : 0.6 + 1.4 * fade, 0, Math.PI * 2);
+      context.fill();
+    }
+  });
+
+  // Knowledge threads: awake edges rest faint, a pulse walks each one.
+  const placed: Array<{ x: number; y: number; w: number }> = [];
+  const layer = knowledge;
+  if (layer && layer.awakeIds.size) {
+    const seatOf = (id: string) => layer.nodes.find((n) => n.id === id);
+    layer.edges.forEach((edge, edgeIndex) => {
+      const a = seatOf(edge.from);
+      const b = seatOf(edge.to);
+      if (!a || !b || !layer.awakeIds.has(edge.to)) return;
+      const x1 = a.x * width;
+      const y1 = a.y * height;
+      const x2 = b.x * width;
+      const y2 = b.y * height;
+      const base =
+        edge.provenance === "musicbrainz"
+          ? 0.5
+          : edge.provenance === "web"
+            ? 0.34
+            : 0.22;
+      context.strokeStyle = rgba(knowledgeTint(b.kind, palette), base);
+      context.lineWidth = edge.provenance === "musicbrainz" ? 1 : 0.7;
+      context.beginPath();
+      context.moveTo(x1, y1);
+      context.lineTo(x2, y2);
+      context.stroke();
+      const pulseT = live
+        ? (time * 0.45 + hash01(edgeIndex * 11 + 3)) % 1
+        : 0.5;
+      const px = x1 + (x2 - x1) * pulseT;
+      const py = y1 + (y2 - y1) * pulseT;
+      context.fillStyle = rgba(palette.bone, live ? 0.75 : 0.4);
+      context.beginPath();
+      context.arc(px, py, 1.6, 0, Math.PI * 2);
+      context.fill();
+    });
+    let labeled = 0;
+    for (const node of layer.nodes) {
+      if (!layer.awakeIds.has(node.id)) continue;
+      const rgb = knowledgeTint(node.kind, palette);
+      const px = node.x * width;
+      const py = node.y * height;
+      const focused = node.id === layer.focusId;
+      const twinkle = live
+        ? 0.6 + 0.4 * Math.sin(time * 1.3 + hash01(node.label.length * 13 + px) * Math.PI * 2)
+        : 0.85;
+      const haloR = (focused ? 4.2 : 2.4) * 3.2;
+      const halo = context.createRadialGradient(px, py, 0, px, py, haloR);
+      halo.addColorStop(0, rgba(rgb, 0.3 * twinkle));
+      halo.addColorStop(1, rgba(rgb, 0));
+      context.fillStyle = halo;
+      context.beginPath();
+      context.arc(px, py, haloR, 0, Math.PI * 2);
+      context.fill();
+      context.fillStyle = rgba(rgb, focused ? 0.6 : 0.34 * twinkle + 0.1);
+      context.beginPath();
+      context.arc(px, py, focused ? 4.2 : 2.4, 0, Math.PI * 2);
+      context.fill();
+      if (labeled < 8) {
+        context.font = '500 10px "Azeret Mono", ui-monospace, monospace';
+        context.letterSpacing = "0.12em";
+        paintSkyLabel(context, node.label, px, py, width, height, palette.foil, 0.66, placed);
+        labeled++;
+      }
+    }
+  }
+
+  const cx = width / 2;
+  const cy = height / 2;
+  const edge = Math.hypot(cx, cy);
+  const vignette = context.createRadialGradient(cx, cy, edge * 0.55, cx, cy, edge);
+  vignette.addColorStop(0, "rgba(6, 5, 3, 0)");
+  vignette.addColorStop(1, "rgba(6, 5, 3, 0.32)");
+  context.fillStyle = vignette;
+  context.fillRect(0, 0, width, height);
 }
 
 function paintSkyLabel(
@@ -328,6 +480,9 @@ export function TheaterField({
   // The draw loop stops itself once the sky settles; a later dossier upgrade
   // (free facts, AI graph) needs one kick to paint the new stars.
   const repaintRef = useRef<(() => void) | null>(null);
+  // The flows pause offscreen — one less loop running under the fold.
+  const onscreenRef = useRef(true);
+  const lastPaintRef = useRef(0);
 
   useEffect(() => {
     opacityRef.current.clear();
@@ -353,8 +508,14 @@ export function TheaterField({
     const resize = () => {
       const rect = parent.getBoundingClientRect();
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
-      canvas.width = Math.max(1, Math.floor(rect.width * dpr));
-      canvas.height = Math.max(1, Math.floor(rect.height * dpr));
+      // Resetting canvas.width clears the bitmap: only do it when the box
+      // actually moved, or a later observer fire wipes a settled sky.
+      const nextWidth = Math.max(1, Math.floor(rect.width * dpr));
+      const nextHeight = Math.max(1, Math.floor(rect.height * dpr));
+      if (canvas.width !== nextWidth || canvas.height !== nextHeight) {
+        canvas.width = nextWidth;
+        canvas.height = nextHeight;
+      }
       canvas.style.width = `${rect.width}px`;
       canvas.style.height = `${rect.height}px`;
       context.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -416,13 +577,30 @@ export function TheaterField({
 
       context.clearRect(0, 0, width, height);
 
-      // The ring installation stands on every viewport — phone meridians,
-      // scaled to the room. (Typed boolean, not a literal, so the dormant
-      // dotted field below stays reachable to the compiler until it is cut.)
+      // The meridian flows stand on every viewport — the same sweeping
+      // curves as the installation, dotted and traveling. (Typed boolean,
+      // not a literal, so the dormant dotted field below stays reachable
+      // to the compiler until it is cut.)
       const boardSky: boolean = true;
       if (boardSky) {
-        drawBoardSky(context, width, height, palette, dustRef.current);
-        frame = 0;
+        if (
+          !stillSky &&
+          onscreenRef.current &&
+          now - lastPaintRef.current < 80
+        ) {
+          frame = window.requestAnimationFrame(draw);
+          return;
+        }
+        lastPaintRef.current = now;
+        drawOrbitSky(context, width, height, palette, dustRef.current, {
+          time,
+          live: !stillSky,
+          knowledge: knowledgeRef.current,
+        });
+        frame =
+          !stillSky && onscreenRef.current
+            ? window.requestAnimationFrame(draw)
+            : 0;
         return;
       }
 
@@ -1012,6 +1190,16 @@ export function TheaterField({
     resize();
     const observer = new ResizeObserver(resize);
     observer.observe(parent);
+    const visibility = new IntersectionObserver(
+      (entries) => {
+        onscreenRef.current = entries[0]?.isIntersecting ?? true;
+        if (onscreenRef.current && !frame && !reduced.current) {
+          frame = window.requestAnimationFrame(draw);
+        }
+      },
+      { root: null, threshold: 0 },
+    );
+    visibility.observe(parent);
     frame = window.requestAnimationFrame(draw);
     repaintRef.current = () => {
       if (frame) return;
@@ -1019,6 +1207,7 @@ export function TheaterField({
     };
     return () => {
       observer.disconnect();
+      visibility.disconnect();
       window.cancelAnimationFrame(frame);
       frame = 0;
       repaintRef.current = null;

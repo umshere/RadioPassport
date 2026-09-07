@@ -134,5 +134,10 @@ morph per viewport of travel — more feels seasick, less feels dead.
 - `app/components/radio-passport/TusiField.tsx` — hero field in `.rp-globe-side`.
 - `app/components/radio-passport/ParticleGlobe.tsx` — scroll-boost spin with
   exponential settle + dotted halo ring in foil/ether/bone.
+- `app/components/radio-passport/TheaterWell.tsx` — `drawOrbitSky`: the three
+  meridian curves as dotted crawling flows with lacquer travelers, pulsing
+  knowledge threads, twinkling seat glows. Seats never move, so the DOM
+  buttons stay exactly where the canvas glows. Loop throttled to ~12fps and
+  paused offscreen; one static frame under reduced motion.
 - Voice stays Elsewhere (`land · dusk · hour · stamp · live · cover ·
   elsewhere · now`); the motion carries the Tribe influence, never the words.
