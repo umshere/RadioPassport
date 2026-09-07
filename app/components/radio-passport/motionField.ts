@@ -168,3 +168,13 @@ export function hash01(index: number): number {
   const x = Math.sin(index * 127.1 + 311.7) * 43758.5453;
   return x - Math.floor(x);
 }
+
+/**
+ * True when the room's bone ink is dark — i.e. a day room, where canvas
+ * figures need stronger alphas to read against the light. Night bone is
+ * near-white; day bone is near-black.
+ */
+export function boneDaylight(bone: readonly [number, number, number]): boolean {
+  const luminance = (bone[0] * 0.299 + bone[1] * 0.587 + bone[2] * 0.114) / 255;
+  return luminance < 0.5;
+}

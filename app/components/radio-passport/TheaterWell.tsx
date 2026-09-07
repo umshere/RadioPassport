@@ -9,9 +9,8 @@ import {
 import { safeExternalUrl } from "./stationInsights";
 import { grainPath } from "./halftone";
 import {
-  cubicPoint,
+  boneDaylight,
   hash01,
-  type Point2,
 } from "./motionField";
 import {
   markArtworkUrlFailed,
@@ -133,20 +132,172 @@ const MERIDIANS = [
   },
 ] as const;
 
-function flowPoint(
-  segs: readonly (readonly (readonly number[])[])[],
-  t: number,
-): Point2 {
-  const wrapped = ((t % 1) + 1) % 1;
-  const half = wrapped * 2;
-  const index = half < 1 ? 0 : 1;
-  const local = half < 1 ? half : half - 1;
-  const seg = segs[index]!;
-  const [p0, p1, p2, p3] = seg as unknown as [Point2, Point2, Point2, Point2];
-  return cubicPoint(p0, p1, p2, p3, local);
+/** An orbit meridian as one SVG path — two cubic spans, same geometry. */
+function meridianPath(segs: readonly (readonly (readonly number[])[])[]): string {
+  type Pt = [number, number];
+  const pair = segs as unknown as [[Pt, Pt, Pt, Pt], [Pt, Pt, Pt, Pt]];
+  const [p0, p1, p2, p3] = pair[0]!;
+  const [, q1, q2, q3] = pair[1]!;
+  const pt = (p: Pt) => `${p[0]} ${p[1]}`;
+  return `M ${pt(p0)} C ${pt(p1)} ${pt(p2)} ${pt(p3)} C ${pt(q1)} ${pt(q2)} ${pt(q3)}`;
 }
 
-function drawOrbitSky(
+/** Mirror of knowledgeTint for SVG: brand ink per node kind. */
+function kindVar(kind: PositionedKnowledgeNode["kind"]): string {
+  if (
+    kind === "language" ||
+    kind === "year" ||
+    kind === "genre" ||
+    kind === "city" ||
+    kind === "place"
+  ) {
+    return "var(--ew-ether)";
+  }
+  if (kind === "event") return "var(--ew-lacquer)";
+  if (kind === "station" || kind === "track") return "var(--ew-bone)";
+  return "var(--ew-foil)";
+}
+
+/**
+ * The living layer: meridian dotted flows (CSS crawl), lacquer travelers
+ * (SMIL journey), thread pulses and twinkling glows. Declarative motion —
+ * no JS frames, so there is no bitmap pipeline to break. Seats never move:
+ * fractions map to the same 390×236 room the canvas and DOM buttons share.
+ */
+function OrbitMotion({
+  knowledge,
+  reduced,
+}: {
+  knowledge: TheaterKnowledgeLayer | null;
+  reduced: boolean;
+}) {
+  const layer = knowledge;
+  const awakeEdges = useMemo(() => {
+    if (!layer || !layer.awakeIds.size) return [];
+    const seatOf = (id: string) => layer.nodes.find((n) => n.id === id);
+    return layer.edges
+      .map((edge, index) => {
+        const a = seatOf(edge.from);
+        const b = seatOf(edge.to);
+        if (!a || !b || !layer.awakeIds.has(edge.to)) return null;
+        return { edge, a, b, index };
+      })
+      .filter((entry): entry is NonNullable<typeof entry> => entry !== null)
+      .slice(0, 24);
+  }, [layer]);
+  const awakeNodes = useMemo(() => {
+    if (!layer || !layer.awakeIds.size) return [];
+    return layer.nodes.filter((node) => layer.awakeIds.has(node.id)).slice(0, 18);
+  }, [layer]);
+  return (
+    <svg
+      className="ew-orbit"
+      viewBox="0 0 390 236"
+      preserveAspectRatio="none"
+      aria-hidden="true"
+    >
+      {MERIDIANS.map((meridian, meridianIndex) => {
+        const d = meridianPath(meridian.segs);
+        return <path key={`base-${meridianIndex}`} d={d} className="ew-flow-base" style={{ stroke: "var(--ew-foil)" }} />;
+      })}
+      {!reduced &&
+        MERIDIANS.map((meridian, meridianIndex) => {
+          const d = meridianPath(meridian.segs);
+          return (
+            <path
+              key={`dots-${meridianIndex}`}
+              d={d}
+              className="ew-flow-dots"
+              style={{
+                stroke: meridianIndex % 2 === 0 ? "var(--ew-ether)" : "var(--ew-foil)",
+                animationDuration: `${6 + meridianIndex * 2.4}s`,
+                animationDirection: meridianIndex % 2 === 0 ? undefined : "reverse",
+              }}
+            />
+          );
+        })}
+      {!reduced &&
+        MERIDIANS.map((meridian, meridianIndex) => {
+          const d = meridianPath(meridian.segs);
+          return (
+            <g key={`comet-${meridianIndex}`}>
+              <animateMotion
+                dur={`${13 + meridianIndex * 4}s`}
+                repeatCount="indefinite"
+                path={d}
+              />
+              <circle r="5.5" className="ew-comet-halo" />
+              <circle r="2.4" className="ew-comet" />
+            </g>
+          );
+        })}
+      {awakeEdges.map(({ edge, a, b, index }) => {
+        const x1 = a.x * 390;
+        const y1 = a.y * 236;
+        const x2 = b.x * 390;
+        const y2 = b.y * 236;
+        return (
+          <g key={`${edge.from}>${edge.to}`}>
+            <line
+              x1={x1}
+              y1={y1}
+              x2={x2}
+              y2={y2}
+              className="ew-thread"
+              style={{ stroke: "var(--ew-foil)" }}
+            />
+            {!reduced && (
+              <circle r="1.6" className="ew-thread-pulse">
+                <animateMotion
+                  dur="2.8s"
+                  begin={`${(-hash01(index * 11 + 3) * 2.8).toFixed(2)}s`}
+                  repeatCount="indefinite"
+                  path={`M ${x1} ${y1} L ${x2} ${y2}`}
+                />
+              </circle>
+            )}
+          </g>
+        );
+      })}
+      {awakeNodes.map((node, nodeIndex) => {
+        const px = node.x * 390;
+        const py = node.y * 236;
+        const focused = node.id === layer?.focusId;
+        const tint = kindVar(node.kind);
+        return (
+          <g key={node.id}>
+            <circle
+              cx={px}
+              cy={py}
+              r={focused ? 12 : 8}
+              className={reduced ? "ew-star-glow" : "ew-star-twinkle"}
+              style={{
+                fill: tint,
+                ...(reduced
+                  ? null
+                  : {
+                      animationDelay: `${(hash01(nodeIndex * 7 + 1) * 4).toFixed(2)}s`,
+                    }),
+              }}
+            />
+            <circle
+              cx={px}
+              cy={py}
+              r={focused ? 4.2 : 2.4}
+              className="ew-star-core"
+              style={{ fill: tint }}
+            />
+          </g>
+        );
+      })}
+    </svg>
+  );
+}
+
+/** Static backdrop: dust, the three journey-path underlays, vignette.
+ * Painted once per kick (mount, resize, new knowledge) — the proven
+ * pattern. All motion lives in the OrbitMotion SVG overlay. */
+function paintBackdrop(
   context: CanvasRenderingContext2D,
   width: number,
   height: number,
@@ -157,132 +308,46 @@ function drawOrbitSky(
     lacquer: [number, number, number];
   },
   grains: Array<{ x: number; y: number; size: number; depth: number }>,
-  opts: {
-    time: number;
-    live: boolean;
-    knowledge: TheaterKnowledgeLayer | null;
-  },
 ) {
-  const { time, live, knowledge } = opts;
-  const toX = (x: number) => (x / 390) * width;
-  const toY = (y: number) => (y / 236) * height;
+  // Day rooms need stronger ink: dark figures on cream wash out at night
+  // alphas. One multiplier keeps both rooms expressive.
+  const day = boneDaylight(palette.bone);
+  const ink = (alpha: number) => Math.min(0.9, alpha * (day ? 2.1 : 1));
   context.clearRect(0, 0, width, height);
 
   grains.forEach((grain) => {
-    context.fillStyle = rgba(palette.bone, 0.2);
+    context.fillStyle = rgba(palette.bone, day ? 0.3 : 0.2);
     context.beginPath();
     context.arc(grain.x * width, grain.y * height, 1.05, 0, Math.PI * 2);
     context.fill();
   });
 
-  // The three flows: dotted streams crawling their curves.
-  MERIDIANS.forEach((meridian, meridianIndex) => {
-    const drift = live ? time * meridian.speed : 0.31;
-    const accentTint =
-      meridianIndex % 2 === 0 ? palette.ether : palette.foil;
-    for (let i = 0; i < meridian.dots; i++) {
-      const [dx, dy] = flowPoint(meridian.segs, i / meridian.dots + drift);
-      const accent = i % 12 === 0;
-      const shimmer = live
-        ? 0.6 + 0.4 * Math.sin(time * 1.1 + hash01(i * 5 + meridianIndex) * Math.PI * 2)
-        : 0.8;
-      context.fillStyle = accent
-        ? rgba(accentTint, 0.42 * shimmer)
-        : rgba(palette.foil, 0.15 * shimmer);
-      context.beginPath();
-      context.arc(toX(dx), toY(dy), accent ? 1.6 : 1.05, 0, Math.PI * 2);
-      context.fill();
-    }
-    // The traveler: one lacquer comet running each curve, trailing home.
-    const head = live
-      ? (time * meridian.speed * 3 + meridianIndex * 0.37) % 1
-      : 0.62;
-    const direction = meridian.speed >= 0 ? 1 : -1;
-    for (let k = 10; k >= 0; k--) {
-      const [tx, ty] = flowPoint(meridian.segs, head - k * 0.006 * direction);
-      const fade = 1 - k / 11;
-      context.fillStyle = rgba(
-        palette.lacquer,
-        (k === 0 ? 0.95 : 0.4 * fade) * (live ? 1 : 0.7),
-      );
-      context.beginPath();
-      context.arc(toX(tx), toY(ty), k === 0 ? 2.4 : 0.6 + 1.4 * fade, 0, Math.PI * 2);
-      context.fill();
-    }
+  // The journey paths read first: a solid whisper line under each flow so
+  // the arcs carry at a glance, dotted streams and travelers living on top.
+  context.save();
+  context.scale(width / 390, height / 236);
+  context.strokeStyle = rgba(palette.foil, ink(0.22));
+  context.lineWidth = 1.1;
+  MERIDIANS.forEach((meridian) => {
+    context.beginPath();
+    const [m0, m1, m2, m3] = meridian.segs[0]!;
+    context.moveTo(m0[0], m0[1]);
+    context.bezierCurveTo(m1[0], m1[1], m2[0], m2[1], m3[0], m3[1]);
+    const [n0, n1, n2, n3] = meridian.segs[1]!;
+    context.bezierCurveTo(n1[0], n1[1], n2[0], n2[1], n3[0], n3[1]);
+    context.stroke();
   });
+  context.restore();
 
-  // Knowledge threads: awake edges rest faint, a pulse walks each one.
-  const placed: Array<{ x: number; y: number; w: number }> = [];
-  const layer = knowledge;
-  if (layer && layer.awakeIds.size) {
-    const seatOf = (id: string) => layer.nodes.find((n) => n.id === id);
-    layer.edges.forEach((edge, edgeIndex) => {
-      const a = seatOf(edge.from);
-      const b = seatOf(edge.to);
-      if (!a || !b || !layer.awakeIds.has(edge.to)) return;
-      const x1 = a.x * width;
-      const y1 = a.y * height;
-      const x2 = b.x * width;
-      const y2 = b.y * height;
-      const base =
-        edge.provenance === "musicbrainz"
-          ? 0.5
-          : edge.provenance === "web"
-            ? 0.34
-            : 0.22;
-      context.strokeStyle = rgba(knowledgeTint(b.kind, palette), base);
-      context.lineWidth = edge.provenance === "musicbrainz" ? 1 : 0.7;
-      context.beginPath();
-      context.moveTo(x1, y1);
-      context.lineTo(x2, y2);
-      context.stroke();
-      const pulseT = live
-        ? (time * 0.45 + hash01(edgeIndex * 11 + 3)) % 1
-        : 0.5;
-      const px = x1 + (x2 - x1) * pulseT;
-      const py = y1 + (y2 - y1) * pulseT;
-      context.fillStyle = rgba(palette.bone, live ? 0.75 : 0.4);
-      context.beginPath();
-      context.arc(px, py, 1.6, 0, Math.PI * 2);
-      context.fill();
-    });
-    let labeled = 0;
-    for (const node of layer.nodes) {
-      if (!layer.awakeIds.has(node.id)) continue;
-      const rgb = knowledgeTint(node.kind, palette);
-      const px = node.x * width;
-      const py = node.y * height;
-      const focused = node.id === layer.focusId;
-      const twinkle = live
-        ? 0.6 + 0.4 * Math.sin(time * 1.3 + hash01(node.label.length * 13 + px) * Math.PI * 2)
-        : 0.85;
-      const haloR = (focused ? 4.2 : 2.4) * 3.2;
-      const halo = context.createRadialGradient(px, py, 0, px, py, haloR);
-      halo.addColorStop(0, rgba(rgb, 0.3 * twinkle));
-      halo.addColorStop(1, rgba(rgb, 0));
-      context.fillStyle = halo;
-      context.beginPath();
-      context.arc(px, py, haloR, 0, Math.PI * 2);
-      context.fill();
-      context.fillStyle = rgba(rgb, focused ? 0.6 : 0.34 * twinkle + 0.1);
-      context.beginPath();
-      context.arc(px, py, focused ? 4.2 : 2.4, 0, Math.PI * 2);
-      context.fill();
-      if (labeled < 8) {
-        context.font = '500 10px "Azeret Mono", ui-monospace, monospace';
-        context.letterSpacing = "0.12em";
-        paintSkyLabel(context, node.label, px, py, width, height, palette.foil, 0.66, placed);
-        labeled++;
-      }
-    }
-  }
-
+  // Dots, travelers, threads and pulses live in the OrbitMotion SVG
+  // overlay now — this bitmap holds only the quiet backdrop.
   const cx = width / 2;
   const cy = height / 2;
   const edge = Math.hypot(cx, cy);
   const vignette = context.createRadialGradient(cx, cy, edge * 0.55, cx, cy, edge);
   vignette.addColorStop(0, "rgba(6, 5, 3, 0)");
-  vignette.addColorStop(1, "rgba(6, 5, 3, 0.32)");
+  // Day rooms get a whisper, not soot: dark edges on cream read as dirt.
+  vignette.addColorStop(1, day ? "rgba(26, 22, 18, 0.12)" : "rgba(6, 5, 3, 0.32)");
   context.fillStyle = vignette;
   context.fillRect(0, 0, width, height);
 }
@@ -431,6 +496,14 @@ export function TheaterField({
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const reduced = usePrefersReducedMotion();
+  const [motionReduced, setMotionReduced] = useState(false);
+  useEffect(() => {
+    const media = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const sync = () => setMotionReduced(media.matches);
+    sync();
+    media.addEventListener("change", sync);
+    return () => media.removeEventListener("change", sync);
+  }, []);
   const knowledgeRef = useRef<TheaterKnowledgeLayer | null>(knowledge ?? null);
   knowledgeRef.current = knowledge ?? null;
   const firingAtRef = useRef(new Map<string, number>());
@@ -477,12 +550,10 @@ export function TheaterField({
   const structureStartRef = useRef<number | null>(null);
   const focusRef = useRef(focusId);
   focusRef.current = focusId;
-  // The draw loop stops itself once the sky settles; a later dossier upgrade
-  // (free facts, AI graph) needs one kick to paint the new stars.
-  const repaintRef = useRef<(() => void) | null>(null);
-  // The flows pause offscreen — one less loop running under the fold.
-  const onscreenRef = useRef(true);
-  const lastPaintRef = useRef(0);
+  // Static sky: one full paint per kick (mount, resize, new knowledge).
+  // The living layer is declarative SVG (OrbitMotion) — no JS frames, so
+  // there is no bitmap pipeline that can silently stop presenting.
+  const paintRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     opacityRef.current.clear();
@@ -519,7 +590,7 @@ export function TheaterField({
       canvas.style.width = `${rect.width}px`;
       canvas.style.height = `${rect.height}px`;
       context.setTransform(dpr, 0, 0, dpr, 0, 0);
-      if (!frame) frame = window.requestAnimationFrame(draw);
+      draw(performance.now());
     };
 
     const draw = (now: number) => {
@@ -578,29 +649,13 @@ export function TheaterField({
       context.clearRect(0, 0, width, height);
 
       // The meridian flows stand on every viewport — the same sweeping
-      // curves as the installation, dotted and traveling. (Typed boolean,
-      // not a literal, so the dormant dotted field below stays reachable
-      // to the compiler until it is cut.)
+      // curves as the installation, painted once per kick. Motion lives in
+      // the OrbitMotion SVG overlay; this bitmap never loops. (Typed
+      // boolean, not a literal, so the dormant dotted field below stays
+      // reachable to the compiler until it is cut.)
       const boardSky: boolean = true;
       if (boardSky) {
-        if (
-          !stillSky &&
-          onscreenRef.current &&
-          now - lastPaintRef.current < 80
-        ) {
-          frame = window.requestAnimationFrame(draw);
-          return;
-        }
-        lastPaintRef.current = now;
-        drawOrbitSky(context, width, height, palette, dustRef.current, {
-          time,
-          live: !stillSky,
-          knowledge: knowledgeRef.current,
-        });
-        frame =
-          !stillSky && onscreenRef.current
-            ? window.requestAnimationFrame(draw)
-            : 0;
+        paintBackdrop(context, width, height, palette, dustRef.current);
         return;
       }
 
@@ -1187,35 +1242,22 @@ export function TheaterField({
       else frame = 0; // settled — a later repaint kick may restart us
     };
 
-    resize();
-    const observer = new ResizeObserver(resize);
+    draw(performance.now());
+    const observer = new ResizeObserver(() => {
+      resize();
+    });
     observer.observe(parent);
-    const visibility = new IntersectionObserver(
-      (entries) => {
-        onscreenRef.current = entries[0]?.isIntersecting ?? true;
-        if (onscreenRef.current && !frame && !reduced.current) {
-          frame = window.requestAnimationFrame(draw);
-        }
-      },
-      { root: null, threshold: 0 },
-    );
-    visibility.observe(parent);
-    frame = window.requestAnimationFrame(draw);
-    repaintRef.current = () => {
-      if (frame) return;
-      frame = window.requestAnimationFrame(draw);
+    paintRef.current = () => {
+      draw(performance.now());
     };
     return () => {
       observer.disconnect();
-      visibility.disconnect();
-      window.cancelAnimationFrame(frame);
-      frame = 0;
-      repaintRef.current = null;
+      paintRef.current = null;
     };
   }, [seed]);
 
   useEffect(() => {
-    repaintRef.current?.();
+    paintRef.current?.();
   }, [releases, phase, knowledge?.nodes.length, knowledge?.firing.length]);
 
   return (
@@ -1227,6 +1269,7 @@ export function TheaterField({
         data-nodes={String(releases.length)}
         aria-hidden="true"
       />
+      <OrbitMotion knowledge={knowledge ?? null} reduced={motionReduced} />
       {knowledge && knowledge.nodes.length ? (
         <TheaterNodes
           nodes={knowledge.nodes}

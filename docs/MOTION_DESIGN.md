@@ -134,10 +134,12 @@ morph per viewport of travel — more feels seasick, less feels dead.
 - `app/components/radio-passport/TusiField.tsx` — hero field in `.rp-globe-side`.
 - `app/components/radio-passport/ParticleGlobe.tsx` — scroll-boost spin with
   exponential settle + dotted halo ring in foil/ether/bone.
-- `app/components/radio-passport/TheaterWell.tsx` — `drawOrbitSky`: the three
-  meridian curves as dotted crawling flows with lacquer travelers, pulsing
-  knowledge threads, twinkling seat glows. Seats never move, so the DOM
-  buttons stay exactly where the canvas glows. Loop throttled to ~12fps and
-  paused offscreen; one static frame under reduced motion.
+- `app/components/radio-passport/TheaterWell.tsx` — `paintBackdrop` (static
+  canvas: dust, journey-path underlays, vignette) + `OrbitMotion` SVG overlay
+  (dotted crawl via dashoffset, travelers + thread pulses via SMIL, twinkling
+  glows). Lesson learned: a continuously-repainted canvas can silently stop
+  presenting with no errors — static bitmaps plus declarative SVG motion are
+  the reliable pairing. Seats never move, so the DOM buttons stay exactly
+  where the SVG glows.
 - Voice stays Elsewhere (`land · dusk · hour · stamp · live · cover ·
   elsewhere · now`); the motion carries the Tribe influence, never the words.

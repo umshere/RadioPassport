@@ -735,9 +735,11 @@ describe("theater lock", () => {
     );
     expect(well).toContain("const showCover = icy || showPlate");
     expect(well).toContain("theaterSkyLive");
-    expect(well).toContain("drawOrbitSky(context, width, height, palette,");
+    expect(well).toContain("paintBackdrop(context, width, height, palette,");
     expect(well).toContain("MERIDIANS");
-    expect(well).toContain("onscreenRef");
+    expect(well).toContain("OrbitMotion");
+    expect(well).toContain("animateMotion");
+    expect(well).toContain("ew-flow-dots");
     expect(well).not.toContain('matchMedia("(max-width: 960px)")');
     expect(well).toContain("wakingIds");
     expect(well).toContain("fieldStandingLabel");

@@ -5,6 +5,7 @@ import {
   MOTION_SCROLL_GAIN,
   MOTION_SETTLE_RATE,
   arcControl,
+  boneDaylight,
   cubicPoint,
   dampTowards,
   decayBoost,
@@ -133,5 +134,10 @@ describe("dots & damping math", () => {
       expect(hash01(index)).toBe(value);
     }
     expect(hash01(3)).not.toBe(hash01(4));
+  });
+
+  it("tells night bone from day bone", () => {
+    expect(boneDaylight([232, 223, 208])).toBe(false);
+    expect(boneDaylight([26, 22, 18])).toBe(true);
   });
 });

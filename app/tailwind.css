@@ -1662,6 +1662,7 @@
   @media (prefers-reduced-motion: reduce) {
     .rp-live-dot, .rp-eq i, .rp-toast, .ew-theater-well.is-filed .ew-caption, .ew-theater-well.is-filed .ew-cover-row, .ew-theater-well.is-filed .ew-journey li, .ew-theater-well.is-filed .ew-meridians { animation: none; }
     .ew-page, .ew-arrive, .ew-cover-rule, .rp-overlay, .rp-overlay-inner, .ew-passage-bar i { animation: none; }
+    .ew-flow-dots, .ew-star-twinkle { animation: none; }
     .rp-chip, .rp-station, .rp-dock-play { transition: none; }
     .rp-dock-play::before { animation: none; }
     .ew-land, .ew-atlas::after, .ew-theater-back::after { transition: none; }
@@ -2055,6 +2056,20 @@ html, body {
 /* Theater knowledge layer — DOM buttons over the sky; keep one-line rules. */
 .ew-theater-field-wrap { position: absolute; inset: 0; }
 .ew-theater-field-wrap .ew-theater-field { position: absolute; inset: 0; width: 100%; height: 100%; }
+/* Living layer: declarative SVG motion over the static sky. Dotted flows
+   crawl via dashoffset, travelers ride SMIL paths, stars twinkle. */
+.ew-orbit { position: absolute; inset: 0; z-index: 1; width: 100%; height: 100%; pointer-events: none; }
+.ew-flow-base { fill: none; stroke-width: 1.1; opacity: 0.22; }
+.ew-flow-dots { fill: none; stroke-width: 2; stroke-linecap: round; stroke-dasharray: 0.1 5; animation: ew-dash-crawl 7s linear infinite; }
+.ew-comet { fill: #C73A3A; }
+.ew-comet-halo { fill: #C73A3A; opacity: 0.22; }
+.ew-thread { stroke-width: 0.8; opacity: 0.34; }
+.ew-thread-pulse { fill: var(--ew-bone); opacity: 0.75; }
+.ew-star-glow { opacity: 0.3; }
+.ew-star-twinkle { opacity: 0.3; animation: ew-star-twinkle 4s ease-in-out infinite; }
+.ew-star-core { opacity: 0.9; }
+@keyframes ew-dash-crawl { to { stroke-dashoffset: -51; } }
+@keyframes ew-star-twinkle { 0%, 100% { opacity: 0.18; } 50% { opacity: 0.42; } }
 .ew-knode-layer { position: absolute; inset: 0; pointer-events: none; z-index: 2; }
 .ew-knode { pointer-events: auto; position: absolute; display: flex; align-items: center; gap: 6px; min-width: 28px; min-height: 28px; padding: 3px 8px 3px 4px; border: 0; background: color-mix(in srgb, var(--ew-ink) 78%, transparent); border-radius: 999px; cursor: pointer; color: var(--ew-bone); font: 500 11px/1.2 "Azeret Mono", ui-monospace, monospace; letter-spacing: 0.08em; z-index: 1; }
 .ew-knode[data-anchor="w"] { flex-direction: row-reverse; padding: 3px 4px 3px 8px; }
