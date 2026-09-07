@@ -35,6 +35,7 @@ import {
   theaterDossierFacts,
   theaterIntelligence,
   theaterRoomGate,
+  theaterTransportCopy,
   theaterWithoutStation,
   sameHourPillLabel,
 } from "~/components/radio-passport/productFlow";
@@ -661,12 +662,51 @@ describe("Overlays keep a way through", () => {
     expect(describeAtlasEmpty("").actions).toEqual([]);
   });
 
-  it("sends an empty theater back to land", () => {
+  it("welcomes a first landing and points to a city", () => {
     const empty = theaterWithoutStation();
     expect(empty.route).toBe("/");
-    expect(empty.label).toMatch(/elsewhere/i);
-    expect(empty.message).toMatch(/land/i);
+    expect(empty.kicker).toMatch(/first landing/i);
+    expect(empty.label).toMatch(/choose a city/i);
+    expect(empty.headline).toMatch(/live listening room/i);
+    expect(empty.message).toMatch(/press play/i);
+    expect(empty.message).toMatch(/song lines/i);
+    expect(empty.message).toMatch(/stamps/i);
     expect(connectionById("theater-empty")?.step).toBe("land");
+  });
+
+  it("labels the transport row like a host, not a cockpit", () => {
+    const fresh = theaterTransportCopy({
+      isPlaying: false,
+      kept: false,
+      stamped: false,
+      secondsLeft: 42,
+    });
+    expect(fresh).toMatchObject({
+      back: "Back",
+      keep: "Keep",
+      play: "Play",
+      next: "Next",
+      passport: "Passport",
+    });
+    expect(fresh.passportHint).toMatch(/42s/);
+    expect(fresh.passportHint).toMatch(/stay tuned/i);
+
+    const held = theaterTransportCopy({
+      isPlaying: true,
+      kept: true,
+      stamped: true,
+      secondsLeft: null,
+    });
+    expect(held).toMatchObject({ keep: "Kept", play: "Pause" });
+    expect(held.passportHint).toMatch(/stamped/i);
+
+    const quiet = theaterTransportCopy({
+      isPlaying: false,
+      kept: false,
+      stamped: false,
+      secondsLeft: null,
+    });
+    expect(quiet.passportHint).toMatch(/60 seconds/i);
   });
 
   it("waits to hydrate before calling the theater empty", () => {

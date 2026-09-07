@@ -703,11 +703,49 @@ export function resolveStampReplay(
 export function theaterWithoutStation() {
   return {
     route: "/",
-    label: "Back to Elsewhere",
-    message: "Land somewhere first. Then come back.",
+    kicker: "EW · First landing",
+    label: "Choose a city",
+    headline: "You’ve landed in a live listening room.",
+    message:
+      "Choose a city, press play, and keep the signals you love. Song lines appear when the station sends them; stamps mark the hours you were elsewhere.",
   };
 }
 
+/** Visible micro-labels for the Theater transport row. The ring countdown
+ * (`42s`) only makes sense once it wears the word Passport. */
+export type TheaterTransportCopy = {
+  back: string;
+  keep: string;
+  play: string;
+  next: string;
+  passport: string;
+  passportHint: string;
+};
+
+export function theaterTransportCopy({
+  isPlaying,
+  kept,
+  stamped,
+  secondsLeft,
+}: {
+  isPlaying: boolean;
+  kept: boolean;
+  stamped: boolean;
+  secondsLeft: number | null;
+}): TheaterTransportCopy {
+  return {
+    back: "Back",
+    keep: kept ? "Kept" : "Keep",
+    play: isPlaying ? "Pause" : "Play",
+    next: "Next",
+    passport: "Passport",
+    passportHint: stamped
+      ? "This city is stamped"
+      : secondsLeft === null
+        ? "Stay 60 seconds to stamp this city"
+        : `Stamp lands in ${Math.max(0, secondsLeft)}s — stay tuned`,
+  };
+}
 /** Wait until client hydration before declaring the room empty. */
 export function theaterRoomGate(
   hydrated: boolean,

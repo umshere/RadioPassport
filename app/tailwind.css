@@ -2173,6 +2173,11 @@ html, body {
 .ew-theater-ring.is-stamped { background: var(--ew-foil); }
 /* The stamped ring is the emblem: foil ring, lacquer heart. */
 .ew-theater-ring-dot { display: block; width: 9px; height: 9px; border-radius: 50%; background: var(--ew-lacquer); }
+/* Transport controls wear their names: first-time eyes should not have to
+ * guess what the heart does or what `42s` is counting down to. */
+.ew-theater-cell { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.ew-theater-clabel { font: 500 9px/1 "Azeret Mono", ui-monospace, monospace; letter-spacing: .14em; text-transform: uppercase; color: var(--ew-dust); }
+.ew-theater-cell.is-on .ew-theater-clabel { color: var(--ew-foil); }
 .ew-theater-queue { display: flex; flex-direction: column; margin-top: 16px; }
 .ew-theater-queue > .rp-eyebrow { color: var(--ew-dust); }
 .ew-theater-qrow { display: flex; align-items: baseline; justify-content: space-between; gap: 14px; min-height: 44px; border: 0; border-bottom: 1px solid var(--ew-rule); background: transparent; padding: 8px 0; text-align: left; color: var(--ew-bone); cursor: pointer; }

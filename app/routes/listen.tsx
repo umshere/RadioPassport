@@ -347,7 +347,7 @@ export default function ListeningPage() {
       <main className="ew-theater flex min-h-screen flex-col items-start justify-center">
         <p className="rp-eyebrow text-foil ew-arrive">{BRAND.eyebrow}</p>
         <h1 className="ew-coverline mt-4 ew-arrive ew-arrive-2">
-          The room is empty.
+          {empty.headline}
         </h1>
         <p className="rp-lede mt-4 ew-arrive ew-arrive-3">{empty.message}</p>
         <Link
@@ -356,7 +356,7 @@ export default function ListeningPage() {
           prefetch="intent"
           viewTransition
         >
-          <span className="ew-land-kicker">EW · Departure</span>
+          <span className="ew-land-kicker">{empty.kicker}</span>
           <span className="ew-land-city">{empty.label}</span>
         </Link>
       </main>
