@@ -72,6 +72,23 @@ export function titleCasePlaceName(value: string): string {
     .join("");
 }
 
+/**
+ * Radio-Browser favicons are often plain http, which dies as mixed content
+ * on an https page — and the first failure then poisons the session
+ * fail-cache, so the logo never renders even though the URL sits in the
+ * data. Prefer the same host over https: the art stays the station's own,
+ * only the scheme changes. Unverifiable there, the <img onError> chain
+ * still falls back to the monogram.
+ */
+export function preferSecureArtworkUrl(url?: string | null): string | null {
+  if (typeof url !== "string") return null;
+  const trimmed = url.trim();
+  if (/^http:\/\//i.test(trimmed)) {
+    return `https://${trimmed.slice("http://".length)}`;
+  }
+  return trimmed;
+}
+
 export function sanitizeArtworkUrl(url?: string | null): string | null {
   if (typeof url !== "string") return null;
   const trimmed = url.trim();

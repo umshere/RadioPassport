@@ -12,7 +12,10 @@ import type {
 } from "~/types/knowledge";
 import type { Station } from "~/types/radio";
 import { fieldSlug, lockSeed } from "~/components/radio-passport/theaterLock";
-import { sanitizeArtworkUrl } from "~/utils/stations";
+import {
+  preferSecureArtworkUrl,
+  sanitizeArtworkUrl,
+} from "~/utils/stations";
 
 /**
  * The Theater knowledge model — the pure core of the product correction
@@ -180,6 +183,13 @@ export function buildTheaterKnowledge(input: {
   expansions?: ExpandedNeighborhood[];
   /** Live ICY identity. Never invented — omit it when the station is quiet. */
   track?: { artist?: string | null; title?: string | null } | null;
+  /**
+   * Verified art only, keyed by namespaced node id — the dossier plate for
+   * the track/album, gated portraits for artists. A URL that fails
+   * sanitize is refused here, never rendered; nodes without art keep their
+   * monogram discs.
+   */
+  artwork?: Record<string, string>;
 }): KnowledgeGraph {
   const nodes: KnowledgeNode[] = [];
   const edges: KnowledgeEdge[] = [];
@@ -189,6 +199,15 @@ export function buildTheaterKnowledge(input: {
   const fileNode = (node: KnowledgeNode) => {
     if (!node.id || !node.label.trim()) return;
     if (indexOf.has(node.id)) return;
+    if (!node.imagery) {
+      const art = sanitizeArtworkUrl(input.artwork?.[node.id]);
+      if (art) {
+        node = {
+          ...node,
+          imagery: { type: "art", url: art, monogram: monogramOf(node.label) },
+        };
+      }
+    }
     indexOf.set(node.id, nodes.length);
     nodes.push(node);
   };
@@ -270,7 +289,7 @@ export function buildTheaterKnowledge(input: {
         provenance: "catalog",
         imagery: {
           type: "favicon",
-          url: sanitizeArtworkUrl(station.favicon),
+          url: sanitizeArtworkUrl(preferSecureArtworkUrl(station.favicon)),
           monogram: monogramOf(name),
         },
       });
@@ -468,7 +487,9 @@ export function toExpandedNeighborhood(
       kind === "station"
         ? {
             type: "favicon" as const,
-            url: sanitizeArtworkUrl(entry.favicon ?? null),
+            url: sanitizeArtworkUrl(
+              preferSecureArtworkUrl(entry.favicon ?? null),
+            ),
             monogram: monogramOf(entry.label),
           }
         : kind === "country" && entry.countryCode
@@ -673,6 +694,110 @@ export function wakeTheaterKnowledge(input: {
   }
 
   return { graph, seats: input.seats, awake, firing, visible, darkCount };
+}
+
+/**
+ * Depth lane of a knowledge node in tide water. The well holds the tuned
+ * station; the on-air track rides closest; land and tongue hubs hold the
+ * middle; everything else — neighbour stations, dossier branches, cited
+ * web — drifts outermost where it can be fanned without covering the room.
+ */
+export function tideLaneForKnowledge(
+  node: { id: string; kind: KnowledgeKind },
+  tunedId: string | null,
+): number {
+  if (node.kind === "station" && tunedId && node.id === tunedId) return 0;
+  if (node.kind === "track") return 1;
+  if (
+    node.kind === "country" ||
+    node.kind === "language" ||
+    node.kind === "city" ||
+    node.kind === "artist"
+  ) {
+    return 2;
+  }
+  return 3;
+}
+
+const TIDE_LANE_RADIUS = [0, 0.18, 0.3, 0.42] as const;
+const TIDE_Y_FLATTEN = 0.72;
+
+/**
+ * Tide seating — the A/B against seatTheaterKnowledge. Same pinning
+ * discipline (pinned seats win verbatim; jitter keyed by [seed, nodeId]),
+ * but the well is the tuned station and every other node takes a depth
+ * lane instead of a hop ring around the focus. The focus still highlights;
+ * it never drags the water.
+ */
+export function seatTheaterKnowledgeTide(input: {
+  graph: KnowledgeGraph;
+  seats: Map<string, KnowledgeSeat>;
+  focusId: string | null;
+  seed: number;
+  tunedId?: string | null;
+}): Map<string, KnowledgeSeat> {
+  const { graph } = input;
+  const tunedId =
+    input.tunedId && graph.nodes.some((node) => node.id === input.tunedId)
+      ? input.tunedId
+      : null;
+  const indexOf = new Map(graph.nodes.map((node, index) => [node.id, index]));
+  const seats = new Map<string, KnowledgeSeat>();
+  for (const [id, seat] of input.seats) {
+    if (!indexOf.has(id)) continue;
+    seats.set(id, { x: seat.x, y: seat.y });
+  }
+
+  const wellId =
+    tunedId ??
+    (input.focusId && indexOf.has(input.focusId) ? input.focusId : null) ??
+    graph.nodes.find((node) => node.kind === "country")?.id ??
+    graph.nodes[0]?.id ??
+    null;
+
+  const tooClose = (candidate: KnowledgeSeat) => {
+    for (const other of seats.values()) {
+      const dx = candidate.x - other.x;
+      const dy = candidate.y - other.y;
+      if (dx * dx + dy * dy < MIN_SEAT_GAP * MIN_SEAT_GAP) return true;
+    }
+    return false;
+  };
+
+  for (const node of graph.nodes) {
+    if (seats.has(node.id)) continue;
+    if (node.id === wellId) {
+      seats.set(node.id, { ...FOCUS_CENTRE });
+      continue;
+    }
+    const lane = tideLaneForKnowledge(node, tunedId);
+    const baseAngle = SECTOR_ANGLE[node.kind];
+    const rng = createRng(lockSeed([input.seed, "tide", node.id]));
+    let angle =
+      baseAngle + (rng() - 0.5) * SECTOR_JITTER + (rng() - 0.5) * SECTOR_WOBBLE;
+    const radius =
+      TIDE_LANE_RADIUS[lane]! * (0.92 + rng() * 0.16);
+    const polar = (theta: number, r: number): KnowledgeSeat => {
+      const x = 0.5 + Math.cos(theta) * r;
+      const y = 0.5 + Math.sin(theta) * r * TIDE_Y_FLATTEN;
+      return {
+        x: Math.min(SEAT_MAX, Math.max(SEAT_MIN, x)),
+        y: Math.min(SEAT_MAX, Math.max(SEAT_MIN, y)),
+      };
+    };
+    let seat = polar(angle, radius);
+    let guard = 0;
+    while (tooClose(seat) && guard < 36) {
+      angle += GOLDEN_ANGLE;
+      const extra = Math.floor(guard / 6) * 0.05;
+      seat = polar(angle, Math.min(0.48, radius + extra));
+      guard += 1;
+    }
+    seats.set(node.id, seat);
+  }
+
+  if (wellId) seats.set(wellId, { ...FOCUS_CENTRE });
+  return seats;
 }
 
 /**

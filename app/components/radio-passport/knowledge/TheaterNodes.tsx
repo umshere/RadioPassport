@@ -13,7 +13,7 @@
  * graph and its seats are decided above the renderer.
  */
 
-import { memo, useState } from "react";
+import { memo, useEffect, useState } from "react";
 import type { CSSProperties } from "react";
 import type {
   KnowledgeImagery,
@@ -21,6 +21,7 @@ import type {
   PositionedKnowledgeNode,
   TheaterNodesProps,
 } from "~/types/knowledge";
+import { markArtworkUrlFailed } from "~/utils/stations";
 
 /*
  * Class contract — the consumer's global stylesheet carries these
@@ -118,6 +119,10 @@ const KnodeImagery = memo(function KnodeImagery({
 }) {
   // Reset when the node's imagery changes seat-mate or source.
   const [broken, setBroken] = useState(false);
+  const sourceUrl = imagery.type === "flag" ? null : imagery.url;
+  useEffect(() => {
+    setBroken(false);
+  }, [sourceUrl]);
 
   let content: string | null = null;
   let src: string | null = null;
@@ -142,7 +147,12 @@ const KnodeImagery = memo(function KnodeImagery({
           loading="lazy"
           draggable={false}
           referrerPolicy="no-referrer"
-          onError={() => setBroken(true)}
+          onError={() => {
+            // Teach the session fail-cache: a dead logo hides app-wide
+            // instead of retrying on every mount.
+            if (src) markArtworkUrlFailed(src);
+            setBroken(true);
+          }}
         />
       ) : (
         content

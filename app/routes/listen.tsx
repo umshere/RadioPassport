@@ -10,9 +10,11 @@ import { TheaterField, TheaterWell } from "~/components/radio-passport/TheaterWe
 import {
   buildTheaterKnowledge,
   seatTheaterKnowledge,
+  seatTheaterKnowledgeTide,
   toExpandedNeighborhood,
   wakeTheaterKnowledge,
 } from "~/components/radio-passport/knowledge/theaterKnowledge";
+import type { TheaterFieldMode } from "~/components/radio-passport/theaterLock";
 import type {
   ExpandedNeighborhood,
   KnowledgeGraph,
@@ -120,6 +122,25 @@ export default function ListeningPage() {
   const [stationByUuid, setStationByUuid] = useState<Record<string, Station>>(
     () => ({}),
   );
+  // A/B: the orbit sky keeps its figure; the tide holds depth lanes in
+  // water. `?field=tide` shares the tide directly; the switch below flips it.
+  const [fieldMode, setFieldMode] = useState<TheaterFieldMode>(() =>
+    typeof window !== "undefined" &&
+    new URLSearchParams(window.location.search).get("field") === "tide"
+      ? "tide"
+      : "sky",
+  );
+  const switchFieldMode = useCallback((mode: TheaterFieldMode) => {
+    setFieldMode(mode);
+    try {
+      const url = new URL(window.location.href);
+      if (mode === "tide") url.searchParams.set("field", "tide");
+      else url.searchParams.delete("field");
+      window.history.replaceState(null, "", url);
+    } catch {
+      // Share-URL upgrade only — the switch itself already held.
+    }
+  }, []);
 
   useEffect(() => {
     setSelectedId(null);
@@ -133,7 +154,12 @@ export default function ListeningPage() {
     folioRef.current?.scrollTo({ top: 0 });
   }, [selectedId]);
 
-  const knowledgeGraph: KnowledgeGraph = useMemo(
+  // Verified node art, dressed in two passes: the bare graph names the
+  // track/album ids, then the dossier plate and gated portraits dress
+  // them. Addition-only ids keep every seat pinned across the rebuild.
+  const [nodeArt, setNodeArt] = useState<Record<string, string>>({});
+  const nodeArtSeenRef = useRef(new Set<string>());
+  const bareGraph: KnowledgeGraph = useMemo(
     () =>
       buildTheaterKnowledge({
         station: hydrated ? storedNowPlaying : null,
@@ -142,6 +168,28 @@ export default function ListeningPage() {
         track: room.signal.track,
       }),
     [expansions, hydrated, storedNowPlaying, intelligence.graph, room.signal.track],
+  );
+  const nodeArtwork = useMemo(() => {
+    const map: Record<string, string> = {};
+    const plate = intelligence.imageUrl;
+    if (plate) {
+      for (const node of bareGraph.nodes) {
+        if (node.kind === "track" || node.kind === "album") map[node.id] = plate;
+      }
+    }
+    for (const [id, url] of Object.entries(nodeArt)) map[id] = url;
+    return map;
+  }, [bareGraph, intelligence.imageUrl, nodeArt]);
+  const knowledgeGraph: KnowledgeGraph = useMemo(
+    () =>
+      buildTheaterKnowledge({
+        station: hydrated ? storedNowPlaying : null,
+        roomGraph: intelligence.graph,
+        expansions,
+        track: room.signal.track,
+        artwork: nodeArtwork,
+      }),
+    [expansions, hydrated, storedNowPlaying, intelligence.graph, room.signal.track, nodeArtwork],
   );
 
   const evidenceArrived = useMemo(
@@ -156,12 +204,24 @@ export default function ListeningPage() {
       awakeRef.current = new Set();
     }
     const cap = typeof window !== "undefined" && window.innerWidth < 720 ? 10 : 18;
-    const seats = seatTheaterKnowledge({
-      graph: knowledgeGraph,
-      seats: seatsRef.current,
-      focusId: selectedId,
-      seed: lockSeed([storedNowPlaying?.uuid ?? "elsewhere"]),
-    });
+    const seed = lockSeed([storedNowPlaying?.uuid ?? "elsewhere"]);
+    const seats =
+      fieldMode === "tide"
+        ? seatTheaterKnowledgeTide({
+            graph: knowledgeGraph,
+            seats: seatsRef.current,
+            focusId: selectedId,
+            seed,
+            tunedId: storedNowPlaying
+              ? `station:${storedNowPlaying.uuid}`
+              : null,
+          })
+        : seatTheaterKnowledge({
+            graph: knowledgeGraph,
+            seats: seatsRef.current,
+            focusId: selectedId,
+            seed,
+          });
     seatsRef.current = seats;
     const prevAwake = awakeRef.current;
     const model = wakeTheaterKnowledge({
@@ -182,6 +242,7 @@ export default function ListeningPage() {
     return { ...model, wakingIds };
   }, [
     evidenceArrived,
+    fieldMode,
     hydrated,
     intelligence.facts.length,
     intelligence.summary,
@@ -205,6 +266,70 @@ export default function ListeningPage() {
         ),
     [knowledge],
   );
+
+  // Gated artist portraits, one honest fetch each: the endpoint serves
+  // Wikipedia PageImages only, capped per room, never retried in-session.
+  // Only artist nodes wear imagery — typographic kinds (event, place)
+  // render label text, so fetching their faces would waste the call. A
+  // miss keeps the monogram disc.
+  useEffect(() => {
+    if (!hydrated) return;
+    const fresh = knowledge.visible
+      .map((id) => knowledge.graph.nodes.find((entry) => entry.id === id))
+      .filter(
+        (entry): entry is KnowledgeNode =>
+          Boolean(entry) &&
+          entry?.kind === "artist" &&
+          !nodeArt[entry?.id ?? ""] &&
+          !nodeArtSeenRef.current.has(entry?.id ?? ""),
+      )
+      .slice(0, 4);
+    if (fresh.length === 0) return;
+    let cancelled = false;
+    for (const node of fresh) nodeArtSeenRef.current.add(node.id);
+    void Promise.all(
+      fresh.map(async (node) => {
+        try {
+          const response = await fetch(
+            `/api/node-artwork?kind=artist&q=${encodeURIComponent(node.label)}`,
+          );
+          const payload = (await response.json()) as {
+            url?: unknown;
+          };
+          return [node.id, typeof payload?.url === "string" ? payload.url : null] as const;
+        } catch {
+          return [node.id, null] as const;
+        }
+      }),
+    ).then((rows) => {
+      if (cancelled) return;
+      setNodeArt((current) => {
+        const next = { ...current };
+        for (const [id, url] of rows) {
+          if (url) next[id] = url;
+        }
+        return next;
+      });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [hydrated, knowledge, nodeArt]);
+
+  // A tap names the node; on touch screens the folio detail (with Tune
+  // here) is below the fold, so bring it into view instead of stranding
+  // the tap. Desktop keeps its stillness — Tab already reaches the detail.
+  useEffect(() => {
+    if (!selectedId) return;
+    if (!window.matchMedia("(pointer: coarse)").matches) return;
+    const detail = document.querySelector(".ew-knode-detail");
+    if (!detail) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      detail.scrollIntoView({ block: "nearest" });
+      return;
+    }
+    detail.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }, [selectedId]);
 
   const handleNodeSelect = useCallback(
     (id: string) => {
@@ -373,6 +498,7 @@ export default function ListeningPage() {
             releases={releases}
             longitude={nowPlaying.longitude}
             graph={intelligence.graph}
+            fieldMode={fieldMode}
             focusId={room.signal.track?.title ?? null}
             knowledge={{
               nodes: knowledgeNodes,
@@ -414,6 +540,21 @@ export default function ListeningPage() {
             </p>
           ) : null}
           <UpNextRow />
+          <div className="ew-field-switch" role="group" aria-label="Field water">
+            <span className="ew-field-switch-kicker" aria-hidden="true">
+              field
+            </span>
+            {(["sky", "tide"] as const).map((mode) => (
+              <button
+                key={mode}
+                type="button"
+                aria-pressed={fieldMode === mode}
+                onClick={() => switchFieldMode(mode)}
+              >
+                {mode}
+              </button>
+            ))}
+          </div>
           <TheaterWell
             phase={phase}
             dispatchBody={intelligence.dispatchBody}

@@ -1,7 +1,11 @@
 import { useEffect, useState } from "react";
 import type { Station } from "~/types/radio";
 import { FlipBoard } from "~/components/radio-passport/FlipBoard";
-import { markArtworkUrlFailed, sanitizeArtworkUrl } from "~/utils/stations";
+import {
+  markArtworkUrlFailed,
+  preferSecureArtworkUrl,
+  sanitizeArtworkUrl,
+} from "~/utils/stations";
 
 function tidyPlace(value: string) {
   return value
@@ -65,7 +69,7 @@ function StationArt({
   active: boolean;
   onPlay: () => void;
 }) {
-  const artwork = sanitizeArtworkUrl(station.favicon);
+  const artwork = sanitizeArtworkUrl(preferSecureArtworkUrl(station.favicon));
   const [failed, setFailed] = useState(false);
   useEffect(() => {
     setFailed(false);

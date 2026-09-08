@@ -15,6 +15,7 @@ import {
 } from "./motionField";
 import {
   markArtworkUrlFailed,
+  preferSecureArtworkUrl,
   sanitizeArtworkUrl,
 } from "~/utils/stations";
 import type { TriviaGraph } from "~/types/trivia";
@@ -70,6 +71,7 @@ import {
   type FieldNode,
   type FieldPoint,
   type FieldRelease,
+  type TheaterFieldMode,
   type TheaterPhase,
 } from "./theaterLock";
 
@@ -159,9 +161,12 @@ function kindVar(kind: PositionedKnowledgeNode["kind"]): string {
 function OrbitMotion({
   knowledge,
   reduced,
+  fieldMode = "sky",
 }: {
   knowledge: TheaterKnowledgeLayer | null;
   reduced: boolean;
+  /** Tide water bows threads instead of wiring them straight. */
+  fieldMode?: TheaterFieldMode;
 }) {
   const layer = knowledge;
   const awakeEdges = useMemo(() => {
@@ -260,23 +265,38 @@ function OrbitMotion({
         const y1 = a.y * 236;
         const x2 = b.x * 390;
         const y2 = b.y * 236;
+        const bowed = fieldMode === "tide";
+        const [cx, cy] = bowed
+          ? arcControl(x1, y1, x2, y2, 0.14, index % 2 === 0)
+          : [0, 0];
+        const d = bowed
+          ? `M ${x1} ${y1} Q ${cx} ${cy} ${x2} ${y2}`
+          : `M ${x1} ${y1} L ${x2} ${y2}`;
         return (
           <g key={`${edge.from}>${edge.to}`}>
-            <line
-              x1={x1}
-              y1={y1}
-              x2={x2}
-              y2={y2}
-              className="ew-thread"
-              style={{ stroke: "var(--ew-foil)" }}
-            />
+            {bowed ? (
+              <path
+                d={d}
+                className="ew-thread"
+                style={{ stroke: "var(--ew-foil)" }}
+              />
+            ) : (
+              <line
+                x1={x1}
+                y1={y1}
+                x2={x2}
+                y2={y2}
+                className="ew-thread"
+                style={{ stroke: "var(--ew-foil)" }}
+              />
+            )}
             {!reduced && (
               <circle r="1.6" className="ew-thread-pulse">
                 <animateMotion
                   dur="2.8s"
                   begin={`${(-hash01(index * 11 + 3) * 2.8).toFixed(2)}s`}
                   repeatCount="indefinite"
-                  path={`M ${x1} ${y1} L ${x2} ${y2}`}
+                  path={d}
                 />
               </circle>
             )}
@@ -509,6 +529,7 @@ export function TheaterField({
   graph = EMPTY_GRAPH,
   focusId = null,
   knowledge,
+  fieldMode = "sky",
 }: {
   seed: number;
   phase: TheaterPhase;
@@ -517,6 +538,8 @@ export function TheaterField({
   graph?: TriviaGraph | null;
   focusId?: string | null;
   knowledge?: TheaterKnowledgeLayer;
+  /** A/B: "sky" keeps the orbit figure; "tide" seats depth lanes in water. */
+  fieldMode?: TheaterFieldMode;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const reduced = usePrefersReducedMotion();
@@ -1285,15 +1308,20 @@ export function TheaterField({
   }, [releases, phase, knowledge?.nodes.length, knowledge?.firing.length]);
 
   return (
-    <div className="ew-theater-field-wrap">
+    <div className="ew-theater-field-wrap" data-field-mode={fieldMode}>
       <canvas
         ref={canvasRef}
         className="ew-theater-field"
         data-phase={phase}
+        data-field-mode={fieldMode}
         data-nodes={String(releases.length)}
         aria-hidden="true"
       />
-      <OrbitMotion knowledge={knowledge ?? null} reduced={motionReduced} />
+      <OrbitMotion
+        knowledge={knowledge ?? null}
+        reduced={motionReduced}
+        fieldMode={fieldMode}
+      />
       {knowledge && knowledge.nodes.length ? (
         <TheaterNodes
           nodes={knowledge.nodes}
@@ -1431,7 +1459,8 @@ export function TheaterWell({
 }) {
   const aria = theaterWellAria(phase);
   const plate =
-    sanitizeArtworkUrl(imageUrl) ?? sanitizeArtworkUrl(artwork ?? null);
+    sanitizeArtworkUrl(imageUrl) ??
+    sanitizeArtworkUrl(preferSecureArtworkUrl(artwork ?? null));
   const [plateFailed, setPlateFailed] = useState(false);
   useEffect(() => {
     setPlateFailed(false);

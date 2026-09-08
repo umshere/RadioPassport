@@ -198,6 +198,10 @@ describe("evidence-grounded trivia route", () => {
   }
 
 
+  // Per-test image scenario: "rg-hit" serves release-group art,
+  // "archive-dry" forces the fallthrough to iTunes.
+  let imageScenario = "rg-hit";
+
   function mbResponses(url: string): Response | null {
     if (url.includes("/recording/?query=")) {
       return new Response(
@@ -214,7 +218,14 @@ describe("evidence-grounded trivia route", () => {
           title: "Love Made Me Tough",
           length: 241000,
           "first-release-date": "2007-03-09",
-          releases: [{ id: "rel-1", title: "Stay", date: "2007" }],
+          releases: [
+            {
+              id: "rel-1",
+              title: "Stay",
+              date: "2007",
+              "release-group": { id: "rg-1" },
+            },
+          ],
           "artist-credit": [
             { name: "Chris Coco", artist: { id: "artist-1", name: "Chris Coco" } },
           ],
@@ -233,6 +244,66 @@ describe("evidence-grounded trivia route", () => {
           area: { name: "United Kingdom" },
           country: "GB",
           tags: [{ name: "balearic" }],
+        }),
+        { status: 200, headers: { "content-type": "application/json" } },
+      );
+    }
+    // Image fixtures: the pressing has no cover of its own; the
+    // release-group does — unless the scenario says the Archive is dry.
+    if (url.includes("coverartarchive.org/release/rel-1/")) {
+      return new Response(JSON.stringify({ images: [] }), {
+        status: 404,
+        headers: { "content-type": "application/json" },
+      });
+    }
+    if (url.includes("coverartarchive.org/release-group/rg-1/")) {
+      if (imageScenario === "archive-dry") {
+        return new Response(JSON.stringify({ images: [] }), {
+          status: 404,
+          headers: { "content-type": "application/json" },
+        });
+      }
+      return new Response(JSON.stringify({ images: [{ id: 7 }] }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+    }
+    if (url.includes("itunes.apple.com/search")) {
+      return new Response(
+        JSON.stringify({
+          resultCount: 1,
+          results: [
+            {
+              trackName: "Love Made Me Tough",
+              artistName: "Chris Coco",
+              artworkUrl100:
+                "https://is1-ssl.mzstatic.com/image/thumb/x/100x100bb.jpg",
+            },
+          ],
+        }),
+        { status: 200, headers: { "content-type": "application/json" } },
+      );
+    }
+    if (url.includes("en.wikipedia.org/w/api.php")) {
+      if (url.includes("list=search")) {
+        return new Response(
+          JSON.stringify({ query: { search: [{ title: "Chris Coco" }] } }),
+          { status: 200, headers: { "content-type": "application/json" } },
+        );
+      }
+      return new Response(
+        JSON.stringify({
+          query: {
+            pages: {
+              7: {
+                title: "Chris Coco",
+                canonicalurl: "https://en.wikipedia.org/wiki/Chris_Coco",
+                thumbnail: {
+                  source: "https://upload.wikimedia.org/coco.jpg",
+                },
+              },
+            },
+          },
         }),
         { status: 200, headers: { "content-type": "application/json" } },
       );
@@ -260,6 +331,7 @@ describe("evidence-grounded trivia route", () => {
   }
 
   beforeEach(() => {
+      imageScenario = "rg-hit";
       Object.assign(process.env, originalEnv);
       process.env.MUSICBRAINZ_MIN_INTERVAL_MS = "0";
       process.env.AI_PROVIDER = "openai";
@@ -313,7 +385,47 @@ describe("evidence-grounded trivia route", () => {
       expect(calls.find((call: any) => call.includes("/recording/?query="))).toBeTruthy();
       expect(calls.find((call: any) => call.includes("/recording/rec-1?"))).toBeTruthy();
       expect(calls.find((call: any) => call.includes("/artist/artist-1?"))).toBeTruthy();
-      expect(fetchMock.mock.calls).toHaveLength(3);
+      // The pressing has no cover; the verified release-group front serves
+      // the plate and iTunes never gets its turn.
+      expect(payload.trivia.imageUrl).toBe(
+        "https://coverartarchive.org/release-group/rg-1/front-250",
+      );
+      const imageCalls = fetchMock.mock.calls
+        .map((call: any) => String(call[0]))
+        .filter(
+          (url: string) =>
+            url.includes("coverartarchive.org") ||
+            url.includes("itunes.apple.com"),
+        );
+      expect(imageCalls).toEqual([
+        "https://coverartarchive.org/release/rel-1/",
+        "https://coverartarchive.org/release-group/rg-1/",
+      ]);
+      // The Wiki pill lands on the resolved article, never a search page.
+      const wiki = payload.trivia.links.find(
+        (link: { label: string }) => link.label === "Wiki",
+      );
+      expect(wiki?.url).toBe("https://en.wikipedia.org/wiki/Chris_Coco");
+      expect(fetchMock.mock.calls).toHaveLength(7);
+    });
+
+    it("falls through a dry Archive to a name-matched iTunes cover", async () => {
+      imageScenario = "archive-dry";
+      const route = await importRoute();
+      const response = await route.loader({
+        request: freeRequest(),
+        context: {},
+        params: {},
+      });
+      expect(response.status).toBe(200);
+      const payload = await readBody(response);
+      expect(payload.status).toBe("ok");
+      expect(payload.trivia.imageUrl).toBe(
+        "https://is1-ssl.mzstatic.com/image/thumb/x/600x600bb.jpg",
+      );
+      const urls = fetchMock.mock.calls.map((call: any) => String(call[0]));
+      expect(urls.filter((url: string) => url.includes("coverartarchive.org"))).toHaveLength(2);
+      expect(urls.find((url: string) => url.includes("itunes.apple.com"))).toBeTruthy();
     });
 
     it("joins concurrent lookups into one shared resolution", async () => {
@@ -361,6 +473,59 @@ describe("evidence-grounded trivia route", () => {
       expect(second.status).toBe(200);
       expect((await readBody(second)).status).toBe("empty");
       expect(musicBrainzCalls()).toHaveLength(1);
+    });
+
+    it("serves a minimal plate when only a verified cover exists", async () => {
+      fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+        const url =
+          typeof input === "string"
+            ? input
+            : input instanceof URL
+              ? input.toString()
+              : input.url;
+        if (url.includes("/recording/?query=")) {
+          return new Response(JSON.stringify({ recordings: [] }), {
+            status: 200,
+            headers: { "content-type": "application/json" },
+          });
+        }
+        if (url.includes("itunes.apple.com/search")) {
+          return new Response(
+            JSON.stringify({
+              resultCount: 1,
+              results: [
+                {
+                  trackName: "Aakhri Ishq",
+                  artistName: "Shashwat Sachdev, Jubin Nautiyal & Irshad Kamil",
+                  artworkUrl100:
+                    "https://is1-ssl.mzstatic.com/image/thumb/x/100x100bb.jpg",
+                },
+              ],
+            }),
+            { status: 200, headers: { "content-type": "application/json" } },
+          );
+        }
+        throw new Error(`Unexpected fetch request: ${url}`);
+      });
+      global.fetch = fetchMock as unknown as typeof fetch;
+
+      const route = await importRoute();
+      const response = await route.loader({
+        request: freeRequest(
+          "Aakhri Ishq (From Dhurandhar The Revenge)",
+          "Shashwat Sachdev, Jubin Nautiyal and Irshad Kamil",
+        ),
+        context: {},
+        params: {},
+      });
+      const payload = await readBody(response);
+      // No recording, no claims, no graph — but the verified cover serves.
+      expect(payload.status).toBe("ok");
+      expect(payload.trivia.imageUrl).toBe(
+        "https://is1-ssl.mzstatic.com/image/thumb/x/600x600bb.jpg",
+      );
+      expect(payload.trivia.graph.nodes).toEqual([]);
+      expect(payload.trivia.facts).toEqual([]);
     });
 
     it("paces outbound MusicBrainz calls through the queue", async () => {

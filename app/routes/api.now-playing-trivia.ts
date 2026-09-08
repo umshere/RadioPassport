@@ -7,7 +7,11 @@ import type {
   TriviaGraphNode,
 } from "~/types/trivia";
 import { EMPTY_GRAPH } from "~/types/trivia";
-import { resolveTrackImage } from "~/utils/imageSearch";
+import {
+  fetchWikipediaArticle,
+  resolveCoverArt,
+  resolveTrackImage,
+} from "~/utils/imageSearch";
 import { getOpenRouterTriviaModelRotation } from "~/services/ai/providers/openRouterModels";
 import { parseJsonObjectFromText } from "~/services/ai/providers/providerUtils";
 import {
@@ -149,6 +153,28 @@ function buildSearchQuery(title?: string | null, artist?: string | null) {
   const safeTitle = title ? cleanSearchTerm(title) : "";
   const safeArtist = artist ? cleanSearchTerm(artist) : "";
   return `${safeArtist} ${safeTitle}`.trim();
+}
+
+/**
+ * The Wiki pill lands on a real article: the artist's page first, then the
+ * title's. A song query rarely names an article; a name usually does.
+ * Unresolved, the pill does not ship.
+ */
+async function resolveWikiArticle(
+  title?: string | null,
+  artist?: string | null,
+): Promise<{ title: string; url: string } | null> {
+  const safeArtist = artist ? cleanSearchTerm(artist) : "";
+  if (safeArtist) {
+    const article = await fetchWikipediaArticle(safeArtist);
+    if (article) return article;
+  }
+  const safeTitle = title ? cleanSearchTerm(title) : "";
+  if (safeTitle) {
+    const article = await fetchWikipediaArticle(safeTitle);
+    if (article) return article;
+  }
+  return null;
 }
 
 function normalizeTriviaPayload(
@@ -577,7 +603,12 @@ async function fetchMusicBrainzEnrichment(
       title?: string;
       length?: number;
       "first-release-date"?: string;
-      releases?: Array<{ id?: string; title?: string; date?: string }>;
+      releases?: Array<{
+        id?: string;
+        title?: string;
+        date?: string;
+        "release-group"?: { id?: string };
+      }>;
       "artist-credit"?: Array<{
         name?: string;
         artist?: { id?: string; name?: string };
@@ -594,11 +625,10 @@ async function fetchMusicBrainzEnrichment(
           fallbackQuery,
         )}`
       : null;
-    const fallbackWikipediaUrl = fallbackQuery
-      ? `https://en.wikipedia.org/wiki/Special:Search?search=${encodeURIComponent(
-          fallbackQuery,
-        )}`
-      : null;
+    // A Wiki pill lands on a real article or it does not ship — a search
+    // page dressed as a destination is what felt "not correct".
+    const fallbackWiki = await resolveWikiArticle(title ?? "", artist ?? "");
+    const fallbackWikipediaUrl = fallbackWiki?.url ?? null;
     return {
       ...EMPTY_ENRICHMENT,
       links: [
@@ -624,7 +654,12 @@ async function fetchMusicBrainzEnrichment(
         title?: string;
         length?: number;
         "first-release-date"?: string;
-        releases?: Array<{ id?: string; title?: string; date?: string }>;
+        releases?: Array<{
+          id?: string;
+          title?: string;
+          date?: string;
+          "release-group"?: { id?: string };
+        }>;
         "artist-credit"?: Array<{
           name?: string;
           artist?: { id?: string; name?: string };
@@ -636,7 +671,7 @@ async function fetchMusicBrainzEnrichment(
           work?: { title?: string };
         }>;
       }>(
-        `${MUSICBRAINZ_BASE}/recording/${recordingId}?fmt=json&inc=artists+releases+tags+artist-rels+work-rels`,
+        `${MUSICBRAINZ_BASE}/recording/${recordingId}?fmt=json&inc=artists+releases+release-groups+tags+artist-rels+work-rels`,
       )
     : null;
   if (detailed) {
@@ -701,11 +736,11 @@ async function fetchMusicBrainzEnrichment(
         searchQuery,
       )}`
     : null;
-  const wikipediaUrl = searchQuery
-    ? `https://en.wikipedia.org/wiki/Special:Search?search=${encodeURIComponent(
-        searchQuery,
-      )}`
-    : null;
+  const wikiArticle = await resolveWikiArticle(
+    recording.title ?? title ?? "",
+    artistName,
+  );
+  const wikipediaUrl = wikiArticle?.url ?? null;
 
   const links = [
     youtubeUrl
@@ -741,9 +776,11 @@ async function fetchMusicBrainzEnrichment(
       : null,
   ].filter(Boolean) as TrackTrivia["links"];
 
-  let imageUrl = releaseId
-    ? `https://coverartarchive.org/release/${releaseId}/front-250`
-    : null;
+  // Verify before serving: a guessed front-250 that 404s hides the plate
+  // and blocks every fallback. iTunes always gets its turn after the
+  // Archive — a verified miss there is not the end of the search.
+  const releaseGroupId = release?.["release-group"]?.id ?? null;
+  let imageUrl = await resolveCoverArt({ releaseId, releaseGroupId });
   if (!imageUrl) {
     imageUrl = await resolveTrackImage(
       recording.title ?? title ?? "",
@@ -1041,7 +1078,10 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
   if (source === "free") {
     const enrichment = await getMusicBrainzEnrichment(title, artist);
-    if (!enrichment.recordingId) {
+    // A verified image without a MusicBrainz recording still serves a
+    // minimal honest plate — cover plus search doors, no claims, no graph.
+    // Nothing verified at all stays honestly empty.
+    if (!enrichment.recordingId && !enrichment.imageUrl) {
       const response: TrackTriviaResponse = {
         status: "empty",
         reason: "No free trivia found for this track yet.",

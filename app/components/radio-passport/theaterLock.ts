@@ -1675,3 +1675,15 @@ export function fieldShootingStar(
 }
 
 export { EMPTY_GRAPH };
+
+/* ── Tide field (A/B against the sky) ────────────────────────────────────
+ * The sky pins knowledge to hop rings around the focus. The tide seats the
+ * same graph in depth lanes around a still well instead — the tuned
+ * station rests at the centre (the SVG halo marks it), the on-air track
+ * rides closest, hubs hold the middle water, everything else drifts
+ * outermost. Arrival glides on a viscous CSS ease; threads bow like dye in
+ * a current instead of running as straight wires. Lane math lives beside
+ * the seating it serves (theaterKnowledge); this is only the mode flag.
+ */
+
+export type TheaterFieldMode = "sky" | "tide";
