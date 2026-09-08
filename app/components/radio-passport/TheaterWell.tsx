@@ -9,6 +9,7 @@ import {
 import { safeExternalUrl } from "./stationInsights";
 import { grainPath } from "./halftone";
 import {
+  arcControl,
   boneDaylight,
   hash01,
 } from "./motionField";
@@ -133,15 +134,6 @@ const MERIDIANS = [
 ] as const;
 
 /** An orbit meridian as one SVG path — two cubic spans, same geometry. */
-function meridianPath(segs: readonly (readonly (readonly number[])[])[]): string {
-  type Pt = [number, number];
-  const pair = segs as unknown as [[Pt, Pt, Pt, Pt], [Pt, Pt, Pt, Pt]];
-  const [p0, p1, p2, p3] = pair[0]!;
-  const [, q1, q2, q3] = pair[1]!;
-  const pt = (p: Pt) => `${p[0]} ${p[1]}`;
-  return `M ${pt(p0)} C ${pt(p1)} ${pt(p2)} ${pt(p3)} C ${pt(q1)} ${pt(q2)} ${pt(q3)}`;
-}
-
 /** Mirror of knowledgeTint for SVG: brand ink per node kind. */
 function kindVar(kind: PositionedKnowledgeNode["kind"]): string {
   if (
@@ -189,6 +181,40 @@ function OrbitMotion({
     if (!layer || !layer.awakeIds.size) return [];
     return layer.nodes.filter((node) => layer.awakeIds.has(node.id)).slice(0, 18);
   }, [layer]);
+  // Journey arcs: every awake station draws a curved path home to the tuned
+  // station — the music is the center, stations journey around it. Real
+  // paths, not decoration: each arc ends at a station you can tune.
+  const journeys = useMemo(() => {
+    if (!layer || !layer.awakeIds.size) return [];
+    const tuned = layer.nodes.find(
+      (node) => node.id === layer.tunedId && layer.awakeIds.has(node.id),
+    );
+    const core = tuned ?? null;
+    if (!core) return [];
+    return layer.nodes
+      .filter(
+        (node) =>
+          node.kind === "station" &&
+          node.id !== core.id &&
+          layer.awakeIds.has(node.id),
+      )
+      .slice(0, 9)
+      .map((node, index) => {
+        const x0 = core.x * 390;
+        const y0 = core.y * 236;
+        const x1 = node.x * 390;
+        const y1 = node.y * 236;
+        const [cx, cy] = arcControl(x0, y0, x1, y1, 0.22, index % 2 === 0);
+        return { node, d: `M ${x0} ${y0} Q ${cx} ${cy} ${x1} ${y1}`, index };
+      });
+  }, [layer]);
+  const tunedSeat = useMemo(() => {
+    if (!layer || !layer.tunedId) return null;
+    const tuned = layer.nodes.find(
+      (node) => node.id === layer.tunedId && layer.awakeIds.has(node.id),
+    );
+    return tuned ? { x: tuned.x * 390, y: tuned.y * 236 } : null;
+  }, [layer]);
   return (
     <svg
       className="ew-orbit"
@@ -196,41 +222,39 @@ function OrbitMotion({
       preserveAspectRatio="none"
       aria-hidden="true"
     >
-      {MERIDIANS.map((meridian, meridianIndex) => {
-        const d = meridianPath(meridian.segs);
-        return <path key={`base-${meridianIndex}`} d={d} className="ew-flow-base" style={{ stroke: "var(--ew-foil)" }} />;
-      })}
-      {!reduced &&
-        MERIDIANS.map((meridian, meridianIndex) => {
-          const d = meridianPath(meridian.segs);
-          return (
-            <path
-              key={`dots-${meridianIndex}`}
-              d={d}
-              className="ew-flow-dots"
-              style={{
-                stroke: meridianIndex % 2 === 0 ? "var(--ew-ether)" : "var(--ew-foil)",
-                animationDuration: `${6 + meridianIndex * 2.4}s`,
-                animationDirection: meridianIndex % 2 === 0 ? undefined : "reverse",
-              }}
-            />
-          );
-        })}
-      {!reduced &&
-        MERIDIANS.map((meridian, meridianIndex) => {
-          const d = meridianPath(meridian.segs);
-          return (
-            <g key={`comet-${meridianIndex}`}>
+      {tunedSeat && (
+        <g>
+          <circle
+            cx={tunedSeat.x}
+            cy={tunedSeat.y}
+            r="11"
+            className="ew-tuned-halo"
+          />
+          <circle
+            cx={tunedSeat.x}
+            cy={tunedSeat.y}
+            r="7"
+            className="ew-tuned-ring"
+          />
+        </g>
+      )}
+      <circle cx="195" cy="118" r="100" className="ew-tick" />
+      <circle cx="195" cy="118" r="70" className="ew-orbit-ring" />
+      {journeys.map(({ node, d, index }) => (
+        <g key={`journey-${node.id}`}>
+          <path d={d} className="ew-journey" />
+          {!reduced && (
+            <circle r="1.4" className="ew-journey-pulse">
               <animateMotion
-                dur={`${13 + meridianIndex * 4}s`}
+                dur={`${(3.2 + (index % 3) * 0.9).toFixed(1)}s`}
+                begin={`${(-hash01(index * 17 + 5) * 3.2).toFixed(2)}s`}
                 repeatCount="indefinite"
                 path={d}
               />
-              <circle r="5.5" className="ew-comet-halo" />
-              <circle r="2.4" className="ew-comet" />
-            </g>
-          );
-        })}
+            </circle>
+          )}
+        </g>
+      ))}
       {awakeEdges.map(({ edge, a, b, index }) => {
         const x1 = a.x * 390;
         const y1 = a.y * 236;
@@ -269,7 +293,7 @@ function OrbitMotion({
             <circle
               cx={px}
               cy={py}
-              r={focused ? 12 : 8}
+              r={focused ? 9 : 6.5}
               className={reduced ? "ew-star-glow" : "ew-star-twinkle"}
               style={{
                 fill: tint,
@@ -283,7 +307,7 @@ function OrbitMotion({
             <circle
               cx={px}
               cy={py}
-              r={focused ? 4.2 : 2.4}
+              r={focused ? 3.4 : 2}
               className="ew-star-core"
               style={{ fill: tint }}
             />
