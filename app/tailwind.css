@@ -1963,6 +1963,13 @@ html, body {
 /* Own compositing layer: mobile Safari has dropped this fixed band's paint
    (while keeping its hit-testing) whenever a neighboring fixed surface —
    the dock's old backdrop blur — pulled it through the wrong path. */
+/* The veil ends where the phone band begins: a full-screen fixed scroll
+   layer beside the fixed band drops the band's paint on real iPhone GPUs —
+   the taps land, the pixels don't, and Room (no veil) repaints on arrival.
+   Ending the veil above the band leaves the band compositing against the
+   page, the same condition Room paints under. Passport and country drill
+   down ride the same veil, so they keep their chrome too. */
+.rp-overlay { bottom: calc(44px + env(safe-area-inset-bottom, 0px)); }
 .ew-band-nav-slot { display: grid; place-items: center; min-height: 44px; border: 0; background: transparent; padding: 0; color: var(--ew-dust); font: 500 9px/1 "Azeret Mono", monospace; letter-spacing: .16em; text-transform: uppercase; text-decoration: none; cursor: pointer; }
 .ew-band-nav-slot.is-current { color: var(--ew-foil); box-shadow: inset 0 -1px 0 var(--ew-foil); }
 .ew-band-nav-slot.is-disabled { color: rgba(154,143,128,.4); cursor: default; pointer-events: none; }
