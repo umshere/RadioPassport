@@ -71,7 +71,6 @@ import {
   type FieldNode,
   type FieldPoint,
   type FieldRelease,
-  type TheaterFieldMode,
   type TheaterPhase,
 } from "./theaterLock";
 
@@ -175,12 +174,9 @@ function kindVar(kind: PositionedKnowledgeNode["kind"]): string {
 function OrbitMotion({
   knowledge,
   reduced,
-  fieldMode = "sky",
 }: {
   knowledge: TheaterKnowledgeLayer | null;
   reduced: boolean;
-  /** Tide water bows threads instead of wiring them straight. */
-  fieldMode?: TheaterFieldMode;
 }) {
   const layer = knowledge;
   const awakeEdges = useMemo(() => {
@@ -257,22 +253,18 @@ function OrbitMotion({
           />
         </g>
       )}
-      <circle cx="195" cy="118" r="100" className="ew-tick" />
-      <circle cx="195" cy="118" r="70" className="ew-orbit-ring" />
-      {fieldMode === "tide" && (
-        <g className="ew-tide-lanes" aria-hidden="true">
-          {TIDE_LANE_LINES.map(({ y, x1, x2 }) => (
-            <line
-              key={y}
-              x1={x1}
-              x2={x2}
-              y1={y}
-              y2={y}
-              className="ew-tide-lane"
-            />
-          ))}
-        </g>
-      )}
+      <g className="ew-tide-lanes" aria-hidden="true">
+        {TIDE_LANE_LINES.map(({ y, x1, x2 }) => (
+          <line
+            key={y}
+            x1={x1}
+            x2={x2}
+            y1={y}
+            y2={y}
+            className="ew-tide-lane"
+          />
+        ))}
+      </g>
       {journeys.map(({ node, d, index }) => (
         <g key={`journey-${node.id}`}>
           <path d={d} className="ew-journey" />
@@ -293,31 +285,16 @@ function OrbitMotion({
         const y1 = a.y * 236;
         const x2 = b.x * 390;
         const y2 = b.y * 236;
-        const bowed = fieldMode === "tide";
-        const [cx, cy] = bowed
-          ? arcControl(x1, y1, x2, y2, 0.14, index % 2 === 0)
-          : [0, 0];
-        const d = bowed
-          ? `M ${x1} ${y1} Q ${cx} ${cy} ${x2} ${y2}`
-          : `M ${x1} ${y1} L ${x2} ${y2}`;
+        // Water bows every thread — no straight wiring in the tide.
+        const [cx, cy] = arcControl(x1, y1, x2, y2, 0.14, index % 2 === 0);
+        const d = `M ${x1} ${y1} Q ${cx} ${cy} ${x2} ${y2}`;
         return (
           <g key={`${edge.from}>${edge.to}`}>
-            {bowed ? (
-              <path
-                d={d}
-                className="ew-thread"
-                style={{ stroke: "var(--ew-foil)" }}
-              />
-            ) : (
-              <line
-                x1={x1}
-                y1={y1}
-                x2={x2}
-                y2={y2}
-                className="ew-thread"
-                style={{ stroke: "var(--ew-foil)" }}
-              />
-            )}
+            <path
+              d={d}
+              className="ew-thread"
+              style={{ stroke: "var(--ew-foil)" }}
+            />
             {!reduced && (
               <circle r="1.6" className="ew-thread-pulse">
                 <animateMotion
@@ -557,7 +534,6 @@ export function TheaterField({
   graph = EMPTY_GRAPH,
   focusId = null,
   knowledge,
-  fieldMode = "sky",
 }: {
   seed: number;
   phase: TheaterPhase;
@@ -566,8 +542,6 @@ export function TheaterField({
   graph?: TriviaGraph | null;
   focusId?: string | null;
   knowledge?: TheaterKnowledgeLayer;
-  /** A/B: "sky" keeps the orbit figure; "tide" seats depth lanes in water. */
-  fieldMode?: TheaterFieldMode;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const reduced = usePrefersReducedMotion();
@@ -1336,19 +1310,17 @@ export function TheaterField({
   }, [releases, phase, knowledge?.nodes.length, knowledge?.firing.length]);
 
   return (
-    <div className="ew-theater-field-wrap" data-field-mode={fieldMode}>
+    <div className="ew-theater-field-wrap">
       <canvas
         ref={canvasRef}
         className="ew-theater-field"
         data-phase={phase}
-        data-field-mode={fieldMode}
         data-nodes={String(releases.length)}
         aria-hidden="true"
       />
       <OrbitMotion
         knowledge={knowledge ?? null}
         reduced={motionReduced}
-        fieldMode={fieldMode}
       />
       {knowledge && knowledge.nodes.length ? (
         <TheaterNodes

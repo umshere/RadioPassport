@@ -1662,7 +1662,7 @@
   @media (prefers-reduced-motion: reduce) {
     .rp-live-dot, .rp-eq i, .rp-toast, .ew-theater-well.is-filed .ew-caption, .ew-theater-well.is-filed .ew-cover-row, .ew-theater-well.is-filed .ew-journey li, .ew-theater-well.is-filed .ew-meridians { animation: none; }
     .ew-page, .ew-arrive, .ew-cover-rule, .rp-overlay, .rp-overlay-inner, .ew-passage-bar i { animation: none; }
-    .ew-star-twinkle, .ew-tick { animation: none; }
+    .ew-star-twinkle { animation: none; }
     .rp-chip, .rp-station, .rp-dock-play { transition: none; }
     .rp-dock-play::before { animation: none; }
     .ew-land, .ew-atlas::after, .ew-theater-back::after { transition: none; }
@@ -2070,14 +2070,11 @@ html, body {
 .ew-journey-pulse { fill: var(--ew-bone); opacity: 0.7; }
 .ew-tuned-ring { fill: none; stroke: var(--ew-lacquer); stroke-width: 1.1; opacity: 0.75; }
 .ew-tuned-halo { fill: var(--ew-lacquer); opacity: 0.08; }
-.ew-tick { fill: none; stroke: var(--ew-foil); stroke-width: 1; stroke-dasharray: 1 5; opacity: 0.28; transform-box: fill-box; transform-origin: center; animation: ew-spin-slow 140s linear infinite; }
-.ew-orbit-ring { fill: none; stroke: var(--ew-ether); stroke-width: 1; stroke-dasharray: 0.1 4; stroke-linecap: round; opacity: 0.3; }
 .ew-thread { stroke-width: 0.8; opacity: 0.34; }
 .ew-thread-pulse { fill: var(--ew-bone); opacity: 0.75; }
 .ew-star-glow { opacity: 0.3; }
 .ew-star-twinkle { opacity: 0.3; animation: ew-star-twinkle 4s ease-in-out infinite; }
 .ew-star-core { opacity: 0.9; }
-@keyframes ew-spin-slow { to { transform: rotate(360deg); } }
 @keyframes ew-star-twinkle { 0%, 100% { opacity: 0.18; } 50% { opacity: 0.42; } }
 .ew-knode-layer { position: absolute; inset: 0; pointer-events: none; z-index: 2; }
 .ew-knode { pointer-events: auto; position: absolute; display: flex; align-items: center; gap: 6px; min-width: 28px; min-height: 28px; padding: 3px 8px 3px 4px; border: 0; background: color-mix(in srgb, var(--ew-ink) 78%, transparent); border-radius: 999px; cursor: pointer; color: var(--ew-bone); font: 500 11px/1.2 "Azeret Mono", ui-monospace, monospace; letter-spacing: 0.08em; z-index: 1; }
@@ -2107,22 +2104,20 @@ html, body {
 @keyframes ew-knode-wake { from { opacity: 0; } to { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .ew-knode[data-motion="wake"] { animation: none; } }
 /* Tide water — roomier taps; seat changes glide like a body in water. */
-.ew-theater-field-wrap[data-field-mode="tide"] .ew-knode { min-width: 44px; min-height: 44px; transition: left 0.9s cubic-bezier(0.22, 1, 0.36, 1), top 0.9s cubic-bezier(0.22, 1, 0.36, 1); }
-@media (prefers-reduced-motion: reduce) { .ew-theater-field-wrap[data-field-mode="tide"] .ew-knode { transition: none; } }
-/* Tide water reads as water: the orbit furniture (tick, hop rings) stands
-   down, six still depth lanes hold the seating instead, and a cool wash
-   settles over the canvas and threads — above the living layer, below the
-   knode buttons, so the stars stay crisp. Sky keeps everything. */
-.ew-theater-field-wrap[data-field-mode="tide"] .ew-tick,
-.ew-theater-field-wrap[data-field-mode="tide"] .ew-orbit-ring { display: none; }
-.ew-theater-field-wrap[data-field-mode="tide"]::after { content: ""; position: absolute; inset: 0; z-index: 1; pointer-events: none; background: linear-gradient(180deg, transparent 28%, color-mix(in srgb, var(--ew-ether) 7%, transparent) 72%, color-mix(in srgb, var(--ew-ether) 13%, transparent)); }
+.ew-theater-field-wrap .ew-knode { min-width: 44px; min-height: 44px; transition: left 0.9s cubic-bezier(0.22, 1, 0.36, 1), top 0.9s cubic-bezier(0.22, 1, 0.36, 1); }
+@media (prefers-reduced-motion: reduce) { .ew-theater-field-wrap .ew-knode { transition: none; } }
+/* The water reads as water: six still depth lanes hold the seating, and a
+   cool wash settles over the canvas and threads — above the living layer,
+   below the knode buttons, so the stars stay crisp. */
+.ew-theater-field-wrap::after { content: ""; position: absolute; inset: 0; z-index: 1; pointer-events: none; background: linear-gradient(180deg, transparent 28%, color-mix(in srgb, var(--ew-ether) 7%, transparent) 72%, color-mix(in srgb, var(--ew-ether) 13%, transparent)); }
 .ew-tide-lane { stroke: var(--ew-ether); stroke-width: 0.6; opacity: 0.16; }
-/* Field A/B switch — quiet folio control beside the trail. */
-.ew-field-switch { display: flex; align-items: center; gap: 8px; margin: 10px 0 2px; }
-.ew-field-switch-kicker { color: var(--ew-dust); font: 500 10px/1 "Azeret Mono", monospace; letter-spacing: 0.18em; text-transform: uppercase; }
-.ew-field-switch button { border: 1px solid var(--ew-rule); background: none; border-radius: 999px; padding: 4px 12px; cursor: pointer; color: var(--ew-dust); font: 500 11px/1.4 "Azeret Mono", monospace; letter-spacing: 0.1em; text-transform: uppercase; }
-.ew-field-switch button:hover { color: var(--ew-foil); border-color: var(--ew-foil); }
-.ew-field-switch button[aria-pressed="true"] { color: var(--ew-foil); border-color: var(--ew-foil); }
+/* Hubs and stars wear different clothes: a country is a flag medallion —
+   no kind dot, the flag large — while a station keeps the favicon pill
+   with its dot. Land first, then the stations it opens onto. */
+.ew-knode[data-kind="country"] { padding: 4px 14px 4px 5px; }
+.ew-knode[data-kind="country"] .ew-knode-mark { display: none; }
+.ew-knode[data-kind="country"] .ew-knode-imagery { display: grid; place-items: center; width: 26px; height: 26px; font-size: 16px; }
+.ew-knode[data-kind="station"] .ew-knode-imagery { width: 16px; height: 16px; font-size: 11px; }
 .ew-letter-phone { display: none; }
 .ew-plate-caption { display: none; }
 .ew-theater-desk, .ew-theater-star { display: grid; grid-template-rows: 1fr; min-height: 0; }

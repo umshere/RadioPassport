@@ -118,14 +118,16 @@ export type TheaterKnowledgeModel = {
  *     cited web neighbours. `firing` carries edges whose far end woke in
  *     THIS call (empty when nothing new).
  *
- * seatTheaterKnowledge(input: {
+ * seatTheaterKnowledgeTide(input: {
  *   graph: KnowledgeGraph;
  *   seats: Map<string, KnowledgeSeat>;
  *   focusId: string | null;
  *   seed: number;
+ *   tunedId?: string | null;
  * }): Map<string, KnowledgeSeat>
- *   — focus-centred deterministic seats, pinned verbatim once assigned;
- *     newcomers take free kind-sector slots around their anchor.
+ *   — tide deterministic seats: the tuned station holds the well, every
+ *     other node takes a depth lane; pinned seats win verbatim, newcomers
+ *     take free lane seats around their anchor.
  */
 
 /** The DOM layer's node shape: knowledge node + its seat. */

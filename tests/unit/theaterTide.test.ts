@@ -1,11 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
   buildTheaterKnowledge,
-  seatTheaterKnowledge,
+  revealedTideStationIds,
   seatTheaterKnowledgeTide,
   tideLaneForKnowledge,
 } from "~/components/radio-passport/knowledge/theaterKnowledge";
 import type { Station } from "~/types/radio";
+import type { ExpandedNeighborhood } from "~/types/knowledge";
 
 function makeStation(): Station {
   return {
@@ -70,7 +71,7 @@ describe("tide knowledge seating", () => {
     }
   });
 
-  it("is deterministic and pins seats across growth and mode flips", () => {
+  it("is deterministic and pins seats across growth", () => {
     const graph = buildTheaterKnowledge({ station: makeStation() });
     const first = seatTheaterKnowledgeTide({
       graph,
@@ -88,25 +89,62 @@ describe("tide knowledge seating", () => {
     });
     expect([...first.entries()]).toEqual([...replay.entries()]);
 
-    // The sky's seats are honored verbatim — flipping the A/B only lifts
-    // the tuned station into the well; nothing else already afloat moves.
-    const sky = seatTheaterKnowledge({
+    // Already-afloat seats are honored verbatim — arriving knowledge lifts
+    // nothing that holds still.
+    const grown = seatTheaterKnowledgeTide({
       graph,
-      seats: new Map(),
-      focusId: null,
-      seed: 7,
-    });
-    const tide = seatTheaterKnowledgeTide({
-      graph,
-      seats: sky,
+      seats: first,
       focusId: null,
       seed: 7,
       tunedId: "station:st-1",
     });
-    expect(tide.get("station:st-1")).toEqual({ x: 0.5, y: 0.5 });
-    for (const [id, seat] of sky) {
-      if (id === "station:st-1") continue;
-      expect(tide.get(id)).toEqual(seat);
-    }
+    expect([...grown.entries()]).toEqual([...first.entries()]);
+  });
+
+  it("opens sibling stations only from the selected hub", () => {
+    const expansions: ExpandedNeighborhood[] = [
+      {
+        focusId: "country:IN",
+        nodes: [
+          {
+            id: "station:aaa",
+            kind: "station",
+            label: "Radio Dawn",
+            provenance: "catalog",
+          },
+          {
+            id: "language:hi",
+            kind: "language",
+            label: "Hindi",
+            provenance: "catalog",
+          },
+        ],
+        edges: [],
+      },
+      {
+        focusId: "language:hi",
+        nodes: [
+          {
+            id: "station:bbb",
+            kind: "station",
+            label: "Radio Dusk",
+            provenance: "catalog",
+          },
+        ],
+        edges: [],
+      },
+    ];
+    expect(revealedTideStationIds([], "country:IN").size).toBe(0);
+    expect(revealedTideStationIds(expansions, null).size).toBe(0);
+    expect(revealedTideStationIds(expansions, "country:FR")).toEqual(
+      new Set(),
+    );
+    expect(revealedTideStationIds(expansions, "country:IN")).toEqual(
+      new Set(["station:aaa"]),
+    );
+    // A language hub opens its own water, never another hub's.
+    expect(revealedTideStationIds(expansions, "language:hi")).toEqual(
+      new Set(["station:bbb"]),
+    );
   });
 });

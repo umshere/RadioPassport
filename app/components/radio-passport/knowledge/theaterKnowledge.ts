@@ -26,8 +26,8 @@ import {
  *     expansions into one navigable graph.
  *   wakeTheaterKnowledge — real events light neurons; nothing dances on its
  *     own.
- *   seatTheaterKnowledge — deterministic sky coordinates; pinned seats never
- *     move, so arriving knowledge reshuffles nothing.
+ *   seatTheaterKnowledgeTide — deterministic tide coordinates; pinned seats
+ *     never move, so arriving knowledge reshuffles nothing.
  *
  * Everything here fails closed: a claim without a verified MusicBrainz edge
  * behind it, or a web claim without the exact URL it was read from, never
@@ -55,13 +55,9 @@ const SECTOR_ANGLE: Record<KnowledgeKind, number> = {
 
 const SECTOR_JITTER = 0.35;
 const SECTOR_WOBBLE = 0.04;
-const HOP_ONE_RADIUS = 0.26;
-const HOP_TWO_RADIUS = 0.42;
 const GOLDEN_ANGLE = 2.399963229728653;
 /** Normalized distance below which two labels occupy the same tap. */
 const MIN_SEAT_GAP = 0.12;
-/** y flattens so the figure reads as a sky, not a clock face. */
-const SEAT_Y_FLATTEN = 0.72;
 const SEAT_MIN = 0.06;
 const SEAT_MAX = 0.94;
 const FOCUS_CENTRE: KnowledgeSeat = { x: 0.5, y: 0.5 };
@@ -514,6 +510,27 @@ export function toExpandedNeighborhood(
   return { focusId, nodes, edges };
 }
 
+/**
+ * Stations the selected hub has opened onto. The tide shows the well and
+ * its hubs; sibling stations stay under until their country or language is
+ * tapped, then fan out of that hub only. Deselecting the hub stills them
+ * again — the water never holds everything at once.
+ */
+export function revealedTideStationIds(
+  expansions: ExpandedNeighborhood[],
+  selectedId: string | null,
+): Set<string> {
+  const revealed = new Set<string>();
+  if (!selectedId) return revealed;
+  for (const expansion of expansions) {
+    if (expansion.focusId !== selectedId) continue;
+    for (const node of expansion.nodes) {
+      if (node.kind === "station") revealed.add(node.id);
+    }
+  }
+  return revealed;
+}
+
 /** Keep a handful of language doors, then the stations they open onto.
  * Graph order otherwise lets twelve languages fill a country hop and hide
  * every connected station — the opposite of Country → language → station. */
@@ -723,11 +740,10 @@ const TIDE_LANE_RADIUS = [0, 0.18, 0.3, 0.42] as const;
 const TIDE_Y_FLATTEN = 0.72;
 
 /**
- * Tide seating — the A/B against seatTheaterKnowledge. Same pinning
- * discipline (pinned seats win verbatim; jitter keyed by [seed, nodeId]),
- * but the well is the tuned station and every other node takes a depth
- * lane instead of a hop ring around the focus. The focus still highlights;
- * it never drags the water.
+ * Tide seating. Same pinning discipline (pinned seats win verbatim; jitter
+ * keyed by [seed, nodeId]), but the well is the tuned station and every
+ * other node takes a depth lane instead of a hop ring around the focus.
+ * The focus still highlights; it never drags the water.
  */
 export function seatTheaterKnowledgeTide(input: {
   graph: KnowledgeGraph;
@@ -797,108 +813,5 @@ export function seatTheaterKnowledgeTide(input: {
   }
 
   if (wellId) seats.set(wellId, { ...FOCUS_CENTRE });
-  return seats;
-}
-
-/**
- * Deterministic seats. Pinned seats win verbatim (addition-stability beats
- * re-centring); newcomers take free kind-sector slots around the effective
- * centre, keyed by [seed, nodeId] so a new star reshuffles nothing already on
- * canvas. The focus itself sits dead centre — expressed as one seat, not by
- * dragging the whole sky.
- */
-export function seatTheaterKnowledge(input: {
-  graph: KnowledgeGraph;
-  seats: Map<string, KnowledgeSeat>;
-  focusId: string | null;
-  seed: number;
-}): Map<string, KnowledgeSeat> {
-  const { graph } = input;
-  const indexOf = new Map(graph.nodes.map((node, index) => [node.id, index]));
-  const seats = new Map<string, KnowledgeSeat>();
-  for (const [id, seat] of input.seats) {
-    if (!indexOf.has(id)) continue;
-    seats.set(id, { x: seat.x, y: seat.y });
-  }
-
-  const centreId =
-    input.focusId && indexOf.has(input.focusId)
-      ? input.focusId
-      : graph.nodes.find((node) => node.kind === "country")?.id ??
-        graph.nodes[0]?.id ??
-        null;
-
-  const adjacency = new Map<string, Set<string>>();
-  for (const edge of graph.edges) {
-    if (!indexOf.has(edge.from) || !indexOf.has(edge.to)) continue;
-    if (!adjacency.has(edge.from)) adjacency.set(edge.from, new Set());
-    if (!adjacency.has(edge.to)) adjacency.set(edge.to, new Set());
-    adjacency.get(edge.from)!.add(edge.to);
-    adjacency.get(edge.to)!.add(edge.from);
-  }
-
-  const hops = new Map<string, number>();
-  if (centreId) {
-    hops.set(centreId, 0);
-    const queue: string[] = [centreId];
-    while (queue.length) {
-      const current = queue.shift()!;
-      const depth = hops.get(current)!;
-      for (const neighbour of adjacency.get(current) ?? []) {
-        if (hops.has(neighbour)) continue;
-        hops.set(neighbour, depth + 1);
-        queue.push(neighbour);
-      }
-    }
-  }
-
-  const tooClose = (candidate: KnowledgeSeat) => {
-    for (const other of seats.values()) {
-      const dx = candidate.x - other.x;
-      const dy = candidate.y - other.y;
-      if (dx * dx + dy * dy < MIN_SEAT_GAP * MIN_SEAT_GAP) return true;
-    }
-    return false;
-  };
-
-  for (const node of graph.nodes) {
-    if (seats.has(node.id)) continue;
-    const depth = hops.get(node.id);
-    if (depth === undefined) continue;
-    if (depth === 0) {
-      seats.set(node.id, { ...FOCUS_CENTRE });
-      continue;
-    }
-    const baseAngle = SECTOR_ANGLE[node.kind];
-    // Jitter keyed by identity, never by counts or indexes: the same node
-    // lands in the same spot in every render and every room.
-    const rng = createRng(lockSeed([input.seed, node.id]));
-    let angle =
-      baseAngle +
-      (rng() - 0.5) * SECTOR_JITTER +
-      (rng() - 0.5) * SECTOR_WOBBLE;
-    const radius = depth === 1 ? HOP_ONE_RADIUS : HOP_TWO_RADIUS;
-    const polar = (theta: number, r: number): KnowledgeSeat => {
-      const x = 0.5 + Math.cos(theta) * r;
-      const y = 0.5 + Math.sin(theta) * r * SEAT_Y_FLATTEN;
-      return {
-        x: Math.min(SEAT_MAX, Math.max(SEAT_MIN, x)),
-        y: Math.min(SEAT_MAX, Math.max(SEAT_MIN, y)),
-      };
-    };
-    // Kind sector is the first try; walk the golden angle, then spiral out,
-    // so a country hop of eight stations does not stack on one tap.
-    let seat = polar(angle, radius);
-    let guard = 0;
-    while (tooClose(seat) && guard < 36) {
-      angle += GOLDEN_ANGLE;
-      const extra = Math.floor(guard / 6) * 0.05;
-      seat = polar(angle, Math.min(0.48, radius + extra));
-      guard += 1;
-    }
-    seats.set(node.id, seat);
-  }
-
-  if (centreId) seats.set(centreId, { ...FOCUS_CENTRE });
   return seats;
 }

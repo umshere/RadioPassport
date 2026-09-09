@@ -740,7 +740,7 @@ describe("theater lock", () => {
     expect(well).toContain("OrbitMotion");
     expect(well).toContain("animateMotion");
     expect(well).toContain("ew-journey");
-    expect(well).toContain("ew-tick");
+    expect(well).toContain("ew-tide-lane");
     expect(well).not.toContain('matchMedia("(max-width: 960px)")');
     expect(well).toContain("wakingIds");
     expect(well).toContain("fieldStandingLabel");

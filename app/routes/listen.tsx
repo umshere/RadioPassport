@@ -9,12 +9,11 @@ import { stationTags } from "~/components/radio-passport/stationInsights";
 import { TheaterField, TheaterWell } from "~/components/radio-passport/TheaterWell";
 import {
   buildTheaterKnowledge,
-  seatTheaterKnowledge,
+  revealedTideStationIds,
   seatTheaterKnowledgeTide,
   toExpandedNeighborhood,
   wakeTheaterKnowledge,
 } from "~/components/radio-passport/knowledge/theaterKnowledge";
-import type { TheaterFieldMode } from "~/components/radio-passport/theaterLock";
 import type {
   ExpandedNeighborhood,
   KnowledgeGraph,
@@ -122,25 +121,9 @@ export default function ListeningPage() {
   const [stationByUuid, setStationByUuid] = useState<Record<string, Station>>(
     () => ({}),
   );
-  // A/B: the orbit sky keeps its figure; the tide holds depth lanes in
-  // water. `?field=tide` shares the tide directly; the switch below flips it.
-  const [fieldMode, setFieldMode] = useState<TheaterFieldMode>(() =>
-    typeof window !== "undefined" &&
-    new URLSearchParams(window.location.search).get("field") === "tide"
-      ? "tide"
-      : "sky",
-  );
-  const switchFieldMode = useCallback((mode: TheaterFieldMode) => {
-    setFieldMode(mode);
-    try {
-      const url = new URL(window.location.href);
-      if (mode === "tide") url.searchParams.set("field", "tide");
-      else url.searchParams.delete("field");
-      window.history.replaceState(null, "", url);
-    } catch {
-      // Share-URL upgrade only — the switch itself already held.
-    }
-  }, []);
+  // The theater is water now — one field, no A/B. The tide seats depth
+  // lanes around the well; sibling stations stay under until their hub is
+  // tapped, then fan out of it. Deselecting stills them again.
 
   useEffect(() => {
     setSelectedId(null);
@@ -205,23 +188,15 @@ export default function ListeningPage() {
     }
     const cap = typeof window !== "undefined" && window.innerWidth < 720 ? 10 : 18;
     const seed = lockSeed([storedNowPlaying?.uuid ?? "elsewhere"]);
-    const seats =
-      fieldMode === "tide"
-        ? seatTheaterKnowledgeTide({
-            graph: knowledgeGraph,
-            seats: seatsRef.current,
-            focusId: selectedId,
-            seed,
-            tunedId: storedNowPlaying
-              ? `station:${storedNowPlaying.uuid}`
-              : null,
-          })
-        : seatTheaterKnowledge({
-            graph: knowledgeGraph,
-            seats: seatsRef.current,
-            focusId: selectedId,
-            seed,
-          });
+    const seats = seatTheaterKnowledgeTide({
+      graph: knowledgeGraph,
+      seats: seatsRef.current,
+      focusId: selectedId,
+      seed,
+      tunedId: storedNowPlaying
+        ? `station:${storedNowPlaying.uuid}`
+        : null,
+    });
     seatsRef.current = seats;
     const prevAwake = awakeRef.current;
     const model = wakeTheaterKnowledge({
@@ -242,7 +217,6 @@ export default function ListeningPage() {
     return { ...model, wakingIds };
   }, [
     evidenceArrived,
-    fieldMode,
     hydrated,
     intelligence.facts.length,
     intelligence.summary,
@@ -252,20 +226,45 @@ export default function ListeningPage() {
     storedNowPlaying,
   ]);
 
-  const knowledgeNodes = useMemo(
-    () =>
-      knowledge.visible
-        .map((id) => {
-          const node = knowledge.graph.nodes.find((entry) => entry.id === id);
-          const seat = knowledge.seats.get(id);
-          if (!node || !seat) return null;
-          return { ...node, x: seat.x, y: seat.y };
-        })
-        .filter((node): node is KnowledgeNode & { x: number; y: number } =>
-          Boolean(node),
-        ),
-    [knowledge],
+  // Tide disclosure: the tuned station rides the well and hubs hold the
+  // water; sibling stations surface only from the selected hub, plus any
+  // station the tap names directly (follow-this-star lands on open water).
+  const tunedStationId = storedNowPlaying
+    ? `station:${storedNowPlaying.uuid}`
+    : null;
+  const disclosedStationIds = useMemo(
+    () => revealedTideStationIds(expansions, selectedId),
+    [expansions, selectedId],
   );
+  const visibleRef = useRef<Set<string>>(new Set());
+  const knowledgeNodes = useMemo(() => {
+    const revealed =
+      selectedId && selectedId.startsWith("station:")
+        ? new Set([...disclosedStationIds, selectedId])
+        : disclosedStationIds;
+    const nodes = knowledge.visible
+      .map((id) => {
+        const node = knowledge.graph.nodes.find((entry) => entry.id === id);
+        const seat = knowledge.seats.get(id);
+        if (!node || !seat) return null;
+        if (
+          node.kind === "station" &&
+          node.id !== tunedStationId &&
+          !revealed.has(node.id)
+        )
+          return null;
+        return { ...node, x: seat.x, y: seat.y };
+      })
+      .filter((node): node is KnowledgeNode & { x: number; y: number } =>
+        Boolean(node),
+      );
+    // Freshly surfaced stations glide in; everything already afloat holds.
+    const fresh = nodes
+      .map((node) => node.id)
+      .filter((id) => !visibleRef.current.has(id));
+    visibleRef.current = new Set(nodes.map((node) => node.id));
+    return { nodes, fresh };
+  }, [disclosedStationIds, knowledge, selectedId, tunedStationId]);
 
   // Gated artist portraits, one honest fetch each: the endpoint serves
   // Wikipedia PageImages only, capped per room, never retried in-session.
@@ -398,7 +397,7 @@ export default function ListeningPage() {
     ? knowledge.graph.nodes.find((entry) => entry.id === selectedId) ?? null
     : null;
   const figureSiblings = selectedId
-    ? knowledgeNodes.filter((node) => node.id !== selectedId).slice(0, 6)
+    ? knowledgeNodes.nodes.filter((node) => node.id !== selectedId).slice(0, 6)
     : [];
   const followId = selectedId
     ? knowledge.graph.edges
@@ -498,14 +497,13 @@ export default function ListeningPage() {
             releases={releases}
             longitude={nowPlaying.longitude}
             graph={intelligence.graph}
-            fieldMode={fieldMode}
             focusId={room.signal.track?.title ?? null}
             knowledge={{
-              nodes: knowledgeNodes,
+              nodes: knowledgeNodes.nodes,
               edges: knowledge.graph.edges,
               awakeIds: knowledge.awake,
               firing: knowledge.firing,
-              wakingIds: knowledge.wakingIds,
+              wakingIds: knowledgeNodes.fresh,
               focusId: selectedId,
               tunedId: storedNowPlaying
                 ? `station:${storedNowPlaying.uuid}`
@@ -540,21 +538,6 @@ export default function ListeningPage() {
             </p>
           ) : null}
           <UpNextRow />
-          <div className="ew-field-switch" role="group" aria-label="Field water">
-            <span className="ew-field-switch-kicker" aria-hidden="true">
-              field
-            </span>
-            {(["sky", "tide"] as const).map((mode) => (
-              <button
-                key={mode}
-                type="button"
-                aria-pressed={fieldMode === mode}
-                onClick={() => switchFieldMode(mode)}
-              >
-                {mode}
-              </button>
-            ))}
-          </div>
           <TheaterWell
             phase={phase}
             dispatchBody={intelligence.dispatchBody}
