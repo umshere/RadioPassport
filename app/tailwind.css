@@ -2109,6 +2109,14 @@ html, body {
 /* Tide water — roomier taps; seat changes glide like a body in water. */
 .ew-theater-field-wrap[data-field-mode="tide"] .ew-knode { min-width: 44px; min-height: 44px; transition: left 0.9s cubic-bezier(0.22, 1, 0.36, 1), top 0.9s cubic-bezier(0.22, 1, 0.36, 1); }
 @media (prefers-reduced-motion: reduce) { .ew-theater-field-wrap[data-field-mode="tide"] .ew-knode { transition: none; } }
+/* Tide water reads as water: the orbit furniture (tick, hop rings) stands
+   down, six still depth lanes hold the seating instead, and a cool wash
+   settles over the canvas and threads — above the living layer, below the
+   knode buttons, so the stars stay crisp. Sky keeps everything. */
+.ew-theater-field-wrap[data-field-mode="tide"] .ew-tick,
+.ew-theater-field-wrap[data-field-mode="tide"] .ew-orbit-ring { display: none; }
+.ew-theater-field-wrap[data-field-mode="tide"]::after { content: ""; position: absolute; inset: 0; z-index: 1; pointer-events: none; background: linear-gradient(180deg, transparent 28%, color-mix(in srgb, var(--ew-ether) 7%, transparent) 72%, color-mix(in srgb, var(--ew-ether) 13%, transparent)); }
+.ew-tide-lane { stroke: var(--ew-ether); stroke-width: 0.6; opacity: 0.16; }
 /* Field A/B switch — quiet folio control beside the trail. */
 .ew-field-switch { display: flex; align-items: center; gap: 8px; margin: 10px 0 2px; }
 .ew-field-switch-kicker { color: var(--ew-dust); font: 500 10px/1 "Azeret Mono", monospace; letter-spacing: 0.18em; text-transform: uppercase; }

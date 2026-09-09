@@ -136,6 +136,20 @@ const MERIDIANS = [
 ] as const;
 
 /** An orbit meridian as one SVG path — two cubic spans, same geometry. */
+/**
+ * Tide depth lanes in the shared 390×236 room: horizontal stills at the
+ * flattened lane depths the seating walks (lane radius × 0.72 × 236 around
+ * centre 118). Outer lanes run shorter, so the water reads as a held
+ * breadth rather than a fence. Declarative lines — no JS frames.
+ */
+const TIDE_LANE_LINES = [
+  { y: 47, x1: 70, x2: 320 },
+  { y: 66, x1: 44, x2: 346 },
+  { y: 87, x1: 28, x2: 362 },
+  { y: 149, x1: 28, x2: 362 },
+  { y: 170, x1: 44, x2: 346 },
+  { y: 189, x1: 70, x2: 320 },
+] as const;
 /** Mirror of knowledgeTint for SVG: brand ink per node kind. */
 function kindVar(kind: PositionedKnowledgeNode["kind"]): string {
   if (
@@ -245,6 +259,20 @@ function OrbitMotion({
       )}
       <circle cx="195" cy="118" r="100" className="ew-tick" />
       <circle cx="195" cy="118" r="70" className="ew-orbit-ring" />
+      {fieldMode === "tide" && (
+        <g className="ew-tide-lanes" aria-hidden="true">
+          {TIDE_LANE_LINES.map(({ y, x1, x2 }) => (
+            <line
+              key={y}
+              x1={x1}
+              x2={x2}
+              y1={y}
+              y2={y}
+              className="ew-tide-lane"
+            />
+          ))}
+        </g>
+      )}
       {journeys.map(({ node, d, index }) => (
         <g key={`journey-${node.id}`}>
           <path d={d} className="ew-journey" />
