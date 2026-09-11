@@ -1826,8 +1826,13 @@
 .ew-seek-say { flex: 1 1 auto; min-width: 0; width: 0; padding: 10px 14px 10px 56px; opacity: 0; translate: -8px 0; visibility: hidden; transition: opacity .22s ease .18s, translate .3s var(--ew-settle) .16s, visibility 0s .45s; }
 .ew-seek.is-open .ew-seek-say { width: auto; opacity: 1; translate: none; visibility: visible; transition: opacity .25s ease .2s, translate .32s var(--ew-settle) .18s, visibility 0s 0s; }
 .ew-seek .rp-intent { width: 100%; max-width: none; min-height: 0; border: 0; background: transparent; padding: 0; flex-wrap: wrap; gap: 4px 8px; }
-.ew-seek .rp-intent input { flex: 1 1 120px; padding: 6px 0; }
-.ew-seek .rp-intent-status { flex: 1 1 100%; max-width: none; }
+/* One input row: field, clear, mic, surprise — in that order. Status drops
+   to a caption line under the row instead of crowding it. */
+.ew-seek .rp-intent input { order: 1; flex: 1 1 80px; padding: 6px 0; }
+.ew-seek .rp-intent-clear { order: 2; }
+.ew-seek .rp-mic { order: 3; }
+.ew-seek .rp-surprise { order: 4; }
+.ew-seek .rp-intent-status { order: 5; flex: 1 1 100%; max-width: none; white-space: normal; margin: 2px 0 0; }
 @media (max-width: 760px) {
 .ew-seek.is-open { width: min(300px, 74vw); }
 }
