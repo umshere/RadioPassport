@@ -35,6 +35,7 @@ import { usePlayerNoticeStore } from "~/state/playerNoticeStore";
 import type { Station } from "~/types/radio";
 import { sanitizeArtworkUrl } from "~/utils/stations";
 import { JourneyBridge } from "~/components/radio-passport/JourneyBridge";
+import { ToastChannel } from "~/components/radio-passport/ToastChannel";
 import { useAtmosphereStore } from "~/state/atmosphereStore";
 import { ATMOSPHERE_BOOT_SCRIPT, ATMOSPHERE_THEME_COLOR } from "~/utils/atmosphere";
 
@@ -209,6 +210,7 @@ export default function App() {
 
         <PlayerDock />
         <JourneyBridge />
+        <ToastChannel />
         <AtmosphereBridge />
         <GlobalAudioBridge />
       </>

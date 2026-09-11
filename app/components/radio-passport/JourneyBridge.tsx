@@ -1,8 +1,8 @@
-import { useEffect, useRef, useState } from "react";
-import { useLocation, useNavigate } from "@remix-run/react";
+import { useEffect, useRef } from "react";
 import { usePlayerStore } from "~/state/playerStore";
 import { dispatchRequestFor } from "~/state/roomStore";
 import type { DispatchResponse } from "~/types/ai";
+import { usePlayerNoticeStore } from "~/state/playerNoticeStore";
 import {
   isStampReady,
   stationStampId,
@@ -10,7 +10,6 @@ import {
   useJourneyStore,
 } from "~/state/journeyStore";
 import { stationLocation, stationTelemetry } from "./StationRow";
-import { homeWithPassportHref, openPassportNow } from "./productFlow";
 
 /** Share of the continuous minute elapsed, clamped to 0..1 — the dock ring's ink. */
 export function stampInkProgress(startedAt: number, now: number): number {
@@ -42,16 +41,12 @@ export function stampForContinuousSession(
 }
 
 export function JourneyBridge() {
-  const location = useLocation();
-  const navigate = useNavigate();
   const nowPlaying = usePlayerStore((state) => state.nowPlaying);
   const isPlaying = usePlayerStore((state) => state.isPlaying);
   const hydrated = useJourneyStore((state) => state.hydrated);
   const stamps = useJourneyStore((state) => state.stamps);
   const hydrate = useJourneyStore((state) => state.hydrate);
   const addStamp = useJourneyStore((state) => state.addStamp);
-  const [toast, setToast] = useState<PassportStamp | null>(null);
-  const [toastLine, setToastLine] = useState<string | null>(null);
   const startedAtRef = useRef<number | null>(null);
 
   useEffect(() => hydrate(), [hydrate]);
@@ -82,8 +77,20 @@ export function JourneyBridge() {
       );
       if (!stamp) return;
       addStamp(stamp);
-      setToast(stamp);
-      setToastLine(null);
+      // The stamp files through the one toast channel; when the dispatch
+      // headline lands it refiles with the footnote (latest wins, fresh
+      // timer) instead of growing a second toast.
+      const fileStamp = (footnote?: string) =>
+        usePlayerNoticeStore.getState().setNotice({
+          kind: "info",
+          title: "INKED",
+          message: stamp.city,
+          detail: `${stamp.stationName} · ${stamp.country}`,
+          footnote,
+          action: "passport",
+          durationMs: footnote ? 6500 : 4000,
+        });
+      fileStamp();
       void fetch("/api/ai/dispatch", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -92,7 +99,7 @@ export function JourneyBridge() {
         .then(async (response) => (response.ok ? response.json() : null))
         .then((payload: DispatchResponse | null) => {
           const headline = payload?.dispatch?.headline?.trim();
-          if (headline) setToastLine(headline);
+          if (headline) fileStamp(headline);
         })
         .catch(() => { });
     }, 60_000);
@@ -102,12 +109,6 @@ export function JourneyBridge() {
       if (startedAtRef.current === startedAt) startedAtRef.current = null;
     };
   }, [addStamp, hydrated, isPlaying, nowPlaying, stamps]);
-
-  useEffect(() => {
-    if (!toast) return;
-    const timer = window.setTimeout(() => setToast(null), toastLine ? 6500 : 4000);
-    return () => window.clearTimeout(timer);
-  }, [toast, toastLine]);
 
   // Stamp ink: while the current city plays unstamped, publish --stamp-ink
   // (0..1) once a second so the dock ring fills over the continuous minute.
@@ -152,27 +153,6 @@ export function JourneyBridge() {
     };
   }, [hydrated, isPlaying, nowPlaying, stamps]);
 
-  if (!toast) return null;
-  return (
-    <button
-      type="button"
-      className="rp-toast text-left"
-      role="status"
-      aria-live="polite"
-      onClick={() =>
-        openPassportNow(location.pathname, () =>
-          navigate(homeWithPassportHref())
-        )
-      }
-    >
-      <span className="rp-eyebrow text-foil">INKED</span>
-      <strong>
-        {toast.city}
-      </strong>
-      <small>
-        {toast.stationName} · {toast.country}
-      </small>
-      {toastLine ? <em className="rp-toast-line">{toastLine}</em> : null}
-    </button>
-  );
+  // The stamp toast files through the channel; this bridge keeps no UI.
+  return null;
 }

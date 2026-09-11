@@ -1229,7 +1229,8 @@
     color: inherit;
     cursor: pointer;
     text-align: left;
-    animation: rp-toast 4s ease both;
+    /* Enter-only: the channel's timer dismisses, the CSS never auto-hides. */
+    animation: rp-toast .45s var(--ew-settle) both;
   }
   .rp-toast strong {
     font-family: "Newsreader", serif;
@@ -1238,21 +1239,9 @@
     font-weight: 400;
   }
   .rp-toast small { color: var(--ew-dust); font: 10px "Azeret Mono", monospace; }
-  .rp-player-notice {
-    position: absolute;
-    left: 50%;
-    bottom: calc(100% + 10px);
-    width: min(560px, calc(100vw - 28px));
-    transform: translateX(-50%);
-    border: 1px solid var(--ew-rule);
-    border-radius: 2px;
-    background: var(--ew-leather);
-    padding: 10px 13px;
-    color: var(--ew-bone);
-    font: 11px/1.45 "Azeret Mono", monospace;
-  }
-  .rp-player-notice-warning { border-color: rgba(199, 58, 58, .5); }
-  .rp-player-notice-error { border-color: var(--ew-lacquer); }
+  .rp-toast-line { color: var(--ew-dust); font-family: "Newsreader", serif; font-style: italic; font-size: 14px; line-height: 1.4; }
+  .rp-toast.is-warning { border-top-color: rgba(199, 58, 58, .5); cursor: default; }
+  .rp-toast.is-error { border-top-color: var(--ew-lacquer); cursor: default; }
   .ew-theater {
     position: relative;
     display: flex;
@@ -1507,9 +1496,8 @@
   @keyframes rp-pulse { 50% { opacity: .55; } }
   @keyframes rp-eq { to { transform: scaleY(.45); } }
   @keyframes rp-toast {
-    0% { opacity: 0; transform: translateY(8px); }
-    10%, 85% { opacity: 1; transform: translateY(0); }
-    100% { opacity: 0; transform: translateY(-4px); }
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
   }
 
   @media (max-width: 960px) {
@@ -1642,7 +1630,6 @@
     .rp-dock-play { width: 44px; height: 44px; }
     .rp-theater-link { display: inline !important; font-size: 8px; letter-spacing: .1em; }
     .rp-toast { right: 14px; left: 14px; bottom: calc(var(--player-dock-clearance, 108px) + env(safe-area-inset-bottom, 0px)); min-width: 0; }
-    .rp-player-notice { width: calc(100vw - 20px); font-size: 10px; }
     .ew-theater {
       padding: 0;
     }

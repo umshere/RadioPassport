@@ -2,16 +2,38 @@ import { create } from "~/utils/zustand-lite";
 
 export type PlayerNoticeKind = "info" | "warning" | "error";
 
+/**
+ * The one toast channel. Single slot, latest wins: stream errors from the
+ * audio engine and INKED stamps from JourneyBridge file through here, and
+ * one surface (ToastChannel) renders them. Producers pass copy + an optional
+ * passport tap; timing lives here, not in callers.
+ */
 export type PlayerNotice = {
   id: string;
   kind: PlayerNoticeKind;
   message: string;
   createdAt: number;
+  /** Eyebrow over the message (e.g. INKED). Absent for plain notices. */
+  title?: string;
+  /** Second line under the message (e.g. station · country). */
+  detail?: string;
+  /** Third line, italic (e.g. the stamp dispatch headline). */
+  footnote?: string;
+  /** Tap behavior. Only "passport" opens the book. */
+  action?: "passport";
 };
 
 type PlayerNoticeState = {
   notice: PlayerNotice | null;
-  setNotice: (input: { kind?: PlayerNoticeKind; message: string; durationMs?: number }) => string;
+  setNotice: (input: {
+    kind?: PlayerNoticeKind;
+    message: string;
+    title?: string;
+    detail?: string;
+    footnote?: string;
+    action?: "passport";
+    durationMs?: number;
+  }) => string;
   clearNotice: (id?: string) => void;
 };
 
@@ -23,10 +45,18 @@ function makeId(): string {
 
 export const usePlayerNoticeStore = create<PlayerNoticeState>((set, get) => ({
   notice: null,
-  setNotice: ({ kind = "info", message, durationMs = DEFAULT_DURATION_MS }) => {
+  setNotice: ({
+    kind = "info",
+    message,
+    title,
+    detail,
+    footnote,
+    action,
+    durationMs = DEFAULT_DURATION_MS,
+  }) => {
     const id = makeId();
     const createdAt = Date.now();
-    set({ notice: { id, kind, message, createdAt } });
+    set({ notice: { id, kind, message, createdAt, title, detail, footnote, action } });
 
     if (typeof window !== "undefined") {
       window.setTimeout(() => {

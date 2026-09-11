@@ -8,7 +8,6 @@ import {
 import { useHydrated } from "~/hooks/useHydrated";
 import { usePlayerStore } from "~/state/playerStore";
 import { canMutateJourney, useJourneyStore } from "~/state/journeyStore";
-import { usePlayerNoticeStore } from "~/state/playerNoticeStore";
 import { useRoom } from "~/hooks/useRoom";
 import { dispatchRequestFor, roomForStation, useRoomStore } from "~/state/roomStore";
 import {
@@ -44,7 +43,6 @@ export default function PlayerDock() {
   const hydrated = useJourneyStore((state) => state.hydrated);
   const toggleFavorite = useJourneyStore((state) => state.toggleFavorite);
   const stamps = useJourneyStore((state) => state.stamps);
-  const notice = usePlayerNoticeStore((state) => state.notice);
   useRoom(nowPlaying, isPlaying);
   const storedRoom = useRoomStore((state) => state.room);
   const room = roomForStation(storedRoom, nowPlaying?.uuid);
@@ -432,15 +430,6 @@ export default function PlayerDock() {
       >
         Theater
       </Link>
-      {notice && (
-        <div
-          className={`rp-player-notice rp-player-notice-${notice.kind}`}
-          role={notice.kind === "error" ? "alert" : "status"}
-          aria-live={notice.kind === "error" ? "assertive" : "polite"}
-        >
-          {notice.message}
-        </div>
-      )}
       </div>
     </aside>
   );
