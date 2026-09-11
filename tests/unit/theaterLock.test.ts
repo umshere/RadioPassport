@@ -791,19 +791,16 @@ describe("theater lock", () => {
     expect(listen).toContain("focusId");
     expect(listen).toContain("Follow this star");
     expect(listen).toContain("catalog=");
-    expect(listen).toContain("TheaterTransport");
+    // One transport: the dock deck carries the labeled cells — the letter
+    // keeps no second set of controls.
+    expect(listen).not.toContain("TheaterTransport");
     expect(listen).toContain("UpNextRow");
-    const transport = readFileSync(
-      new URL(
-        "../../app/components/radio-passport/TheaterTransport.tsx",
-        import.meta.url,
-      ),
-      "utf8",
-    );
     // Both stamped rings are the emblem: thin foil ring, lacquer heart.
-    expect(transport).toContain("ew-theater-ring-dot");
-    expect(transport).not.toContain('"EW"');
+    expect(dock).toContain("rp-dock-ring-dot");
+    expect(dock).not.toContain('"EW"');
     expect(dock).toContain("ew-stamp-ring-dot");
+    expect(dock).toContain("rp-dock-deck");
+    expect(dock).toContain("theaterTransportCopy");
     // Pause must freeze the folio on the last aired title, never collapse it.
     expect(listen).toContain("lastTrackRef");
     expect(listen).toContain("displayTrack");
@@ -837,7 +834,7 @@ describe("theater lock", () => {
     expect(stylesheet).toContain(".ew-theater-folio.is-star .ew-letter-phone");
     expect(stylesheet).toContain(".ew-known.is-collapsed");
     expect(stylesheet).toContain(".ew-stamp-ring-dot");
-    expect(stylesheet).toContain(".ew-theater-ring-dot");
+    expect(stylesheet).toContain(".rp-dock-ring-dot");
     expect(stylesheet).not.toMatch(/\.ew-known,\s*\.ew-waiting/);
     expect(listen).toContain("deskSigned");
     expect(well).toContain("The desk found");

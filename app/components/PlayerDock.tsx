@@ -1,8 +1,9 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "@remix-run/react";
 import {
   homeWithPassportHref,
   openPassportNow,
+  theaterTransportCopy,
 } from "~/components/radio-passport/productFlow";
 import { useHydrated } from "~/hooks/useHydrated";
 import { usePlayerStore } from "~/state/playerStore";
@@ -48,6 +49,12 @@ export default function PlayerDock() {
   const storedRoom = useRoomStore((state) => state.room);
   const room = roomForStation(storedRoom, nowPlaying?.uuid);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const deckRef = useRef<HTMLDivElement>(null);
+  // The deck is the dock expanded: labeled transport cells (Back / Keep /
+  // Play / Next / Passport) that used to live a second life in the theater
+  // letter. One transport, one object — the row stays the compact face.
+  const [deckOpen, setDeckOpen] = useState(false);
+  const [ink, setInk] = useState<number | null>(null);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -146,6 +153,40 @@ export default function PlayerDock() {
     };
   }, [nowPlaying]);
 
+  // Stamp countdown for the deck ring — read from the ink JourneyBridge
+  // writes. The deck stays mounted (one object), inert while closed.
+  useEffect(() => {
+    if (!nowPlaying) return;
+    const read = () => {
+      const raw = getComputedStyle(document.documentElement)
+        .getPropertyValue("--stamp-ink")
+        .trim();
+      if (!raw) {
+        setInk(null);
+        return;
+      }
+      const next = Number(raw);
+      setInk(Number.isFinite(next) ? Math.min(1, Math.max(0, next)) : null);
+    };
+    read();
+    const timer = window.setInterval(read, 1000);
+    return () => window.clearInterval(timer);
+  }, [nowPlaying?.uuid, isPlaying]);
+
+  useEffect(() => {
+    if (deckRef.current)
+      deckRef.current.toggleAttribute("inert", !deckOpen);
+  }, [deckOpen ]);
+
+  useEffect(() => {
+    if (!deckOpen) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setDeckOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [deckOpen ]);
+
   if (!mounted || !nowPlaying) return null;
 
   const go = (direction: number) => {
@@ -164,9 +205,129 @@ export default function PlayerDock() {
   const trackLine = track
     ? [track.artist, track.title].filter(Boolean).join(" — ")
     : null;
+  const kept = favorites.includes(nowPlaying.uuid);
+  const secondsLeft =
+    ink === null ? null : Math.max(0, Math.ceil((1 - ink) * 60));
+  const deckCopy = theaterTransportCopy({
+    isPlaying,
+    kept,
+    stamped,
+    secondsLeft,
+  });
 
   return (
-    <aside className="rp-dock" aria-label="Now playing">
+    <aside
+      className={`rp-dock${deckOpen ? " is-open" : ""}`}
+      aria-label="Now playing"
+    >
+      <div ref={deckRef} className="rp-dock-deck" aria-hidden={!deckOpen}>
+        <div className="rp-dock-deck-clip">
+          <div className="rp-dock-deck-row" role="group" aria-label="Room controls">
+            <span className="rp-dock-cell">
+              <button
+                type="button"
+                className="rp-dock-tbtn"
+                onClick={() => go(-1)}
+                aria-label="Previous station"
+                tabIndex={deckOpen ? undefined : -1}
+              >
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                  <path d="M18 5.5v13L9 12l9-6.5Z" />
+                  <rect x="5.5" y="5.5" width="2.4" height="13" rx="1" />
+                </svg>
+              </button>
+              <span className="rp-dock-clabel" aria-hidden="true">{deckCopy.back}</span>
+            </span>
+            <span className={`rp-dock-cell${kept ? " is-on" : ""}`}>
+              <button
+                type="button"
+                className={`rp-dock-tbtn${kept ? " is-on" : ""}`}
+                onClick={() =>
+                  canMutateJourney(hydrated) && toggleFavorite(nowPlaying.uuid, nowPlaying)
+                }
+                disabled={!canMutateJourney(hydrated)}
+                aria-label={kept ? "Kept — this signal is in your passport" : "Keep this signal"}
+                tabIndex={deckOpen ? undefined : -1}
+              >
+                <svg
+                  width="22"
+                  height="22"
+                  viewBox="0 0 24 24"
+                  fill={kept ? "currentColor" : "none"}
+                  stroke="currentColor"
+                  strokeWidth="1.3"
+                  aria-hidden="true"
+                >
+                  <path d="M12 20s-7.5-4.7-7.5-9.6A4.4 4.4 0 0 1 12 7.5a4.4 4.4 0 0 1 7.5 2.9C19.5 15.3 12 20 12 20Z" />
+                </svg>
+              </button>
+              <span className="rp-dock-clabel" aria-hidden="true">{deckCopy.keep}</span>
+            </span>
+            <span className="rp-dock-cell">
+              <button
+                type="button"
+                className="rp-dock-tplay"
+                onClick={togglePlay}
+                aria-label={isPlaying ? "Pause" : "Play"}
+                tabIndex={deckOpen ? undefined : -1}
+              >
+                {isPlaying ? (
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                    <rect x="6.5" y="4.5" width="4" height="15" rx="1" />
+                    <rect x="13.5" y="4.5" width="4" height="15" rx="1" />
+                  </svg>
+                ) : (
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                    <path d="M8 5.5v13L19 12 8 5.5Z" />
+                  </svg>
+                )}
+              </button>
+              <span className="rp-dock-clabel" aria-hidden="true">{deckCopy.play}</span>
+            </span>
+            <span className="rp-dock-cell">
+              <button
+                type="button"
+                className="rp-dock-tbtn"
+                onClick={() => go(1)}
+                aria-label="Next station"
+                tabIndex={deckOpen ? undefined : -1}
+              >
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                  <path d="M6 5.5v13L15 12 6 5.5Z" />
+                  <rect x="16.1" y="5.5" width="2.4" height="13" rx="1" />
+                </svg>
+              </button>
+              <span className="rp-dock-clabel" aria-hidden="true">{deckCopy.next}</span>
+            </span>
+            <span className={`rp-dock-cell${stamped ? " is-on" : ""}`}>
+              <button
+                type="button"
+                className={`rp-dock-ring${stamped ? " is-stamped" : ""}`}
+                onClick={() =>
+                  openPassportNow(location.pathname, () =>
+                    navigate(homeWithPassportHref())
+                  )
+                }
+                aria-label={`Passport — ${deckCopy.passportHint}`}
+                title={deckCopy.passportHint}
+                tabIndex={deckOpen ? undefined : -1}
+              >
+                <span>
+                  {stamped ? (
+                    <i className="rp-dock-ring-dot" aria-hidden="true" />
+                  ) : secondsLeft === null ? (
+                    ""
+                  ) : (
+                    `${secondsLeft}s`
+                  )}
+                </span>
+              </button>
+              <span className="rp-dock-clabel" aria-hidden="true">{deckCopy.passport}</span>
+            </span>
+          </div>
+        </div>
+      </div>
+      <div className="rp-dock-row">
       <Link to="/listen" prefetch="intent" viewTransition aria-label="Open listening theater">
         <canvas ref={canvasRef} className="rp-dock-art" aria-hidden="true" />
       </Link>
@@ -243,6 +404,26 @@ export default function PlayerDock() {
       >
         ›
       </button>
+      <button
+        type="button"
+        className="rp-dock-more"
+        aria-expanded={deckOpen}
+        aria-label={deckOpen ? "Fewer controls" : "More controls"}
+        onClick={() => setDeckOpen((value) => !value)}
+      >
+        <svg
+          width="18"
+          height="18"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          aria-hidden="true"
+        >
+          <path d="M6 14.5 12 8.5 18 14.5" />
+        </svg>
+      </button>
       <Link
         to="/listen"
         className="rp-theater-link rp-eyebrow text-foil"
@@ -260,6 +441,7 @@ export default function PlayerDock() {
           {notice.message}
         </div>
       )}
+      </div>
     </aside>
   );
 }

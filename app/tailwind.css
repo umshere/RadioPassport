@@ -1112,20 +1112,54 @@
     bottom: 0;
     left: 0;
     display: flex;
-    align-items: center;
-    gap: 14px;
+    flex-direction: column;
+    align-items: stretch;
     width: 100%;
-    min-height: 72px;
     border: 0;
     border-top: 1px solid var(--ew-rule);
     border-radius: 0;
     background: var(--ew-dock);
-    padding: 10px max(20px, calc((100vw - 1360px) / 2));
     box-shadow: var(--ew-lift);
     /* No backdrop-filter here on purpose: the dock ink is 94% opaque so a
        blur paints nothing — but on mobile Safari the filter drags the
        neighboring fixed phone band through a compositing path where it stops
        painting while still hit-testing: an invisible band you can still tap. */
+  }
+  /* The deck is the dock expanded: labeled transport cells in one object
+     with the row. Closed it collapses to nothing (0fr + hidden); open it
+     settles down from the row. The row keeps the compact face. */
+  .rp-dock-deck { display: grid; grid-template-rows: 0fr; opacity: 0; visibility: hidden; transition: grid-template-rows .4s var(--ew-settle), opacity .25s ease, visibility 0s .4s; }
+  .rp-dock.is-open .rp-dock-deck { grid-template-rows: 1fr; opacity: 1; visibility: visible; transition: grid-template-rows .45s var(--ew-settle), opacity .3s ease .1s, visibility 0s 0s; }
+  .rp-dock-deck-clip { overflow: hidden; min-height: 0; }
+  .rp-dock-deck-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; border-bottom: 1px solid var(--ew-rule); padding: 10px max(20px, calc((100vw - 1360px) / 2)); }
+  /* Deck cells wear their names: first-time eyes should not have to guess
+     what the heart does or what `42s` is counting down to. */
+  .rp-dock-cell { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .rp-dock-clabel { font: 500 9px/1 "Azeret Mono", ui-monospace, monospace; letter-spacing: .14em; text-transform: uppercase; color: var(--ew-dust); }
+  .rp-dock-cell.is-on .rp-dock-clabel { color: var(--ew-foil); }
+  .rp-dock-tbtn { display: grid; width: 44px; height: 44px; place-items: center; border: 0; background: transparent; padding: 0; color: var(--ew-dust); cursor: pointer; }
+  .rp-dock-tbtn.is-on { color: var(--ew-foil); }
+  .rp-dock-tplay { display: grid; width: 56px; height: 56px; place-items: center; border: 1.5px solid var(--ew-foil); border-radius: 50%; background: var(--ew-lacquer); padding: 0; color: var(--ew-bone); cursor: pointer; }
+  .rp-dock-ring { position: relative; display: grid; width: 44px; height: 44px; place-items: center; border: 0; border-radius: 50%; background: conic-gradient(var(--ew-lacquer) calc(var(--stamp-ink, 0) * 100%), transparent 0); padding: 0; cursor: pointer; }
+  .rp-dock-ring span { display: grid; width: 32px; height: 32px; place-items: center; border-radius: 50%; background: var(--ew-ink); color: var(--ew-foil); font: 500 9px/1 "Azeret Mono", monospace; }
+  .rp-dock-ring.is-stamped { background: var(--ew-foil); }
+  /* The stamped ring is the emblem: foil ring, lacquer heart. */
+  .rp-dock-ring-dot { display: block; width: 9px; height: 9px; border-radius: 50%; background: var(--ew-lacquer); }
+  .rp-dock-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    width: 100%;
+    min-height: 72px;
+    padding: 10px max(20px, calc((100vw - 1360px) / 2));
+  }
+  .rp-dock-more { display: grid; flex: none; width: 44px; height: 44px; place-items: center; border: 0; background: transparent; padding: 0; color: var(--ew-dust); cursor: pointer; }
+  .rp-dock-more:hover { color: var(--ew-bone); }
+  .rp-dock-more svg { transition: transform .3s var(--ew-settle); }
+  .rp-dock.is-open .rp-dock-more { color: var(--ew-foil); }
+  .rp-dock.is-open .rp-dock-more svg { transform: rotate(180deg); }
+  @media (prefers-reduced-motion: reduce) {
+  .rp-dock-deck, .rp-dock-more svg { transition: none; }
   }
   .rp-dock-art { width: 48px; height: 48px; flex: none; border-radius: 2px; }
   .rp-dock strong { font-size: 15px; font-weight: 500; }
@@ -1594,7 +1628,7 @@
     .rp-stats { grid-template-columns: repeat(2, 1fr); margin: 20px 0; }
     .ew-book { grid-template-columns: 1fr; }
     .rp-country-grid { grid-template-columns: minmax(0, 1fr); }
-    .rp-dock {
+    .rp-dock-row {
       gap: 8px;
       min-height: 72px;
       padding: 8px 10px calc(8px + env(safe-area-inset-bottom, 0px));
@@ -2026,7 +2060,9 @@ html, body {
 .ew-cover-strip-land { margin: 0; overflow: hidden; color: var(--ew-foil); font: 500 10px/1.35 "Azeret Mono", monospace; letter-spacing: .18em; text-transform: uppercase; text-overflow: ellipsis; white-space: nowrap; }
 .ew-cover-strip-meta { margin: 0; flex: none; color: var(--ew-dust); font: 500 10px/1.35 "Azeret Mono", monospace; letter-spacing: .18em; text-transform: uppercase; white-space: nowrap; }
 .ew-cover-strip-seek { display: grid; flex: none; width: 44px; height: 44px; margin-left: auto; place-items: center; border: 0; background: transparent; padding: 0; color: var(--ew-dust); }
-.rp-dock { bottom: calc(44px + env(safe-area-inset-bottom, 0px)); min-height: 64px; height: 64px; padding: 8px 10px; }
+.rp-dock { bottom: calc(44px + env(safe-area-inset-bottom, 0px)); }
+.rp-dock-row { gap: 8px; min-height: 64px; height: 64px; padding: 8px 10px; }
+.rp-dock-deck-row { padding: 8px 10px; }
 .rp-dock-art { width: 44px; height: 44px; }
 .rp-dock-play { width: 48px; height: 48px; }
 .rp-dock .rp-dock-heart, .rp-dock .ew-dock-track { display: none; }
@@ -2196,7 +2232,7 @@ html, body {
 /* Theater phone = Theater.html / Knowledge.html. Desktop sky stays the wide field. */
 .ew-plate { display: grid; place-items: center; }
 .ew-plate:has(img) .ew-plate-mark { display: none; }
-.ew-theater-transport, .ew-theater-queue, .ew-theater-telemetry, .ew-theater-folio-rule { display: none; }
+.ew-theater-queue, .ew-theater-telemetry, .ew-theater-folio-rule { display: none; }
 @media (max-width: 960px) {
 .ew-site-bar.is-theater .ew-theater-rail { display: none; }
 .ew-theater { --ew-theater-sky: 236px; }
@@ -2250,20 +2286,6 @@ html, body {
 .ew-plate-mark svg { display: block; width: 34px; height: 34px; }
 .ew-plate-copy { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 .ew-plate-caption { display: block; margin: 0; color: var(--ew-dust); font-family: "Newsreader", "Iowan Old Style", "Palatino Linotype", serif; font-style: italic; font-size: 13px; line-height: 1.5; }
-.ew-theater-transport { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 0; border-bottom: 1px solid var(--ew-rule); padding: 10px 0; }
-.ew-theater-tbtn { display: grid; width: 44px; height: 44px; place-items: center; border: 0; background: transparent; color: var(--ew-dust); }
-.ew-theater-tbtn.is-on { color: var(--ew-foil); }
-.ew-theater-tplay { display: grid; width: 56px; height: 56px; place-items: center; border: 1.5px solid var(--ew-foil); border-radius: 50%; background: var(--ew-lacquer); color: var(--ew-bone); }
-.ew-theater-ring { position: relative; display: grid; width: 36px; height: 36px; place-items: center; border: 0; border-radius: 50%; background: conic-gradient(var(--ew-lacquer) calc(var(--stamp-ink, 0) * 100%), transparent 0); padding: 0; }
-.ew-theater-ring span { display: grid; width: 32px; height: 32px; place-items: center; border-radius: 50%; background: var(--ew-ink); color: var(--ew-foil); font: 500 9px/1 "Azeret Mono", monospace; }
-.ew-theater-ring.is-stamped { background: var(--ew-foil); }
-/* The stamped ring is the emblem: foil ring, lacquer heart. */
-.ew-theater-ring-dot { display: block; width: 9px; height: 9px; border-radius: 50%; background: var(--ew-lacquer); }
-/* Transport controls wear their names: first-time eyes should not have to
- * guess what the heart does or what `42s` is counting down to. */
-.ew-theater-cell { display: flex; flex-direction: column; align-items: center; gap: 4px; }
-.ew-theater-clabel { font: 500 9px/1 "Azeret Mono", ui-monospace, monospace; letter-spacing: .14em; text-transform: uppercase; color: var(--ew-dust); }
-.ew-theater-cell.is-on .ew-theater-clabel { color: var(--ew-foil); }
 .ew-theater-queue { display: flex; flex-direction: column; margin-top: 16px; }
 .ew-theater-queue > .rp-eyebrow { color: var(--ew-dust); }
 .ew-theater-qrow { display: flex; align-items: baseline; justify-content: space-between; gap: 14px; min-height: 44px; border: 0; border-bottom: 1px solid var(--ew-rule); background: transparent; padding: 8px 0; text-align: left; color: var(--ew-bone); cursor: pointer; }

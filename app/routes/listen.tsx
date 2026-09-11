@@ -32,7 +32,6 @@ import {
 } from "~/components/radio-passport/theaterLock";
 import { TheaterQueue } from "~/components/radio-passport/TheaterQueue";
 import { TheaterSeek } from "~/components/radio-passport/TheaterSeek";
-import { TheaterTransport } from "~/components/radio-passport/TheaterTransport";
 import { formatClock, formatLocalLabel, localDateAtLongitude } from "~/utils/localTime";
 import {
   theaterIntelligenceFromRoom,
@@ -517,7 +516,8 @@ export default function ListeningPage() {
           ref={folioRef}
           className={`ew-theater-folio${selectedKnowledgeNode ? " is-star" : ""}`}
         >
-          <TheaterTransport />
+          {/* Transport lives in the dock deck now — the letter keeps no
+              second set of controls. */}
           <i className="ew-cover-rule ew-theater-folio-rule" />
           <p className="rp-eyebrow text-ether ew-arrive ew-theater-desk-live">
             <i className="rp-live-dot" />
