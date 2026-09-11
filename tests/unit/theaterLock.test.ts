@@ -711,11 +711,22 @@ describe("theater lock", () => {
       new URL("../../app/routes/_index.tsx", import.meta.url),
       "utf8",
     );
-    expect(listen).not.toContain("TheaterSeek");
+    // The letter carries the seek pill under the heading; the bar keeps
+    // wordmark + tabs only — neither surface forks the chrome.
+    expect(listen).toContain("TheaterSeek");
     expect(listen).not.toContain("ew-theater-back");
-    expect(siteBar).toContain("TheaterSeek");
+    expect(siteBar).not.toContain("TheaterSeek");
     expect(siteBar).not.toContain("SiteSeekRail");
     expect(home).toContain("SiteSeekRail");
+    expect(home).toContain("SeekShell");
+    const theaterSeek = readFileSync(
+      new URL(
+        "../../app/components/radio-passport/TheaterSeek.tsx",
+        import.meta.url,
+      ),
+      "utf8",
+    );
+    expect(theaterSeek).toContain("SeekShell");
     const siteSeek = readFileSync(
       new URL("../../app/components/radio-passport/SiteSeek.tsx", import.meta.url),
       "utf8",

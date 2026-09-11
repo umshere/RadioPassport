@@ -1819,6 +1819,9 @@
    rail gives up its bar flex so the pill sizes itself. */
 .ew-theater-seek-row { margin: 1.15rem 0 0; }
 .ew-theater-seek-row .ew-theater-rail { flex: none; }
+/* Home holds the shell open in its rail: a full-bleed capsule with the same
+   lens inset and foil border — the bar's own width rules still bound it. */
+.ew-home-seek .ew-seek.is-open { width: 100%; }
 
 /* Held for the length of a room swap (see applyAtmosphere). Unlayered so it
    outranks every transition it silences. */

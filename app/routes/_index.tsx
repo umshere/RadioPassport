@@ -52,6 +52,7 @@ import {
   surpriseTapNextState,
 } from "~/components/radio-passport/searchState";
 import { IntentBar } from "~/components/radio-passport/IntentBar";
+import { SeekShell } from "~/components/radio-passport/SeekShell";
 import { HourRail } from "~/components/radio-passport/HourRail";
 import { CoverStrip } from "~/components/CoverStrip";
 import { CoverSlotPortal } from "~/components/radio-passport/CoverSlot";
@@ -793,6 +794,11 @@ export default function Index() {
       }`}
     >
       <SiteSeekPortal>
+        <SeekShell
+          open
+          busy={catalogLoading || aiStatus === "loading"}
+          lensLabel="Seek the catalog — focus the intent field"
+        >
         <IntentBar
           value={query}
           onChange={(value) => {
@@ -815,6 +821,7 @@ export default function Index() {
           // while the outage borrows the empty tone's styling.
           statusTone={seek.tone === "unreachable" ? "empty" : seek.tone}
         />
+        </SeekShell>
       </SiteSeekPortal>
       <CoverSlotPortal>
         <CoverStrip

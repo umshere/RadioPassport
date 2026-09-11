@@ -31,8 +31,8 @@ export default function SiteBar() {
             window.scrollTo({ top: 0 });
           }}
         />
-        {/* Theater seek lives in the letter under the heading now — the bar
-            keeps the wordmark and the tabs. */}
+        {/* The theater pill lives in the letter under the heading now —
+            the bar keeps the wordmark and the tabs. */}
       </div>
       <BandNav />
       <nav className="ew-site-bar-side" aria-label="Site">

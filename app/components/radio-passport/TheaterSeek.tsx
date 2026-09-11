@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useId, useRef, useState } from "react";
-import type { PointerEvent as ReactPointerEvent } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { IntentBar } from "~/components/radio-passport/IntentBar";
+import { SeekShell } from "~/components/radio-passport/SeekShell";
 import { loadWorldDescriptorPreview } from "~/services/aiOrchestrator";
 import { resolveTypedIntent } from "~/services/ai/intent/promptIntent";
 import { useJourneyStore } from "~/state/journeyStore";
@@ -32,19 +32,13 @@ function stationMatches(station: Station, query: string) {
 }
 
 /**
- * Theater seek lives in the site bar. One object whose width is the state
- * (Bencho seek DNA, Phase 0): closed it is a 64px hide circle with the lens
- * at its fixed inset; open it springs wider and the intent field rises
- * inside — button and field never unmount-swap. Lands in this room — never
- * sends you home.
+ * Theater seek lives in the letter under the heading. The chrome is the
+ * shared SeekShell (one expanding pill); this container owns open state and
+ * the land / catalog / surprise / voice / status behavior. Lands in this
+ * room — never sends you home.
  */
 export function TheaterSeek() {
-  const panelId = useId();
   const railRef = useRef<HTMLDivElement>(null);
-  const pillRef = useRef<HTMLDivElement>(null);
-  const sayRef = useRef<HTMLDivElement>(null);
-  const lensRef = useRef<HTMLButtonElement>(null);
-  const magnetOk = useRef(false);
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("");
@@ -142,44 +136,6 @@ export function TheaterSeek() {
   );
 
   useEffect(() => {
-    magnetOk.current =
-      window.matchMedia("(hover: hover) and (pointer: fine)").matches &&
-      !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  }, []);
-
-  // The field stays mounted so open/close is one object changing — inert
-  // (not unmounted) while closed. React 18 has no inert prop; the DOM does.
-  // The lean vars are frame dressing: drop them whenever the pill opens.
-  useEffect(() => {
-    if (sayRef.current) sayRef.current.toggleAttribute("inert", !open);
-    if (open) {
-      pillRef.current?.style.removeProperty("--ew-seek-x");
-      pillRef.current?.style.removeProperty("--ew-seek-y");
-    }
-  }, [open ]);
-
-  // Magnet lean, closed only: the pill tips a few px toward the pointer.
-  // Transform-only, desktop fine pointers, never under reduced motion.
-  const lean = useCallback(
-    (event: ReactPointerEvent<HTMLDivElement>) => {
-      const pill = pillRef.current;
-      if (!pill || open || !magnetOk.current) return;
-      const rect = pill.getBoundingClientRect();
-      const dx = event.clientX - (rect.left + rect.width / 2);
-      const dy = event.clientY - (rect.top + rect.height / 2);
-      const clamp = (value: number) =>
-        Math.max(-6, Math.min(6, value / 8)).toFixed(1);
-      pill.style.setProperty("--ew-seek-x", `${clamp(dx)}px`);
-      pill.style.setProperty("--ew-seek-y", `${clamp(dy)}px`);
-    },
-    [open],
-  );
-  const unleash = useCallback(() => {
-    pillRef.current?.style.removeProperty("--ew-seek-x");
-    pillRef.current?.style.removeProperty("--ew-seek-y");
-  }, []);
-
-  useEffect(() => {
     if (!open) return;
     const node = railRef.current?.querySelector("input");
     node?.focus();
@@ -187,7 +143,9 @@ export function TheaterSeek() {
       if (event.key === "Escape") {
         setOpen(false);
         setStatus("");
-        lensRef.current?.focus();
+        railRef.current
+          ?.querySelector<HTMLButtonElement>(".ew-seek-lens")
+          ?.focus();
       }
     };
     window.addEventListener("keydown", onKey);
@@ -201,72 +159,40 @@ export function TheaterSeek() {
       className={`ew-theater-rail${open ? " is-open" : ""}`}
       ref={railRef}
     >
-      <div
-        ref={pillRef}
-        className={`ew-seek${open ? " is-open" : ""}${busy ? " is-busy" : ""}`}
-        onPointerMove={lean}
-        onPointerLeave={unleash}
-      >
-        <button
-          ref={lensRef}
-          type="button"
-          className="ew-seek-lens"
-          aria-expanded={open}
-          aria-controls={panelId}
-          aria-label={
-            open
-              ? "Collapse seek"
-              : "Seek — ask for a place, language, mood, or station"
+      <SeekShell
+        open={open}
+        toggleable
+        busy={busy}
+        onLensClick={() => {
+          if (open) {
+            setOpen(false);
+            setStatus("");
+          } else {
+            setOpen(true);
           }
-          onClick={() => {
-            if (open) {
-              setOpen(false);
-              setStatus("");
-            } else {
-              setOpen(true);
-            }
+        }}
+      >
+        <IntentBar
+          value={query}
+          onChange={(value) => {
+            setQuery(value);
+            if (status) setStatus("");
           }}
-        >
-          <svg
-            viewBox="0 0 28 28"
-            width="28"
-            height="28"
-            aria-hidden="true"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            strokeLinecap="round"
-          >
-            <circle cx="12" cy="12" r="7" />
-            <path d="M17.5 17.5 24 24" />
-          </svg>
-        </button>
-        <div ref={sayRef} className="ew-seek-say" aria-hidden={!open}>
-          <IntentBar
-            value={query}
-            onChange={(value) => {
-              setQuery(value);
-              if (status) setStatus("");
-            }}
-            onSubmit={(value) => void submit(value)}
-            onSurprise={() => void surprise()}
-            loading={loading}
-            surpriseLoading={mixLoading}
-            statusLabel={status}
-            statusSpoken={status}
-            statusTone={
-              loading || mixLoading
-                ? "searching"
-                : status === "No signal" || status === "Signal lost"
-                  ? "empty"
-                  : "idle"
-            }
-          />
-        </div>
-        <span id={panelId} className="sr-only">
-          Ask for a place, language, mood, or station
-        </span>
-      </div>
+          onSubmit={(value) => void submit(value)}
+          onSurprise={() => void surprise()}
+          loading={loading}
+          surpriseLoading={mixLoading}
+          statusLabel={status}
+          statusSpoken={status}
+          statusTone={
+            loading || mixLoading
+              ? "searching"
+              : status === "No signal" || status === "Signal lost"
+                ? "empty"
+                : "idle"
+          }
+        />
+      </SeekShell>
     </div>
   );
 }
