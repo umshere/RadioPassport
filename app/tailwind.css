@@ -1813,6 +1813,12 @@
 @media (prefers-reduced-motion: reduce) {
 .ew-seek, .ew-seek-say { transition: none; }
 }
+/* Letter seek — the pill stands under the heading block, left-aligned with
+   the type. Top margin matches the track's step (1.15rem); the track and
+   up-next rows bring their own top margins, so no bottom margin here. The
+   rail gives up its bar flex so the pill sizes itself. */
+.ew-theater-seek-row { margin: 1.15rem 0 0; }
+.ew-theater-seek-row .ew-theater-rail { flex: none; }
 
 /* Held for the length of a room swap (see applyAtmosphere). Unlayered so it
    outranks every transition it silences. */
@@ -2204,6 +2210,8 @@ html, body {
 .ew-theater .ew-coverline { margin-top: 0; font-size: 42px; line-height: .96; letter-spacing: -.02em; }
 .ew-theater-telemetry { display: block; margin-top: 8px; color: var(--ew-dust); }
 .ew-theater-desk-live, .ew-theater-lede, .ew-theater-folio .ew-track, .ew-theater-folio .ew-upnext { display: none; }
+/* Phone theater keeps no seek — the letter row stands down with the lede. */
+.ew-theater-seek-row { display: none; }
 .ew-theater-folio > * { flex: none; }
 .ew-theater-well { flex: none; min-height: 0; max-width: none; margin-top: 0; overflow: visible; }
 .ew-theater-well .ew-cover-rule, .ew-letter-desk { display: none; }

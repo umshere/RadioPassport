@@ -31,6 +31,7 @@ import {
   theaterTrackCopy,
 } from "~/components/radio-passport/theaterLock";
 import { TheaterQueue } from "~/components/radio-passport/TheaterQueue";
+import { TheaterSeek } from "~/components/radio-passport/TheaterSeek";
 import { TheaterTransport } from "~/components/radio-passport/TheaterTransport";
 import { formatClock, formatLocalLabel, localDateAtLongitude } from "~/utils/localTime";
 import {
@@ -532,6 +533,11 @@ export default function ListeningPage() {
             {nowPlaying.country}
             {nowPlaying.language ? ` · ${nowPlaying.language}` : ""}
           </p>
+          {/* The seek pill stands under the heading block, left-aligned with
+              the type — an instrument of the letter, not chrome of the bar. */}
+          <div className="ew-theater-seek-row ew-arrive ew-arrive-3">
+            <TheaterSeek />
+          </div>
           {trackLine && phase !== "filed" ? (
             <p className="ew-track ew-arrive ew-arrive-4">
               {trackLine}

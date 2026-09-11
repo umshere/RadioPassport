@@ -1,7 +1,6 @@
 import { Link, useLocation, useNavigate } from "@remix-run/react";
 import { SignalWordmark } from "~/components/radio-passport/SignalMark";
 import { CoverSlotRail } from "~/components/radio-passport/CoverSlot";
-import { TheaterSeek } from "~/components/radio-passport/TheaterSeek";
 import BandNav from "~/components/BandNav";
 import {
   homeWithPassportHref,
@@ -32,7 +31,8 @@ export default function SiteBar() {
             window.scrollTo({ top: 0 });
           }}
         />
-        {onTheater ? <TheaterSeek /> : null}
+        {/* Theater seek lives in the letter under the heading now — the bar
+            keeps the wordmark and the tabs. */}
       </div>
       <BandNav />
       <nav className="ew-site-bar-side" aria-label="Site">
