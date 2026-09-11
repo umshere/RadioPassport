@@ -1773,16 +1773,45 @@
   max-width: 36rem;
   min-width: 0;
 }
-.ew-theater-seek {
-  border: 0;
-  background: none;
-  padding: 0;
-  color: var(--ew-foil);
-  font: 500 10px/1 "Azeret Mono", ui-monospace, monospace;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  min-height: 44px;
-  cursor: pointer;
+/* Seek pill — one object whose width is the state (Bencho seek DNA, Phase 0,
+   theater only). Closed it is a 64px hide circle with the lens at its fixed
+   inset; open it springs wider and the intent field rises inside — the field
+   stays mounted (inert while closed), nothing unmount-swaps. Press is a
+   settle-in via the `scale` property so it composes with the magnet lean on
+   `transform`. Lens stroke is dust, bone on hover, brightest while busy. */
+.ew-seek {
+  position: relative;
+  display: flex;
+  flex: none;
+  align-items: center;
+  width: 64px;
+  height: 64px;
+  border: 1px solid var(--ew-rule);
+  border-radius: 999px;
+  background: var(--ew-hide);
+  color: var(--ew-dust);
+  overflow: hidden;
+  transform: translate(var(--ew-seek-x, 0px), var(--ew-seek-y, 0px));
+  transition: width .45s var(--ew-settle), border-color .3s var(--ew-settle), background-color .3s var(--ew-settle), color .3s var(--ew-settle), scale .09s ease-out;
+}
+.ew-seek:hover { border-color: var(--ew-foil-line); color: var(--ew-bone); }
+.ew-seek:not(.is-open):active { scale: .93; }
+.ew-seek.is-open { width: min(348px, 58vw); height: auto; min-height: 64px; background: var(--ew-leather); }
+.ew-seek.is-busy .ew-seek-lens { color: var(--ew-bone); }
+.ew-seek-lens { position: absolute; inset: 0; display: flex; align-items: center; border: 0; border-radius: 999px; background: transparent; padding: 0 0 0 18px; color: inherit; cursor: pointer; }
+.ew-seek-lens svg { display: block; flex: none; }
+.ew-seek-lens:focus-visible { outline: 1px solid var(--ew-foil); outline-offset: 2px; }
+.ew-seek.is-open .ew-seek-lens { inset: auto; left: 18px; top: 10px; align-items: flex-start; width: 28px; height: 44px; padding: 8px 0; }
+.ew-seek-say { flex: 1 1 auto; min-width: 0; width: 0; padding: 10px 14px 10px 56px; opacity: 0; translate: -8px 0; visibility: hidden; transition: opacity .22s ease .18s, translate .3s var(--ew-settle) .16s, visibility 0s .45s; }
+.ew-seek.is-open .ew-seek-say { width: auto; opacity: 1; translate: none; visibility: visible; transition: opacity .25s ease .2s, translate .32s var(--ew-settle) .18s, visibility 0s 0s; }
+.ew-seek .rp-intent { width: 100%; max-width: none; min-height: 0; border: 0; background: transparent; padding: 0; flex-wrap: wrap; gap: 4px 8px; }
+.ew-seek .rp-intent input { flex: 1 1 120px; padding: 6px 0; }
+.ew-seek .rp-intent-status { flex: 1 1 100%; max-width: none; }
+@media (max-width: 760px) {
+.ew-seek.is-open { width: min(300px, 74vw); }
+}
+@media (prefers-reduced-motion: reduce) {
+.ew-seek, .ew-seek-say { transition: none; }
 }
 
 /* Held for the length of a room swap (see applyAtmosphere). Unlayered so it
