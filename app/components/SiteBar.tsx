@@ -34,7 +34,10 @@ export default function SiteBar() {
         {/* The theater pill lives in the letter under the heading now —
             the bar keeps the wordmark and the tabs. */}
       </div>
-      <BandNav />
+      {/* Desktop rail only. The phone band mounts at the root (root.tsx)
+          beside the dock — a fixed band inside this sticky header loses its
+          paint on WebKit once the Atlas veil opens. */}
+      <BandNav variant="rail" />
       <nav className="ew-site-bar-side" aria-label="Site">
         <Link
           to="/about"

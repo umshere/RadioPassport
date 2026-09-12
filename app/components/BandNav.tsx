@@ -17,7 +17,13 @@ const SLOTS = [
   { id: "room", label: "Room", to: "/about" },
 ] as const;
 
-export default function BandNav() {
+// Two mounts, one component. The phone band ("band") is position: fixed and
+// must live at the root beside the dock: nested in the sticky site bar (inside
+// the overflow-hidden 100dvh frame) WebKit composites it against the header's
+// layer and drops its paint the moment another fixed scroll layer — the Atlas
+// veil — stands beside it. Taps still land, pixels don't. The desktop rail
+// ("rail") rides inside the header where it is plain flow layout.
+export default function BandNav({ variant }: { variant: "band" | "rail" }) {
   const location = useLocation();
   const navigate = useNavigate();
   const mounted = useHydrated();
@@ -51,7 +57,7 @@ export default function BandNav() {
             : null;
 
   return (
-    <nav className="ew-band-nav" aria-label="Elsewhere">
+    <nav className={`ew-band-nav is-${variant}`} aria-label="Elsewhere">
       {SLOTS.map((slot) => {
         const isCurrent = current === slot.id;
         const className = `ew-band-nav-slot${isCurrent ? " is-current" : ""}`;

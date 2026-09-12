@@ -29,6 +29,7 @@ import { playbackNoticeCopy } from "~/utils/playbackNoticeCopy";
 import stylesheet from "./tailwind.css?url";
 import PlayerDock from "~/components/PlayerDock";
 import SiteBar from "~/components/SiteBar";
+import BandNav from "~/components/BandNav";
 import { SiteSeekProvider } from "~/components/radio-passport/SiteSeek";
 import { CoverSlotProvider } from "~/components/radio-passport/CoverSlot";
 import { usePlayerNoticeStore } from "~/state/playerNoticeStore";
@@ -209,6 +210,10 @@ export default function App() {
         </SiteSeekProvider>
 
         <PlayerDock />
+        {/* Phone band: fixed at the root beside the dock, outside the sticky
+            header and the overflow-hidden frame, so WebKit keeps painting it
+            while the Atlas veil stands. */}
+        <BandNav variant="band" />
         <JourneyBridge />
         <ToastChannel />
         <AtmosphereBridge />

@@ -574,6 +574,8 @@ describe("live stylesheet", () => {
     expect(css).toContain(".ew-atmosphere");
     expect(css).toContain(".ew-horizon-kicker");
     expect(css).toContain(".ew-band-nav");
+    expect(css).toContain(".ew-band-nav.is-band { position: fixed;");
+    expect(css).toContain(".ew-band-nav.is-rail { display: flex;");
     expect(css).toContain("@media (min-width: 961px)");
     expect(css).toContain(".ew-site-bar-left");
     // The bar's ink is opaque, so a blur would paint nothing — and it would
@@ -630,13 +632,16 @@ describe("home cover panes", () => {
     );
     expect(root).toContain("is-home-frame");
     expect(root).toContain("is-home");
-    expect(root).not.toContain("BandNav");
+    // The phone band mounts at the root beside the dock — inside the sticky
+    // header WebKit drops its paint once the Atlas veil opens. The header
+    // keeps only the desktop rail instance.
+    expect(root).toContain('<BandNav variant="band" />');
     expect(root).toContain("PlayerDock");
     const siteBar = readFileSync(
       new URL("../../app/components/SiteBar.tsx", import.meta.url),
       "utf8",
     );
-    expect(siteBar).toContain("BandNav");
+    expect(siteBar).toContain('<BandNav variant="rail" />');
     expect(siteBar).toContain("ew-site-bar-left");
     expect(siteBar).toContain("requestCloseAtlas");
     const band = readFileSync(
