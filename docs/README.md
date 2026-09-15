@@ -7,6 +7,7 @@ Elsewhere (repo heritage: Radio Passport). Remix + Tailwind. Live radio as a cov
 - Product + run: [../readme.md](../readme.md)
 - **Agents (Grok / Claude / Codex):** [../AGENTS.md](../AGENTS.md)
 - **Roadmap (shipped / next / paid):** [ROADMAP.md](./ROADMAP.md)
+- **Market study (public sources, 2026-08-30):** [MARKET_STUDY.md](./MARKET_STUDY.md)
 - **After compact / next session:** [SESSION_HANDOFF.md](./SESSION_HANDOFF.md)
 - Domains: [DOMAINS.md](./DOMAINS.md)
 - Deploy: [DEPLOY.md](./DEPLOY.md)

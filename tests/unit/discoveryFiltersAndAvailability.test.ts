@@ -253,7 +253,7 @@ describe("station availability honesty", () => {
     const now = Date.parse("2026-08-11T00:00:00.000Z");
     const sevenMonthsAgo = new Date(now - 210 * 24 * 60 * 60 * 1000).toISOString();
     const stale = station({ healthStatus: "good", isStreamHealthy: true, lastCheckOk: true, lastCheckOkTime: sevenMonthsAgo });
-    const fresh = station({ healthStatus: "good", isStreamHealthy: true, lastCheckOk: true, lastCheckOkTime: new Date(now - 60_000).toISOString() });
+    const fresh = station({ healthStatus: "good", isStreamHealthy: true, lastCheckOk: true, lastCheckOkTime: new Date(Date.now() - 60_000).toISOString() });
 
     expect(isEvidenceFresh(sevenMonthsAgo, now)).toBe(false);
     expect(isEvidenceFresh(new Date(now - 60_000).toISOString(), now)).toBe(true);

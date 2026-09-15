@@ -32,6 +32,10 @@ import {
 } from "~/components/radio-passport/theaterLock";
 import { TheaterQueue } from "~/components/radio-passport/TheaterQueue";
 import { TheaterSeek } from "~/components/radio-passport/TheaterSeek";
+import {
+  createSkyTouchDrag,
+  forwardSkyWheel,
+} from "~/components/radio-passport/theaterScroll";
 import { formatClock, formatLocalLabel, localDateAtLongitude } from "~/utils/localTime";
 import {
   theaterIntelligenceFromRoom,
@@ -118,6 +122,7 @@ export default function ListeningPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [trail, setTrail] = useState<Array<{ id: string; label: string }>>([]);
   const folioRef = useRef<HTMLDivElement>(null);
+  const skyRef = useRef<HTMLElement>(null);
   const [stationByUuid, setStationByUuid] = useState<Record<string, Station>>(
     () => ({}),
   );
@@ -330,6 +335,51 @@ export default function ListeningPage() {
     detail.scrollIntoView({ behavior: "smooth", block: "nearest" });
   }, [selectedId]);
 
+  // The sky holds no scroll container (the app shell locks the page and
+  // only the letter scrolls), so wheel and drag gestures that begin over it
+  // are forwarded to the letter instead of dying on the sky. Taps still
+  // click: the drag only takes over past its movement threshold.
+  useEffect(() => {
+    const sky = skyRef.current;
+    const folio = folioRef.current;
+    if (!sky || !folio) return;
+    const onWheel = (event: WheelEvent) => {
+      if (forwardSkyWheel(folio, event.deltaX, event.deltaY, event.ctrlKey)) {
+        event.preventDefault();
+      }
+    };
+    const drag = createSkyTouchDrag(folio);
+    const onTouchStart = (event: TouchEvent) => {
+      const touch = event.touches[0];
+      if (event.touches.length !== 1 || !touch) {
+        drag.reset();
+        return;
+      }
+      drag.start(touch.clientY);
+    };
+    const onTouchMove = (event: TouchEvent) => {
+      const touch = event.touches[0];
+      if (event.touches.length !== 1 || !touch) {
+        drag.reset();
+        return;
+      }
+      if (drag.move(touch.clientY)) event.preventDefault();
+    };
+    const onTouchEnd = () => drag.reset();
+    sky.addEventListener("wheel", onWheel, { passive: false });
+    sky.addEventListener("touchstart", onTouchStart, { passive: true });
+    sky.addEventListener("touchmove", onTouchMove, { passive: false });
+    sky.addEventListener("touchend", onTouchEnd);
+    sky.addEventListener("touchcancel", onTouchEnd);
+    return () => {
+      sky.removeEventListener("wheel", onWheel);
+      sky.removeEventListener("touchstart", onTouchStart);
+      sky.removeEventListener("touchmove", onTouchMove);
+      sky.removeEventListener("touchend", onTouchEnd);
+      sky.removeEventListener("touchcancel", onTouchEnd);
+    };
+  }, [storedNowPlaying?.uuid]);
+
   const handleNodeSelect = useCallback(
     (id: string) => {
       const node = knowledgeGraph.nodes.find((entry) => entry.id === id);
@@ -490,7 +540,7 @@ export default function ListeningPage() {
   return (
     <main className="ew-theater" data-phase={phase} data-beat={beat}>
       <div className="ew-theater-room" key={nowPlaying.uuid}>
-        <aside className="ew-theater-sky">
+        <aside className="ew-theater-sky" ref={skyRef}>
           <TheaterField
             seed={seed}
             phase={phase}
