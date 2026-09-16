@@ -55,6 +55,10 @@ import {
 import { IntentBar } from "~/components/radio-passport/IntentBar";
 import { SeekShell } from "~/components/radio-passport/SeekShell";
 import { HourRail } from "~/components/radio-passport/HourRail";
+import {
+  BoardSheet,
+  type BoardSheetState,
+} from "~/components/radio-passport/BoardSheet";
 import { TrailWhisper } from "~/components/radio-passport/TrailWhisper";
 import { CoverStrip } from "~/components/CoverStrip";
 import { CoverSlotPortal } from "~/components/radio-passport/CoverSlot";
@@ -295,6 +299,9 @@ export default function Index() {
   );
   const [mixLabel, setMixLabel] = useState<string | null>(null);
   const [passport, setPassport] = useState(false);
+  // The station board rests as a sheet on the phone: peek until a search
+  // asks for the rows, back to peek the moment a station lands.
+  const [boardSheet, setBoardSheet] = useState<BoardSheetState>("peek");
   const trailStage = useSecretTrail((state) => state.stage);
   const trailHydrate = useSecretTrail((state) => state.hydrate);
   const trailVisitAtlas = useSecretTrail((state) => state.visitAtlas);
@@ -473,6 +480,9 @@ export default function Index() {
       });
       startStation(station, { autoPlay: true, queueSession: queue });
       recordPlayed(station.uuid);
+      // Landing is the globe's moment again: the sheet settles back to its
+      // peek so the cover and the land stay in view.
+      setBoardSheet("peek");
     },
     [
       hour,
@@ -685,6 +695,11 @@ export default function Index() {
   }, [atlas]);
 
   const isSeeking = query.trim().length >= 2;
+  // A typed search is a request for rows: the sheet rises on its own so the
+  // results meet the eye instead of waiting behind the grip.
+  useEffect(() => {
+    if (isSeeking) setBoardSheet("open");
+  }, [isSeeking]);
   // Manual reshuffle: a fresh idle window from the loaded pool, no refetch.
   // A real deal, not a rotation — rotating slides the window one slot and
   // leaves 7 of 8 rows standing.
@@ -965,6 +980,11 @@ export default function Index() {
               })}
             </div>
           ) : null}
+          <BoardSheet
+            state={boardSheet}
+            onStateChange={setBoardSheet}
+            docked={Boolean(nowPlaying)}
+          >
           <div className="rp-intro-board">
             <div
               className="mt-7 flex items-center justify-between"
@@ -1073,6 +1093,7 @@ export default function Index() {
               </div>
             )}
           </div>
+          </BoardSheet>
         </section>
         <section className="rp-globe-side">
           <GalaxyBackdrop />

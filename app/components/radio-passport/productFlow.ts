@@ -31,6 +31,7 @@ export type FlowAction =
   | "atlas"
   | "country"
   | "play-station"
+  | "board-sheet"
   | "favorite"
   | "passport"
   | "replay-stamp"
@@ -256,6 +257,14 @@ export const SURFACE_CONNECTIONS: SurfaceConnection[] = [
     step: "tune",
     action: "play-station",
     keepsPlayback: false,
+  },
+  {
+    id: "board-sheet",
+    surface: "cover",
+    label: "Station board sheet grip",
+    step: "tune",
+    action: "board-sheet",
+    keepsPlayback: true,
   },
   {
     id: "station-heart",

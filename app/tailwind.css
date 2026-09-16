@@ -1537,22 +1537,39 @@
     .rp-globe-wrap {
       position: relative;
       width: 100%;
-      height: 174px;
-      min-height: 174px;
+      height: clamp(196px, 26svh, 290px);
+      min-height: 196px;
     }
-    /* The globe keeps one height while seeking: swapping 174px on a
-       keystroke resized the canvas mid-gesture (app-feel killer).
-       Seeking intent shows in the coverline, not in globe height. */
+    /* The globe keeps one height while seeking: resizing the canvas on a
+       keystroke mid-gesture is an app-feel killer. Seeking intent shows in
+       the coverline, not in globe height. The station rows moved into the
+       board sheet, so the globe grows — but only far enough that the hour
+       rail still stands in the first phone screen. */
     .rp-home.is-seeking #live-board {
       scroll-margin-top: 0;
     }
     .ew-cover {
-      position: relative;
-      left: auto;
-      right: auto;
-      bottom: auto;
-      min-height: 4.75rem;
-      padding: 4px 16px 0;
+      /* The cover overlays the globe's lower crescent, as on desktop: the
+         rows it would push down (land button, hour rail) must stand above
+         the board sheet's peek on the first phone screen. */
+      position: absolute;
+      left: 16px;
+      right: 16px;
+      bottom: 10px;
+      min-height: 0;
+      padding: 0;
+    }
+    /* Readability scrim between the particle field and the coverline. */
+    .rp-globe-side::after {
+      content: "";
+      position: absolute;
+      z-index: 1;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      height: 46%;
+      background: linear-gradient(180deg, transparent, var(--ew-ink));
+      pointer-events: none;
     }
     .ew-cover .ew-coverline {
       overflow: hidden;
@@ -1560,7 +1577,9 @@
       text-overflow: ellipsis;
       white-space: nowrap;
     }
-    .ew-globe-tip { display: none; }
+    /* The globe tip rides taps on the phone too: the tapped land names
+       itself before the cover does. Smaller card, same ink. */
+    .ew-globe-tip { min-width: 148px; max-width: 190px; padding: 8px 10px; }
     .rp-intro {
       display: flex;
       flex: 1 1 auto;
@@ -2348,3 +2367,61 @@ html, body {
 .ew-secret-choice { display: flex; flex-wrap: wrap; gap: 16px; }.ew-secret-choice button + button { color: var(--ew-dust); border-bottom-color: var(--ew-rule); }.ew-secret-answer { max-width: 52ch; margin: 0 0 12px; color: var(--ew-dust); font: italic 16px/1.4 "Newsreader",serif; }.ew-secret-home { display: inline-block; margin-top: 25px; color: var(--ew-dust); font: 500 10px/1.3 "Azeret Mono",monospace; letter-spacing: .14em; text-transform: uppercase; }.ew-secret-room-empty { display: flex; flex-direction: column; align-items: flex-start; justify-content: center; max-width: 850px; margin: 0 auto; }
 .ew-secret-coffee { display: grid; grid-template-columns: minmax(130px,210px) minmax(0,1fr); align-items: center; gap: 18px; max-width: 610px; margin: 20px 0 4px; padding-top: 18px; border-top: 1px solid color-mix(in srgb,var(--ew-foil) 46%,transparent); }.ew-secret-coffee img { width: 100%; height: auto; max-height: 180px; object-fit: contain; }.ew-secret-coffee p:not(.rp-eyebrow) { max-width: 31rem; margin: 6px 0 12px; color: color-mix(in srgb,var(--ew-bone) 74%,transparent); font: 400 .9rem/1.5 var(--ew-serif); }.ew-secret-coming { display: block; margin-bottom: 10px; color: var(--ew-dust); font: 500 10px/1.4 "Azeret Mono",monospace; letter-spacing: .12em; text-transform: uppercase; }
 @media (max-width:700px) { .ew-trail-whisper { top: calc(56px + env(safe-area-inset-top,0px)); gap: 9px; padding: 9px 12px; }.ew-trail-whisper button,.ew-trail-whisper a { max-width:100px; white-space:normal; }.ew-secret-room { padding:22px 20px calc(132px + env(safe-area-inset-bottom,0px)); }.ew-secret-room-inner { display:flex; flex-direction:column; min-height:0; }.ew-secret-story { margin-top:26px; }.ew-secret-story h1 { margin-top:17px; font-size:clamp(40px,12vw,56px); }.ew-secret-traveler { align-self:center; width:min(46vw,180px); max-height:240px; margin:8px 0 -8px; }.ew-secret-coffee { grid-template-columns:110px minmax(0,1fr); gap:12px; margin-top:16px; padding-top:14px; }.ew-secret-coffee img { max-height:120px; }.ew-secret-ask { width:100%; padding-top:17px; } }
+
+/* Board sheet — the station board as a draggable sheet on the phone, the
+   same board inline on desktop. Outside @layer (Tailwind v3 drop gremlin).
+   Desktop: the wrapper collapses to contents and the grip never renders, so
+   the wide layout keeps the board exactly where it always stood. */
+.rp-board-sheet { display: contents; }
+.rp-board-grip { display: none; }
+@media (max-width: 960px) {
+  .rp-board-sheet {
+    position: fixed;
+    z-index: 38; /* under the Atlas veil (39), the dock (40), the band (41) */
+    right: 0;
+    left: 0;
+    bottom: calc(44px + env(safe-area-inset-bottom, 0px));
+    display: flex;
+    flex-direction: column;
+    height: min(72svh, 620px);
+    min-height: 220px;
+    border-top: 1px solid var(--ew-rule);
+    background: var(--ew-ink);
+    box-shadow: 0 -18px 42px rgba(0, 0, 0, .45);
+    transform: translateY(calc(100% - 84px));
+    transition: transform .38s var(--ew-settle);
+  }
+  /* The dock stands taller than the band: the sheet rides above whichever
+     is present so the grip never hides under the player. */
+  .rp-board-sheet.is-docked { bottom: calc(108px + env(safe-area-inset-bottom, 0px)); }
+  .rp-board-sheet[data-state="open"] { transform: translateY(0); }
+  .rp-board-grip {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 100%;
+    min-height: 28px;
+    border: 0;
+    background: transparent;
+    padding: 8px 0 4px;
+    cursor: grab;
+    touch-action: none; /* the gesture belongs to the sheet, not the page */
+  }
+  .rp-board-grip:active { cursor: grabbing; }
+  .rp-board-grip-bar { display: block; width: 44px; height: 4px; border-radius: 2px; background: var(--ew-ghost); }
+  .rp-board-grip:hover .rp-board-grip-bar,
+  .rp-board-grip:focus-visible .rp-board-grip-bar { background: var(--ew-foil); }
+  /* The board scrolls inside the sheet; the page behind keeps the globe. */
+  .rp-board-sheet .rp-intro-board {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: auto;
+    overscroll-behavior: contain;
+    padding: 0 16px calc(16px + env(safe-area-inset-bottom, 0px));
+  }
+  /* The intro's own tail stays clear of the peeking sheet. */
+  .rp-intro { padding-bottom: 124px; }
+}
+@media (max-width: 960px) and (prefers-reduced-motion: reduce) {
+  .rp-board-sheet { transition: none; }
+}
