@@ -1,0 +1,3 @@
+import type { SolarHour } from "~/utils/localTime";
+export function ambientLineForHour(hour: SolarHour | null): string { switch (hour) { case "Dawn": return "The day is starting here. You arrived with the signal."; case "Midday": return "The day was already underway. You arrived mid-sentence."; case "Dusk": return "The hour is turning. You can stay for the next sound."; case "Night": return "The night has its own frequency. You don't need to steer."; default: return "You landed in an ongoing hour. The next sound can choose itself."; } }
+export function TheaterAmbientLine({ hour }: { hour: SolarHour | null }) { return <div className="ew-theater-ambient" key={hour ?? "unknown"}><p className="rp-eyebrow text-foil">At this hour</p><p>{ambientLineForHour(hour)}</p></div>; }

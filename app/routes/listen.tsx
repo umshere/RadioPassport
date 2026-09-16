@@ -31,12 +31,14 @@ import {
   theaterTrackCopy,
 } from "~/components/radio-passport/theaterLock";
 import { TheaterQueue } from "~/components/radio-passport/TheaterQueue";
+import { SecretTrail } from "~/components/radio-passport/SecretTrail";
+import { TheaterAmbientLine } from "~/components/radio-passport/TheaterAmbientLine";
 import { TheaterSeek } from "~/components/radio-passport/TheaterSeek";
 import {
   createSkyTouchDrag,
   forwardSkyWheel,
 } from "~/components/radio-passport/theaterScroll";
-import { formatClock, formatLocalLabel, localDateAtLongitude } from "~/utils/localTime";
+import { formatClock, formatLocalLabel, localDateAtLongitude, solarHourAtLongitude } from "~/utils/localTime";
 import {
   theaterIntelligenceFromRoom,
   theaterRoomGate,
@@ -579,6 +581,7 @@ export default function ListeningPage() {
             {nowPlaying.name} · {isPlaying ? "Live" : "Paused"}
             {local ? ` · ${formatClock(local)} local` : ""}
           </p>
+          <SecretTrail stationId={nowPlaying.uuid} city={city} longitude={nowPlaying.longitude} />
           <p className="rp-lede mt-2 ew-arrive ew-arrive-3 ew-theater-lede">
             {nowPlaying.country}
             {nowPlaying.language ? ` · ${nowPlaying.language}` : ""}
@@ -594,6 +597,7 @@ export default function ListeningPage() {
             </p>
           ) : null}
           <UpNextRow />
+          {!intelligence.dispatchBody ? <TheaterAmbientLine hour={typeof nowPlaying.longitude === "number" ? solarHourAtLongitude(nowPlaying.longitude) : null} /> : null}
           <TheaterWell
             phase={phase}
             dispatchBody={intelligence.dispatchBody}

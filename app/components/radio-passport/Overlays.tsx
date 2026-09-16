@@ -118,6 +118,7 @@ export function AtlasOverlay({
   setQuery,
   close,
   openCountry,
+  trailFootnote,
 }: {
   countries: Country[];
   stations: Station[];
@@ -125,6 +126,7 @@ export function AtlasOverlay({
   setQuery: (value: string) => void;
   close: () => void;
   openCountry: (country: string) => void;
+  trailFootnote?: React.ReactNode;
 }) {
   const normalized = query.toLowerCase().trim();
   const languagesByCountry = new Map<string, string>();
@@ -230,6 +232,7 @@ export function AtlasOverlay({
           </section>
         ))}
       </div>
+      {trailFootnote}
     </Overlay>
   );
 }
@@ -436,6 +439,7 @@ export function PassportOverlay({
   onPlayFavorite,
   onFavorite,
   onFindCity,
+  trailFootnote,
 }: {
   stamps: PassportStamp[];
   playedCount: number;
@@ -447,6 +451,7 @@ export function PassportOverlay({
   onPlayFavorite?: (station: Station) => void;
   onFavorite?: (station: Station) => void;
   onFindCity?: () => void;
+  trailFootnote?: React.ReactNode;
 }) {
   const countries = new Set(stamps.map((stamp) => stamp.country));
   const languages = new Set(
@@ -568,6 +573,7 @@ export function PassportOverlay({
           Find a city →
         </button>
       ) : null}
+      {trailFootnote}
     </Overlay>
   );
 }

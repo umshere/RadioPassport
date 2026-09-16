@@ -10,6 +10,7 @@ import type { Country, Station } from "~/types/radio";
 import type { InterpretResponse } from "~/types/ai";
 import { usePlayerStore } from "~/state/playerStore";
 import { useJourneyStore } from "~/state/journeyStore";
+import { useSecretTrail } from "~/state/secretTrail";
 import { resolveKeptSignals } from "~/state/favoriteSnapshot";
 import { useListeningMode } from "~/hooks/useListeningMode";
 import { roomForStation, useRoomStore } from "~/state/roomStore";
@@ -54,6 +55,7 @@ import {
 import { IntentBar } from "~/components/radio-passport/IntentBar";
 import { SeekShell } from "~/components/radio-passport/SeekShell";
 import { HourRail } from "~/components/radio-passport/HourRail";
+import { TrailWhisper } from "~/components/radio-passport/TrailWhisper";
 import { CoverStrip } from "~/components/CoverStrip";
 import { CoverSlotPortal } from "~/components/radio-passport/CoverSlot";
 import {
@@ -293,6 +295,13 @@ export default function Index() {
   );
   const [mixLabel, setMixLabel] = useState<string | null>(null);
   const [passport, setPassport] = useState(false);
+  const trailStage = useSecretTrail((state) => state.stage);
+  const trailHydrate = useSecretTrail((state) => state.hydrate);
+  const trailVisitAtlas = useSecretTrail((state) => state.visitAtlas);
+  const trailVisitPassport = useSecretTrail((state) => state.visitPassport);
+  useEffect(() => trailHydrate(), [trailHydrate]);
+  useEffect(() => { if (atlas && trailStage === "atlas") trailVisitAtlas(); }, [atlas, trailStage, trailVisitAtlas]);
+  useEffect(() => { if (passport && trailStage === "passport") trailVisitPassport(); }, [passport, trailStage, trailVisitPassport]);
   // The interpreter's whisper: what it understood differently, until the next keystroke.
   const [intentEcho, setIntentEcho] = useState<string | null>(null);
   const queryRef = useRef(query);
@@ -1143,6 +1152,7 @@ export default function Index() {
           setQuery={setAtlasQuery}
           close={() => setAtlas(false)}
           openCountry={chooseCountry}
+          trailFootnote={<TrailWhisper onOpenBook={() => { setAtlas(false); setCountry(null); setPassport(true); }} />}
         />
       )}
       {country && (
@@ -1205,8 +1215,10 @@ export default function Index() {
             setPassport(false);
           }}
           onFavorite={(station) => toggleFavorite(station.uuid, station)}
+          trailFootnote={<TrailWhisper onOpenBook={() => { setAtlas(false); setCountry(null); setPassport(true); }} />}
         />
       )}
+      {!atlas && !country && !passport ? <TrailWhisper onOpenBook={() => { setAtlas(false); setCountry(null); setPassport(true); }} /> : null}
     </main>
   );
 }
