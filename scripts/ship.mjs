@@ -166,6 +166,7 @@ function waitForGitDeploy(sha) {
         npmCache,
         "vercel",
         "ls",
+        "--yes",
         "-m",
         `githubCommitSha=${sha}`,
       ],
