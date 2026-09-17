@@ -1,3 +1,19 @@
-import type { SolarHour } from "~/utils/localTime";
-export function ambientLineForHour(hour: SolarHour | null): string { switch (hour) { case "Dawn": return "The day is starting here. You arrived with the signal."; case "Midday": return "The day was already underway. You arrived mid-sentence."; case "Dusk": return "The hour is turning. You can stay for the next sound."; case "Night": return "The night has its own frequency. You don't need to steer."; default: return "You landed in an ongoing hour. The next sound can choose itself."; } }
-export function TheaterAmbientLine({ hour }: { hour: SolarHour | null }) { return <div className="ew-theater-ambient" key={hour ?? "unknown"}><p className="rp-eyebrow text-foil">At this hour</p><p>{ambientLineForHour(hour)}</p></div>; }
+import { useEffect, useState } from "react";
+import type { Station } from "~/types/radio";
+import { theaterFragment } from "./theaterFragments";
+
+export function TheaterAmbientLine({ station }: { station: Station }) {
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(new Date()), 60_000);
+    return () => window.clearInterval(timer);
+  }, []);
+  const fragment = theaterFragment(station, now);
+  return (
+    <section className="ew-theater-ambient ew-theater-story" aria-label="At this hour">
+      <p className="rp-eyebrow text-foil">At this hour · {fragment.place}</p>
+      <p className="ew-theater-story-hour">{fragment.hour}</p>
+      <p className="ew-theater-story-detail">{fragment.detail}</p>
+    </section>
+  );
+}

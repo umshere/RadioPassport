@@ -38,7 +38,7 @@ import {
   createSkyTouchDrag,
   forwardSkyWheel,
 } from "~/components/radio-passport/theaterScroll";
-import { formatClock, formatLocalLabel, localDateAtLongitude, solarHourAtLongitude } from "~/utils/localTime";
+import { formatClock, formatLocalLabel, localDateAtLongitude } from "~/utils/localTime";
 import {
   theaterIntelligenceFromRoom,
   theaterRoomGate,
@@ -597,7 +597,7 @@ export default function ListeningPage() {
             </p>
           ) : null}
           <UpNextRow />
-          {!intelligence.dispatchBody ? <TheaterAmbientLine hour={typeof nowPlaying.longitude === "number" ? solarHourAtLongitude(nowPlaying.longitude) : null} /> : null}
+          <TheaterAmbientLine station={nowPlaying} />
           <TheaterWell
             phase={phase}
             dispatchBody={intelligence.dispatchBody}
