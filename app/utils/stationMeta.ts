@@ -200,8 +200,13 @@ export function scoreStation(
 ): number {
   let score = 0;
 
-  if (!station.streamUrl && !station.url) {
+  const stream = streamUrlOf(station);
+  if (!stream) {
     score -= 120;
+  } else if (isSecureStreamUrl(stream)) {
+    score += 35;
+  } else {
+    score -= 50;
   }
 
   switch (station.healthStatus) {

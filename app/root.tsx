@@ -20,6 +20,11 @@ import {
 } from "~/state/stationAvailabilityStore";
 import { isMixedContentStream } from "~/utils/streamHeuristics";
 import {
+  nextProbeTargets,
+  pickSkipCandidate,
+  shouldSkipBeforePlay,
+} from "~/utils/probeAhead";
+import {
   canRetryPlayback,
   getRetryDelayMs,
   MAX_PLAYBACK_RECOVERY_ATTEMPTS,
@@ -345,6 +350,7 @@ function GlobalAudioBridge() {
     lastSkipAt: 0,
     recentFailures: [],
   });
+  const probePatchesRef = useRef<Record<string, Station["probeStatus"]>>({});
   const setAudioElement = usePlayerStore((state) => state.setAudioElement);
   const setIsPlaying = usePlayerStore((state) => state.setIsPlaying);
   const setAudioLevel = usePlayerStore((state) => state.setAudioLevel);
@@ -440,19 +446,16 @@ function GlobalAudioBridge() {
       const protocol =
         typeof window !== "undefined" ? window.location.protocol : "https:";
 
-      let candidate: Station | null = null;
-      for (let offset = 1; offset <= currentQueue.length; offset++) {
-        const idx = (startIndex + offset) % currentQueue.length;
-        const station = currentQueue[idx];
-        if (!station) continue;
-        if (pinnedId && station.uuid === pinnedId) continue;
-        if (isStationTemporarilyUnavailable(availability[station.uuid], now))
-          continue;
-        const url = station.streamUrl ?? station.url ?? "";
-        if (isMixedContentStream(url, protocol)) continue;
-        candidate = station;
-        break;
-      }
+      const candidate = pickSkipCandidate({
+        queue: currentQueue,
+        startIndex,
+        pinnedId,
+        protocol,
+        now,
+        unavailable: (uuid, at) =>
+          isStationTemporarilyUnavailable(availability[uuid], at),
+        probes: probePatchesRef.current,
+      });
 
       if (!candidate) {
         // Keep the current nowPlaying station (even if failed) so player doesn't disappear
@@ -695,12 +698,17 @@ function GlobalAudioBridge() {
       return;
     }
 
-    if (isMixedContentStream(streamUrl, window.location.protocol)) {
-      markFailed(nowPlaying.uuid, "mixed_content");
+    const skipReason = shouldSkipBeforePlay(
+      nowPlaying,
+      window.location.protocol,
+      probePatchesRef.current
+    );
+    if (skipReason) {
+      markFailed(nowPlaying.uuid, skipReason);
       setIsPlaying(false);
       audio.pause();
       audio.removeAttribute("src");
-      autoSkipToNext(nowPlaying, "mixed_content");
+      autoSkipToNext(nowPlaying, skipReason);
       return;
     }
 
@@ -708,6 +716,46 @@ function GlobalAudioBridge() {
       audio.src = streamUrl;
     }
   }, [nowPlaying, normalizeStreamUrl]);
+
+  useEffect(() => {
+    if (!nowPlaying || !isPlaying || !queue.length) return;
+    const targets = nextProbeTargets(queue, currentStationIndex);
+    if (!targets.length) return;
+    let cancelled = false;
+    void fetch("/api/stations/probe", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        stations: targets.map((station) => ({
+          uuid: station.uuid,
+          url: station.url,
+          streamUrl: station.streamUrl,
+        })),
+      }),
+    })
+      .then(async (response) =>
+        response.ok
+          ? ((await response.json()) as {
+              stations?: Array<{
+                uuid: string;
+                probeStatus?: Station["probeStatus"];
+              }>;
+            })
+          : { stations: [] }
+      )
+      .then((payload) => {
+        if (cancelled) return;
+        for (const patch of payload.stations ?? []) {
+          if (patch.uuid && patch.probeStatus) {
+            probePatchesRef.current[patch.uuid] = patch.probeStatus;
+          }
+        }
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [currentStationIndex, isPlaying, nowPlaying, queue]);
 
   useEffect(() => {
     const audio = audioRef.current;
