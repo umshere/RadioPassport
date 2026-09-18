@@ -931,6 +931,26 @@ export function findCityFromPassport() {
   return { passport: false, atlas: true };
 }
 
+/** Stamp ids that appeared since the previous read — the only honest proof
+ * a city just inked. Moving the dial adds nothing, so an old stamp can never
+ * celebrate again. */
+export function freshlyInkedStampIds(seen: string[], stamps: { id: string }[]) {
+  const before = new Set(seen);
+  return stamps.map((stamp) => stamp.id).filter((id) => !before.has(id));
+}
+
+/** Whether a stamp belongs to the city currently on the dial. */
+export function stampMatchesCity(
+  stamp: { city: string; country: string },
+  city: string,
+  country: string
+) {
+  return (
+    stamp.city.toLowerCase() === city.toLowerCase() &&
+    stamp.country.toLowerCase() === (country || "").toLowerCase()
+  );
+}
+
 export function searchKeepsPlayback() {
   return true;
 }

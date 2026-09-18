@@ -297,6 +297,11 @@
   .rp-land-slot {
     min-height: 92px;
   }
+  /* While a signal plays the land CTA is gone; the empty slot must not keep
+     its reservation or the board drops a dead band below the fold. */
+  .rp-land-slot:empty {
+    min-height: 0;
+  }
   .rp-intro-copy {
     flex-shrink: 0;
   }
@@ -1328,6 +1333,15 @@
     margin-top: 1.35rem;
   }
   .ew-theater-well .ew-cover-rule { margin-bottom: 16px; }
+  /* Desktop fold: the well's reserved letter-height pushed the station board
+     below the fold in every state that had room to spare. On desktop the
+     letter keeps only the height its words need; the board rides right
+     beneath the horizon. Mobile keeps the reservation (the sheet floats). */
+  @media (min-width: 961px) {
+    .ew-theater-well,
+    .ew-theater-well:not(:has(.ew-cover-row)) { min-height: 0; }
+    .ew-horizon { margin-top: 18px; }
+  }
   .ew-theater-well.is-filed { min-height: 0; }
   .ew-theater-well.is-filed .ew-caption,
   .ew-theater-well.is-filed .ew-cover-row,
@@ -1693,8 +1707,8 @@
       padding: 8px 16px 8px;
       background: var(--ew-ink);
     }
-    .ew-theater-well { min-height: 16rem; }
-    .ew-cover-row { grid-template-columns: 72px minmax(0, 1fr); gap: 12px; }
+  .ew-theater-well { min-height: 16rem; }
+  .ew-cover-row { grid-template-columns: 72px minmax(0, 1fr); gap: 12px; }
     .ew-plate { width: 72px; height: 72px; }
     .ew-cover-title { font-size: 18px; }
   }
@@ -1946,6 +1960,61 @@ html, body {
     var(--ew-lacquer) calc(var(--stamp-ink, 0) * 100%),
     transparent 0
   );
+}
+/* The ring is the Elsewhere mark: a foil orbit around a lacquer heart in the
+   logo's own red. While a city inks, the heart beats softly and grows like a
+   clock — small dot to full circle over the continuous minute. Completion
+   slams with the spray, then the mark rests: orbit plus heart. */
+.ew-stamp-ring {
+  background: transparent;
+}
+.ew-stamp-ring .ew-stamp-ring-dot {
+  display: block;
+  border-radius: 50%;
+  background: var(--ew-lacquer);
+  width: calc(4px + var(--stamp-ink, 0) * (100% - 4px));
+  height: calc(4px + var(--stamp-ink, 0) * (100% - 4px));
+  transition: width 1s linear, height 1s linear;
+}
+.ew-stamp-ring[data-fresh="true"] .ew-stamp-ring-dot {
+  width: 100%;
+  height: 100%;
+}
+.ew-stamp-ring[data-stamped="true"]:not([data-fresh="true"]) .ew-stamp-ring-dot {
+  width: 8px;
+  height: 8px;
+  transition: width .45s ease, height .45s ease;
+}
+@media (prefers-reduced-motion: no-preference) {
+  /* A slow heartbeat with a faint lacquer glow while the minute inks. */
+  @keyframes ew-stamp-beat {
+    0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(199, 58, 58, 0); }
+    50% { transform: scale(1.12); box-shadow: 0 0 7px 1px rgba(199, 58, 58, .38); }
+  }
+  .ew-stamp-ring:not([data-stamped]) .ew-stamp-ring-dot {
+    animation: ew-stamp-beat 2.6s ease-in-out infinite;
+  }
+  /* Graffiti beat: the finished stamp slams in like a rubber hit, sprays
+     foil, then rests. data-fresh lives ~2.6s on the ring after the ink. */
+  @keyframes ew-stamp-slam {
+    0% { transform: scale(0.4) rotate(-16deg); }
+    35% { transform: scale(1.45) rotate(7deg); }
+    60% { transform: scale(0.92) rotate(-3deg); }
+    80% { transform: scale(1.06) rotate(1deg); }
+    100% { transform: scale(1) rotate(0deg); }
+  }
+  @keyframes ew-stamp-spray {
+    0% { box-shadow: 0 0 0 0 var(--ew-foil-wash-strong), 0 0 22px 4px var(--ew-lacquer); }
+    100% { box-shadow: 0 0 0 10px transparent, 0 0 0 0 transparent; }
+  }
+  .ew-stamp-ring[data-fresh="true"] {
+    animation:
+      ew-stamp-slam 0.55s cubic-bezier(0.2, 1.4, 0.4, 1),
+      ew-stamp-spray 1.1s ease-out;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ew-stamp-ring .ew-stamp-ring-dot { transition: none; }
 }
 
 /* Ticket-stub passport — outside @layer on purpose (same Tailwind layer-drop
@@ -2430,3 +2499,18 @@ html, body {
    layer-drop gremlin — see docs/SESSION_HANDOFF.md). */
 .ew-theater-story-hour { margin: 9px 0 0; color: var(--ew-bone); font: italic clamp(17px, 2vw, 22px)/1.35 "Newsreader", serif; }
 .ew-theater-story-detail { margin: 6px 0 0; color: var(--ew-dust); font: 400 14px/1.5 "Azeret Mono", monospace; letter-spacing: .02em; }
+
+/* Desktop fold — outside @layer (Tailwind drops in-layer home rules).
+   Phone already hides the letter and empty land slot so the board peeks.
+   Desktop keeps the letter; it must not keep a 92px ghost land slot. */
+@media (min-width: 961px) {
+  .rp-land-slot:not(:has(.ew-land)) {
+    min-height: 0;
+    height: 0;
+    overflow: hidden;
+    margin: 0;
+    padding: 0;
+  }
+  .rp-intro { padding-top: 16px; padding-bottom: 12px; }
+  .ew-horizon { margin-top: 12px; }
+}

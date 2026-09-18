@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "@remix-run/react";
 import {
+  freshlyInkedStampIds,
   homeWithPassportHref,
   openPassportNow,
+  stampMatchesCity,
   theaterTransportCopy,
 } from "~/components/radio-passport/productFlow";
 import { useHydrated } from "~/hooks/useHydrated";
@@ -176,6 +178,35 @@ export default function PlayerDock() {
       deckRef.current.toggleAttribute("inert", !deckOpen);
   }, [deckOpen ]);
 
+  const city = nowPlaying ? stationLocation(nowPlaying) : "";
+  const stamped = nowPlaying
+    ? stamps.some((stamp) =>
+        stampMatchesCity(stamp, city, nowPlaying.country || "")
+      )
+    : false;
+
+  // Fresh-stamp slam: celebrate only a stamp id that actually appeared while
+  // this city is on the dial. A station switch onto an old stamp adds no id,
+  // so the beat can never fire for a stay that already happened.
+  const seenStampIds = useRef<string[] | null>(null);
+  const [freshCity, setFreshCity] = useState<string | null>(null);
+  useEffect(() => {
+    const ids = stamps.map((stamp) => stamp.id);
+    const seen = seenStampIds.current;
+    seenStampIds.current = ids;
+    if (!seen) return;
+    const added = new Set(freshlyInkedStampIds(seen, stamps));
+    if (!added.size) return;
+    const hit = stamps.some(
+      (stamp) => added.has(stamp.id) && stampMatchesCity(stamp, city, nowPlaying?.country || "")
+    );
+    if (!hit) return;
+    setFreshCity(city);
+    const timer = window.setTimeout(() => setFreshCity(null), 2600);
+    return () => window.clearTimeout(timer);
+  }, [stamps, city, nowPlaying?.country]);
+  const fresh = freshCity !== null && freshCity === city;
+
   useEffect(() => {
     if (!deckOpen) return;
     const onKey = (event: KeyboardEvent) => {
@@ -193,12 +224,6 @@ export default function PlayerDock() {
     if (next) startStation(next, { preserveQueue: true, autoPlay: true });
   };
 
-  const city = stationLocation(nowPlaying);
-  const stamped = stamps.some(
-    (stamp) =>
-      stamp.city.toLowerCase() === city.toLowerCase() &&
-      stamp.country.toLowerCase() === (nowPlaying.country || "").toLowerCase()
-  );
   const track = room.signal.track;
   const trackLine = track
     ? [track.artist, track.title].filter(Boolean).join(" — ")
@@ -351,7 +376,15 @@ export default function PlayerDock() {
         aria-label={
           stamped ? "Open passport — this city is stamped" : "Open passport"
         }
-        title={stamped ? "Stamped" : "Stay 60 seconds to ink this city"}
+        title={
+          fresh
+            ? "Freshly inked — this city just stamped itself"
+            : stamped
+              ? "Stamped"
+              : "Stay 60 seconds to ink this city"
+        }
+        data-stamped={stamped || undefined}
+        data-fresh={fresh || undefined}
         style={{
           borderRadius: "50%",
           border: `1px solid ${stamped ? "var(--ew-foil)" : "var(--ew-ghost)"
@@ -361,9 +394,7 @@ export default function PlayerDock() {
           ...(stamped ? { background: "var(--ew-foil-wash-strong)" } : {}),
         }}
       >
-        {stamped ? (
-          <i className="ew-stamp-ring-dot" aria-hidden="true" />
-        ) : null}
+        <i className="ew-stamp-ring-dot" aria-hidden="true" />
       </button>
       <button
         type="button"
