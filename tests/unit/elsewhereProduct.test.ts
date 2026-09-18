@@ -573,7 +573,7 @@ describe("live stylesheet", () => {
     expect(css).toContain('[data-atmosphere="day"]');
     expect(css).toContain(".ew-atmosphere");
     expect(css).toContain(".ew-horizon-kicker");
-    expect(css).toContain(".ew-band-nav");
+    expect(css).toContain(".ew-band-nav { display: none; }");
     expect(css).toContain(".ew-band-nav.is-band { position: fixed;");
     expect(css).toContain(".ew-band-nav.is-rail { display: flex;");
     expect(css).toContain("@media (min-width: 961px)");

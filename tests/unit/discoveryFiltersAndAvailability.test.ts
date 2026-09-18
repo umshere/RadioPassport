@@ -250,13 +250,14 @@ describe("likely-streaming catalog filter", () => {
 
 describe("station availability honesty", () => {
   it("does not call a station healthy from stale catalog metadata", () => {
-    const now = Date.parse("2026-08-11T00:00:00.000Z");
+    const now = Date.now();
     const sevenMonthsAgo = new Date(now - 210 * 24 * 60 * 60 * 1000).toISOString();
+    const minuteAgo = new Date(now - 60_000).toISOString();
     const stale = station({ healthStatus: "good", isStreamHealthy: true, lastCheckOk: true, lastCheckOkTime: sevenMonthsAgo });
-    const fresh = station({ healthStatus: "good", isStreamHealthy: true, lastCheckOk: true, lastCheckOkTime: new Date(Date.now() - 60_000).toISOString() });
+    const fresh = station({ healthStatus: "good", isStreamHealthy: true, lastCheckOk: true, lastCheckOkTime: minuteAgo });
 
     expect(isEvidenceFresh(sevenMonthsAgo, now)).toBe(false);
-    expect(isEvidenceFresh(new Date(now - 60_000).toISOString(), now)).toBe(true);
+    expect(isEvidenceFresh(minuteAgo, now)).toBe(true);
 
     const staleAvailability = deriveStationAvailability(stale);
     expect(staleAvailability.detailLabel).toBe("Not recently verified");
