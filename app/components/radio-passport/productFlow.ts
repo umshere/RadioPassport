@@ -931,6 +931,18 @@ export function findCityFromPassport() {
   return { passport: false, atlas: true };
 }
 
+/** Six positions while the book is young, including an entirely blank page. */
+export function passportGhostSlots(stampCount: number) {
+  return Math.max(0, 6 - stampCount);
+}
+
+/** What a stamp button names itself: the stay it replays, not the control. */
+export function stampReplayLabel(stamp: { city: string; country: string }) {
+  const city = stamp.city.trim() || "this city";
+  const country = stamp.country.trim();
+  return country ? `Replay ${city}, ${country}` : `Replay ${city}`;
+}
+
 export function searchKeepsPlayback() {
   return true;
 }

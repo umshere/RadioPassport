@@ -23,8 +23,10 @@ import {
   nextLoopStep,
   overlayBackFromCountry,
   passportRequested,
+  passportGhostSlots,
   resolveStampReplay,
   searchKeepsPlayback,
+  stampReplayLabel,
   hourBoardLabel,
   hourTravelHead,
   homeWelcomeCopy,
@@ -856,5 +858,36 @@ describe("A stamp is a next city, not a souvenir", () => {
       "en.wikipedia.org",
     );
     expect(meridianDomain("not-a-url")).toBe("");
+  });
+});
+
+describe("The passport is a quiet record with three states", () => {
+  it("keeps six positions for empty, one-stamp and early books", () => {
+    expect(passportGhostSlots(0)).toBe(6);
+    expect(passportGhostSlots(1)).toBe(5);
+    // Many: tops up to six positions, then the book fills itself.
+    expect(passportGhostSlots(2)).toBe(4);
+    expect(passportGhostSlots(5)).toBe(1);
+    expect(passportGhostSlots(6)).toBe(0);
+    expect(passportGhostSlots(40)).toBe(0);
+  });
+
+  it("names each stamp button for the stay it replays", () => {
+    expect(stampReplayLabel({ city: "Kochi", country: "India" })).toBe(
+      "Replay Kochi, India",
+    );
+    expect(stampReplayLabel({ city: "Nowhere", country: "" })).toBe(
+      "Replay Nowhere",
+    );
+    expect(stampReplayLabel({ city: "  ", country: "India" })).toBe(
+      "Replay this city, India",
+    );
+  });
+
+  it("keeps every passport control on a registered surface", () => {
+    expect(connectionById("passport-stamp")?.action).toBe("replay-stamp");
+    expect(connectionById("passport-empty")?.action).toBe("find-city");
+    expect(connectionById("passport-favorite")?.action).toBe("play-station");
+    expect(connectionById("passport-close")?.action).toBe("close-overlay");
   });
 });

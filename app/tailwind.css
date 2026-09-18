@@ -2430,3 +2430,58 @@ html, body {
    layer-drop gremlin — see docs/SESSION_HANDOFF.md). */
 .ew-theater-story-hour { margin: 9px 0 0; color: var(--ew-bone); font: italic clamp(17px, 2vw, 22px)/1.35 "Newsreader", serif; }
 .ew-theater-story-detail { margin: 6px 0 0; color: var(--ew-dust); font: 400 14px/1.5 "Azeret Mono", monospace; letter-spacing: .02em; }
+
+/* Passport — paper and ink. Outside @layer, scoped to this book only.
+   Postmarks are abstract ornament, not fabricated geographical evidence. */
+.ew-passport-overlay { background: var(--ew-ink); }
+.ew-passport-book { max-width: 880px; margin: 0 auto; padding: 12px 0 48px; }
+.ew-passport-head { text-align: center; }
+.ew-passport-edition { display: flex; align-items: center; justify-content: center; gap: 20px; margin: 0 50px 28px; color: var(--ew-foil); font: 400 11px/1.4 "Azeret Mono", monospace; letter-spacing: .4em; text-transform: uppercase; }
+.ew-passport-edition span { height: 1px; flex: 1; background: var(--ew-foil-line-strong); }
+.ew-passport-book .ew-passport-head h2 { color: var(--ew-foil); font: 400 clamp(36px, 6vw, 64px)/1.15 "Newsreader", serif; letter-spacing: .22em; text-transform: uppercase; padding-left: .22em; }
+.ew-passport-head .rp-eyebrow { margin: 14px 0 0; color: var(--ew-dust); font-size: 9px; letter-spacing: .14em; }
+.ew-passport-lede { margin: 24px 0 28px; text-align: center; color: var(--ew-bone); font: italic clamp(28px, 4vw, 40px)/1.2 "Newsreader", serif; }
+.ew-passport-lede::before { content: ""; display: block; width: 30px; height: 1px; background: var(--ew-foil); margin: 0 auto 20px; }
+.ew-passport-book .ew-book { display: flex; flex-direction: column; gap: 24px; margin: 0; padding: 0; border: 0; }
+.ew-passport-book .ew-book > div:first-child { order: 2; }
+.ew-passport-book .rp-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-top: 1px solid var(--ew-rule); border-bottom: 1px solid var(--ew-rule); margin: 10px 0 22px; padding: 16px 0; gap: 12px; }
+.ew-passport-book .rp-stat { min-height: 0; padding: 0; border: 0; background: none; text-align: center; }
+.ew-passport-book .rp-stat strong { font-size: 25px; }
+.ew-passport-book .rp-stat span { font-size: 8px; line-height: 1.5; letter-spacing: .08em; }
+.ew-passport-hint { margin: 8px 0 18px; color: var(--ew-dust); font: 9px/1.5 "Azeret Mono", monospace; letter-spacing: .12em; text-transform: uppercase; }
+.ew-passport-book .rp-stamp-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px 20px; margin-top: 16px; }
+.ew-passport-book .rp-stamp-ticket { --passport-ink: #294959; position: relative; display: grid; grid-template-columns: 100px minmax(0, 1fr); align-items: center; gap: 0 16px; min-height: 205px; padding: 22px; border: 1px solid #c0ab82; border-radius: 8px; -webkit-mask: none; mask: none; color: var(--passport-ink); background-color: #e6d8b9; background-image: radial-gradient(ellipse at 10% 15%, #fff7df88, transparent 65%), repeating-linear-gradient(22deg, transparent 0 3px, #8b754508 3px 4px); box-shadow: 0 5px 18px #0003, inset 0 0 0 5px #e6d8b9, inset 0 0 0 6px #bca882; text-align: left; transition: transform .2s ease, box-shadow .2s ease; }
+.ew-passport-book .rp-stamp-ticket[data-ink="1"] { --passport-ink: #375345; }
+.ew-passport-book .rp-stamp-ticket[data-ink="2"] { --passport-ink: #783f38; }
+.ew-passport-book .rp-stamp-ticket:hover { transform: translateY(-3px); box-shadow: 0 10px 24px #0004, inset 0 0 0 5px #e6d8b9, inset 0 0 0 6px #bca882; }
+.ew-passport-book .rp-stamp-ticket:focus-visible { outline: 3px solid var(--ew-foil); outline-offset: 5px; }
+.ew-passport-postmark { display: block; align-self: stretch; border-right: 1px solid currentColor; padding-right: 12px; color: var(--passport-ink); }
+.ew-passport-postmark svg { width: 100%; height: auto; margin-top: 8px; }
+.ew-passport-postmark > span { display: block; text-align: center; font: 8px/1.6 "Azeret Mono", monospace; letter-spacing: .13em; margin-top: 6px; }
+.ew-passport-book .rp-stamp-main .rp-eyebrow { color: var(--passport-ink); font-size: 9px; line-height: 1.5; letter-spacing: .16em; }
+.ew-passport-book .rp-stamp-ticket h3 { color: var(--passport-ink); margin: 8px 0; font: 400 clamp(24px, 3vw, 32px)/1.05 "Newsreader", serif; overflow-wrap: anywhere; }
+.ew-passport-book .rp-stamp-ticket .rp-stamp-main > p:not(.rp-eyebrow) { color: var(--passport-ink); font: 10px/1.5 "Azeret Mono", monospace; white-space: normal; overflow: visible; overflow-wrap: anywhere; }
+.ew-passport-book .rp-stamp-lang { margin-top: 5px; }
+.ew-passport-book .rp-stamp-replay { display: block; margin-top: 13px; color: var(--passport-ink); font: 500 9px/1.5 "Azeret Mono", monospace; letter-spacing: .1em; text-transform: uppercase; }
+.ew-passport-book .rp-stamp-ticket:hover .rp-stamp-replay { text-decoration: underline; text-underline-offset: 3px; }
+.ew-passport-book .rp-stamp-ticket .rp-stamp-stub { grid-column: 1 / -1; display: flex; flex-direction: row; flex-wrap: wrap; align-items: center; justify-content: space-between; border: 0; border-top: 1px dashed currentColor; padding: 10px 0 0; margin-top: 14px; gap: 8px; }
+.ew-passport-book .rp-stamp-ticket .rp-stamp-stub strong, .ew-passport-book .rp-stamp-ticket .rp-stamp-stub em, .ew-passport-book .rp-stamp-ticket .rp-stamp-stub small { color: var(--passport-ink); font: 9px/1.4 "Azeret Mono", monospace; margin: 0; }
+.ew-passport-book .rp-stamp-empty { min-height: 66px; border: 1px dashed var(--ew-foil-line-strong); border-radius: 6px; background: transparent; color: var(--ew-dust); font: 10px/1.4 "Azeret Mono", monospace; letter-spacing: .2em; }
+.ew-passport-book .rp-stamp-empty::after { content: "AN HOUR TO COME"; display: block; font-size: 8px; letter-spacing: .16em; }
+.ew-passport-book .rp-stamp-empty:hover { color: var(--ew-foil); background: var(--ew-foil-wash); }
+.ew-passport-book .rp-stamp-empty:focus-visible, .ew-passport-book .rp-text-button:focus-visible { outline: 2px solid var(--ew-foil); outline-offset: 4px; }
+.ew-passport-empty { text-align: center; margin: 12px 0 25px; padding: 28px 20px; border-top: 1px solid var(--ew-foil-line); border-bottom: 1px solid var(--ew-foil-line); }
+.ew-passport-empty-rule { margin: 0 0 12px; color: var(--ew-bone); font: italic 26px/1.2 "Newsreader", serif; }
+.ew-passport-empty p:not(.ew-passport-empty-rule) { max-width: 36ch; margin: 0 auto; color: var(--ew-dust); font: 14px/1.6 "Newsreader", serif; }
+.ew-passport-empty .rp-text-button { min-height: 44px; }
+@media (max-width: 700px) {
+  .ew-passport-book { padding-top: 12px; }
+  .ew-passport-edition { margin: 0 46px 24px; gap: 10px; font-size: 8px; letter-spacing: .2em; }
+  .ew-passport-book .rp-stamp-grid { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+  .ew-passport-book .rp-stamp-ticket { grid-template-columns: 90px minmax(0, 1fr); padding: 20px; min-height: 185px; gap: 0 14px; }
+  .ew-passport-book .rp-stamp-empty { min-height: 56px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ew-passport-book .rp-stamp-ticket { transition: none; }
+  .ew-passport-book .rp-stamp-ticket:hover { transform: none; }
+}

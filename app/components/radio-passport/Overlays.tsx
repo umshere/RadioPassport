@@ -13,7 +13,7 @@ import { SignalWordmark } from "./SignalMark";
 import { CountryFlag } from "~/components/CountryFlag";
 import { FlipBoard } from "~/components/radio-passport/FlipBoard";
 import { StationRow, stationLocation } from "./StationRow";
-import { describeAtlasEmpty } from "./productFlow";
+import { describeAtlasEmpty, passportGhostSlots, stampReplayLabel } from "./productFlow";
 import { useShelfProbe } from "~/hooks/useShelfProbe";
 import { applyLiveCatalog } from "~/utils/stationMeta";
 
@@ -22,7 +22,9 @@ function Overlay({
   close,
   label,
   hideClose,
+  className = "",
 }: {
+  className?: string;
   children: React.ReactNode;
   close: () => void;
   label: string;
@@ -84,7 +86,7 @@ function Overlay({
   };
   return (
     <div
-      className="rp-overlay"
+      className={`rp-overlay ${className}`}
       role="dialog"
       aria-modal="true"
       aria-label={label}
@@ -457,12 +459,14 @@ export function PassportOverlay({
   const languages = new Set(
     stamps.map((stamp) => stamp.language).filter(Boolean)
   );
+  const ghosts = passportGhostSlots(stamps.length);
   return (
-    <Overlay close={close} label="Your Passport">
-      <header className="flex items-center gap-4">
-        <SignalWordmark compact />
+    <Overlay close={close} label="Your Passport" className="ew-passport-overlay">
+      <div className="ew-passport-book">
+      <header className="ew-passport-head">
+        <p className="ew-passport-edition"><span />Elsewhere<span /></p>
         <div>
-          <h2>Your Passport</h2>
+          <h2>Passport</h2>
           <p className="rp-eyebrow">
             TRAVELER Nº {travelerNumber || "000 001"} · MEMBER SINCE{" "}
             {new Date(memberSince)
@@ -474,9 +478,12 @@ export function PassportOverlay({
           </p>
         </div>
       </header>
+      <p className="ew-passport-lede">
+        {stamps.length ? "You stayed." : "Your next hour is unwritten."}
+      </p>
       <div className="ew-book">
         <div>
-          <div className="rp-stats">
+          <div className="rp-stats" role="list" aria-label="Lands on record">
             <Stat value={stamps.length} label="PLACES STAMPED" />
             <Stat value={countries.size} label="COUNTRIES" />
             <Stat value={playedCount} label="SIGNALS PLAYED" />
@@ -503,83 +510,123 @@ export function PassportOverlay({
           ) : null}
         </div>
         <div>
-          <p className="rp-eyebrow text-foil">STAMPS</p>
-          <div className="rp-stamp-grid">
-            {stamps.map((stamp, index) => (
-              <button
-                type="button"
-                className="rp-stamp rp-stamp-ticket text-left"
-                style={{ transform: `rotate(${index % 2 ? 1.5 : -1.5}deg)` }}
-                key={stamp.id}
-                onClick={() => onReplay?.(stamp)}
-              >
-                <span className="rp-stamp-main">
-                  <p className="rp-eyebrow text-foil">
-                    {stamp.countryCode || "--"} · {stamp.country}
-                  </p>
-                  <h3>{stamp.city}</h3>
-                  <p>{stamp.stationName}</p>
-                </span>
-                <span className="rp-stamp-stub">
-                  <strong>
-                    {new Date(stamp.stampedAt).toLocaleTimeString(undefined, {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                      hour12: false,
-                    })}
-                  </strong>
-                  <em>
-                    {new Date(stamp.stampedAt)
-                      .toLocaleDateString(undefined, {
-                        month: "short",
-                        day: "numeric",
-                      })
-                      .toUpperCase()}
-                  </em>
-                  <small>{stamp.telemetry}</small>
-                </span>
-              </button>
-            ))}
-            {Array.from({ length: Math.max(0, 6 - stamps.length) }).map(
-              (_, index) =>
-                onFindCity ? (
-                  <button
-                    type="button"
-                    className="rp-stamp rp-stamp-empty"
-                    key={`empty-${index}`}
-                    onClick={onFindCity}
-                    aria-label="Find a city to stamp"
-                  >
-                    {String(stamps.length + index + 1).padStart(2, "0")}
-                  </button>
-                ) : (
-                  <div className="rp-stamp rp-stamp-empty" key={`empty-${index}`}>
-                    {String(stamps.length + index + 1).padStart(2, "0")}
-                  </div>
-                )
-            )}
-          </div>
+          <p className="rp-eyebrow text-foil">
+            STAMPS{stamps.length > 0 ? ` · ${stamps.length}` : ""}
+          </p>
+          {stamps.length === 0 ? (
+            <div className="ew-passport-empty" role="status">
+              <p className="ew-passport-empty-rule">The first page is blank.</p>
+              <p>
+                Stay with a station for 60 seconds and the city stamps itself
+                here.
+              </p>
+              {onFindCity ? (
+                <button
+                  type="button"
+                  className="rp-text-button mt-3"
+                  onClick={onFindCity}
+                >
+                  Find a city →
+                </button>
+              ) : null}
+            </div>
+          ) : null}
+            <>
+              {stamps.length > 0 ? <p className="ew-passport-hint">
+                Tap a stamp to land there again.
+              </p> : null}
+              <div className="rp-stamp-grid">
+                {stamps.map((stamp, index) => {
+                  const replay = stampReplayLabel(stamp);
+                  return (
+                    <button
+                      type="button"
+                      className="rp-stamp rp-stamp-ticket text-left"
+                      data-ink={index % 3}
+                      key={stamp.id}
+                      onClick={() => onReplay?.(stamp)}
+                      aria-label={replay}
+                      title={replay}
+                    >
+                      <span className="ew-passport-postmark" aria-hidden="true">
+                        <svg viewBox="0 0 140 140" fill="none">
+                          <circle cx="66" cy="68" r="47" stroke="currentColor" strokeWidth="1.2" />
+                          <circle cx="66" cy="68" r="40" stroke="currentColor" strokeDasharray="2 5" />
+                          <circle cx="66" cy="68" r="13" fill="currentColor" opacity=".8" />
+                          <path d="M8 68h116M66 10v116M20 22h92M20 114h92" stroke="currentColor" opacity=".6" />
+                          <path d="M81 84c20-18 30 16 52-2M81 93c20-18 30 16 52-2M81 102c20-18 30 16 52-2" stroke="currentColor" />
+                        </svg>
+                        <span>{String(index + 1).padStart(2, "0")} / ELSEWHERE</span>
+                      </span>
+                      <span className="rp-stamp-main">
+                        <p className="rp-eyebrow text-foil">
+                          {stamp.countryCode || "--"} · {stamp.country}
+                        </p>
+                        <h3>{stamp.city}</h3>
+                        <p>{stamp.stationName}</p>
+                        {stamp.language ? (
+                          <p className="rp-stamp-lang">
+                            {stamp.language.toUpperCase()}
+                          </p>
+                        ) : null}
+                        <span className="rp-stamp-replay" aria-hidden="true">
+                          Land again →
+                        </span>
+                      </span>
+                      <span className="rp-stamp-stub">
+                        <strong>
+                          {new Date(stamp.stampedAt).toLocaleTimeString(undefined, {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                            hour12: false,
+                          })}
+                        </strong>
+                        <em>
+                          {new Date(stamp.stampedAt)
+                            .toLocaleDateString(undefined, {
+                              month: "short",
+                              day: "numeric",
+                            })
+                            .toUpperCase()}
+                        </em>
+                        <small>{stamp.telemetry}</small>
+                      </span>
+                    </button>
+                  );
+                })}
+                {Array.from({ length: ghosts }).map(
+                  (_, index) =>
+                    onFindCity ? (
+                      <button
+                        type="button"
+                        className="rp-stamp rp-stamp-empty"
+                        key={`empty-${index}`}
+                        onClick={onFindCity}
+                        aria-label="Find a city to stamp"
+                      >
+                        {String(stamps.length + index + 1).padStart(2, "0")}
+                      </button>
+                    ) : (
+                      <div className="rp-stamp rp-stamp-empty" key={`empty-${index}`}>
+                        {String(stamps.length + index + 1).padStart(2, "0")}
+                      </div>
+                    )
+                )}
+              </div>
+              <p className="mt-6 rp-telemetry text-dust">
+                Stay 60 seconds in a new city to ink the next page.
+              </p>
+            </>
         </div>
       </div>
-      <p className="mt-6 rp-telemetry text-dust">
-        Stay with a station for 60 seconds to ink the first page.
-      </p>
-      {stamps.length === 0 && onFindCity ? (
-        <button
-          type="button"
-          className="rp-text-button mt-3"
-          onClick={onFindCity}
-        >
-          Find a city →
-        </button>
-      ) : null}
       {trailFootnote}
+      </div>
     </Overlay>
   );
 }
 function Stat({ value, label }: { value: number; label: string }) {
   return (
-    <div className="rp-stat">
+    <div className="rp-stat" role="listitem">
       <strong>{value}</strong>
       <span className="rp-eyebrow">{label}</span>
     </div>
