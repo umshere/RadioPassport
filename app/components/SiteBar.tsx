@@ -9,6 +9,7 @@ import {
 } from "~/components/radio-passport/productFlow";
 import { useHydrated } from "~/hooks/useHydrated";
 import { useJourneyStore } from "~/state/journeyStore";
+import { Button, ButtonLink, Chip } from "~/components/ui/Button";
 
 export default function SiteBar() {
   const location = useLocation();
@@ -46,9 +47,8 @@ export default function SiteBar() {
         >
           About
         </Link>
-        <button
-          type="button"
-          className="rp-passport-button"
+        <Button
+          variant="frame"
           onClick={() =>
             openPassportNow(location.pathname, () =>
               navigate(homeWithPassportHref())
@@ -57,7 +57,7 @@ export default function SiteBar() {
           aria-label={`Open passport, ${count} places stamped`}
         >
           Passport <b>{String(count).padStart(2, "0")}</b>
-        </button>
+        </Button>
       </nav>
       {/* The condensed cover strip docks here — a real child of the sticky
           bar, so it always stands exactly on the header's bottom edge no

@@ -44,6 +44,7 @@ import { JourneyBridge } from "~/components/radio-passport/JourneyBridge";
 import { ToastChannel } from "~/components/radio-passport/ToastChannel";
 import { useAtmosphereStore } from "~/state/atmosphereStore";
 import { ATMOSPHERE_BOOT_SCRIPT, ATMOSPHERE_THEME_COLOR } from "~/utils/atmosphere";
+import { Button, ButtonLink, Chip } from "~/components/ui/Button";
 
 export const links: LinksFunction = () => [
   { rel: "stylesheet", href: stylesheet },
@@ -271,17 +272,10 @@ export function ErrorBoundary() {
             <h1 className="ew-coverline mt-6">{title}</h1>
             <p className="rp-lede mt-4">{message}</p>
             <div className="mt-8 flex flex-wrap gap-3">
-              <Link to="/" className="ew-land" prefetch="intent">
-                <span className="ew-land-kicker">EW · Return</span>
-                <span className="ew-land-city">Back to Elsewhere</span>
-              </Link>
-              <button
-                type="button"
-                onClick={() => window.location.reload()}
-                className="rp-chip"
-              >
-                Reload
-              </button>
+              <ButtonLink to="/" variant="land" kicker="EW · Return" prefetch="intent">
+                Back to Elsewhere
+              </ButtonLink>
+              <Chip onClick={() => window.location.reload()}>Reload</Chip>
             </div>
             {details ? (
               <details className="mt-8 border border-[var(--ew-rule)] bg-leather p-4 text-sm text-dust">
@@ -314,10 +308,9 @@ function NotFoundEasterEgg({
         <p className="rp-eyebrow text-foil">Lost</p>
         <h1 className="ew-coverline mt-4">{title}</h1>
         <p className="rp-lede mt-4 max-w-xl">{message}</p>
-        <Link to="/" className="ew-land mt-8" prefetch="intent">
-          <span className="ew-land-kicker">EW · Return</span>
-          <span className="ew-land-city">Back to Elsewhere</span>
-        </Link>
+        <ButtonLink to="/" variant="land" kicker="EW · Return" className="mt-8" prefetch="intent">
+          Back to Elsewhere
+        </ButtonLink>
       </section>
     </main>
   );

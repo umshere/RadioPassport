@@ -1,6 +1,7 @@
 import { Link } from "@remix-run/react";
 import { BRAND } from "~/constants/brand";
 import { AtmospherePin } from "~/components/radio-passport/AtmospherePin";
+import { ButtonLink } from "~/components/ui/Button";
 
 export const meta = () => [
   { title: `About · ${BRAND.name}` },
@@ -64,9 +65,7 @@ export default function About() {
         <p className="mt-16">
           {/* SURFACE_CONNECTIONS: about-land — the room must lead back to the
               cover. SPA link, so the audio bridge in root keeps playing. */}
-          <Link to="/" className="rp-text-button">
-            Land somewhere &rarr;
-          </Link>
+          <ButtonLink to="/">Land somewhere &rarr;</ButtonLink>
         </p>
         <p className="mt-16 rp-telemetry text-dust">
           {BRAND.name}

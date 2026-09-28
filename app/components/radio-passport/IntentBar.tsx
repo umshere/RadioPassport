@@ -1,4 +1,5 @@
 import { SearchVoice } from "./SearchVoice";
+import { Button } from "~/components/ui/Button";
 
 export function IntentBar({
   value,
@@ -63,14 +64,14 @@ export function IntentBar({
           onSubmit(transcript);
         }}
       />
-      <button
-        type="button"
-        className="rp-surprise"
+      <Button
+        variant="mono"
         onClick={onSurprise}
         disabled={surpriseLoading}
+        busy={surpriseLoading}
       >
         {surpriseLoading ? "Tuning" : "Surprise"}
-      </button>
+      </Button>
     </form>
   );
 }

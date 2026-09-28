@@ -16,6 +16,7 @@ import { StationRow, stationLocation } from "./StationRow";
 import { describeAtlasEmpty, passportGhostSlots, stampReplayLabel } from "./productFlow";
 import { useShelfProbe } from "~/hooks/useShelfProbe";
 import { applyLiveCatalog } from "~/utils/stationMeta";
+import { Button, ButtonLink, Chip } from "~/components/ui/Button";
 
 function Overlay({
   children,
@@ -178,14 +179,13 @@ export function AtlasOverlay({
           <div className="mt-8" role="status">
             <p className="text-sm text-dust">{describeAtlasEmpty(query).message}</p>
             {describeAtlasEmpty(query).actions.map((action) => (
-              <button
-                type="button"
+              <Button
                 key={action.id}
-                className="rp-text-button mt-3"
+                className="mt-3"
                 onClick={() => setQuery("")}
               >
                 {action.label} →
-              </button>
+              </Button>
             ))}
           </div>
         ) : null}
@@ -331,9 +331,7 @@ export function CountryOverlay({
   });
   return (
     <Overlay close={close} label={`${country} stations`} hideClose>
-      <button type="button" className="rp-text-button" onClick={onBack}>
-        ← Atlas
-      </button>
+      <Button onClick={onBack}>← Atlas</Button>
       <header className="mt-6">
         <h2>
           {countryFlagIso ? (
@@ -362,13 +360,9 @@ export function CountryOverlay({
       ) : drilldown?.status === "error" ? (
         <div className="mt-8" role="alert">
           <p className="text-sm text-muted">{drilldown.message}</p>
-          <button
-            type="button"
-            className="rp-text-button mt-2"
-            onClick={onRetry}
-          >
+          <Button className="mt-2" onClick={onRetry}>
             Retry live catalog →
-          </button>
+          </Button>
         </div>
       ) : stations.length === 0 ? (
         <p className="mt-8 text-sm text-muted" role="status">
@@ -380,10 +374,8 @@ export function CountryOverlay({
             <div className="mt-6 flex flex-wrap gap-2">
               <span className="rp-eyebrow self-center">LANGUAGE</span>
               {languages.map((language) => (
-                <button
-                  type="button"
-                  className={`rp-chip ${languageFilter === language ? "active" : ""
-                    }`}
+                <Chip
+                  selected={languageFilter === language}
                   onClick={() =>
                     setLanguageFilter((current) =>
                       current === language ? null : language
@@ -392,7 +384,7 @@ export function CountryOverlay({
                   key={language}
                 >
                   {language}
-                </button>
+                </Chip>
               ))}
             </div>
           )}
@@ -521,13 +513,9 @@ export function PassportOverlay({
                 here.
               </p>
               {onFindCity ? (
-                <button
-                  type="button"
-                  className="rp-text-button mt-3"
-                  onClick={onFindCity}
-                >
+                <Button className="mt-3" onClick={onFindCity}>
                   Find a city →
-                </button>
+                </Button>
               ) : null}
             </div>
           ) : null}

@@ -45,6 +45,7 @@ import {
   theaterWithoutStation,
 } from "~/components/radio-passport/productFlow";
 import { knowledgeSeatCopy } from "~/components/radio-passport/knowledge/knowledgeCopy";
+import { ButtonLink } from "~/components/ui/Button";
 
 export const meta = () => [
   { title: `Theater · ${BRAND.name}` },
@@ -526,15 +527,16 @@ export default function ListeningPage() {
           {empty.headline}
         </h1>
         <p className="rp-lede mt-4 ew-arrive ew-arrive-3">{empty.message}</p>
-        <Link
+        <ButtonLink
           to={empty.route}
-          className="ew-land mt-8 ew-arrive ew-arrive-4"
+          variant="land"
+          kicker={empty.kicker}
+          className="mt-8 ew-arrive ew-arrive-4"
           prefetch="intent"
           viewTransition
         >
-          <span className="ew-land-kicker">{empty.kicker}</span>
-          <span className="ew-land-city">{empty.label}</span>
-        </Link>
+          {empty.label}
+        </ButtonLink>
       </main>
     );
   }

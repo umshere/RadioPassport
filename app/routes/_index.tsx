@@ -98,6 +98,7 @@ import {
   stationMatchesSolarHour,
   type SolarHour,
 } from "~/utils/localTime";
+import { Button, ButtonLink, Chip } from "~/components/ui/Button";
 
 export const meta = () => [
   { property: "og:title", content: "Elsewhere — You are not here." },
@@ -916,9 +917,9 @@ export default function Index() {
               </p>
             ) : null}
             {!isPlaying && arrivalStation && arrival.ctaKind !== "none" ? (
-              <button
-                type="button"
-                className="ew-land"
+              <Button
+                variant="land"
+                kicker={arrival.ctaKind === "continue" ? "EW · Re-entry" : "EW · Arrival"}
                 onClick={() =>
                   // The button always plays the city it names: the arrival
                   // station already resolves playing → hour travel → resume →
@@ -930,11 +931,8 @@ export default function Index() {
                   )
                 }
               >
-                <span className="ew-land-kicker">
-                  {arrival.ctaKind === "continue" ? "EW · Re-entry" : "EW · Arrival"}
-                </span>
-                <span className="ew-land-city">{arrival.cta}</span>
-              </button>
+                {arrival.cta}
+              </Button>
             ) : null}
           </div>
           <div className="ew-horizon">
@@ -947,15 +945,11 @@ export default function Index() {
                 if (next.query !== query) setQuery(next.query);
               }}
             />
-            <button
-              type="button"
-              className="ew-atlas"
-              onClick={() => setAtlas(true)}
-            >
+            <Button variant="atlas" onClick={() => setAtlas(true)}>
               <i className="ew-atlas-globe" aria-hidden="true" />
               Atlas
               <span aria-hidden="true">→</span>
-            </button>
+            </Button>
           </div>
           {hour ? (
             <p className="mt-3 rp-eyebrow text-dust">
@@ -1042,13 +1036,9 @@ export default function Index() {
             {aiStatus === "error" && listening.exploreError && (
               <div className="mt-2" role="alert">
                 <p className="text-xs text-dust">{listening.exploreError}</p>
-                <button
-                  type="button"
-                  className="rp-text-button mt-2"
-                  onClick={() => void requestAiWorld()}
-                >
+                <Button className="mt-2" onClick={() => void requestAiWorld()}>
                   Try the mix again →
-                </button>
+                </Button>
               </div>
             )}
             <div className="rp-station-list" aria-busy={catalogLoading}>
@@ -1086,10 +1076,9 @@ export default function Index() {
                 <p className="text-sm text-dust">{coverEmpty.message}</p>
                 <div className="mt-3 flex flex-wrap gap-2">
                   {coverEmpty.actions.map((action) => (
-                    <button
-                      type="button"
+                    <Button
                       key={action.id}
-                      className={action.id === "atlas" ? "ew-atlas" : "rp-chip"}
+                      variant={action.id === "atlas" ? "atlas" : "chip"}
                       onClick={() => {
                         if (action.id === "surprise") void requestAiWorld();
                         if (action.id === "atlas") setAtlas(true);
@@ -1100,7 +1089,7 @@ export default function Index() {
                       }}
                     >
                       {action.label}
-                    </button>
+                    </Button>
                   ))}
                 </div>
               </div>

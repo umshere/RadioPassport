@@ -9,6 +9,7 @@ export default {
     "./app/routes/secret-room.tsx",
     "./app/components/PlayerDock.tsx",
     "./app/components/SiteBar.tsx",
+    "./app/components/ui/**/*.{ts,tsx}",
     "./app/components/PretextMeasuredText.tsx",
     "./app/components/radio-passport/**/*.{ts,tsx}",
   ],
