@@ -44,7 +44,7 @@ export default function SiteBar() {
           className="rp-eyebrow text-dust ew-site-room"
           prefetch="intent"
         >
-          Room
+          About
         </Link>
         <button
           type="button"

@@ -14,7 +14,7 @@ const SLOTS = [
   { id: "elsewhere", label: "Elsewhere", to: "/" },
   { id: "atlas", label: "Atlas" },
   { id: "theater", label: "Theater", to: "/listen" },
-  { id: "room", label: "Room", to: "/about" },
+  { id: "room", label: "About", to: "/about" },
 ] as const;
 
 // Two mounts, one component. The phone band ("band") is position: fixed and

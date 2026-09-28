@@ -9,7 +9,7 @@ export function AtmospherePin() {
 
   return (
     <div className="ew-atmosphere ew-atmosphere--split" role="group" aria-label="Room hour">
-      <span className="ew-horizon-kicker">Horizon</span>
+      <span className="ew-horizon-kicker">Appearance</span>
       {CHOICES.map((choice, index) => (
         <span key={choice} className="contents">
           {index > 0 ? (

@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import type { Station } from "~/types/radio";
-import { FlipBoard } from "~/components/radio-passport/FlipBoard";
 import {
   markArtworkUrlFailed,
   preferSecureArtworkUrl,
@@ -132,16 +131,8 @@ export function StationRow({
         className="min-w-0 flex-1 text-left"
         aria-label={`Play ${station.name} from ${location}`}
       >
-        <strong className="block min-w-0 text-bone">
-          <FlipBoard text={station.name} delayMs={beat} />
-        </strong>
-        <span className="mt-1 block min-w-0 text-dust">
-          <FlipBoard
-            text={stationPlaceLine(station)}
-            className="is-meta"
-            delayMs={beat + 40}
-          />
-        </span>
+        <strong className="ew-station-name">{station.name}</strong>
+        <span className="ew-station-place">{stationPlaceLine(station)}</span>
       </button>
       <span className="rp-telemetry hidden shrink-0 sm:block">
         {stationTelemetry(station)}

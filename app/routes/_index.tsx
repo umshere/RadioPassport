@@ -957,7 +957,7 @@ export default function Index() {
           ) : sameHour.length > 0 && !isSeeking ? (
             <p className="mt-3 rp-eyebrow text-dust">Also at this hour</p>
           ) : null}
-          {!hour && !isSeeking ? (
+          {!hour && !isSeeking && stamps.length === 0 ? (
             <p className="mt-3 rp-eyebrow text-dust">
               {homeWelcomeCopy().hourDecoder}
             </p>

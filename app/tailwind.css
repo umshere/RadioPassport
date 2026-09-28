@@ -2584,3 +2584,19 @@ html, body {
   }
   .rp-dock-row .rp-dock-art { display: none; }
 }
+
+/* Station rows: names are read, not performed. Sans for the name, mono for the
+   place, both ellipsised — the flip board stays on the cover place name and the
+   overlay titles, where it can be watched. */
+.ew-station-name { display: block; min-width: 0; overflow: hidden; color: var(--ew-bone); font: 500 15px/1.25 "Schibsted Grotesk", sans-serif; text-overflow: ellipsis; white-space: nowrap; }
+.ew-station-place { display: block; min-width: 0; margin-top: 4px; overflow: hidden; color: var(--ew-dust); font: 500 10px/1.3 "Azeret Mono", monospace; letter-spacing: .1em; text-transform: uppercase; text-overflow: ellipsis; white-space: nowrap; }
+.rp-station.is-active .ew-station-name { color: var(--ew-lacquer-text); }
+
+/* Appearance (Night / Day) is a preference, not a first-screen choice: on the
+   phone home it lives in About; desktop keeps it beside the local-time readout. */
+.ew-appearance { margin-top: 8px; }
+.ew-appearance .ew-horizon-kicker { display: inline-flex; }
+.ew-appearance .ew-atmosphere--split { width: auto; justify-content: flex-start; gap: 8px; }
+@media (max-width: 960px) {
+  .rp-intro .rp-horizon-row { display: none; }
+}

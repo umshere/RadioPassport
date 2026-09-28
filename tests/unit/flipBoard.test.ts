@@ -117,8 +117,8 @@ describe("flip board", () => {
     expect(home).toContain('cache: "no-store"');
     expect(home).toContain("HOME_CATALOG_TTL_MS");
     expect(home).toContain("homeCatalogCache");
-    expect(row).toContain("FlipBoard");
-    expect(row).toContain("delayMs={beat}");
+    // Rows are plain, readable type; the flip board is kept for the place name and overlay titles.
+    expect(row).not.toContain("FlipBoard");
     expect(home).toContain("Show fresh stations");
     expect(home).toContain("setShuffle");
     expect(css).toContain(".ew-flap-line");

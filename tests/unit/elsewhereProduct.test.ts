@@ -651,7 +651,7 @@ describe("home cover panes", () => {
     expect(band).toContain("Elsewhere");
     expect(band).toContain("Atlas");
     expect(band).toContain("Theater");
-    expect(band).toContain("Room");
+    expect(band).toContain("About");
     expect(band).toContain("aria-disabled");
     expect(band).toContain("homeWithAtlasHref");
     expect(band).not.toContain("/atlas");
