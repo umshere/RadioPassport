@@ -78,6 +78,19 @@ export async function fetchKnowledgeSnippet(
   }
 }
 
+/** The opening sentences of a snippet, at most `maxWords` — a grounded answer with no model. */
+export function leadSentences(text: string, maxWords = 55): string {
+  const sentences = text.match(/[^.!?]+[.!?](?=\s|$)/g) ?? [text];
+  let out = "";
+  for (const sentence of sentences) {
+    const next = `${out}${out ? " " : ""}${sentence.trim()}`;
+    if (next.split(/\s+/).length > maxWords) break;
+    out = next;
+    if (out.split(/\s+/).length >= 25) break;
+  }
+  return out || firstSentence(text);
+}
+
 /** First sentence of a snippet — the safe answer when the model's is rejected. */
 export function firstSentence(text: string): string {
   const match = text.match(/^.+?[.!?](?=\s|$)/);

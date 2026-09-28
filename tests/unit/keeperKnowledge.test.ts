@@ -118,11 +118,19 @@ describe("knowledge snippet", () => {
 });
 
 describe("/api/keeper/ask — knowledge mode", () => {
-  it("answers a named artist with NO title sent, labelled knowledge, and never sends station facts to the model", async () => {
-    const complete = vi.fn(async () => "As far as I know, he is a celebrated Indian film composer.");
+  it("answers a named artist with NO title sent, labelled knowledge, straight from the snippet (no model wait)", async () => {
+    const complete = vi.fn(async () => "should not be needed");
     const reply = await ask("Who is Ilayaraja?", noTitle, { fetchImpl: wiki, complete });
-    expect(reply).toMatchObject({ basis: "knowledge", topic: "Ilaiyaraaja", intent: "knowledge_artist" });
+    expect(reply).toMatchObject({ basis: "knowledge", topic: "Ilaiyaraaja", intent: "knowledge_artist", source: "knowledge+snippet" });
+    expect(reply.answer).toContain("Indian film composer");
     expect(reply.stationLine).toBeUndefined();
+    expect(complete).not.toHaveBeenCalled();
+  });
+  it("asks the model, with no station facts, only when there is no snippet", async () => {
+    const none = (async () => new Response("{}", { status: 500 })) as unknown as typeof fetch;
+    const complete = vi.fn(async () => "As far as I know, he is a celebrated Indian film composer.");
+    const reply = await ask("Who is Ilayaraja?", noTitle, { fetchImpl: none, complete });
+    expect(reply).toMatchObject({ basis: "knowledge", source: "knowledge+model" });
     const [system, user] = complete.mock.calls[0] as unknown as [string, string];
     expect(system).toBe(KNOWLEDGE_SYSTEM_PROMPT);
     expect(user).not.toContain("Radio Alfama");
@@ -135,10 +143,11 @@ describe("/api/keeper/ask — knowledge mode", () => {
     const off = await ask("Who is Ilayaraja?", buildKeeperFacts(station, { signal: { status: "ready", track: { raw: "Mariza - Barco Negro", artist: "Mariza", title: "Barco Negro", source: "icy", fetchedAt: "" }, message: null }, dossier: EMPTY_ROOM.dossier }, when), { fetchImpl: wiki, complete });
     expect(off.stationLine).toBeUndefined();
   });
-  it("falls back to the snippet's first sentence when the model answer is rejected", async () => {
+  it("rejects an unsafe model answer when there is no snippet, and admits it doesn't know", async () => {
+    const none = (async () => new Response("{}", { status: 500 })) as unknown as typeof fetch;
     const complete = vi.fn(async () => "He is playing right now, you should explore.");
-    const reply = await ask("Who is Ilayaraja?", noTitle, { fetchImpl: wiki, complete });
-    expect(reply.answer).toBe("Ilaiyaraaja is an Indian film composer.");
+    const reply = await ask("Who is Ilayaraja?", noTitle, { fetchImpl: none, complete });
+    expect(reply.answer).toBe("I don’t know enough about Ilaiyaraaja to say from this desk.");
     expect(reply.source).toMatch(/^knowledge\+fallback:rejected:/);
   });
   it("admits it when there is no snippet and the model fails", async () => {

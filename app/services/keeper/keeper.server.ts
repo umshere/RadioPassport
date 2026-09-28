@@ -19,7 +19,7 @@ import { isKeeperAskEnabled } from "./flag.server";
 import { classifyKeeperQuestion } from "./jev.server";
 import { extractTopic, isNowPlayingQuestion, looksLikeInjection } from "~/components/keeper/keeperTopic";
 import { resolveAlias } from "~/components/keeper/keeperAliases";
-import { KNOWLEDGE_SYSTEM_PROMPT, fetchKnowledgeSnippet, firstSentence } from "./knowledge.server";
+import { KNOWLEDGE_SYSTEM_PROMPT, fetchKnowledgeSnippet, leadSentences } from "./knowledge.server";
 import { validateKeeperAnswer } from "./validateKeeperAnswer";
 import { clientKey, keeperBucket, type TokenBucket } from "./rateLimit.server";
 
@@ -289,9 +289,10 @@ export async function handleKeeperAsk(request: Request, deps: KeeperDeps = {}) {
         ...(stationLine ? { stationLine } : {}),
         source,
       });
-    const fallback = snippet
-      ? firstSentence(snippet.text)
-      : `I don’t know enough about ${topic.canonical} to say from this desk.`;
+    const fallback = `I don’t know enough about ${topic.canonical} to say from this desk.`;
+    // Wikipedia has it: its opening lines are a grounded answer, returned at
+    // once. The model (3–5s) is only for topics Wikipedia doesn't know.
+    if (snippet) return knowledge(leadSentences(snippet.text), "knowledge+snippet");
     try {
       const complete = deps.complete ?? defaultKeeperComplete(env, fetchImpl);
       const raw = await withTimeout(
@@ -300,7 +301,7 @@ export async function handleKeeperAsk(request: Request, deps: KeeperDeps = {}) {
         JSON.stringify({
           TOPIC: topic.canonical,
           KIND: topic.kind,
-          SNIPPET: snippet?.text ?? null,
+          SNIPPET: null,
           QUESTION: parsed.question,
         }),
         ),
@@ -310,7 +311,7 @@ export async function handleKeeperAsk(request: Request, deps: KeeperDeps = {}) {
       const verdict = validateKeeperAnswer(answer, {
         basis: "knowledge",
         question: parsed.question,
-        snippet: snippet?.text ?? null,
+        snippet: null,
         facts: null,
       });
       return knowledge(
