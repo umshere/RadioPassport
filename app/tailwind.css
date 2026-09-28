@@ -2571,3 +2571,16 @@ html, body {
   /* Back lives in the opened deck; Next stays (it closes the loop). Freeing 52px gives the station name room to be read. */
   .rp-dock-row .rp-dock-prev { display: none; }
 }
+
+/* Phone refinement (after first live pass). Passport keeps its foil frame but
+   as a hairline, tighter, so it sits with the wordmark instead of over it; the
+   dock drops its art tile — the stamp ring beside it is already the seal, and
+   two red circles read as clutter while the name needs the room. */
+@media (max-width: 560px) {
+  .ew-site-bar .rp-passport-button {
+    border-color: var(--ew-foil-line);
+    padding: 0 12px;
+    letter-spacing: .12em;
+  }
+  .rp-dock-row .rp-dock-art { display: none; }
+}
