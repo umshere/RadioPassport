@@ -139,7 +139,7 @@ describe("/api/keeper/ask — knowledge mode", () => {
     const complete = vi.fn(async () => "He is playing right now, you should explore.");
     const reply = await ask("Who is Ilayaraja?", noTitle, { fetchImpl: wiki, complete });
     expect(reply.answer).toBe("Ilaiyaraaja is an Indian film composer.");
-    expect(reply.source).toBe("knowledge+fallback");
+    expect(reply.source).toMatch(/^knowledge\+fallback:rejected:/);
   });
   it("admits it when there is no snippet and the model fails", async () => {
     const none = (async () => new Response("{}", { status: 500 })) as unknown as typeof fetch;

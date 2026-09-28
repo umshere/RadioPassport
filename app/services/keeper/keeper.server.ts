@@ -313,9 +313,14 @@ export async function handleKeeperAsk(request: Request, deps: KeeperDeps = {}) {
         snippet: snippet?.text ?? null,
         facts: null,
       });
-      return knowledge(verdict.ok ? answer : fallback, verdict.ok ? "knowledge+model" : "knowledge+fallback");
-    } catch {
-      return knowledge(fallback, "knowledge+fallback");
+      return knowledge(
+        verdict.ok ? answer : fallback,
+        verdict.ok ? "knowledge+model" : `knowledge+fallback:rejected:${verdict.reason}`,
+      );
+    } catch (error) {
+      // Why it fell back, never the message (it may carry provider detail).
+      const why = error instanceof Error && error.message === "timeout" ? "timeout" : "error";
+      return knowledge(fallback, `knowledge+fallback:${why}`);
     }
   }
 
