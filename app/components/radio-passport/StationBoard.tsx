@@ -1,4 +1,5 @@
 import { Button } from "~/components/ui/Button";
+import { Row } from "~/components/ui/Row";
 import { StationRow } from "~/components/radio-passport/StationRow";
 import type {
   CoverEmptyAction,
@@ -13,13 +14,13 @@ function StationSkeleton() {
   return (
     <>
       {Array.from({ length: SKELETON_ROWS }, (_, slot) => (
-        <div key={`pending-${slot}`} className="rp-station is-pending" aria-hidden="true">
+        <Row key={`pending-${slot}`} pending aria-hidden="true">
           <span className="rp-art ew-skel" />
           <span className="ew-skel-lines">
             <i style={{ width: `${68 - (slot % 3) * 10}%` }} />
             <i style={{ width: `${40 - (slot % 2) * 8}%` }} />
           </span>
-        </div>
+        </Row>
       ))}
     </>
   );

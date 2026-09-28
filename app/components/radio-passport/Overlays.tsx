@@ -17,6 +17,7 @@ import { describeAtlasEmpty, passportGhostSlots, stampReplayLabel } from "./prod
 import { useShelfProbe } from "~/hooks/useShelfProbe";
 import { applyLiveCatalog } from "~/utils/stationMeta";
 import { Button, Chip } from "~/components/ui/Button";
+import { Row, RowText } from "~/components/ui/Row";
 import { Sheet } from "~/components/ui/Sheet";
 
 export function AtlasOverlay({
@@ -104,12 +105,12 @@ export function AtlasOverlay({
                     (getContinent(country.iso_3166_1) || "Other") === region
                 )
                 .map((country) => (
-                  <button
-                    type="button"
+                  <Row
+                    as="button"
+                    variant="tile"
                     key={country.name}
                     onClick={() => openCountry(country.name)}
-                    className={`rp-country ${country.stationcount ? "" : "is-unavailable"
-                      }`}
+                    unavailable={!country.stationcount}
                     disabled={!country.stationcount}
                   >
                     {/^[A-Za-z]{2}$/.test(country.iso_3166_1 || "") ? (
@@ -123,17 +124,18 @@ export function AtlasOverlay({
                     <span className="rp-telemetry">
                       {country.iso_3166_1 || "--"}
                     </span>
-                    <span className="min-w-0 flex-1 text-left">
-                      <strong className="block truncate">{country.name}</strong>
-                      <small className="block truncate text-muted">
-                        {languagesByCountry.get(country.name) ||
-                          "Language unavailable"}
-                      </small>
-                    </span>
+                    <RowText
+                      variant="tile"
+                      title={country.name}
+                      sub={
+                        languagesByCountry.get(country.name) ||
+                        "Language unavailable"
+                      }
+                    />
                     <span className="rp-telemetry">
                       {country.stationcount.toLocaleString()}
                     </span>
-                  </button>
+                  </Row>
                 ))}
             </div>
           </section>

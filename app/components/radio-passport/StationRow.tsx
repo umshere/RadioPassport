@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Row, RowText } from "~/components/ui/Row";
 import type { Station } from "~/types/radio";
 import {
   markArtworkUrlFailed,
@@ -127,7 +128,7 @@ export function StationRow({
 }) {
   const location = stationLocation(station);
   return (
-    <div className={`rp-station ${active ? "is-active" : ""}`}>
+    <Row active={active}>
       <StationArt station={station} active={active} onPlay={onPlay} />
       <button
         type="button"
@@ -135,8 +136,7 @@ export function StationRow({
         className="min-w-0 flex-1 text-left"
         aria-label={`Play ${station.name} from ${location}`}
       >
-        <strong className="ew-station-name">{station.name}</strong>
-        <span className="ew-station-place">{stationPlaceLine(station)}</span>
+        <RowText title={station.name} sub={stationPlaceLine(station)} />
       </button>
       <span className="rp-telemetry hidden shrink-0 sm:block">
         {stationTelemetry(station)}
@@ -155,6 +155,6 @@ export function StationRow({
           {favorite ? "♥" : "♡"}
         </button>
       ) : null}
-    </div>
+    </Row>
   );
 }
