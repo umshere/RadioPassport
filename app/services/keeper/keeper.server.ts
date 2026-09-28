@@ -6,7 +6,12 @@ import {
 } from "~/components/keeper/keeperFacts";
 import { KEEPER_QUESTION_MAX, type KeeperIntent } from "~/components/keeper/keeperIntent";
 import type { KeeperState } from "~/components/keeper/keeperState";
-import { completeJsonPreferringGateway, trimEnv } from "~/services/ai/completeFallback";
+import {
+  completeGeminiJson,
+  completeJsonPreferringGateway,
+  hasGeminiKey,
+  trimEnv,
+} from "~/services/ai/completeFallback";
 import { getOpenRouterModelRotation } from "~/services/ai/providers/openRouterModels";
 import { parseJsonObjectFromText } from "~/services/ai/providers/providerUtils";
 import type { SolarHour } from "~/utils/localTime";
@@ -183,6 +188,22 @@ async function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
  */
 export function defaultKeeperComplete(env: NodeJS.ProcessEnv, fetchImpl: typeof fetch) {
   return async (system: string, user: string): Promise<string> => {
+    // Gemini first: it is fast without hidden reasoning, and the gateway can
+    // hold a request for seconds before giving up.
+    if (hasGeminiKey(env)) {
+      try {
+        const value = await completeGeminiJson<{ answer?: string }>({
+          system,
+          user,
+          timeoutMs: MODEL_TIMEOUT_MS,
+          fetchImpl,
+          noThinking: true,
+        });
+        if (typeof value?.answer === "string" && value.answer.trim()) return value.answer;
+      } catch {
+        // fall through to the rest of the chain
+      }
+    }
     try {
       const { value } = await completeJsonPreferringGateway<{ answer?: string }>({
         system,
