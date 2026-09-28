@@ -691,14 +691,14 @@ describe("home cover panes", () => {
       ),
       "utf8",
     );
-    expect(overlays).toContain('<Overlay close={close} label="Atlas" hideClose>');
+    expect(overlays).toContain('<Sheet close={close} label="Atlas" hideClose>');
     expect(overlays).toContain("CountryFlag");
     // Overlay headers are boards too — Atlas and the country name flip.
     expect(overlays).toContain("FlipBoard");
     expect(overlays).toContain('<FlipBoard text="Atlas" />');
     // Atlas and the country drilldown share one way back: no ×, the tabs
     // and ← Atlas dismiss them. (Passport keeps its ×.)
-    expect(overlays.match(/<Overlay[^>]*hideClose/g)?.length).toBe(2);
+    expect(overlays.match(/<Sheet[^>]*hideClose/g)?.length).toBe(2);
     expect(home).toContain('className="rp-intro-board"');
     const homeIntro = readFileSync(
       new URL("../../app/components/radio-passport/HomeIntro.tsx", import.meta.url),

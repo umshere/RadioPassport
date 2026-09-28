@@ -1,4 +1,5 @@
 import { useLocation, useNavigate } from "@remix-run/react";
+import { Eyebrow } from "~/components/ui/Eyebrow";
 import { usePlayerNoticeStore } from "~/state/playerNoticeStore";
 import { homeWithPassportHref, openPassportNow } from "./productFlow";
 
@@ -21,7 +22,7 @@ export function ToastChannel() {
   const body = (
     <>
       {notice.title ? (
-        <span className="rp-eyebrow text-foil">{notice.title}</span>
+        <Eyebrow as="span" tone="foil">{notice.title}</Eyebrow>
       ) : null}
       <strong>{notice.message}</strong>
       {notice.detail ? <small>{notice.detail}</small> : null}

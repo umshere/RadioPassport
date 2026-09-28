@@ -2439,12 +2439,12 @@ html, body {
     border-top: 1px solid var(--ew-rule);
     background: var(--ew-ink);
     box-shadow: 0 -18px 42px rgba(0, 0, 0, .45);
-    transform: translateY(calc(100% - 84px));
+    transform: translateY(calc(100% - var(--ew-peek, 84px)));
     /* Collapsed, the sheet is pushed down under the dock and the phone band.
-       Clip it to the 84px peek (in its own box, so the clip travels with the
+       Clip it to the peek (84px, or whatever BoardSheet measures) (in its own box, so the clip travels with the
        transform) or its first station row shows through them as ghost text.
        The -60px top edge keeps the lift shadow. */
-    clip-path: inset(-60px 0 calc(100% - 84px) 0);
+    clip-path: inset(-60px 0 calc(100% - var(--ew-peek, 84px)) 0);
     transition: transform .38s var(--ew-settle), clip-path .38s var(--ew-settle);
   }
   /* The dock stands taller than the band: the sheet rides above whichever
@@ -2476,6 +2476,9 @@ html, body {
     overscroll-behavior: contain;
     padding: 0 16px calc(16px + env(safe-area-inset-bottom, 0px));
   }
+  /* The label sits right under the grip: one object, not a handle floating
+     above a caption. */
+  .rp-board-sheet .rp-intro-board > #live-board { margin-top: 2px; }
   /* The intro's own tail stays clear of the peeking sheet. */
   .rp-intro { padding-bottom: 124px; }
 }

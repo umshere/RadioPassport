@@ -1,4 +1,4 @@
-import { useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 
 export type BoardSheetState = "peek" | "open";
 
@@ -26,6 +26,31 @@ export function snapBoardSheet(
   return travelY > 48 ? "peek" : "open";
 }
 
+/**
+ * How tall the peek can be: the space between the last thing above the sheet
+ * and the player, snapped to whole rows so no station is cut in half. Never
+ * below the 84px grip-and-label minimum, never more than four rows.
+ */
+export function measurePeek(sheet: HTMLElement): number {
+  const dockTop =
+    window.innerHeight - parseFloat(getComputedStyle(sheet).bottom || "0");
+  let anchor = 0;
+  for (
+    let sibling = sheet.previousElementSibling;
+    sibling;
+    sibling = sibling.previousElementSibling
+  ) {
+    const box = sibling.getBoundingClientRect();
+    if (box.height > 0) anchor = Math.max(anchor, box.bottom);
+  }
+  const header = BOARD_SHEET_PEEK_PX;
+  const row =
+    sheet.querySelector<HTMLElement>(".rp-station")?.offsetHeight || 64;
+  const free = dockTop - anchor - 16 - header;
+  const rows = Math.max(0, Math.min(4, Math.floor(free / row)));
+  return header + rows * row;
+}
+
 export function BoardSheet({
   state,
   onStateChange,
@@ -48,13 +73,34 @@ export function BoardSheet({
   } | null>(null);
   const suppressClickRef = useRef(false);
   const [dragOffset, setDragOffset] = useState<number | null>(null);
+  const [peekPx, setPeekPx] = useState(BOARD_SHEET_PEEK_PX);
+
+  // Fill the gap under the hour rail with the first rows instead of leaving
+  // a void above a detached grip. Re-measured when the page above reflows.
+  const remeasure = useCallback(() => {
+    const sheet = sheetRef.current;
+    if (!sheet || !window.matchMedia("(max-width: 960px)").matches) return;
+    setPeekPx(measurePeek(sheet));
+  }, []);
+  useEffect(() => {
+    remeasure();
+    const parent = sheetRef.current?.parentElement;
+    const observer =
+      typeof ResizeObserver !== "undefined" ? new ResizeObserver(remeasure) : null;
+    if (parent) observer?.observe(parent);
+    window.addEventListener("resize", remeasure);
+    return () => {
+      observer?.disconnect();
+      window.removeEventListener("resize", remeasure);
+    };
+  }, [remeasure, docked]);
 
   const offsets = () => {
     const sheet = sheetRef.current;
     if (!sheet) return { open: 0, peek: 0 };
     return {
       open: 0,
-      peek: Math.max(0, sheet.offsetHeight - BOARD_SHEET_PEEK_PX),
+      peek: Math.max(0, sheet.offsetHeight - peekPx),
     };
   };
 
@@ -107,9 +153,12 @@ export function BoardSheet({
       className={`rp-board-sheet${docked ? " is-docked" : ""}`}
       data-state={state}
       style={
-        dragOffset !== null
-          ? { transform: `translateY(${dragOffset}px)`, transition: "none" }
-          : undefined
+        {
+          "--ew-peek": `${peekPx}px`,
+          ...(dragOffset !== null
+            ? { transform: `translateY(${dragOffset}px)`, transition: "none" }
+            : {}),
+        } as React.CSSProperties
       }
     >
       <button

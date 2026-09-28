@@ -5,6 +5,7 @@ import {
   useState,
   type KeyboardEvent as ReactKeyboardEvent,
 } from "react";
+import { Eyebrow } from "~/components/ui/Eyebrow";
 import type { NowPlayingState } from "~/hooks/useNowPlayingMetadata";
 import { useTrackTrivia } from "~/hooks/useTrackTrivia";
 import { usePlayerStore } from "~/state/playerStore";
@@ -86,7 +87,7 @@ function TriviaBlock({
 }) {
   return (
     <section className="rp-insights-section">
-      <p className="rp-eyebrow">{title}</p>
+      <Eyebrow>{title}</Eyebrow>
       {state.status === "loading" && (
         <p role="status">Looking up track context…</p>
       )}
@@ -259,7 +260,7 @@ export default function StationInsightsSheet() {
             />
           )}
           <div className="min-w-0 flex-1">
-            <p className="rp-eyebrow">STATION DETAILS</p>
+            <Eyebrow>STATION DETAILS</Eyebrow>
             <h2 id="station-insights-title">{station.name}</h2>
           </div>
           <button
@@ -294,7 +295,7 @@ export default function StationInsightsSheet() {
             />
           )}
           <section className="rp-insights-section">
-            <p className="rp-eyebrow">LIVE NOW</p>
+            <Eyebrow>LIVE NOW</Eyebrow>
             {!canRequestMetadata && (
               <p>Play this station to request live track metadata.</p>
             )}
@@ -332,7 +333,7 @@ export default function StationInsightsSheet() {
                 state={freeTrivia}
               />
               <section className="rp-insights-section">
-                <p className="rp-eyebrow">AI TRACK CONTEXT</p>
+                <Eyebrow>AI TRACK CONTEXT</Eyebrow>
                 <div
                   ref={aiResultRef}
                   tabIndex={-1}

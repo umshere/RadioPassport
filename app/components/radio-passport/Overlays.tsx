@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
+import { Eyebrow } from "~/components/ui/Eyebrow";
 import type { Country, Station } from "~/types/radio";
 import { getContinent } from "~/utils/geography";
 import type { PassportStamp } from "~/state/journeyStore";
@@ -9,110 +10,14 @@ import {
   mergeStationLists,
   stationSpeaksLanguage,
 } from "./countryData";
-import { SignalWordmark } from "./SignalMark";
 import { CountryFlag } from "~/components/CountryFlag";
 import { FlipBoard } from "~/components/radio-passport/FlipBoard";
 import { StationRow, stationLocation } from "./StationRow";
 import { describeAtlasEmpty, passportGhostSlots, stampReplayLabel } from "./productFlow";
 import { useShelfProbe } from "~/hooks/useShelfProbe";
 import { applyLiveCatalog } from "~/utils/stationMeta";
-import { Button, ButtonLink, Chip } from "~/components/ui/Button";
-
-function Overlay({
-  children,
-  close,
-  label,
-  hideClose,
-  className = "",
-}: {
-  className?: string;
-  children: React.ReactNode;
-  close: () => void;
-  label: string;
-  /** Atlas is a tab destination now — the tabs dismiss it, so it needs no ×. */
-  hideClose?: boolean;
-}) {
-  const dialogRef = useRef<HTMLDivElement>(null);
-  const triggerRef = useRef<HTMLElement | null>(null);
-  const closeRef = useRef(close);
-  closeRef.current = close;
-  if (!triggerRef.current && typeof document !== "undefined") {
-    triggerRef.current =
-      document.activeElement instanceof HTMLElement
-        ? document.activeElement
-        : null;
-  }
-  useEffect(() => {
-    if (!triggerRef.current && document.activeElement instanceof HTMLElement) {
-      triggerRef.current = document.activeElement;
-    }
-    const focusTimer = window.setTimeout(() => {
-      const dialog = dialogRef.current;
-      const first = dialog?.querySelector<HTMLElement>(
-        'button:not([disabled]), input:not([disabled]), [href], [tabindex]:not([tabindex="-1"])'
-      );
-      (first ?? dialog)?.focus();
-    }, 0);
-    const key = (event: KeyboardEvent) => {
-      if (event.key === "Escape") closeRef.current();
-    };
-    window.addEventListener("keydown", key);
-    return () => {
-      window.clearTimeout(focusTimer);
-      window.removeEventListener("keydown", key);
-      triggerRef.current?.focus();
-    };
-  }, []);
-  const trapFocus = (event: React.KeyboardEvent<HTMLDivElement>) => {
-    if (event.key !== "Tab") return;
-    const focusable = Array.from(
-      event.currentTarget.querySelectorAll<HTMLElement>(
-        'button:not([disabled]), input:not([disabled]), [href], [tabindex]:not([tabindex="-1"])'
-      )
-    ).filter((element) => !element.hasAttribute("hidden"));
-    if (!focusable.length) {
-      event.preventDefault();
-      event.currentTarget.focus();
-      return;
-    }
-    const first = focusable[0]!;
-    const last = focusable[focusable.length - 1]!;
-    if (event.shiftKey && document.activeElement === first) {
-      event.preventDefault();
-      last.focus();
-    } else if (!event.shiftKey && document.activeElement === last) {
-      event.preventDefault();
-      first.focus();
-    }
-  };
-  return (
-    <div
-      className={`rp-overlay ${className}`}
-      role="dialog"
-      aria-modal="true"
-      aria-label={label}
-    >
-      <div
-        ref={dialogRef}
-        className="rp-overlay-inner"
-        tabIndex={-1}
-        onKeyDown={trapFocus}
-      >
-        {children}
-        {!hideClose ? (
-          <button
-            type="button"
-            className="rp-close"
-            onClick={close}
-            aria-label={`Close ${label}`}
-          >
-            ×
-          </button>
-        ) : null}
-      </div>
-    </div>
-  );
-}
+import { Button, Chip } from "~/components/ui/Button";
+import { Sheet } from "~/components/ui/Sheet";
 
 export function AtlasOverlay({
   countries,
@@ -155,16 +60,16 @@ export function AtlasOverlay({
     )
   );
   return (
-    <Overlay close={close} label="Atlas" hideClose>
+    <Sheet close={close} label="Atlas" hideClose>
       <header className="rp-overlay-head">
         <div>
           <h2>
             <FlipBoard text="Atlas" />
             <span className="sr-only">Atlas</span>
           </h2>
-          <p className="rp-eyebrow">
+          <Eyebrow>
             {countries.length} COUNTRIES · LIVE CATALOG
-          </p>
+          </Eyebrow>
         </div>
         <input
           autoFocus
@@ -191,7 +96,7 @@ export function AtlasOverlay({
         ) : null}
         {regions.map((region) => (
           <section key={region}>
-            <p className="rp-eyebrow text-foil">{region}</p>
+            <Eyebrow tone="foil">{region}</Eyebrow>
             <div className="rp-country-grid">
               {visible
                 .filter(
@@ -235,7 +140,7 @@ export function AtlasOverlay({
         ))}
       </div>
       {trailFootnote}
-    </Overlay>
+    </Sheet>
   );
 }
 
@@ -330,7 +235,7 @@ export function CountryOverlay({
     grouped.set(key, [...current, station]);
   });
   return (
-    <Overlay close={close} label={`${country} stations`} hideClose>
+    <Sheet close={close} label={`${country} stations`} hideClose>
       <Button onClick={onBack}>← Atlas</Button>
       <header className="mt-6">
         <h2>
@@ -345,13 +250,13 @@ export function CountryOverlay({
           <FlipBoard text={country} key={country} />
           <span className="sr-only">{country}</span>
         </h2>
-        <p className="rp-eyebrow">
+        <Eyebrow>
           {drilldown?.status === "loading" || languageStatus === "loading"
             ? "LOADING LIVE STATIONS"
             : `${liveStations.length.toLocaleString()} LIVE`}
           {languageFilter ? ` · ${languageFilter.toUpperCase()}` : ""}{" "}
           · {languages.join(" · ") || "LANGUAGE UNAVAILABLE"}
-        </p>
+        </Eyebrow>
       </header>
       {drilldown?.status === "loading" ? (
         <p className="mt-8 text-sm text-muted" role="status">
@@ -372,7 +277,7 @@ export function CountryOverlay({
         <>
           {languages.length > 1 && (
             <div className="mt-6 flex flex-wrap gap-2">
-              <span className="rp-eyebrow self-center">LANGUAGE</span>
+              <Eyebrow as="span" className="self-center">LANGUAGE</Eyebrow>
               {languages.map((language) => (
                 <Chip
                   selected={languageFilter === language}
@@ -393,14 +298,14 @@ export function CountryOverlay({
               .slice(0, maxGroups)
               .map(([city, list], index) => (
                 <section key={city}>
-                  <p className="rp-eyebrow text-foil">
+                  <Eyebrow tone="foil">
                     {index === 0 &&
                       !languageFilter &&
                       liveStations.length > 24
                       ? "TOP PICKS · "
                       : ""}
                     {city.toUpperCase()}
-                  </p>
+                  </Eyebrow>
                   <div className="mt-2 space-y-2">
                     {list.map((station) => (
                       <StationRow
@@ -418,7 +323,7 @@ export function CountryOverlay({
           </div>
         </>
       )}
-    </Overlay>
+    </Sheet>
   );
 }
 
@@ -453,13 +358,13 @@ export function PassportOverlay({
   );
   const ghosts = passportGhostSlots(stamps.length);
   return (
-    <Overlay close={close} label="Your Passport" className="ew-passport-overlay">
+    <Sheet close={close} label="Your Passport" className="ew-passport-overlay">
       <div className="ew-passport-book">
       <header className="ew-passport-head">
         <p className="ew-passport-edition"><span />Elsewhere<span /></p>
         <div>
           <h2>Passport</h2>
-          <p className="rp-eyebrow">
+          <Eyebrow>
             TRAVELER Nº {travelerNumber || "000 001"} · MEMBER SINCE{" "}
             {new Date(memberSince)
               .toLocaleDateString(undefined, {
@@ -467,7 +372,7 @@ export function PassportOverlay({
                 year: "numeric",
               })
               .toUpperCase()}
-          </p>
+          </Eyebrow>
         </div>
       </header>
       <p className="ew-passport-lede">
@@ -483,7 +388,7 @@ export function PassportOverlay({
           </div>
           {favorites.length > 0 ? (
             <div className="mt-6">
-              <p className="rp-eyebrow text-foil">KEPT SIGNALS</p>
+              <Eyebrow tone="foil">KEPT SIGNALS</Eyebrow>
               <div className="mt-3 space-y-1">
                 {favorites.map((station) => (
                   <StationRow
@@ -502,9 +407,9 @@ export function PassportOverlay({
           ) : null}
         </div>
         <div>
-          <p className="rp-eyebrow text-foil">
+          <Eyebrow tone="foil">
             STAMPS{stamps.length > 0 ? ` · ${stamps.length}` : ""}
-          </p>
+          </Eyebrow>
           {stamps.length === 0 ? (
             <div className="ew-passport-empty" role="status">
               <p className="ew-passport-empty-rule">The first page is blank.</p>
@@ -547,9 +452,9 @@ export function PassportOverlay({
                         <span>{String(index + 1).padStart(2, "0")} / ELSEWHERE</span>
                       </span>
                       <span className="rp-stamp-main">
-                        <p className="rp-eyebrow text-foil">
+                        <Eyebrow tone="foil">
                           {stamp.countryCode || "--"} · {stamp.country}
-                        </p>
+                        </Eyebrow>
                         <h3>{stamp.city}</h3>
                         <p>{stamp.stationName}</p>
                         {stamp.language ? (
@@ -609,14 +514,14 @@ export function PassportOverlay({
       </div>
       {trailFootnote}
       </div>
-    </Overlay>
+    </Sheet>
   );
 }
 function Stat({ value, label }: { value: number; label: string }) {
   return (
     <div className="rp-stat" role="listitem">
       <strong>{value}</strong>
-      <span className="rp-eyebrow">{label}</span>
+      <Eyebrow as="span">{label}</Eyebrow>
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import { json, type LoaderFunctionArgs } from "@remix-run/node";
+import { Eyebrow } from "~/components/ui/Eyebrow";
 import { useLoaderData, useSearchParams } from "@remix-run/react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { usePlayerStore } from "~/state/playerStore";
@@ -417,11 +418,11 @@ export default function Index() {
                 ) : null}
               </span>
               {mixLabel ? (
-                <span className="rp-eyebrow text-foil">{mixLabel}</span>
+                <Eyebrow as="span" tone="foil">{mixLabel}</Eyebrow>
               ) : (
-                <span className="rp-eyebrow text-dust">
+                <Eyebrow as="span" tone="dust">
                   {liveFiltered.length} LANDS
-                </span>
+                </Eyebrow>
               )}
             </div>
             {aiStatus === "error" && listening.exploreError && (

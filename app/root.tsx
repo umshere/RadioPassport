@@ -1,4 +1,5 @@
 import type { LinksFunction } from "@remix-run/node";
+import { Eyebrow } from "~/components/ui/Eyebrow";
 import {
   isRouteErrorResponse,
   Link,
@@ -268,7 +269,7 @@ export function ErrorBoundary() {
       <div className="min-h-screen bg-ink px-6 py-10 text-bone">
         <div className="mx-auto flex min-h-[calc(100dvh-5rem)] max-w-3xl items-center">
           <div className="w-full">
-            <p className="rp-eyebrow text-foil">{statusLabel}</p>
+            <Eyebrow tone="foil">{statusLabel}</Eyebrow>
             <h1 className="ew-coverline mt-6">{title}</h1>
             <p className="rp-lede mt-4">{message}</p>
             <div className="mt-8 flex flex-wrap gap-3">
@@ -305,7 +306,7 @@ function NotFoundEasterEgg({
     <main className="not-found-easter-egg relative min-h-screen overflow-hidden px-6 py-10 text-bone">
       <div className="not-found-easter-egg__pattern" aria-hidden="true" />
       <section className="relative z-10 mx-auto flex min-h-[calc(100dvh-5rem)] w-full max-w-3xl flex-col items-start justify-center">
-        <p className="rp-eyebrow text-foil">Lost</p>
+        <Eyebrow tone="foil">Lost</Eyebrow>
         <h1 className="ew-coverline mt-4">{title}</h1>
         <p className="rp-lede mt-4 max-w-xl">{message}</p>
         <ButtonLink to="/" variant="land" kicker="EW · Return" className="mt-8" prefetch="intent">

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Eyebrow } from "~/components/ui/Eyebrow";
 import { usePlayerStore } from "~/state/playerStore";
 import { useUpNextStore } from "~/state/upNextStore";
 import { stationLocation } from "./StationRow";
@@ -69,7 +70,7 @@ export default function UpNextRow() {
         )}
       </span>
       <span className="ew-upnext-copy">
-        <span className="rp-eyebrow text-foil">Up next</span>
+        <Eyebrow as="span" tone="foil">Up next</Eyebrow>
         <strong className="ew-upnext-name">{next.name}</strong>
         {sub ? <span className="ew-upnext-sub">{sub}</span> : null}
       </span>
