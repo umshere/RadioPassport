@@ -8,6 +8,9 @@ type ProbeSnapshot = {
   probeCheckedAt: string;
 };
 
+/** Worst case per station is now HEAD_TIMEOUT_MS when silent (was ~6s: 2.8s HEAD + 3.2s GET). */
+const HEAD_TIMEOUT_MS = 2200;
+const GET_TIMEOUT_MS = 2500;
 const PROBE_CACHE_TTL_MS = 90_000;
 const PROBE_CACHE_MAX_ENTRIES = 400;
 const probeCache = new Map<
@@ -148,10 +151,15 @@ async function resolveProbeSnapshot(
   }
 
   const probePromise = (async () => {
-    const headResult = await probeRequest(url, "HEAD", 2800);
-    const finalResult = headResult.ok
-      ? headResult
-      : await probeRequest(url, "GET", 3200);
+    const headResult = await probeRequest(url, "HEAD", HEAD_TIMEOUT_MS);
+    // A HEAD that never answered (status 0: timeout or refused) means the host
+    // is not talking; a GET would only burn a second timeout and hold the whole
+    // batch. Fall back to GET only when the host replied but refused HEAD
+    // (405 and friends are common on Icecast).
+    const finalResult =
+      headResult.ok || headResult.status === 0
+        ? headResult
+        : await probeRequest(url, "GET", GET_TIMEOUT_MS);
     const snapshot: ProbeSnapshot = {
       probeStatus: finalResult.ok
         ? finalResult.latencyMs > 1800

@@ -1,6 +1,4 @@
 import type { ComponentType } from "react";
-import { ThemeIcon } from "@mantine/core";
-import { IconBroadcast } from "@tabler/icons-react";
 import type { ReactCountryFlagProps } from "react-country-flag";
 import * as ReactCountryFlagModule from "react-country-flag";
 
@@ -99,21 +97,29 @@ export function CountryFlag({ iso, size = 48, title, width, height, className, e
     );
   }
 
+  // No country: the seal stands in (gold ring, lacquer heart) — never a
+  // stock gradient chip.
   return (
-    <ThemeIcon
-      size={em != null ? size : Math.max(Number(flagWidth), Number(flagHeight))}
-      radius="md"
-      variant="gradient"
-      gradient={{ from: "cyan", to: "violet", deg: 135 }}
+    <span
+      role="img"
       aria-label="Global"
       className={className}
       style={{
+        display: "inline-grid",
+        placeItems: "center",
         width: flagWidth,
         height: flagHeight,
         minWidth: flagWidth,
+        border: "1px solid var(--ew-foil-line-strong)",
+        borderRadius: 2,
+        background: "var(--ew-ink)",
+        color: "var(--ew-foil)",
       }}
     >
-      <IconBroadcast size={size * 0.6} stroke={1.5} />
-    </ThemeIcon>
+      <svg viewBox="0 0 32 32" width="70%" height="70%" aria-hidden="true">
+        <circle cx="16" cy="16" r="11" fill="none" stroke="currentColor" strokeWidth="1.5" />
+        <circle cx="16" cy="16" r="4.5" fill="var(--ew-lacquer)" />
+      </svg>
+    </span>
   );
 }
