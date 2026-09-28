@@ -908,6 +908,13 @@ export default function Index() {
             </div>
           </div>
           <div className="rp-land-slot">
+            {/* First visit only: the brand line and the promise, once. After the
+                first stamp the button is enough. */}
+            {!isPlaying && arrivalStation && arrival.ctaKind === "land" && stamps.length === 0 ? (
+              <p className="ew-hook">
+                <em>You are not here.</em> Hear {arrivalCity} right now.
+              </p>
+            ) : null}
             {!isPlaying && arrivalStation && arrival.ctaKind !== "none" ? (
               <button
                 type="button"
