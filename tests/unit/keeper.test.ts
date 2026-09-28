@@ -191,6 +191,10 @@ describe("keeper facts", () => {
     const facts = buildKeeperFacts(lisbon, room("loading", null), at(9));
     expect(facts.titles).toBe("waiting");
     expect(keeperTrackLine(facts)).toBe("Listening for a title from the station.");
+    // A re-poll after the feed already answered "none" stays "none".
+    const repoll = buildKeeperFacts(lisbon, room("loading", null), at(9), true);
+    expect(repoll.titles).toBe("none");
+    expect(keeperTrackLine(repoll)).toBe("This station sends no track titles.");
   });
 
   it("repeats the ICY title exactly and offers the artist chip only with an artist", () => {

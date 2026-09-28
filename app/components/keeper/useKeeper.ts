@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { freshlyInkedStampIds } from "~/components/radio-passport/productFlow";
 import { trackKey } from "~/components/radio-passport/stationInsights";
 import { useHydrated } from "~/hooks/useHydrated";
+import { useJourneyStore } from "~/state/journeyStore";
 import { useKeeperStore } from "~/state/keeperStore";
 import { usePlayerStore } from "~/state/playerStore";
 import { roomForStation, useRoomStore } from "~/state/roomStore";
@@ -48,9 +50,17 @@ export function useKeeperView(): KeeperView {
   const now = useMinute();
   const station = hydrated ? nowPlaying : null;
   const room = roomForStation(storedRoom, station?.uuid);
+  // Once the title feed has answered for this station, a re-poll (which
+  // briefly reads "loading") must not flip the sheet back to "listening".
+  const settledFor = useRef<string | null>(null);
+  const status = room.signal.status;
+  if (station && (status === "ready" || status === "empty" || status === "error")) {
+    settledFor.current = station.uuid;
+  }
+  const titlesSettled = Boolean(station && settledFor.current === station.uuid);
   const facts = useMemo(
-    () => (station ? buildKeeperFacts(station, room, now) : null),
-    [station, room, now],
+    () => (station ? buildKeeperFacts(station, room, now, titlesSettled) : null),
+    [station, room, now, titlesSettled],
   );
   const playing = Boolean(station && hydrated && isPlaying);
   const state = deriveKeeperState({
@@ -73,8 +83,9 @@ export function useKeeperView(): KeeperView {
 }
 
 /**
- * Side effects, mounted once (beside the sheet): a fresh ICY title makes the
- * keeper look up. Only titles the stream really sent can trigger it.
+ * Side effects, mounted once (beside the sheet): a fresh ICY title or a
+ * freshly inked stamp makes the keeper look up (one flap roll). Only titles
+ * the stream really sent, and only stamp ids that just appeared, count.
  */
 export function useKeeperDelight() {
   const nowPlaying = usePlayerStore((state) => state.nowPlaying);
@@ -96,4 +107,19 @@ export function useKeeperDelight() {
     if (!sameStation || !shouldDelight(before, key)) return;
     useKeeperStore.getState().delight(KEEPER_DELIGHT_MS);
   }, [key, nowPlaying?.uuid]);
+
+  const stamps = useJourneyStore((state) => state.stamps);
+  const journeyReady = useJourneyStore((state) => state.hydrated);
+  const seenStamps = useRef<string[] | null>(null);
+  useEffect(() => {
+    // Stamps restored from storage are history, not news.
+    if (!journeyReady) return;
+    const ids = stamps.map((stamp) => stamp.id);
+    const seen = seenStamps.current;
+    seenStamps.current = ids;
+    if (!seen) return;
+    if (freshlyInkedStampIds(seen, stamps).length) {
+      useKeeperStore.getState().delight(KEEPER_DELIGHT_MS);
+    }
+  }, [journeyReady, stamps]);
 }

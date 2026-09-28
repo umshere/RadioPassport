@@ -86,7 +86,8 @@ export function KeeperFloat({ view }: { view: KeeperView }) {
   const [spot, setSpot] = useState<KeeperSpot>(DEFAULT_KEEPER_SPOT);
   const [bounds, setBounds] = useState<KeeperBounds | null>(null);
   const [drag, setDrag] = useState<{ x: number; y: number } | null>(null);
-  const [engaged, setEngaged] = useState(false);
+  const [hovered, setHovered] = useState(false);
+  const [focused, setFocused] = useState(false);
   const [hopping, setHopping] = useState(false);
   const pointer = useRef<{ id: number; x: number; y: number; moved: boolean } | null>(null);
   const suppressClick = useRef(false);
@@ -139,7 +140,11 @@ export function KeeperFloat({ view }: { view: KeeperView }) {
   if (!view.present || !bounds) return null;
 
   const resting = clampKeeperSpot(spot, bounds);
-  const peek = keeperPeeks({ state: view.state, engaged: engaged || Boolean(drag), hopping });
+  const peek = keeperPeeks({
+    state: view.state,
+    engaged: hovered || focused || Boolean(drag),
+    hopping,
+  });
   const style: React.CSSProperties = drag
     ? {
         left: drag.x - KEEPER_FLOAT_SIZE / 2,
@@ -159,10 +164,10 @@ export function KeeperFloat({ view }: { view: KeeperView }) {
       data-dragging={drag ? true : undefined}
       data-away={view.sheetOpen || undefined}
       style={style}
-      onPointerEnter={() => setEngaged(true)}
-      onPointerLeave={() => setEngaged(false)}
-      onFocus={() => setEngaged(true)}
-      onBlur={() => setEngaged(false)}
+      onPointerEnter={(event) => event.pointerType === "mouse" && setHovered(true)}
+      onPointerLeave={() => setHovered(false)}
+      onFocus={() => setFocused(true)}
+      onBlur={() => setFocused(false)}
       onPointerDown={(event) => {
         if (event.button !== 0) return;
         pointer.current = {
@@ -191,7 +196,13 @@ export function KeeperFloat({ view }: { view: KeeperView }) {
         const start = pointer.current;
         pointer.current = null;
         if (!start?.moved) return;
+        // Swallow only the click this drag's release produces; if the
+        // browser fires none (the figure moved under the pointer), the
+        // next real tap must still open the sheet.
         suppressClick.current = true;
+        window.setTimeout(() => {
+          suppressClick.current = false;
+        }, 0);
         setDrag(null);
         place(snapKeeperSpot(event.clientX, event.clientY, bounds));
       }}

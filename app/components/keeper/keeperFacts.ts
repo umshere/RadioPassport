@@ -77,6 +77,9 @@ export function buildKeeperFacts(
   station: Station,
   room: Pick<Room, "signal" | "dossier"> | null,
   now = new Date(),
+  /** The title feed has already answered once for this station (sent,
+   *  none, or failed): a later re-poll is not "waiting" again. */
+  titlesSettled = false,
 ): KeeperFacts {
   const longitude =
     typeof station.longitude === "number" && Number.isFinite(station.longitude)
@@ -88,7 +91,9 @@ export function buildKeeperFacts(
   const title = clip(rawTrack?.title, LIMITS.text);
   const sent = Boolean(artist || title);
   const waiting =
-    !sent && (!room || room.signal.status === "loading" || room.signal.status === "idle");
+    !sent &&
+    !titlesSettled &&
+    (!room || room.signal.status === "loading" || room.signal.status === "idle");
   const dossier =
     sent && room && room.dossier.status === "ready"
       ? {

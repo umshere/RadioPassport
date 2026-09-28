@@ -164,6 +164,9 @@ export function KeeperSheet({ view }: { view: KeeperView & { facts: KeeperFacts 
     return () => {
       document.removeEventListener("keydown", onKey);
       window.requestAnimationFrame(() => {
+        // Only a real close hands focus back (a dev StrictMode re-run of
+        // this effect must not pull focus out of an open sheet).
+        if (useKeeperStore.getState().sheetOpen) return;
         const keeper = document.querySelector<HTMLElement>(".ew-keeper-float button");
         (keeper ?? previous)?.focus?.({ preventScroll: true });
       });
@@ -369,8 +372,14 @@ export function KeeperSheet({ view }: { view: KeeperView & { facts: KeeperFacts 
               enterKeyHint="send"
               placeholder="Ask about this station, its place, its hour"
               onChange={(event) => {
+                const typing = event.target.value.trim().length > 0;
                 setDraft(event.target.value);
-                setTyping(event.target.value.trim().length > 0);
+                setTyping(typing);
+                // Typing interrupts the keeper: it stops talking and listens.
+                if (typing && useKeeperStore.getState().exchange === "speaking") {
+                  turn.current += 1;
+                  setExchange("none");
+                }
               }}
               onBlur={() => setTyping(false)}
             />
