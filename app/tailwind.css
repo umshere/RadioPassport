@@ -2423,13 +2423,12 @@ html, body {
     flex-direction: column;
     height: min(72svh, 620px);
     min-height: 220px;
-    /* A layer, not a page section: one step lighter than the page (leather,
-       the dock's family), a foil hairline for its top edge, and the design
-       system's one lift. A shadow alone vanishes on near-black, so the
-       surface and the edge carry the depth. */
+    /* A layer, not a page section — but still the dark theme: same ink as
+       the page, and only the edge tells it apart. A foil hairline on top, a
+       faint foil glow just beneath it, and the design system's one lift. */
     border-top: 1px solid var(--ew-foil-line);
-    background: linear-gradient(to bottom, var(--ew-hide), var(--ew-leather) 56px);
-    box-shadow: var(--ew-lift), inset 0 1px 0 var(--ew-foil-wash-strong);
+    background: var(--ew-ink);
+    box-shadow: var(--ew-lift), inset 0 1px 0 var(--ew-foil-wash-strong), inset 0 14px 18px -14px var(--ew-foil-wash-strong);
     transform: translateY(calc(100% - var(--ew-peek, 84px)));
     /* Collapsed, the sheet is pushed down under the dock and the phone band.
        Clip it to the peek (84px, or whatever BoardSheet measures) (in its own box, so the clip travels with the
