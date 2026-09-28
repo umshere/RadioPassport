@@ -24,12 +24,6 @@ export function shouldAnimateDock(isPlaying: boolean, reducedMotion: boolean) {
   return isPlaying && !reducedMotion;
 }
 
-function hue(id: string) {
-  return [...id].reduce(
-    (total, char) => (total * 31 + char.charCodeAt(0)) % 360,
-    0
-  );
-}
 
 export default function PlayerDock() {
   const location = useLocation();
@@ -48,57 +42,12 @@ export default function PlayerDock() {
   useRoom(nowPlaying, isPlaying);
   const storedRoom = useRoomStore((state) => state.room);
   const room = roomForStation(storedRoom, nowPlaying?.uuid);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
   const deckRef = useRef<HTMLDivElement>(null);
   // The deck is the dock expanded: labeled transport cells (Back / Keep /
   // Play / Next / Passport) that used to live a second life in the theater
   // letter. One transport, one object — the row stays the compact face.
   const [deckOpen, setDeckOpen] = useState(false);
   const [ink, setInk] = useState<number | null>(null);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas || !nowPlaying) return;
-    const context = canvas.getContext("2d");
-    if (!context) return;
-    let raf = 0,
-      t = 0;
-    const draw = () => {
-      const rect = canvas.getBoundingClientRect(),
-        dpr = Math.min(window.devicePixelRatio || 1, 2);
-      canvas.width = rect.width * dpr;
-      canvas.height = rect.height * dpr;
-      context.setTransform(dpr, 0, 0, dpr, 0, 0);
-      const c = rect.width / 2,
-        r = rect.width * 0.27;
-      context.fillStyle = `hsl(${hue(nowPlaying.uuid)} 28% 16%)`;
-      context.fillRect(0, 0, rect.width, rect.height);
-      context.strokeStyle = "rgba(198,165,106,.85)";
-      context.beginPath();
-      context.arc(c, c, r, 0, Math.PI * 2);
-      context.stroke();
-      for (let i = 0; i < 26; i++) {
-        const a = (i / 26) * Math.PI * 2 + t,
-          rr = r + (isPlaying ? Math.sin(t * 3 + i) * 3 : 0);
-        context.fillStyle = i % 4 === 0 ? "#C73A3A" : "#E8DFD0";
-        context.beginPath();
-        context.arc(
-          c + Math.cos(a) * rr,
-          c + Math.sin(a) * rr,
-          1.5,
-          0,
-          Math.PI * 2
-        );
-        context.fill();
-      }
-      if (isPlaying) {
-        t += 0.04;
-        raf = requestAnimationFrame(draw);
-      }
-    };
-    draw();
-    return () => cancelAnimationFrame(raf);
-  }, [isPlaying, nowPlaying]);
 
   useEffect(() => {
     if (!mounted || !nowPlaying) return;
@@ -352,7 +301,7 @@ export default function PlayerDock() {
       </div>
       <div className="rp-dock-row">
       <Link to="/listen" prefetch="intent" viewTransition aria-label="Open listening theater">
-        <canvas ref={canvasRef} className="rp-dock-art" aria-hidden="true" />
+        <img className="rp-dock-art" src="/elsewhere-mark.jpg" alt="" width={44} height={44} />
       </Link>
       <div className="min-w-0 flex-1">
         <strong className="block truncate">{nowPlaying.name}</strong>
