@@ -23,7 +23,10 @@ export function hasGeminiKey(env: NodeJS.ProcessEnv = process.env) {
 }
 
 export async function completeGeminiJson<T>(
-  options: Pick<GatewayChatOptions, "system" | "user" | "timeoutMs" | "fetchImpl">
+  options: Pick<GatewayChatOptions, "system" | "user" | "timeoutMs" | "fetchImpl"> & {
+    /** Skip Gemini 2.5's hidden reasoning: short factual answers come back in ~1s, not ~5s. */
+    noThinking?: boolean;
+  }
 ): Promise<T> {
   const apiKey = trimEnv(process.env.GEMINI_API_KEY);
   if (!apiKey) {
@@ -43,6 +46,7 @@ export async function completeGeminiJson<T>(
       contents: [{ role: "user", parts: [{ text: options.user }] }],
       generationConfig: {
         temperature: 0.5,
+        ...(options.noThinking ? { thinkingConfig: { thinkingBudget: 0 } } : {}),
         ...(apiVersion === "v1beta"
           ? { responseMimeType: "application/json" }
           : {}),
@@ -80,7 +84,7 @@ export async function completeGeminiJson<T>(
 }
 
 export async function completeJsonPreferringGateway<T>(
-  options: GatewayChatOptions
+  options: GatewayChatOptions & { noThinking?: boolean }
 ): Promise<{ value: T; source: "heuristics" | "gemini" }> {
   if (isGatewayConfigured(options.apiKey ?? process.env.HEURISTICS_API_KEY)) {
     try {

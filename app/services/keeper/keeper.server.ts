@@ -21,7 +21,9 @@ import { clientKey, keeperBucket, type TokenBucket } from "./rateLimit.server";
 /** Request bodies above this are refused before parsing. */
 export const KEEPER_BODY_MAX = 8 * 1024;
 export const KEEPER_ANSWER_WORDS = 70;
-const MODEL_TIMEOUT_MS = 6000;
+const MODEL_TIMEOUT_MS = 4500;
+/** Knowledge answers give up on the model here and use the snippet's sentence. */
+const KNOWLEDGE_DEADLINE_MS = 5000;
 
 export const KEEPER_SYSTEM_PROMPT = `You are the keeper: the night clerk at the desk of a live radio station on Elsewhere, a site for hearing live radio from somewhere it is another hour.
 Rules, all of them hard:
@@ -183,6 +185,7 @@ export function defaultKeeperComplete(env: NodeJS.ProcessEnv, fetchImpl: typeof 
         user,
         timeoutMs: MODEL_TIMEOUT_MS,
         fetchImpl,
+        noThinking: true,
       });
       if (typeof value?.answer === "string" && value.answer.trim()) return value.answer;
     } catch {
@@ -266,7 +269,8 @@ export async function handleKeeperAsk(request: Request, deps: KeeperDeps = {}) {
       : `I don’t know enough about ${topic.canonical} to say from this desk.`;
     try {
       const complete = deps.complete ?? defaultKeeperComplete(env, fetchImpl);
-      const raw = await complete(
+      const raw = await withTimeout(
+        complete(
         KNOWLEDGE_SYSTEM_PROMPT,
         JSON.stringify({
           TOPIC: topic.canonical,
@@ -274,6 +278,8 @@ export async function handleKeeperAsk(request: Request, deps: KeeperDeps = {}) {
           SNIPPET: snippet?.text ?? null,
           QUESTION: parsed.question,
         }),
+        ),
+        KNOWLEDGE_DEADLINE_MS,
       );
       const answer = clampWords(raw);
       const verdict = validateKeeperAnswer(answer, {
