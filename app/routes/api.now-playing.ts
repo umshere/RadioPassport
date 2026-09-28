@@ -1,4 +1,5 @@
 import { json, type LoaderFunctionArgs } from "@remix-run/node";
+import { repairMojibake } from "~/utils/repairMojibake";
 import type { NowPlayingResponse } from "~/types/nowPlaying";
 
 const REQUEST_TIMEOUT_MS = 8000;
@@ -59,9 +60,9 @@ function sanitizeMetadata(raw: string) {
 function decodeMetadataPayload(payload: Uint8Array) {
   const utf8 = new TextDecoder("utf-8").decode(payload);
   const needsFallback = /\uFFFD/.test(utf8) || /[\u0000-\u0008\u000B\u000C\u000E-\u001F]/.test(utf8);
-  if (!needsFallback) return sanitizeMetadata(utf8);
+  if (!needsFallback) return repairMojibake(sanitizeMetadata(utf8));
   const latin1 = new TextDecoder("iso-8859-1").decode(payload);
-  return sanitizeMetadata(latin1);
+  return repairMojibake(sanitizeMetadata(latin1));
 }
 
 async function readIcyMetadata(stream: ReadableStream<Uint8Array>, metaint: number) {
