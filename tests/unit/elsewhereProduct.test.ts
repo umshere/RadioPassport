@@ -658,11 +658,24 @@ describe("home cover panes", () => {
     expect(band).toContain("ATLAS_SYNC_EVENT");
     expect(band).toContain("requestCloseAtlas");
     expect(band).toContain("preventScrollReset");
-    expect(home).toContain("announceAtlas");
-    expect(home).toContain("CLOSE_ATLAS_EVENT");
-    expect(home).toContain("CountryFlag");
-    expect(home).toContain("ew-coverline-flag");
-    expect(home).toContain("playFromCountryNextState");
+    // Overlay orchestration and the globe/cover pane moved out of Index().
+    const homeOverlaysHook = readFileSync(
+      new URL("../../app/hooks/home/useHomeOverlays.ts", import.meta.url),
+      "utf8",
+    );
+    const homeGlobeSide = readFileSync(
+      new URL("../../app/components/radio-passport/HomeGlobeSide.tsx", import.meta.url),
+      "utf8",
+    );
+    const homeOverlays = readFileSync(
+      new URL("../../app/components/radio-passport/HomeOverlays.tsx", import.meta.url),
+      "utf8",
+    );
+    expect(homeOverlaysHook).toContain("announceAtlas");
+    expect(homeOverlaysHook).toContain("CLOSE_ATLAS_EVENT");
+    expect(homeGlobeSide).toContain("CountryFlag");
+    expect(homeGlobeSide).toContain("ew-coverline-flag");
+    expect(homeOverlays).toContain("playFromCountryNextState");
     // The instant-board derivation moved into the home stations hook.
     const homeStations = readFileSync(
       new URL("../../app/hooks/home/useHomeStations.ts", import.meta.url),
@@ -692,11 +705,11 @@ describe("home cover panes", () => {
     expect(home).toContain('className="rp-intel-slot"');
     expect(home).toContain("is-landed");
     expect(home).not.toContain("{arrival.headline}");
-    expect(home).toContain('className="ew-coverline ew-arrive"');
+    expect(homeGlobeSide).toContain('className="ew-coverline ew-arrive"');
     expect(home).toContain("CoverStrip");
     expect(home).toMatch(/className="rp-stage"[\s\S]*SiteSeekRail/);
     expect(home).not.toContain("scrollIntoView");
-    expect(home).toMatch(
+    expect(homeGlobeSide).toMatch(
       /className=\{`ew-cover\$\{arrivalCity \? " ew-seam-city" : ""\}`\}\s*>/
     );
   });

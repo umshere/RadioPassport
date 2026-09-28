@@ -1,44 +1,21 @@
 import { json, type LoaderFunctionArgs } from "@remix-run/node";
-import { Link, useLoaderData, useSearchParams } from "@remix-run/react";
+import { useLoaderData, useSearchParams } from "@remix-run/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useShelfProbe } from "~/hooks/useShelfProbe";
 import { createQueueSession } from "~/utils/playerQueue";
 import type { Station } from "~/types/radio";
 import type { InterpretResponse } from "~/types/ai";
 import { usePlayerStore } from "~/state/playerStore";
 import { useJourneyStore } from "~/state/journeyStore";
-import { useSecretTrail } from "~/state/secretTrail";
 import { resolveKeptSignals } from "~/state/favoriteSnapshot";
 import { useListeningMode } from "~/hooks/useListeningMode";
 import { roomForStation, useRoomStore } from "~/state/roomStore";
 import { loadWorldDescriptorPreview } from "~/services/aiOrchestrator";
-import { ParticleGlobe } from "~/components/radio-passport/ParticleGlobe";
-import { GalaxyBackdrop } from "~/components/radio-passport/GalaxyBackdrop";
-import { TusiField } from "~/components/radio-passport/TusiField";
-import {
-  globeFocusId,
-} from "~/components/radio-passport/globePlaces";
+import { stationLocation } from "~/components/radio-passport/StationRow";
 import { AtmospherePin } from "~/components/radio-passport/AtmospherePin";
-import {
-  StationRow,
-  stationLocation,
-} from "~/components/radio-passport/StationRow";
-import {
-  AtlasOverlay,
-  CountryOverlay,
-  PassportOverlay,
-} from "~/components/radio-passport/Overlays";
-import {
-  countryCacheKey,
-  countryCacheWith,
-  fetchCountryDrilldown,
-  type CountryDrilldownState,
-} from "~/components/radio-passport/countryData";
 import { applyAiPreviewPool } from "~/components/radio-passport/aiPreview";
 import {
   hourTapNextState,
   playFromAtlasNextState,
-  playFromCountryNextState,
   shouldClearBrowsingFilters,
   surpriseTapNextState,
 } from "~/components/radio-passport/searchState";
@@ -49,28 +26,17 @@ import {
   BoardSheet,
   type BoardSheetState,
 } from "~/components/radio-passport/BoardSheet";
-import { TrailWhisper } from "~/components/radio-passport/TrailWhisper";
 import { CoverStrip } from "~/components/CoverStrip";
 import { CoverSlotPortal } from "~/components/radio-passport/CoverSlot";
 import {
-  FlipBoard,
   boardDeal,
 } from "~/components/radio-passport/FlipBoard";
-import { CountryFlag } from "~/components/CountryFlag";
 import { SiteSeekPortal, SiteSeekRail } from "~/components/radio-passport/SiteSeek";
 import {
   resolveCoverArrival,
   describeCoverEmpty,
-  findCityFromPassport,
   sameHourPillLabel,
-  OPEN_ATLAS_EVENT,
-  CLOSE_ATLAS_EVENT,
-  OPEN_PASSPORT_EVENT,
-  announceAtlas,
-  atlasRequested,
   hourTravelHead,
-  passportRequested,
-  resolveStampReplay,
   looksLikeIntentSentence,
   hourBoardLabel,
   intentEchoFromInterpret,
@@ -91,6 +57,9 @@ import { Button } from "~/components/ui/Button";
 import { useHomeStations } from "~/hooks/home/useHomeStations";
 import { useCatalogSearch } from "~/hooks/home/useCatalogSearch";
 import { useHomeIntent } from "~/hooks/home/useHomeIntent";
+import { useHomeOverlays } from "~/hooks/home/useHomeOverlays";
+import { HomeOverlays } from "~/components/radio-passport/HomeOverlays";
+import { HomeGlobeSide } from "~/components/radio-passport/HomeGlobeSide";
 import { StationBoard } from "~/components/radio-passport/StationBoard";
 import { HOME_NO_STORE, loadHomeBoard } from "~/services/home/homeBoard.server";
 
@@ -160,29 +129,22 @@ export default function Index() {
     error: catalogError,
     retry: retryCatalog,
   } = useCatalogSearch(query);
-  const [atlas, setAtlas] = useState(() =>
-    atlasRequested(searchParams.toString())
-  );
-  const [atlasQuery, setAtlasQuery] = useState("");
-  const [country, setCountry] = useState<string | null>(null);
-  const [countryCache, setCountryCache] = useState<
-    Record<string, CountryDrilldownState>
-  >({});
+  const overlays = useHomeOverlays(searchParams.toString());
+  const {
+    atlas,
+    setAtlas,
+    country,
+    countryCache,
+    countryStations,
+    passport,
+  } = overlays;
   const [aiStatus, setAiStatus] = useState<"idle" | "loading" | "error">(
     "idle"
   );
   const [mixLabel, setMixLabel] = useState<string | null>(null);
-  const [passport, setPassport] = useState(false);
   // The station board rests as a sheet on the phone: peek until a search
   // asks for the rows, back to peek the moment a station lands.
   const [boardSheet, setBoardSheet] = useState<BoardSheetState>("peek");
-  const trailStage = useSecretTrail((state) => state.stage);
-  const trailHydrate = useSecretTrail((state) => state.hydrate);
-  const trailVisitAtlas = useSecretTrail((state) => state.visitAtlas);
-  const trailVisitPassport = useSecretTrail((state) => state.visitPassport);
-  useEffect(() => trailHydrate(), [trailHydrate]);
-  useEffect(() => { if (atlas && trailStage === "atlas") trailVisitAtlas(); }, [atlas, trailStage, trailVisitAtlas]);
-  useEffect(() => { if (passport && trailStage === "passport") trailVisitPassport(); }, [passport, trailStage, trailVisitPassport]);
   // The interpreter's whisper: what it understood differently, until the next keystroke.
   const [intentEcho, setIntentEcho] = useState<string | null>(null);
   const queryRef = useRef(query);
@@ -191,11 +153,9 @@ export default function Index() {
   const {
     featured,
     continueStation,
-    baseStations,
     filtered,
     liveFiltered,
     globeStations,
-    stampedKeys,
     places,
     selectedPool,
   } = useHomeStations({
@@ -263,48 +223,6 @@ export default function Index() {
       startStation,
     ]
   );
-
-  const loadCountry = useCallback(
-    async (next: string, force = false) => {
-      const key = countryCacheKey(next);
-      if (!force && countryCache[key]) return;
-      setCountryCache((current) =>
-        countryCacheWith(current, next, { status: "loading", stations: [] })
-      );
-      try {
-        const stations = await fetchCountryDrilldown(next);
-        setCountryCache((current) =>
-          countryCacheWith(current, next, { status: "ready", stations })
-        );
-      } catch (error) {
-        setCountryCache((current) =>
-          countryCacheWith(current, next, {
-            status: "error",
-            stations: [],
-            message:
-              error instanceof Error
-                ? error.message
-                : "We could not load this live country catalog.",
-          })
-        );
-      }
-    },
-    [countryCache]
-  );
-
-  const chooseCountry = useCallback(
-    (next: string) => {
-      setCountry(next);
-      setAtlas(false);
-      void loadCountry(next);
-    },
-    [loadCountry]
-  );
-
-  const countryDrilldown = country
-    ? countryCache[countryCacheKey(country)] ?? null
-    : null;
-  const countryStations = countryDrilldown?.stations ?? [];
 
   const requestAiWorld = useCallback(
     async (prompt?: string) => {
@@ -412,55 +330,6 @@ export default function Index() {
     },
     [globeStations, places, play, selectedPool]
   );
-
-  useEffect(() => {
-    if (passportRequested(searchParams.toString())) {
-      setPassport(true);
-    }
-    if (atlasRequested(searchParams.toString())) {
-      setAtlas(true);
-    }
-  }, [searchParams]);
-
-  useEffect(() => {
-    const open = () => setPassport(true);
-    window.addEventListener(OPEN_PASSPORT_EVENT, open);
-    return () => window.removeEventListener(OPEN_PASSPORT_EVENT, open);
-  }, []);
-
-  useEffect(() => {
-    const open = () => setAtlas(true);
-    window.addEventListener(OPEN_ATLAS_EVENT, open);
-    return () => window.removeEventListener(OPEN_ATLAS_EVENT, open);
-  }, []);
-
-  // Elsewhere tabs and the wordmark ask to close: their Link to "/" is a
-  // no-op while Atlas stands open (replaceState URL Remix never hears).
-  // Leaving the overlay world drops the country drilldown too.
-  useEffect(() => {
-    const closeAtlas = () => {
-      setCountry(null);
-      setAtlas(false);
-    };
-    window.addEventListener(CLOSE_ATLAS_EVENT, closeAtlas);
-    return () => window.removeEventListener(CLOSE_ATLAS_EVENT, closeAtlas);
-  }, []);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const params = new URLSearchParams(window.location.search);
-    if (atlas) params.set("atlas", "1");
-    else params.delete("atlas");
-    const next = params.toString();
-    const search = next ? `?${next}` : "";
-    if (window.location.search === search) return;
-    window.history.replaceState(
-      window.history.state,
-      "",
-      `${window.location.pathname}${search}${window.location.hash}`,
-    );
-    announceAtlas(atlas);
-  }, [atlas]);
 
   const isSeeking = query.trim().length >= 2;
   // A typed search is a request for rows: the sheet rises on its own so the
@@ -828,151 +697,37 @@ export default function Index() {
           </div>
           </BoardSheet>
         </section>
-        <section className="rp-globe-side">
-          <GalaxyBackdrop />
-          <TusiField />
-          <div className="rp-globe-wrap">
-            <ParticleGlobe
-              places={places}
-              focusId={globeFocusId(
-                nowPlaying,
-                query,
-                catalog.length > 0,
-                places
-              )}
-              onSelect={playPlace}
-            />
-          </div>
-          <div
-            className={`ew-cover${arrivalCity ? " ew-seam-city" : ""}`}
-          >
-            <i className="ew-cover-rule" />
-            <h1
-              className="ew-coverline ew-arrive"
-              key={seekingCover ? "seeking" : arrivalStation?.uuid ?? arrivalCity}
-            >
-              {seekingCover ? (
-                <>
-                  <FlipBoard text={query.trim()} />
-                  <span className="sr-only">{query.trim()}</span>
-                </>
-              ) : (
-                <>
-                  {arrivalStation?.countryCode ? (
-                    <CountryFlag
-                      iso={arrivalStation.countryCode}
-                      em={0.72}
-                      title={arrivalStation.country || arrivalCity}
-                      className="ew-coverline-flag"
-                    />
-                  ) : null}
-                  <FlipBoard text={arrivalCity} />
-                  <span className="sr-only">{arrivalCity}</span>
-                </>
-              )}
-            </h1>
-            <p
-              className="rp-eyebrow ew-arrive ew-arrive-2"
-              key={
-                seekingCover
-                  ? `seek-meta-${query}`
-                  : `cover-meta-${arrivalStation?.uuid ?? arrivalCity}`
-              }
-            >
-              {seekingCover
-                ? seekingBoardLabel(
-                  query,
-                  catalogLoading,
-                  liveFiltered.length,
-                  catalogError
-                ) ?? ""
-                : arrivalStation
-                  ? `${arrivalStation.bitrate
-                    ? `${arrivalStation.bitrate} · `
-                    : ""
-                  }${arrivalCity.toUpperCase()} · ${arrival.live ? "LIVE" : "LAND"
-                  }`
-                  : "TAP A CITY TO TUNE"}
-              {!seekingCover && localNow ? ` · ${formatClock(localNow)}` : ""}
-            </p>
-          </div>
-        </section>
+        <HomeGlobeSide
+          places={places}
+          catalogReady={catalog.length > 0}
+          onSelectPlace={playPlace}
+          nowPlaying={nowPlaying}
+          query={query}
+          seekingCover={seekingCover}
+          arrivalStation={arrivalStation}
+          arrivalCity={arrivalCity}
+          live={arrival.live}
+          localNow={localNow}
+          seekLabel={
+            seekingBoardLabel(query, catalogLoading, liveFiltered.length, catalogError) ?? ""
+          }
+        />
       </div>
-      {atlas && (
-        <AtlasOverlay
-          countries={countries}
-          stations={initialStations}
-          query={atlasQuery}
-          setQuery={setAtlasQuery}
-          close={() => setAtlas(false)}
-          openCountry={chooseCountry}
-          trailFootnote={<TrailWhisper onOpenBook={() => { setAtlas(false); setCountry(null); setPassport(true); }} />}
-        />
-      )}
-      {country && (
-        <CountryOverlay
-          country={country}
-          stations={countryStations}
-          drilldown={countryDrilldown}
-          onRetry={() => country && void loadCountry(country, true)}
-          favorites={favorites}
-          onBack={() => {
-            setCountry(null);
-            setAtlas(true);
-          }}
-          close={() => setCountry(null)}
-          onPlay={(station) => {
-            play(
-              station,
-              countryStations,
-              `Country: ${country}`,
-              playFromCountryNextState(country)
-            );
-            setCountry(null);
-          }}
-          onFavorite={toggleFavorite}
-        />
-      )}
-      {passport && (
-        <PassportOverlay
-          stamps={stamps}
-          playedCount={played.length}
-          memberSince={memberSince}
-          travelerNumber={travelerNumber}
-          favorites={favoriteStations}
-          close={() => setPassport(false)}
-          onFindCity={() => {
-            const next = findCityFromPassport();
-            setPassport(next.passport);
-            setAtlas(next.atlas);
-          }}
-          onReplay={(stamp) => {
-            const resolved = resolveStampReplay(stamp, [
-              ...initialStations,
-              ...catalog,
-              ...countryStations,
-            ]);
-            if (resolved.station) {
-              play(resolved.station, selectedPool, stamp.city);
-              setPassport(false);
-              return;
-            }
-            setPassport(false);
-            if (resolved.fallback === "country" && stamp.country) {
-              chooseCountry(stamp.country);
-              return;
-            }
-            setAtlas(true);
-          }}
-          onPlayFavorite={(station) => {
-            play(station, selectedPool, "Favorites");
-            setPassport(false);
-          }}
-          onFavorite={(station) => toggleFavorite(station.uuid, station)}
-          trailFootnote={<TrailWhisper onOpenBook={() => { setAtlas(false); setCountry(null); setPassport(true); }} />}
-        />
-      )}
-      {!atlas && !country && !passport ? <TrailWhisper onOpenBook={() => { setAtlas(false); setCountry(null); setPassport(true); }} /> : null}
+      <HomeOverlays
+        overlays={overlays}
+        countries={countries}
+        stations={initialStations}
+        catalog={catalog}
+        favorites={favorites}
+        favoriteStations={favoriteStations}
+        stamps={stamps}
+        playedCount={played.length}
+        memberSince={memberSince}
+        travelerNumber={travelerNumber}
+        selectedPool={selectedPool}
+        play={play}
+        toggleFavorite={toggleFavorite}
+      />
     </main>
   );
 }

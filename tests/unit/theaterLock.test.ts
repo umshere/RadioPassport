@@ -818,7 +818,12 @@ describe("theater lock", () => {
     expect(home).not.toContain("useNowPlayingMetadata(");
     expect(home).toContain("useRoomStore");
     expect(home).not.toContain("useTrackTrivia(");
-    expect(home).toContain("GalaxyBackdrop");
+    expect(
+      readFileSync(
+        new URL("../../app/components/radio-passport/HomeGlobeSide.tsx", import.meta.url),
+        "utf8",
+      ),
+    ).toContain("GalaxyBackdrop");
     expect(listen).not.toContain("theaterSkyShrink");
     expect(listen).toContain("data-beat");
     expect(listen).toContain("theaterBeat");
