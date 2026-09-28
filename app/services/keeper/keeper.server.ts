@@ -23,7 +23,7 @@ export const KEEPER_BODY_MAX = 8 * 1024;
 export const KEEPER_ANSWER_WORDS = 70;
 const MODEL_TIMEOUT_MS = 4500;
 /** Knowledge answers give up on the model here and use the snippet's sentence. */
-const KNOWLEDGE_DEADLINE_MS = 5000;
+const KNOWLEDGE_DEADLINE_MS = 4000;
 
 export const KEEPER_SYSTEM_PROMPT = `You are the keeper: the night clerk at the desk of a live radio station on Elsewhere, a site for hearing live radio from somewhere it is another hour.
 Rules, all of them hard:
@@ -140,7 +140,11 @@ const LOCAL_INTENTS = new Set<KeeperIntent>([
 export function clampWords(text: string, max = KEEPER_ANSWER_WORDS) {
   const words = text.replace(/\s+/g, " ").trim().split(" ");
   if (words.length <= max) return words.join(" ");
-  return `${words.slice(0, max).join(" ").replace(/[,;:]$/, "")}…`;
+  const cut = words.slice(0, max).join(" ");
+  // Prefer ending on a whole sentence over a mid-thought ellipsis.
+  const sentenceEnd = Math.max(cut.lastIndexOf(". "), cut.lastIndexOf("! "), cut.lastIndexOf("? "));
+  if (sentenceEnd > cut.length * 0.4) return cut.slice(0, sentenceEnd + 1);
+  return `${cut.replace(/[,;:]$/, "")}…`;
 }
 
 /**
