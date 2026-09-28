@@ -118,8 +118,8 @@ function Document({
         <Links />
       </head>
       <body
-        className="min-h-screen text-[var(--rp-text)] bg-[var(--rp-bg)]"
-        style={{ background: "var(--rp-bg)" }}
+        className="min-h-screen text-[var(--ew-bone)] bg-[var(--ew-ink)]"
+        style={{ background: "var(--ew-ink)" }}
         suppressHydrationWarning
       >
         {children}

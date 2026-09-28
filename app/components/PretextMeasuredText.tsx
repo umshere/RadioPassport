@@ -99,7 +99,7 @@ export function PretextMeasuredText({
         <button
           type="button"
           onClick={() => setIsExpanded((value) => !value)}
-          className="mt-2 inline-flex items-center rounded-full border border-[rgba(245,177,45,0.25)] bg-[rgba(245,177,45,0.08)] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--rp-gold)] transition hover:bg-[rgba(245,177,45,0.14)]"
+          className="mt-2 inline-flex items-center min-h-[44px] border border-[var(--ew-foil-line)] bg-[var(--ew-foil-wash)] px-3 font-mono text-[10px] font-medium uppercase tracking-[0.18em] text-[var(--ew-foil)] transition hover:bg-[var(--ew-foil-wash-strong)]"
         >
           {isExpanded ? lessLabel : `${moreLabel} (${lines!.length - collapsedLines!} lines)`}
         </button>

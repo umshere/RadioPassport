@@ -6,7 +6,10 @@ export default {
     "./app/routes/_index.tsx",
     "./app/routes/about.tsx",
     "./app/routes/listen.tsx",
+    "./app/routes/secret-room.tsx",
     "./app/components/PlayerDock.tsx",
+    "./app/components/SiteBar.tsx",
+    "./app/components/PretextMeasuredText.tsx",
     "./app/components/radio-passport/**/*.{ts,tsx}",
   ],
   theme: {

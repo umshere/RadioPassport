@@ -5,21 +5,6 @@
 @layer base {
   :root {
     color-scheme: dark;
-    --rp-bg: #0C0B09;
-    --rp-surface: #1A1410;
-    --rp-card: #1A1410;
-    --rp-card-2: #241C16;
-    --rp-border: rgba(232, 223, 208, 0.10);
-    --rp-border-strong: rgba(232, 223, 208, 0.18);
-    --rp-gold: #C73A3A;
-    --rp-gold-strong: #C6A56A;
-    --rp-midnight: #0C0B09;
-    --rp-bronze: #C6A56A;
-    --rp-bronze-soft: #9A8F80;
-    --rp-text: #E8DFD0;
-    --rp-muted: #9A8F80;
-    --rp-muted-2: rgba(154, 143, 128, .65);
-    --rp-shadow: 0 -16px 48px rgba(0, 0, 0, 0.45);
     --ew-ink: #0C0B09;
     --ew-leather: #1A1410;
     --ew-hide: #241C16;
@@ -38,6 +23,13 @@
     --ew-hour-night: #A79BEC;
     --ew-on-lacquer: #E8DFD0;
     --ew-on-ink: #E8DFD0;
+    /* Lacquer as small text: the seal red is 3.84:1 on ink, so text uses this lift (5.1:1). */
+    --ew-lacquer-text: #E5615C;
+    --ew-passport-paper: #E6D8B9;
+    --ew-passport-paper-edge: #C0AB82;
+    --ew-passport-ink-0: #294959;
+    --ew-passport-ink-1: #375345;
+    --ew-passport-ink-2: #783F38;
     --ew-header: rgba(26, 20, 16, .88);
     --ew-dock: rgba(26, 20, 16, .94);
     --ew-veil: rgba(12, 11, 9, .97);
@@ -57,21 +49,6 @@
 
   :root[data-atmosphere="day"] {
     color-scheme: light;
-    --rp-bg: #F2EBE1;
-    --rp-surface: #E8DFD2;
-    --rp-card: #E8DFD2;
-    --rp-card-2: #DDD4C6;
-    --rp-border: rgba(26, 22, 18, 0.10);
-    --rp-border-strong: rgba(26, 22, 18, 0.18);
-    --rp-gold: #C73A3A;
-    --rp-gold-strong: #8A6E3A;
-    --rp-midnight: #F2EBE1;
-    --rp-bronze: #8A6E3A;
-    --rp-bronze-soft: #6F675C;
-    --rp-text: #1A1612;
-    --rp-muted: #6F675C;
-    --rp-muted-2: rgba(111, 103, 92, .65);
-    --rp-shadow: 0 -16px 48px rgba(26, 22, 18, 0.08);
     --ew-ink: #F2EBE1;
     --ew-leather: #E8DFD2;
     --ew-hide: #DDD4C6;
@@ -87,6 +64,7 @@
     --ew-hour-night: #4B3FA0;
     --ew-on-lacquer: #E8DFD0;
     --ew-on-ink: #E8DFD0;
+    --ew-lacquer-text: #B5302F;
     --ew-header: rgba(242, 235, 225, .90);
     --ew-dock: rgba(232, 223, 210, .94);
     --ew-veil: rgba(242, 235, 225, .97);
@@ -113,9 +91,14 @@
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    background: var(--rp-bg);
-    color: var(--rp-text);
+    background: var(--ew-ink);
+    color: var(--ew-bone);
     transition: background-color .28s ease, color .28s ease;
+  }
+
+  :focus-visible {
+    outline: 1px solid var(--ew-foil);
+    outline-offset: 2px;
   }
 
   .safe-pb {
@@ -127,7 +110,7 @@
 @layer components {
   .text-paper { color: var(--ew-bone); }
   .text-muted { color: var(--ew-dust); }
-  .text-coral, .text-lacquer { color: var(--ew-lacquer); }
+  .text-coral, .text-lacquer { color: var(--ew-lacquer-text); }
   .text-foil { color: var(--ew-foil); }
   .text-ether { color: var(--ew-ether); }
 
@@ -669,7 +652,7 @@
     transition: background .15s;
   }
   .rp-station:hover { background: var(--ew-row-hover); }
-  .rp-station.is-active strong { color: var(--ew-lacquer); }
+  .rp-station.is-active strong { color: var(--ew-lacquer-text); }
   .rp-art {
     position: relative;
     display: grid;
@@ -1733,8 +1716,6 @@
 @layer components {
   .not-found-easter-egg {
     isolation: isolate;
-    --rp-bg: #0C0B09;
-    --rp-text: #E8DFD0;
     --ew-ink: #0C0B09;
     --ew-leather: #1A1410;
     --ew-hide: #241C16;
@@ -2519,10 +2500,10 @@ html, body {
 .ew-passport-book .rp-stat span { font-size: 8px; line-height: 1.5; letter-spacing: .08em; }
 .ew-passport-hint { margin: 8px 0 18px; color: var(--ew-dust); font: 9px/1.5 "Azeret Mono", monospace; letter-spacing: .12em; text-transform: uppercase; }
 .ew-passport-book .rp-stamp-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px 20px; margin-top: 16px; }
-.ew-passport-book .rp-stamp-ticket { --passport-ink: #294959; position: relative; display: grid; grid-template-columns: 100px minmax(0, 1fr); align-items: center; gap: 0 16px; min-height: 205px; padding: 22px; border: 1px solid #c0ab82; border-radius: 8px; -webkit-mask: none; mask: none; color: var(--passport-ink); background-color: #e6d8b9; background-image: radial-gradient(ellipse at 10% 15%, #fff7df88, transparent 65%), repeating-linear-gradient(22deg, transparent 0 3px, #8b754508 3px 4px); box-shadow: 0 5px 18px #0003, inset 0 0 0 5px #e6d8b9, inset 0 0 0 6px #bca882; text-align: left; transition: transform .2s ease, box-shadow .2s ease; }
-.ew-passport-book .rp-stamp-ticket[data-ink="1"] { --passport-ink: #375345; }
-.ew-passport-book .rp-stamp-ticket[data-ink="2"] { --passport-ink: #783f38; }
-.ew-passport-book .rp-stamp-ticket:hover { transform: translateY(-3px); box-shadow: 0 10px 24px #0004, inset 0 0 0 5px #e6d8b9, inset 0 0 0 6px #bca882; }
+.ew-passport-book .rp-stamp-ticket { --passport-ink: var(--ew-passport-ink-0); position: relative; display: grid; grid-template-columns: 100px minmax(0, 1fr); align-items: center; gap: 0 16px; min-height: 205px; padding: 22px; border: 1px solid var(--ew-passport-paper-edge); border-radius: 8px; -webkit-mask: none; mask: none; color: var(--passport-ink); background-color: var(--ew-passport-paper); background-image: radial-gradient(ellipse at 10% 15%, #fff7df88, transparent 65%), repeating-linear-gradient(22deg, transparent 0 3px, #8b754508 3px 4px); box-shadow: 0 5px 18px #0003, inset 0 0 0 5px var(--ew-passport-paper), inset 0 0 0 6px #bca882; text-align: left; transition: transform .2s ease, box-shadow .2s ease; }
+.ew-passport-book .rp-stamp-ticket[data-ink="1"] { --passport-ink: var(--ew-passport-ink-1); }
+.ew-passport-book .rp-stamp-ticket[data-ink="2"] { --passport-ink: var(--ew-passport-ink-2); }
+.ew-passport-book .rp-stamp-ticket:hover { transform: translateY(-3px); box-shadow: 0 10px 24px #0004, inset 0 0 0 5px var(--ew-passport-paper), inset 0 0 0 6px #bca882; }
 .ew-passport-book .rp-stamp-ticket:focus-visible { outline: 3px solid var(--ew-foil); outline-offset: 5px; }
 .ew-passport-postmark { display: block; align-self: stretch; border-right: 1px solid currentColor; padding-right: 12px; color: var(--passport-ink); }
 .ew-passport-postmark svg { width: 100%; height: auto; margin-top: 8px; }
@@ -2568,4 +2549,16 @@ html, body {
   }
   .rp-intro { padding-top: 16px; padding-bottom: 12px; }
   .ew-horizon { margin-top: 12px; }
+}
+
+/* Phone tap targets — every control reaches 44px. Kept outside @layer with the
+   other late overrides. Visual size is unchanged where a halo carries the reach. */
+@media (max-width: 960px) {
+  .ew-site-bar .rp-passport-button,
+  .ew-site-bar > a,
+  .ew-site-bar-left a { min-height: 44px; display: inline-flex; align-items: center; }
+  .rp-mic, .rp-intent-action, .rp-board-shuffle { min-width: 44px; min-height: 44px; }
+  .ew-atmosphere button, .ew-atmosphere--split button { min-height: 44px; }
+  .rp-board-grip { min-height: 44px; }
+  .rp-dock .ew-stamp-ring { width: 32px; height: 32px; }
 }
