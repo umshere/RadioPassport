@@ -18,9 +18,20 @@ export type KnowledgeSnippet = { text: string; title: string; source: "wikipedia
 
 type Fetch = typeof fetch;
 
+/** Wikipedia asks API clients to identify themselves; anonymous ones get throttled. */
+const WIKI_HEADERS = {
+  "User-Agent": "Elsewhere/1.0 (https://elsewheremusic.com; keeper)",
+  "Api-User-Agent": "Elsewhere/1.0 (https://elsewheremusic.com; keeper)",
+  Accept: "application/json",
+};
+
+const SNIPPET_TTL_MS = 10 * 60 * 1000;
+const snippetCache = new Map<string, { at: number; value: KnowledgeSnippet | null }>();
+
 async function wikipediaSummary(topic: string, fetchImpl: Fetch): Promise<KnowledgeSnippet | null> {
   const search = await fetchImpl(
     `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(topic)}&srlimit=1&format=json&origin=*`,
+    { headers: WIKI_HEADERS },
   );
   if (!search.ok) return null;
   const found = (await search.json()) as { query?: { search?: Array<{ title?: string }> } };
@@ -32,6 +43,7 @@ async function wikipediaSummary(topic: string, fetchImpl: Fetch): Promise<Knowle
   }
   const summary = await fetchImpl(
     `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title.replace(/ /g, "_"))}`,
+    { headers: WIKI_HEADERS },
   );
   if (!summary.ok) return null;
   const data = (await summary.json()) as { type?: string; extract?: string };
@@ -49,12 +61,18 @@ export async function fetchKnowledgeSnippet(
   deps: { fetchImpl?: Fetch; timeoutMs?: number } = {},
 ): Promise<KnowledgeSnippet | null> {
   const fetchImpl = deps.fetchImpl ?? fetch;
+  const cacheKey = foldName(topic);
+  const cached = snippetCache.get(cacheKey);
+  if (cached && Date.now() - cached.at < SNIPPET_TTL_MS && !deps.fetchImpl) return cached.value;
   let timer: ReturnType<typeof setTimeout> | undefined;
   const timeout = new Promise<null>((resolve) => {
     timer = setTimeout(() => resolve(null), deps.timeoutMs ?? KNOWLEDGE_SNIPPET_MS);
   });
   try {
-    return await Promise.race([wikipediaSummary(topic, fetchImpl).catch(() => null), timeout]);
+    const value = await Promise.race([wikipediaSummary(topic, fetchImpl).catch(() => null), timeout]);
+    // Only a real hit is remembered; a slow or empty lookup is retried next time.
+    if (value && !deps.fetchImpl) snippetCache.set(cacheKey, { at: Date.now(), value });
+    return value;
   } finally {
     if (timer) clearTimeout(timer);
   }
