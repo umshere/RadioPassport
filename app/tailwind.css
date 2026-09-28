@@ -2600,3 +2600,20 @@ html, body {
 @media (max-width: 960px) {
   .rp-intro .rp-horizon-row { display: none; }
 }
+
+/* Loading is calm: the board shows the shape of what is coming (art tile, name,
+   place) instead of scrambled letters or black squares. Artwork fades in over
+   the seal. Outside @layer with the other late rules. */
+.rp-station.is-pending { background: none; animation: none; min-height: 64px; }
+.ew-skel, .ew-skel-lines i { background: linear-gradient(90deg, var(--ew-rule) 0%, var(--ew-ghost) 50%, var(--ew-rule) 100%); background-size: 200% 100%; animation: ew-shimmer 1.6s linear infinite; }
+.rp-art.ew-skel { border-color: var(--ew-rule); }
+.ew-skel-lines { display: grid; flex: 1 1 auto; gap: 9px; min-width: 0; }
+.ew-skel-lines i { display: block; height: 10px; border-radius: 1px; }
+@keyframes ew-shimmer { to { background-position: -200% 0; } }
+.rp-art.has-plate img { opacity: 0; transition: opacity .28s ease; }
+.rp-art.has-plate.is-ready img { opacity: 1; }
+.rp-art.has-plate:not(.is-ready) img { position: absolute; inset: 0; }
+@media (prefers-reduced-motion: reduce) {
+  .ew-skel, .ew-skel-lines i { animation: none; }
+  .rp-art.has-plate img { transition: none; }
+}

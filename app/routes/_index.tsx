@@ -1045,16 +1045,22 @@ export default function Index() {
               </div>
             )}
             <div className="rp-station-list" aria-busy={catalogLoading}>
-              {/* Skeletons only when there is nothing to show yet: a refetch
+              {/* Skeleton rows only when there is nothing to show yet: a refetch
                   must never flash over rows we already have (aria-busy on the
                   list carries the pending state instead). */}
-              {catalogLoading && isSeeking && liveFiltered.length === 0
-                ? [0, 1, 2].map((slot) => (
+              {catalogLoading && boardRows.length === 0
+                ? [0, 1, 2, 3, 4, 5].map((slot) => (
                   <div
                     key={`pending-${slot}`}
                     className="rp-station is-pending"
                     aria-hidden="true"
-                  />
+                  >
+                    <span className="rp-art ew-skel" />
+                    <span className="ew-skel-lines">
+                      <i style={{ width: `${68 - (slot % 3) * 10}%` }} />
+                      <i style={{ width: `${40 - (slot % 2) * 8}%` }} />
+                    </span>
+                  </div>
                 ))
                 : boardRows.map((station, index) => (
                     <StationRow

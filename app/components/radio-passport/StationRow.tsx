@@ -70,31 +70,35 @@ function StationArt({
 }) {
   const artwork = sanitizeArtworkUrl(preferSecureArtworkUrl(station.favicon));
   const [failed, setFailed] = useState(false);
+  const [ready, setReady] = useState(false);
   useEffect(() => {
     setFailed(false);
+    setReady(false);
   }, [artwork, station.uuid]);
   const showPlate = Boolean(artwork && !failed);
   return (
     <button
       type="button"
       onClick={onPlay}
-      className={`rp-art${showPlate ? " has-plate" : ""}${active ? " is-live" : ""}`}
+      className={`rp-art${showPlate ? " has-plate" : ""}${showPlate && ready ? " is-ready" : ""}${active ? " is-live" : ""}`}
       aria-label={`Play ${station.name}`}
     >
+      {/* The seal stands in until the plate has loaded, then the plate fades
+          over it — a row never shows a black square while artwork travels. */}
+      {!showPlate || !ready ? <ElsewhereMark /> : null}
       {showPlate ? (
         <img
           src={artwork!}
           alt=""
           loading="lazy"
           decoding="async"
+          onLoad={() => setReady(true)}
           onError={() => {
             markArtworkUrlFailed(artwork!);
             setFailed(true);
           }}
         />
-      ) : (
-        <ElsewhereMark />
-      )}
+      ) : null}
       {active ? (
         <span className="rp-eq">
           <i />
