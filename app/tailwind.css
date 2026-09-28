@@ -2618,3 +2618,15 @@ html, body {
   .ew-skel, .ew-skel-lines i { animation: none; }
   .rp-art.has-plate img { transition: none; }
 }
+
+/* Phone search: one 48px square bar like the Passport button and the hour rail,
+   not a 70px pill. The 64px round lens is a Theater/idle form; on the home
+   the field is always open, so it carries the system's square edge. */
+@media (max-width: 960px) {
+  .ew-home-seek .ew-seek.is-open { min-height: 48px; border-radius: 0; background: var(--ew-ink); }
+  .ew-home-seek .ew-seek.is-open .ew-seek-lens { top: 0; bottom: 0; left: 14px; align-items: center; width: 28px; height: auto; padding: 0; }
+  .ew-home-seek .ew-seek.is-open .ew-seek-say { padding: 0 8px 0 50px; }
+  .ew-home-seek .ew-seek .rp-intent { min-height: 46px; }
+  .ew-home-seek .ew-seek .rp-intent input { padding: 4px 0; }
+  .ew-home-seek { margin-top: 10px; }
+}
