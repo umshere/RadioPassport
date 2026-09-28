@@ -663,7 +663,13 @@ describe("home cover panes", () => {
     expect(home).toContain("CountryFlag");
     expect(home).toContain("ew-coverline-flag");
     expect(home).toContain("playFromCountryNextState");
-    expect(home).toContain("seekingInstantPool");
+    // The instant-board derivation moved into the home stations hook.
+    const homeStations = readFileSync(
+      new URL("../../app/hooks/home/useHomeStations.ts", import.meta.url),
+      "utf8",
+    );
+    expect(homeStations).toContain("seekingInstantPool");
+    expect(home).toContain("useHomeStations");
     expect(home).toContain("hourTravelHead");
     const overlays = readFileSync(
       new URL(

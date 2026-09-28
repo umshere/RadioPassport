@@ -1,8 +1,6 @@
 import { json, type LoaderFunctionArgs } from "@remix-run/node";
 import { Link, useLoaderData, useSearchParams } from "@remix-run/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { normalizeStations } from "~/utils/stations";
-import { applyLiveCatalog } from "~/utils/stationMeta";
 import { useShelfProbe } from "~/hooks/useShelfProbe";
 import { createQueueSession } from "~/utils/playerQueue";
 import type { Station } from "~/types/radio";
@@ -18,9 +16,7 @@ import { ParticleGlobe } from "~/components/radio-passport/ParticleGlobe";
 import { GalaxyBackdrop } from "~/components/radio-passport/GalaxyBackdrop";
 import { TusiField } from "~/components/radio-passport/TusiField";
 import {
-  buildGlobePlaces,
   globeFocusId,
-  globeStationPool,
 } from "~/components/radio-passport/globePlaces";
 import { AtmospherePin } from "~/components/radio-passport/AtmospherePin";
 import {
@@ -36,16 +32,11 @@ import {
   countryCacheKey,
   countryCacheWith,
   fetchCountryDrilldown,
-  mergeStationLists,
   type CountryDrilldownState,
 } from "~/components/radio-passport/countryData";
 import { applyAiPreviewPool } from "~/components/radio-passport/aiPreview";
 import {
-  catalogRequestState,
   hourTapNextState,
-  intentSearchString,
-  parseInitialIntent,
-  parseInitialQuery,
   playFromAtlasNextState,
   playFromCountryNextState,
   shouldClearBrowsingFilters,
@@ -94,10 +85,12 @@ import {
   formatLocalLabel,
   localDateAtLongitude,
   solarHourAtLongitude,
-  stationMatchesSolarHour,
   type SolarHour,
 } from "~/utils/localTime";
-import { Button, ButtonLink, Chip } from "~/components/ui/Button";
+import { Button } from "~/components/ui/Button";
+import { useHomeStations } from "~/hooks/home/useHomeStations";
+import { useCatalogSearch } from "~/hooks/home/useCatalogSearch";
+import { useHomeIntent } from "~/hooks/home/useHomeIntent";
 import { StationBoard } from "~/components/radio-passport/StationBoard";
 import { HOME_NO_STORE, loadHomeBoard } from "~/services/home/homeBoard.server";
 
@@ -136,27 +129,6 @@ export async function loader(_: LoaderFunctionArgs) {
   return json({ ...board, boardSeed }, { headers: HOME_NO_STORE });
 }
 
-function tokens(value: string | null | undefined) {
-  return (value || "").toLowerCase();
-}
-
-function stationMatches(station: Station, query: string) {
-  const queryTokens = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
-  if (!queryTokens.length) return true;
-  const haystack = [
-    station.name,
-    station.tags,
-    station.language,
-    station.country,
-    station.city,
-    station.state,
-    station.codec,
-  ]
-    .map(tokens)
-    .join(" ");
-  return queryTokens.every((token) => haystack.includes(token));
-}
-
 export default function Index() {
   const {
     countries,
@@ -179,49 +151,15 @@ export default function Index() {
   const listening = useListeningMode();
   const storedRoom = useRoomStore((state) => state.room);
   const room = roomForStation(storedRoom, nowPlaying?.uuid);
-  const [hour, setHour] = useState<SolarHour | null>(
-    () =>
-      parseInitialIntent(`https://radio.example/?${searchParams.toString()}`)
-        .hour as SolarHour | null
+  const { hour, setHour, place, setPlace, query, setQuery } = useHomeIntent(
+    searchParams.toString()
   );
-  const [place, setPlace] = useState<string | null>(
-    () =>
-      parseInitialIntent(`https://radio.example/?${searchParams.toString()}`)
-        .place
-  );
-  const [query, setQuery] = useState(() =>
-    parseInitialQuery(`https://radio.example/?${searchParams.toString()}`)
-  );
-  // The board mirrors itself in the URL (replace, never push): theater trips
-  // and reloads land on the same intent. replaceState skips Remix loader
-  // revalidation; unrelated params (e.g. passport) are preserved.
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const next = intentSearchString(window.location.search, {
-      query,
-      hour,
-      place,
-    });
-    if (window.location.search === next) return;
-    // Carry history.state through: React Router keeps { usr, key, idx } there,
-    // and nulling it collapses this entry's ScrollRestoration key to "default"
-    // and resets the router's stack index.
-    window.history.replaceState(
-      window.history.state,
-      "",
-      `${window.location.pathname}${next}${window.location.hash}`
-    );
-  }, [query, hour, place]);
-  const [catalog, setCatalog] = useState<Station[]>([]);
-  const [catalogLoading, setCatalogLoading] = useState(false);
-  // True only when the live catalog could not be reached — never when it
-  // answered empty. The cover owes the visitor that distinction (flow audit F3).
-  const [catalogError, setCatalogError] = useState(false);
-  const [catalogAttempt, setCatalogAttempt] = useState(0);
-  const retryCatalog = useCallback(() => {
-    setCatalogError(false);
-    setCatalogAttempt((attempt) => attempt + 1);
-  }, []);
+  const {
+    catalog,
+    loading: catalogLoading,
+    error: catalogError,
+    retry: retryCatalog,
+  } = useCatalogSearch(query);
   const [atlas, setAtlas] = useState(() =>
     atlasRequested(searchParams.toString())
   );
@@ -250,136 +188,30 @@ export default function Index() {
   const queryRef = useRef(query);
   queryRef.current = query;
 
-  useEffect(() => {
-    if (!catalogRequestState(query).shouldFetch) {
-      setCatalog([]);
-      setCatalogLoading(false);
-      setCatalogError(false);
-      return;
-    }
-    let cancelled = false;
-    setCatalogLoading(true);
-    const id = window.setTimeout(
-      () =>
-        fetch(`/api/radio-catalog?stations=8000&q=${encodeURIComponent(query)}`)
-          .then((response) =>
-            response.ok ? response.json() : Promise.reject()
-          )
-          .then((data: { stations?: Station[] }) => {
-            if (cancelled) return;
-            setCatalog(
-              normalizeStations(data.stations || [])
-                .filter((station) => stationMatches(station, query))
-                .slice(0, 200)
-            );
-            setCatalogError(false);
-          })
-          .catch(() => {
-            if (cancelled) return;
-            // An outage is not an empty catalog: flag it so the cover says
-            // "Signal lost" instead of lying "No signal".
-            setCatalog([]);
-            setCatalogError(true);
-          })
-          .finally(() => !cancelled && setCatalogLoading(false)),
-      260
-    );
-    return () => {
-      cancelled = true;
-      window.clearTimeout(id);
-    };
-  }, [query, catalogAttempt]);
-
-  const featured = useMemo(() => {
-    const geo = initialStations.filter(
-      (station) => typeof station.latitude === "number"
-    );
-    return (
-      [...geo].sort(
-        (a, b) => (b.clickCount || 0) - (a.clickCount || 0)
-      )[0] ??
-      initialStations[0] ??
-      null
-    );
-  }, [initialStations]);
-
-  const continueStation = useMemo(() => {
-    if (!journeyReady) return null;
-    const lastId = played[0];
-    if (!lastId) return null;
-    return (
-      initialStations.find((station) => station.uuid === lastId) ??
-      catalog.find((station) => station.uuid === lastId) ??
-      null
-    );
-  }, [catalog, initialStations, journeyReady, played]);
-
-  // Landing from a country drilldown already holds that country's stations:
-  // deal them as the instant board instead of searching from zero while the
-  // catalog fetch flies. The catalog merges in behind (instant rows stay
-  // parked), so the board fills at once and refines. A hand-typed query that
-  // matches a visited country gets the same head start.
-  const seekingInstantPool = useMemo(
-    () =>
-      query.trim().length >= 2
-        ? countryCache[countryCacheKey(query)]?.stations ?? []
-        : [],
-    [countryCache, query]
-  );
-  const seekingBase = useMemo(
-    () => mergeStationLists(seekingInstantPool, catalog),
-    [seekingInstantPool, catalog]
-  );
-  const baseStations =
-    query.trim().length >= 2
-      ? seekingBase
-      : listening.listeningMode === "world" && listening.exploreStations.length
-        ? listening.exploreStations
-        : initialStations;
-
-  const filtered = useMemo(
-    () =>
-      applyLiveCatalog(
-        baseStations.filter((station) => {
-          if (!stationMatches(station, query)) return false;
-          if (shouldClearBrowsingFilters(query)) return true;
-          return (
-            stationMatchesSolarHour(station.longitude, hour) &&
-            (!place || stationLocation(station) === place)
-          );
-        })
-      ).slice(0, 120),
-    [baseStations, hour, place, query]
-  );
-  const liveFiltered = useShelfProbe(
+  const {
+    featured,
+    continueStation,
+    baseStations,
     filtered,
-    `${query}|${hour ?? ""}|${place ?? ""}|${listening.listeningMode}`
-  );
-
-  const globeStations = globeStationPool(
-    query,
-    catalog,
+    liveFiltered,
+    globeStations,
+    stampedKeys,
+    places,
+    selectedPool,
+  } = useHomeStations({
     initialStations,
-    liveFiltered
-  );
-  const stampedKeys = useMemo(
-    () => new Set(stamps.map((stamp) => `${stamp.country}:${stamp.city}`)),
-    [stamps]
-  );
-
-  const places = useMemo(
-    () =>
-      buildGlobePlaces(globeStations, {
-        nowPlaying,
-        place,
-        stampedKeys,
-      }),
-    [globeStations, nowPlaying, place, stampedKeys]
-  );
-
-  const selectedPool = liveFiltered.length
-    ? liveFiltered
-    : applyLiveCatalog(baseStations).slice(0, 60);
+    catalog,
+    query,
+    hour,
+    place,
+    countryCache,
+    listeningMode: listening.listeningMode,
+    exploreStations: listening.exploreStations,
+    nowPlaying,
+    stamps,
+    played,
+    journeyReady,
+  });
   const play = useCallback(
     (
       station: Station,
