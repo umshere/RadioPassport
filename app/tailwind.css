@@ -2436,9 +2436,13 @@ html, body {
     flex-direction: column;
     height: min(72svh, 620px);
     min-height: 220px;
-    border-top: 1px solid var(--ew-rule);
-    background: var(--ew-ink);
-    box-shadow: 0 -18px 42px rgba(0, 0, 0, .45);
+    /* A layer, not a page section: one step lighter than the page (leather,
+       the dock's family), a foil hairline for its top edge, and the design
+       system's one lift. A shadow alone vanishes on near-black, so the
+       surface and the edge carry the depth. */
+    border-top: 1px solid var(--ew-foil-line);
+    background: linear-gradient(to bottom, var(--ew-hide), var(--ew-leather) 56px);
+    box-shadow: var(--ew-lift), inset 0 1px 0 var(--ew-foil-wash-strong);
     transform: translateY(calc(100% - var(--ew-peek, 84px)));
     /* Collapsed, the sheet is pushed down under the dock and the phone band.
        Clip it to the peek (84px, or whatever BoardSheet measures) (in its own box, so the clip travels with the
@@ -2465,7 +2469,7 @@ html, body {
     touch-action: none; /* the gesture belongs to the sheet, not the page */
   }
   .rp-board-grip:active { cursor: grabbing; }
-  .rp-board-grip-bar { display: block; width: 44px; height: 4px; border-radius: 2px; background: var(--ew-ghost); }
+  .rp-board-grip-bar { display: block; width: 44px; height: 4px; border-radius: 2px; background: var(--ew-dust); opacity: .6; }
   .rp-board-grip:hover .rp-board-grip-bar,
   .rp-board-grip:focus-visible .rp-board-grip-bar { background: var(--ew-foil); }
   /* The board scrolls inside the sheet; the page behind keeps the globe. */
