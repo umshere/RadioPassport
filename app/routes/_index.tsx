@@ -1,12 +1,11 @@
 import { json, type LoaderFunctionArgs } from "@remix-run/node";
 import { Link, useLoaderData, useSearchParams } from "@remix-run/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { rbFetchJson } from "~/utils/radioBrowser";
 import { normalizeStations } from "~/utils/stations";
 import { applyLiveCatalog } from "~/utils/stationMeta";
 import { useShelfProbe } from "~/hooks/useShelfProbe";
 import { createQueueSession } from "~/utils/playerQueue";
-import type { Country, Station } from "~/types/radio";
+import type { Station } from "~/types/radio";
 import type { InterpretResponse } from "~/types/ai";
 import { usePlayerStore } from "~/state/playerStore";
 import { useJourneyStore } from "~/state/journeyStore";
@@ -99,6 +98,8 @@ import {
   type SolarHour,
 } from "~/utils/localTime";
 import { Button, ButtonLink, Chip } from "~/components/ui/Button";
+import { StationBoard } from "~/components/radio-passport/StationBoard";
+import { HOME_NO_STORE, loadHomeBoard } from "~/services/home/homeBoard.server";
 
 export const meta = () => [
   { property: "og:title", content: "Elsewhere — You are not here." },
@@ -127,78 +128,12 @@ export function shouldRevalidate({
   return currentUrl.search !== nextUrl.search;
 }
 
-const HOME_NO_STORE = { "Cache-Control": "private, no-store" } as const;
-const RB_NO_STORE = { cache: "no-store" as RequestCache };
-
-// The countries + top-240 barely move within minutes, but every tab crossing
-// back home paid two external round trips for them. Short server-side cache:
-// browsers still get no-store and the board seed stays fresh per load, while
-// repeat visits answer from memory. Only full answers are kept — outages
-// serve the last good board instead of an empty one, and never poison it.
-const HOME_CATALOG_TTL_MS = 5 * 60 * 1000;
-let homeCatalogCache: {
-  at: number;
-  countries: Country[];
-  stations: Station[];
-} | null = null;
-
 export async function loader(_: LoaderFunctionArgs) {
+  // boardSeed is per request, so the board deals a fresh window on every load
+  // while the catalog itself comes from the short server-side cache.
   const boardSeed = Date.now();
-  const cached =
-    homeCatalogCache &&
-    Date.now() - homeCatalogCache.at < HOME_CATALOG_TTL_MS
-      ? homeCatalogCache
-      : null;
-  if (cached) {
-    return json(
-      {
-        countries: cached.countries,
-        stations: cached.stations,
-        boardSeed,
-      },
-      { headers: HOME_NO_STORE },
-    );
-  }
-  try {
-    const [countriesRaw, stationsRaw] = await Promise.all([
-      rbFetchJson<Country[]>("/json/countries", RB_NO_STORE, { softFail: true }),
-      rbFetchJson<unknown>(
-        "/json/stations/search?limit=240&hidebroken=true&order=clickcount&reverse=true&has_geo_info=true",
-        RB_NO_STORE,
-        { softFail: true }
-      ),
-    ]);
-    const countries = Array.isArray(countriesRaw) ? countriesRaw : [];
-    const stations = applyLiveCatalog(
-      normalizeStations(Array.isArray(stationsRaw) ? stationsRaw : [])
-    );
-    if (countries.length > 0 && stations.length > 0) {
-      homeCatalogCache = { at: Date.now(), countries, stations };
-    }
-    return json(
-      {
-        countries,
-        stations,
-        boardSeed,
-      },
-      { headers: HOME_NO_STORE },
-    );
-  } catch {
-    if (homeCatalogCache) {
-      return json(
-        {
-          countries: homeCatalogCache.countries,
-          stations: homeCatalogCache.stations,
-          boardSeed,
-        },
-        { headers: HOME_NO_STORE },
-      );
-    }
-    return json(
-      { countries: [], stations: [], boardSeed },
-      { headers: HOME_NO_STORE },
-    );
-  }
+  const board = await loadHomeBoard();
+  return json({ ...board, boardSeed }, { headers: HOME_NO_STORE });
 }
 
 function tokens(value: string | null | undefined) {
@@ -1041,59 +976,23 @@ export default function Index() {
                 </Button>
               </div>
             )}
-            <div className="rp-station-list" aria-busy={catalogLoading}>
-              {/* Skeleton rows only when there is nothing to show yet: a refetch
-                  must never flash over rows we already have (aria-busy on the
-                  list carries the pending state instead). */}
-              {catalogLoading && boardRows.length === 0
-                ? [0, 1, 2, 3, 4, 5].map((slot) => (
-                  <div
-                    key={`pending-${slot}`}
-                    className="rp-station is-pending"
-                    aria-hidden="true"
-                  >
-                    <span className="rp-art ew-skel" />
-                    <span className="ew-skel-lines">
-                      <i style={{ width: `${68 - (slot % 3) * 10}%` }} />
-                      <i style={{ width: `${40 - (slot % 2) * 8}%` }} />
-                    </span>
-                  </div>
-                ))
-                : boardRows.map((station, index) => (
-                    <StationRow
-                      key={station.uuid}
-                      station={station}
-                      active={nowPlaying?.uuid === station.uuid && isPlaying}
-                      favorite={favorites.includes(station.uuid)}
-                      beat={index * 70}
-                      onPlay={() => play(station)}
-                      onFavorite={() => toggleFavorite(station.uuid, station)}
-                    />
-                  ))}
-            </div>
-            {liveFiltered.length === 0 && !catalogLoading && (
-              <div className="py-8" role="status">
-                <p className="text-sm text-dust">{coverEmpty.message}</p>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {coverEmpty.actions.map((action) => (
-                    <Button
-                      key={action.id}
-                      variant={action.id === "atlas" ? "atlas" : "chip"}
-                      onClick={() => {
-                        if (action.id === "surprise") void requestAiWorld();
-                        if (action.id === "atlas") setAtlas(true);
-                        if (action.id === "clear-search") setQuery("");
-                        if (action.id === "clear-hour") setHour(null);
-                        if (action.id === "clear-place") setPlace(null);
-                        if (action.id === "retry-catalog") retryCatalog();
-                      }}
-                    >
-                      {action.label}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-            )}
+            <StationBoard
+              rows={boardRows}
+              loading={catalogLoading}
+              playingUuid={isPlaying ? nowPlaying?.uuid ?? null : null}
+              favoriteIds={favorites}
+              onPlay={(station) => play(station)}
+              onFavorite={(station) => toggleFavorite(station.uuid, station)}
+              empty={liveFiltered.length === 0 ? coverEmpty : null}
+              onEmptyAction={(action) => {
+                if (action.id === "surprise") void requestAiWorld();
+                if (action.id === "atlas") setAtlas(true);
+                if (action.id === "clear-search") setQuery("");
+                if (action.id === "clear-hour") setHour(null);
+                if (action.id === "clear-place") setPlace(null);
+                if (action.id === "retry-catalog") retryCatalog();
+              }}
+            />
           </div>
           </BoardSheet>
         </section>

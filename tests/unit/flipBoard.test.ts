@@ -100,6 +100,10 @@ describe("flip board", () => {
       new URL("../../app/routes/_index.tsx", import.meta.url),
       "utf8",
     );
+    const homeBoard = readFileSync(
+      new URL("../../app/services/home/homeBoard.server.ts", import.meta.url),
+      "utf8",
+    );
     const row = readFileSync(
       new URL("../../app/components/radio-passport/StationRow.tsx", import.meta.url),
       "utf8",
@@ -113,10 +117,13 @@ describe("flip board", () => {
     expect(home).toContain("boardDeal");
     expect(home).toContain("boardSeed");
     expect(home).toContain("boardDeal(filtered.slice");
-    expect(home).toContain('Cache-Control": "private, no-store"');
-    expect(home).toContain('cache: "no-store"');
-    expect(home).toContain("HOME_CATALOG_TTL_MS");
-    expect(home).toContain("homeCatalogCache");
+    // The loader moved to a server service; the route keeps the contract.
+    expect(homeBoard).toContain('Cache-Control": "private, no-store"');
+    expect(homeBoard).toContain('cache: "no-store"');
+    expect(homeBoard).toContain("HOME_CATALOG_TTL_MS");
+    expect(homeBoard).toContain("homeCatalogCache");
+    expect(home).toContain("HOME_NO_STORE");
+    expect(home).toContain("loadHomeBoard");
     // Rows are plain, readable type; the flip board is kept for the place name and overlay titles.
     expect(row).not.toContain("FlipBoard");
     expect(home).toContain("Show fresh stations");
