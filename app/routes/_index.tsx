@@ -1,22 +1,15 @@
 import { json, type LoaderFunctionArgs } from "@remix-run/node";
 import { useLoaderData, useSearchParams } from "@remix-run/react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { createQueueSession } from "~/utils/playerQueue";
-import type { Station } from "~/types/radio";
-import type { InterpretResponse } from "~/types/ai";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { usePlayerStore } from "~/state/playerStore";
 import { useJourneyStore } from "~/state/journeyStore";
 import { resolveKeptSignals } from "~/state/favoriteSnapshot";
 import { useListeningMode } from "~/hooks/useListeningMode";
 import { roomForStation, useRoomStore } from "~/state/roomStore";
-import { loadWorldDescriptorPreview } from "~/services/aiOrchestrator";
 import { stationLocation } from "~/components/radio-passport/StationRow";
-import { applyAiPreviewPool } from "~/components/radio-passport/aiPreview";
 import {
   hourTapNextState,
-  playFromAtlasNextState,
   shouldClearBrowsingFilters,
-  surpriseTapNextState,
 } from "~/components/radio-passport/searchState";
 import { IntentBar } from "~/components/radio-passport/IntentBar";
 import { SeekShell } from "~/components/radio-passport/SeekShell";
@@ -34,14 +27,11 @@ import {
   resolveCoverArrival,
   describeCoverEmpty,
   hourTravelHead,
-  looksLikeIntentSentence,
   hourBoardLabel,
-  intentEchoFromInterpret,
   seekingBoardLabel,
   seekingStatus,
   theaterIntelligenceFromRoom,
 } from "~/components/radio-passport/productFlow";
-import { resolveTypedIntent, solarHourFromWord } from "~/services/ai/intent/promptIntent";
 import {
   formatClock,
   localDateAtLongitude,
@@ -51,6 +41,7 @@ import {
 import { Button } from "~/components/ui/Button";
 import { useHomeStations } from "~/hooks/home/useHomeStations";
 import { useCatalogSearch } from "~/hooks/home/useCatalogSearch";
+import { useHomePlay } from "~/hooks/home/useHomePlay";
 import { useHomeIntent } from "~/hooks/home/useHomeIntent";
 import { useHomeOverlays } from "~/hooks/home/useHomeOverlays";
 import { HomeIntro } from "~/components/radio-passport/HomeIntro";
@@ -103,7 +94,6 @@ export default function Index() {
   const [searchParams] = useSearchParams();
   const nowPlaying = usePlayerStore((state) => state.nowPlaying);
   const isPlaying = usePlayerStore((state) => state.isPlaying);
-  const startStation = usePlayerStore((state) => state.startStation);
   const favorites = useJourneyStore((state) => state.favoriteStationIds);
   const favoriteSnapshots = useJourneyStore((state) => state.favoriteStations);
   const stamps = useJourneyStore((state) => state.stamps);
@@ -112,7 +102,6 @@ export default function Index() {
   const travelerNumber = useJourneyStore((state) => state.travelerNumber);
   const journeyReady = useJourneyStore((state) => state.hydrated);
   const toggleFavorite = useJourneyStore((state) => state.toggleFavorite);
-  const recordPlayed = useJourneyStore((state) => state.recordPlayed);
   const listening = useListeningMode();
   const storedRoom = useRoomStore((state) => state.room);
   const room = roomForStation(storedRoom, nowPlaying?.uuid);
@@ -134,18 +123,10 @@ export default function Index() {
     countryStations,
     passport,
   } = overlays;
-  const [aiStatus, setAiStatus] = useState<"idle" | "loading" | "error">(
-    "idle"
-  );
-  const [mixLabel, setMixLabel] = useState<string | null>(null);
   // The station board rests as a sheet on the phone: peek until a search
   // asks for the rows, back to peek the moment a station lands.
   const [boardSheet, setBoardSheet] = useState<BoardSheetState>("peek");
-  // The interpreter's whisper: what it understood differently, until the next keystroke.
-  const [intentEcho, setIntentEcho] = useState<string | null>(null);
-  const queryRef = useRef(query);
-  queryRef.current = query;
-
+  const settleSheet = useCallback(() => setBoardSheet("peek"), []);
   const {
     featured,
     continueStation,
@@ -168,164 +149,28 @@ export default function Index() {
     played,
     journeyReady,
   });
-  const play = useCallback(
-    (
-      station: Station,
-      pool = selectedPool,
-      label = "Live now",
-      home?: ReturnType<typeof playFromAtlasNextState>
-    ) => {
-      if (home) {
-        setQuery(home.query);
-        setHour(home.hour);
-        setPlace(home.place);
-        setMixLabel(home.mixLabel);
-      }
-      const q = home ? home.query : query;
-      const h = home ? home.hour : hour;
-      const p = home ? home.place : place;
-      const mix = home ? home.mixLabel : mixLabel;
-      const queue = createQueueSession({
-        sourceType: home
-          ? "atlas"
-          : q.trim()
-            ? "search"
-            : listening.listeningMode === "world"
-              ? "ai_mix"
-              : "atlas",
-        sourceLabel: mix || (q.trim() ? `Search: ${q.trim()}` : label),
-        stations: pool,
-        context: {
-          country: station.country,
-          query: q.trim() || null,
-          view: "elsewhere",
-        },
-        seed: `${q}:${h || ""}:${p || ""}`,
-      });
-      startStation(station, { autoPlay: true, queueSession: queue });
-      recordPlayed(station.uuid);
-      // Landing is the globe's moment again: the sheet settles back to its
-      // peek so the cover and the land stay in view.
-      setBoardSheet("peek");
-    },
-    [
-      hour,
-      listening.listeningMode,
-      mixLabel,
-      place,
-      query,
-      recordPlayed,
-      selectedPool,
-      startStation,
-    ]
-  );
-
-  const requestAiWorld = useCallback(
-    async (prompt?: string) => {
-      if (aiStatus === "loading") return;
-      const next = surpriseTapNextState();
-      setQuery(next.query);
-      setHour(next.hour);
-      setPlace(next.place);
-      setAiStatus("loading");
-      listening.setIsFetchingExplore(true);
-      listening.setExploreError(null);
-      try {
-        const descriptor = await loadWorldDescriptorPreview({
-          prompt:
-            prompt || "Take me somewhere live at this hour of the world",
-          currentStationId: nowPlaying?.uuid ?? null,
-          visual: "card_stack",
-          sceneId: "card_stack",
-          country: nowPlaying?.country ?? null,
-          language: nowPlaying?.language ?? null,
-          preferredCountries: nowPlaying?.country ? [nowPlaying.country] : [],
-          preferredLanguages: nowPlaying?.language ? [nowPlaying.language] : [],
-          favoriteStationIds: favorites,
-          recentStationIds: played,
-        });
-        applyAiPreviewPool(descriptor, listening.setExploreStations);
-        listening.setListeningMode("world");
-        setMixLabel(descriptor.mood || descriptor.reason || "World mix");
-        setAiStatus("idle");
-        const first = descriptor.stations[0];
-        if (first) {
-          play(first, descriptor.stations, descriptor.mood || "World mix");
-        }
-      } catch (error) {
-        const message =
-          error instanceof Error
-            ? error.message
-            : "We could not curate a world mix. Please try again.";
-        listening.setExploreError(message);
-        setAiStatus("error");
-      } finally {
-        listening.setIsFetchingExplore(false);
-      }
-    },
-    [aiStatus, favorites, listening, nowPlaying, play, played]
-  );
-
-  const submitIntent = useCallback(
-    async (value: string) => {
-      const prompt = value.trim();
-      if (!prompt) return;
-      const resolved = resolveTypedIntent(prompt);
-      if (resolved.wantsMix) {
-        void requestAiWorld(prompt);
-        return;
-      }
-      setQuery(resolved.query);
-      setHour(resolved.hour);
-      const tightened =
-        resolved.query.trim().toLowerCase() !== prompt.toLowerCase();
-      if (resolved.hour || tightened || !looksLikeIntentSentence(prompt)) {
-        return;
-      }
-      try {
-        const response = await fetch("/api/ai/interpret", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            prompt,
-            currentStationId: nowPlaying?.uuid ?? null,
-            country: nowPlaying?.country ?? null,
-            language: nowPlaying?.language ?? null,
-          }),
-        });
-        if (!response.ok) return;
-        const payload = (await response.json()) as InterpretResponse;
-        // A slow response must never rewrite an intent the visitor already
-        // retyped (or cleared) while waiting — same staleness rule as the echo.
-        if (queryRef.current !== prompt) return;
-        if (payload.intent.place) setPlace(payload.intent.place);
-        if (payload.intent.language) {
-          setQuery(payload.intent.language);
-        } else if (payload.intent.query && payload.intent.query !== prompt) {
-          setQuery(payload.intent.query);
-        }
-        const hour =
-          solarHourFromWord(payload.intent.mood) ??
-          solarHourFromWord(payload.intent.query);
-        if (hour) setHour(hour);
-        const echo = intentEchoFromInterpret(prompt, payload.intent);
-        if (echo && queryRef.current === prompt) setIntentEcho(echo);
-      } catch {
-        // Catalog search already runs from the typed query.
-      }
-    },
-    [nowPlaying, requestAiWorld]
-  );
-
-  const playPlace = useCallback(
-    (id: string) => {
-      const found = places.find((item) => item.id === id);
-      if (!found) return;
-      const next = globeStations.find((station) => station.uuid === id);
-      if (next) play(next, selectedPool, found.stationName);
-    },
-    [globeStations, places, play, selectedPool]
-  );
+  const {
+    play,
+    requestAiWorld,
+    submitIntent,
+    playPlace,
+    aiStatus,
+    mixLabel,
+    intentEcho,
+    setIntentEcho,
+  } = useHomePlay({
+    query,
+    hour,
+    place,
+    setQuery,
+    setHour,
+    setPlace,
+    selectedPool,
+    listening,
+    globeStations,
+    places,
+    onLanded: settleSheet,
+  });
 
   const isSeeking = query.trim().length >= 2;
   // A typed search is a request for rows: the sheet rises on its own so the
