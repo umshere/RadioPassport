@@ -46,7 +46,10 @@ export function measurePeek(sheet: HTMLElement): number {
   const header = BOARD_SHEET_PEEK_PX;
   const row =
     sheet.querySelector<HTMLElement>(".rp-station")?.offsetHeight || 64;
-  const free = dockTop - anchor - 16 - header;
+  // The floating keeper rests in this gap too: leave it a berth so it never
+  // sits on the hour rail.
+  const keeperBerth = document.querySelector(".ew-keeper-float") ? 72 : 0;
+  const free = dockTop - anchor - 16 - header - keeperBerth;
   const rows = Math.max(0, Math.min(4, Math.floor(free / row)));
   return header + rows * row;
 }
@@ -84,12 +87,14 @@ export function BoardSheet({
   }, []);
   useEffect(() => {
     remeasure();
+    const settle = window.setTimeout(remeasure, 700); // the keeper mounts just after the dock
     const parent = sheetRef.current?.parentElement;
     const observer =
       typeof ResizeObserver !== "undefined" ? new ResizeObserver(remeasure) : null;
     if (parent) observer?.observe(parent);
     window.addEventListener("resize", remeasure);
     return () => {
+      window.clearTimeout(settle);
       observer?.disconnect();
       window.removeEventListener("resize", remeasure);
     };

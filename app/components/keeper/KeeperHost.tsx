@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { useKeeperStore } from "~/state/keeperStore";
+import { preloadKeeperSprites } from "./Keeper";
 import { KeeperFloat } from "./KeeperFloat";
 import { KeeperSheet } from "./KeeperSheet";
 import { useKeeperDelight, useKeeperView } from "./useKeeper";
@@ -11,6 +12,7 @@ import { useKeeperDelight, useKeeperView } from "./useKeeper";
  */
 export function KeeperHost() {
   useKeeperDelight();
+  useEffect(preloadKeeperSprites, []);
   const view = useKeeperView();
   const closeSheet = useKeeperStore((state) => state.closeSheet);
 

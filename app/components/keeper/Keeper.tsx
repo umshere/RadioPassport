@@ -58,7 +58,7 @@ export function Keeper({
       role={onOpen ? undefined : "img"}
       aria-label={onOpen ? undefined : keeperStateLabel(state)}
     >
-      <KeeperFigure />
+      <KeeperFigure state={state} />
       <span className="ew-keeper-plate" aria-hidden="true">
         <FlipBoard text={keeperPlate(state)} className="is-meta" />
       </span>
@@ -83,41 +83,48 @@ export function Keeper({
   );
 }
 
-/** The SVG itself. 64-unit box so it holds its lines from 40px to 120px. */
-export function KeeperFigure() {
+/**
+ * The keeper's sprites: pixel-art poses cut from the character sheet, one per
+ * state. The seal-headed clerk's radar face is the state — scanning while it
+ * thinks, eyes shut while it listens, a waveform while it speaks.
+ * `chill` (cat on the desk) is the sleeping pose; the rest of the sheet
+ * (passport, atlas, flight control, explore, travel, next stop) is kept in
+ * /keeper for scenes.
+ */
+const SPRITE: Record<KeeperState, string> = {
+  idle: "idle",
+  listening: "listening",
+  thinking: "searching",
+  speaking: "speaking",
+  sleeping: "chill",
+  delight: "found",
+};
+
+export function keeperSpriteUrl(state: KeeperState) {
+  return `/keeper/${SPRITE[state]}.webp`;
+}
+
+/** Warm the cache so a state change never shows a blank frame. */
+export function preloadKeeperSprites() {
+  if (typeof Image === "undefined") return;
+  for (const name of new Set(Object.values(SPRITE))) {
+    const img = new Image();
+    img.src = `/keeper/${name}.webp`;
+  }
+}
+
+/** The sprite. `key` restarts the flap-in each time the state changes. */
+export function KeeperFigure({ state }: { state: KeeperState }) {
   return (
-    <svg
-      className="ew-keeper-svg"
-      viewBox="0 0 64 64"
-      aria-hidden="true"
-      focusable="false"
-    >
-      {/* Thought lamps: three square bulbs that light in turn. */}
-      <g className="ew-keeper-think">
-        <rect x="44" y="11" width="2.5" height="2.5" />
-        <rect x="48.5" y="7.5" width="2.5" height="2.5" />
-        <rect x="53" y="4" width="2.5" height="2.5" />
-      </g>
-      <g className="ew-keeper-figure">
-        <path className="ew-keeper-coat" d="M14.5 58 L19 41.5 H45 L49.5 58 Z" />
-        <path className="ew-keeper-collar" d="M26.5 41.5 L32 47.5 L37.5 41.5" />
-        <g className="ew-keeper-head">
-          <circle className="ew-keeper-seal" cx="32" cy="27" r="12" />
-          <circle className="ew-keeper-seal-ring" cx="32" cy="27" r="9.25" />
-          <path className="ew-keeper-band" d="M19 25.5 A13 13 0 0 1 45 25.5" />
-          <rect className="ew-keeper-cup" x="16.5" y="23" width="4" height="7.5" />
-          <rect className="ew-keeper-cup" x="43.5" y="23" width="4" height="7.5" />
-          <g className="ew-keeper-eyes">
-            <rect className="ew-keeper-eye" x="27" y="24.5" width="2.4" height="3.4" />
-            <rect className="ew-keeper-eye" x="34.6" y="24.5" width="2.4" height="3.4" />
-          </g>
-          <path className="ew-keeper-smile" d="M26.4 27 q1.8 -1.8 3.6 0 M34 27 q1.8 -1.8 3.6 0" />
-          <rect className="ew-keeper-mouth" x="30.25" y="31.5" width="3.5" height="1.2" />
-        </g>
-      </g>
-      <path className="ew-keeper-mic" d="M41 58 V52.5" />
-      <rect className="ew-keeper-mic-head" x="39.5" y="49" width="3" height="3.5" />
-      <path className="ew-keeper-desk" d="M6 58.5 H58" />
-    </svg>
+    <img
+      key={state}
+      className="ew-keeper-sprite"
+      src={keeperSpriteUrl(state)}
+      alt=""
+      width={214}
+      height={214}
+      decoding="async"
+      draggable={false}
+    />
   );
 }
