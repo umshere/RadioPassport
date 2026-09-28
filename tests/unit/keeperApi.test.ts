@@ -323,7 +323,7 @@ describe("sheet client", () => {
       answer: "Yes.",
       state: "speaking",
       intent: "city",
-      action: undefined,
+      basis: "station",
     });
   });
 });

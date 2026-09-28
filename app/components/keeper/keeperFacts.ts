@@ -1,4 +1,5 @@
 import { stationLocation } from "~/components/radio-passport/StationRow";
+import { cleanTrack } from "~/services/keeper/cleanTitle";
 import { stationTags } from "~/components/radio-passport/stationInsights";
 import type { Room } from "~/state/roomStore";
 import type { Station } from "~/types/radio";
@@ -87,8 +88,16 @@ export function buildKeeperFacts(
       : null;
   const local = longitude === null ? null : localDateAtLongitude(longitude, now);
   const rawTrack = room?.signal.track ?? null;
-  const artist = clip(rawTrack?.artist, LIMITS.text);
-  const title = clip(rawTrack?.title, LIMITS.text);
+  // What the feed sent, cleaned; only a line that is really a track counts
+  // as a title (a jingle, an ad or a URL is not a song).
+  const cleaned = cleanTrack(
+    clip(rawTrack?.artist, LIMITS.text),
+    clip(rawTrack?.title, LIMITS.text),
+    station.name,
+  );
+  const isTrack = cleaned.kind === "track" && cleaned.confidence >= 0.6;
+  const artist = isTrack ? clip(cleaned.artist, LIMITS.text) : null;
+  const title = isTrack ? clip(cleaned.title, LIMITS.text) : null;
   const sent = Boolean(artist || title);
   const waiting =
     !sent &&
@@ -164,8 +173,15 @@ export function sanitizeKeeperFacts(raw: unknown): KeeperFacts | null {
       ? { clock, localHour, solar: solar as SolarHour }
       : null;
   const trackIn = input.track as Record<string, unknown> | null | undefined;
-  const artist = clip(trackIn?.artist, LIMITS.text);
-  const title = clip(trackIn?.title, LIMITS.text);
+  // Never trust the client's split: recompute from what it sent.
+  const cleaned = cleanTrack(
+    clip(trackIn?.artist, LIMITS.text),
+    clip(trackIn?.title, LIMITS.text),
+    name,
+  );
+  const isTrack = cleaned.kind === "track" && cleaned.confidence >= 0.6;
+  const artist = isTrack ? clip(cleaned.artist, LIMITS.text) : null;
+  const title = isTrack ? clip(cleaned.title, LIMITS.text) : null;
   const sent = input.titles === "sent" && Boolean(artist || title);
   const dossierIn = input.dossier as Record<string, unknown> | null | undefined;
   const dossierFacts = Array.isArray(dossierIn?.facts)

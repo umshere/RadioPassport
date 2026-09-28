@@ -2939,3 +2939,7 @@ button:disabled, [aria-disabled="true"] { opacity: .45; cursor: not-allowed; }
   .ew-keeper[data-state="idle"] .ew-keeper-sprite { animation: ew-keeper-flapin .26s steps(4, end), ew-keeper-bob 2.6s steps(2, end) .3s infinite; }
   .ew-keeper[data-state="speaking"] .ew-keeper-sprite { animation: ew-keeper-flapin .26s steps(4, end), ew-keeper-bob .6s steps(2, end) .3s infinite; }
 }
+
+/* ---- keeper basis label — knowledge answers say where they come from. */
+.ew-keeper-basis { display: block; margin-bottom: 6px; }
+.ew-keeper-station-line { margin-top: 6px; font: 12px "Azeret Mono", monospace; text-transform: uppercase; letter-spacing: .08em; color: var(--ew-foil); }

@@ -1,4 +1,5 @@
 import { useLocation, useNavigate, useRouteLoaderData } from "@remix-run/react";
+import { Eyebrow } from "~/components/ui/Eyebrow";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { snapBoardSheet } from "~/components/radio-passport/BoardSheet";
 import { FlipBoard } from "~/components/radio-passport/FlipBoard";
@@ -36,6 +37,9 @@ type Talk = {
   question: string;
   answer: string | null;
   hop?: SolarHour;
+  /** Knowledge answers wear a label: they are not about the station. */
+  basis?: "station" | "knowledge";
+  stationLine?: string;
 };
 
 const FOCUSABLE =
@@ -174,8 +178,13 @@ export function KeeperSheet({ view }: { view: KeeperView & { facts: KeeperFacts 
   }, [close]);
 
   const speak = useCallback(
-    (question: string, answer: string, hop?: SolarHour) => {
-      setTalk({ question, answer, hop });
+    (
+      question: string,
+      answer: string,
+      hop?: SolarHour,
+      extra?: { basis?: "station" | "knowledge"; stationLine?: string },
+    ) => {
+      setTalk({ question, answer, hop, ...extra });
       setExchange("speaking");
       const mine = turn.current;
       later(() => {
@@ -229,7 +238,10 @@ export function KeeperSheet({ view }: { view: KeeperView & { facts: KeeperFacts 
     const reply = await askKeeper(question, facts);
     if (turn.current !== mine) return;
     if (reply) {
-      speak(question, reply.answer, reply.action?.hour);
+      speak(question, reply.answer, reply.action?.hour, {
+        basis: reply.basis,
+        stationLine: reply.stationLine,
+      });
       return;
     }
     const local = answerLocally(ruleClassify(question), facts);
@@ -335,6 +347,11 @@ export function KeeperSheet({ view }: { view: KeeperView & { facts: KeeperFacts 
             {talk ? (
               <>
                 <p className="ew-keeper-q">{talk.question}</p>
+                {talk.answer && talk.basis === "knowledge" ? (
+                  <Eyebrow as="span" tone="dust" className="ew-keeper-basis">
+                    From general knowledge &mdash; not from the station
+                  </Eyebrow>
+                ) : null}
                 {talk.answer ? (
                   <FlapText className="ew-keeper-a" text={talk.answer} />
                 ) : (
@@ -343,6 +360,9 @@ export function KeeperSheet({ view }: { view: KeeperView & { facts: KeeperFacts 
                     <span aria-hidden="true">&hellip;</span>
                   </p>
                 )}
+                {talk.answer && talk.stationLine ? (
+                  <p className="ew-keeper-station-line">{talk.stationLine}</p>
+                ) : null}
                 {talk.answer && talk.hop ? (
                   <Chip className="ew-keeper-hop" onClick={() => hopTo(talk.hop!)}>
                     Take me there &rarr;

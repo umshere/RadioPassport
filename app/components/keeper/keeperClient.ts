@@ -7,6 +7,10 @@ export type KeeperReply = {
   answer: string;
   state: KeeperState;
   intent: KeeperIntent;
+  /** knowledge: from general knowledge, not from the station. */
+  basis: "station" | "knowledge";
+  topic?: string;
+  stationLine?: string;
   action?: { kind: "hour_hop"; hour: SolarHour };
 };
 
@@ -43,6 +47,9 @@ export async function askKeeper(
         answer: payload.answer.trim(),
         state: isKeeperState(payload.state) ? payload.state : "speaking",
         intent: isKeeperIntent(payload.intent) ? payload.intent : "unknown",
+        basis: payload.basis === "knowledge" ? "knowledge" : "station",
+        topic: typeof payload.topic === "string" ? payload.topic : undefined,
+        stationLine: typeof payload.stationLine === "string" ? payload.stationLine : undefined,
         action,
       } satisfies KeeperReply;
     })

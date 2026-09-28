@@ -12,6 +12,10 @@ import { parseJsonObjectFromText } from "~/services/ai/providers/providerUtils";
 import type { SolarHour } from "~/utils/localTime";
 import { isKeeperAskEnabled } from "./flag.server";
 import { classifyKeeperQuestion } from "./jev.server";
+import { extractTopic, isNowPlayingQuestion, looksLikeInjection } from "~/components/keeper/keeperTopic";
+import { resolveAlias } from "~/components/keeper/keeperAliases";
+import { KNOWLEDGE_SYSTEM_PROMPT, fetchKnowledgeSnippet, firstSentence } from "./knowledge.server";
+import { validateKeeperAnswer } from "./validateKeeperAnswer";
 import { clientKey, keeperBucket, type TokenBucket } from "./rateLimit.server";
 
 /** Request bodies above this are refused before parsing. */
@@ -40,8 +44,11 @@ export type KeeperDeps = {
 type KeeperJson = {
   answer?: string;
   state?: KeeperState;
-  intent?: KeeperIntent;
+  intent?: KeeperIntent | `knowledge_${string}`;
   source?: string;
+  basis?: "station" | "knowledge";
+  topic?: string;
+  stationLine?: string;
   action?: { kind: "hour_hop"; hour: SolarHour };
   error?: string;
 };
@@ -232,7 +239,58 @@ export async function handleKeeperAsk(request: Request, deps: KeeperDeps = {}) {
   const blocked = limited(request, deps);
   if (blocked) return blocked;
 
-  const routing = await classifyKeeperQuestion(parsed.question, { env, fetchImpl });
+  // A named topic ("Who is Ilayaraja?", "what's fado?") is answered from
+  // general knowledge and labelled as such. Anything that smells of the air
+  // right now — or of an injection — stays strictly on the station's facts.
+  const strict = looksLikeInjection(parsed.question) || isNowPlayingQuestion(parsed.question);
+  const topic = strict ? null : extractTopic(parsed.question, facts.station.tags);
+  if (topic) {
+    const snippet = await fetchKnowledgeSnippet(topic.canonical, topic.kind, { fetchImpl });
+    const onAirArtist = facts.track?.artist ?? null;
+    const stationLine =
+      onAirArtist && resolveAlias(onAirArtist) === resolveAlias(topic.canonical)
+        ? `The station’s title names ${topic.canonical}.`
+        : undefined;
+    const knowledge = (answer: string, source: string) =>
+      reply({
+        answer,
+        state: "speaking",
+        intent: `knowledge_${topic.kind}`,
+        basis: "knowledge",
+        topic: topic.canonical,
+        ...(stationLine ? { stationLine } : {}),
+        source,
+      });
+    const fallback = snippet
+      ? firstSentence(snippet.text)
+      : `I don’t know enough about ${topic.canonical} to say from this desk.`;
+    try {
+      const complete = deps.complete ?? defaultKeeperComplete(env, fetchImpl);
+      const raw = await complete(
+        KNOWLEDGE_SYSTEM_PROMPT,
+        JSON.stringify({
+          TOPIC: topic.canonical,
+          KIND: topic.kind,
+          SNIPPET: snippet?.text ?? null,
+          QUESTION: parsed.question,
+        }),
+      );
+      const answer = clampWords(raw);
+      const verdict = validateKeeperAnswer(answer, {
+        basis: "knowledge",
+        question: parsed.question,
+        snippet: snippet?.text ?? null,
+        facts: null,
+      });
+      return knowledge(verdict.ok ? answer : fallback, verdict.ok ? "knowledge+model" : "knowledge+fallback");
+    } catch {
+      return knowledge(fallback, "knowledge+fallback");
+    }
+  }
+
+  const routing = looksLikeInjection(parsed.question)
+    ? { intent: "track" as KeeperIntent, source: "rules" }
+    : await classifyKeeperQuestion(parsed.question, { env, fetchImpl });
   const local = answerLocally(routing.intent, facts);
   const answerLocal = () =>
     reply({
