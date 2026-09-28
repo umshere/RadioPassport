@@ -95,7 +95,7 @@ describe("board sheet contracts", () => {
   });
 
   it("gives the globe room while keeping the hour rail in the first phone screen", () => {
-    expect(css).toContain("height: clamp(196px, 26svh, 290px)");
+    expect(css).toContain("height: clamp(220px, 33svh, 330px)");
     expect(css).not.toContain("height: 174px");
     // The globe tip rides taps on the phone instead of hiding.
     expect(css).not.toContain(".ew-globe-tip { display: none; }");

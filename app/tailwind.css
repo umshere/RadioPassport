@@ -1534,8 +1534,9 @@
     .rp-globe-wrap {
       position: relative;
       width: 100%;
-      height: clamp(196px, 26svh, 290px);
-      min-height: 196px;
+      /* Night/Day left the phone home, freeing ~55px: the globe takes it. */
+      height: clamp(220px, 33svh, 330px);
+      min-height: 220px;
     }
     /* The globe keeps one height while seeking: resizing the canvas on a
        keystroke mid-gesture is an app-feel killer. Seeking intent shows in
