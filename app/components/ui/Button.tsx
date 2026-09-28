@@ -15,8 +15,16 @@ import type { LinkProps } from "@remix-run/react";
  *   text    quiet foil text action
  *   atlas   foil-ruled wayfinding link
  *   chip    square filter chip (use <Chip> for the pressed/selected form)
+ *   keeper  the keeper figure as a control (opens its sheet); no chrome
  */
-export type ButtonVariant = "land" | "mono" | "frame" | "text" | "atlas" | "chip";
+export type ButtonVariant =
+  | "land"
+  | "mono"
+  | "frame"
+  | "text"
+  | "atlas"
+  | "chip"
+  | "keeper";
 
 const VARIANT_CLASS: Record<ButtonVariant, string> = {
   land: "ew-land",
@@ -25,6 +33,7 @@ const VARIANT_CLASS: Record<ButtonVariant, string> = {
   text: "rp-text-button",
   atlas: "ew-atlas",
   chip: "rp-chip",
+  keeper: "ew-keeper-button",
 };
 
 export function buttonClass({

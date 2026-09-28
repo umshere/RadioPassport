@@ -45,6 +45,7 @@ import { useCatalogSearch } from "~/hooks/home/useCatalogSearch";
 import { useHomePlay } from "~/hooks/home/useHomePlay";
 import { useHomeIntent } from "~/hooks/home/useHomeIntent";
 import { useHomeOverlays } from "~/hooks/home/useHomeOverlays";
+import { useKeeperHourHop } from "~/hooks/home/useKeeperHourHop";
 import { HomeIntro } from "~/components/radio-passport/HomeIntro";
 import { HomeOverlays } from "~/components/radio-passport/HomeOverlays";
 import { HomeGlobeSide } from "~/components/radio-passport/HomeGlobeSide";
@@ -128,6 +129,13 @@ export default function Index() {
   // asks for the rows, back to peek the moment a station lands.
   const [boardSheet, setBoardSheet] = useState<BoardSheetState>("peek");
   const settleSheet = useCallback(() => setBoardSheet("peek"), []);
+  useKeeperHourHop({
+    query,
+    setHour,
+    setPlace,
+    setQuery,
+    onHop: () => setBoardSheet("open"),
+  });
   const {
     featured,
     continueStation,

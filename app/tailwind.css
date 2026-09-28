@@ -2660,3 +2660,262 @@ button:disabled, [aria-disabled="true"] { opacity: .45; cursor: not-allowed; }
   .rp-country:hover { background-color: var(--ew-leather); border-color: var(--ew-rule); }
 }
 @media (prefers-reduced-motion: reduce) { .is-busy, button[aria-busy="true"] { animation: none; } }
+
+/* ---- The keeper ---------------------------------------------------------------
+   The station's night clerk (app/components/keeper/). In the components layer:
+   the keeper folder is in tailwind.config.ts `content`, so these survive the
+   purge. Motion speaks the departure board's language — flaps that snap on
+   stepped timing and --ew-settle, never a cartoon bounce. Transform/opacity
+   only; prefers-reduced-motion keeps every pose, drops every animation. */
+@layer components {
+  .ew-keeper {
+    --keeper-size: 64px;
+    --keeper-ember: var(--ew-hour-midday);
+    position: relative;
+    display: block;
+    width: var(--keeper-size);
+    height: var(--keeper-size);
+    flex: none;
+  }
+  .ew-keeper[data-size="sheet"] { --keeper-size: 88px; }
+  .ew-keeper[data-mood="drowsy"] { --keeper-ember: var(--ew-hour-night); }
+  .ew-keeper[data-mood="bright"] { --keeper-ember: var(--ew-hour-dawn); }
+  .ew-keeper[data-mood="warm"] { --keeper-ember: var(--ew-hour-dusk); }
+  .ew-keeper-svg { display: block; width: 100%; height: 100%; overflow: visible; }
+  .ew-keeper-coat { fill: var(--ew-leather); stroke: var(--ew-foil-line-strong); stroke-width: 1; stroke-linejoin: miter; }
+  .ew-keeper-collar { fill: none; stroke: var(--keeper-ember); stroke-width: 1.5; stroke-linejoin: miter; }
+  .ew-keeper-seal { fill: var(--ew-lacquer); stroke: var(--ew-foil); stroke-width: 1.25; }
+  .ew-keeper-seal-ring { fill: none; stroke: var(--ew-on-lacquer); stroke-opacity: .35; stroke-width: .75; stroke-dasharray: 1.5 1.5; }
+  .ew-keeper-band { fill: none; stroke: var(--ew-foil); stroke-width: 1.5; }
+  .ew-keeper-cup { fill: var(--ew-foil); }
+  .ew-keeper-eyes, .ew-keeper-eye, .ew-keeper-mouth { transform-box: fill-box; transform-origin: 50% 50%; }
+  .ew-keeper-eye { fill: var(--ew-on-lacquer); transition: transform .16s steps(2, end); }
+  .ew-keeper-smile { fill: none; stroke: var(--ew-on-lacquer); stroke-width: 1.1; stroke-linecap: square; opacity: 0; }
+  .ew-keeper-mouth { fill: var(--ew-on-lacquer); opacity: .75; }
+  .ew-keeper-head { transform-box: view-box; transform-origin: 32px 27px; transition: transform .3s var(--ew-settle); }
+  .ew-keeper-mic { stroke: var(--ew-dust); stroke-width: 1; }
+  .ew-keeper-mic-head { fill: var(--ew-dust); }
+  .ew-keeper-desk { stroke: var(--ew-foil-line-strong); stroke-width: 1; }
+  .ew-keeper-think rect { fill: var(--ew-foil); opacity: 0; }
+
+  /* The desk plate: a three-cell split-flap (FlipBoard, meta size). */
+  .ew-keeper-plate {
+    position: absolute;
+    left: 6%;
+    bottom: 6%;
+    display: flex;
+    padding: .14em .2em;
+    border: 1px solid var(--ew-foil-line);
+    background: var(--ew-ink);
+    font-size: calc(var(--keeper-size) * .1);
+    line-height: 1;
+    pointer-events: none;
+  }
+  .ew-keeper-plate .ew-flap-line.is-meta .ew-flap { width: .74em; height: 1.1em; font-size: 1em; letter-spacing: 0; color: var(--ew-foil); }
+
+  /* Poses — static, so reduced motion still reads every state. */
+  .ew-keeper[data-mood="drowsy"]:not([data-state="delight"]):not([data-state="sleeping"]) .ew-keeper-eye { transform: scaleY(.6); }
+  .ew-keeper[data-state="listening"] .ew-keeper-head { transform: rotate(-6deg); }
+  .ew-keeper[data-state="listening"] .ew-keeper-eye { transform: scaleY(1.12); }
+  .ew-keeper[data-state="thinking"] .ew-keeper-eyes { transform: translate(1.2px, -1.4px); }
+  .ew-keeper[data-state="thinking"] .ew-keeper-think rect { opacity: .9; }
+  .ew-keeper[data-state="speaking"] .ew-keeper-mouth { transform: scaleY(2.4); }
+  /* Sleeping: the eye flaps settle half-closed, the head leans to the desk. */
+  .ew-keeper[data-state="sleeping"] .ew-keeper-eye { transform: scaleY(.3) translateY(1.6px); }
+  .ew-keeper[data-state="sleeping"] .ew-keeper-head { transform: rotate(6deg) translateY(1px); }
+  .ew-keeper[data-state="sleeping"] .ew-keeper-mouth { opacity: .35; }
+  .ew-keeper[data-state="delight"] .ew-keeper-eyes { opacity: 0; }
+  .ew-keeper[data-state="delight"] .ew-keeper-smile { opacity: 1; }
+
+  @media (prefers-reduced-motion: no-preference) {
+    /* A blink is a flap drop: shut and open in single steps, no ease. */
+    @keyframes ew-keeper-blink {
+      0%, 93%, 100% { transform: scaleY(1); }
+      94%, 97% { transform: scaleY(.08); }
+    }
+    .ew-keeper[data-state="idle"] .ew-keeper-eyes,
+    .ew-keeper[data-state="listening"] .ew-keeper-eyes {
+      animation: ew-keeper-blink 5.2s steps(1, end) infinite;
+    }
+    .ew-keeper[data-mood="drowsy"][data-state="idle"] .ew-keeper-eyes { animation-duration: 7.4s; }
+    /* Thought lamps light in turn, like bulbs on a board. */
+    @keyframes ew-keeper-lamp {
+      0%, 100% { opacity: .15; }
+      33% { opacity: .95; }
+    }
+    .ew-keeper[data-state="thinking"] .ew-keeper-think rect { animation: ew-keeper-lamp .9s steps(1, end) infinite; }
+    .ew-keeper[data-state="thinking"] .ew-keeper-think rect:nth-child(2) { animation-delay: .3s; }
+    .ew-keeper[data-state="thinking"] .ew-keeper-think rect:nth-child(3) { animation-delay: .6s; }
+    /* The mouth is a flap too: open, shut, in steps. */
+    @keyframes ew-keeper-say {
+      0%, 100% { transform: scaleY(2.4); }
+      50% { transform: scaleY(.9); }
+    }
+    .ew-keeper[data-state="speaking"] .ew-keeper-mouth { animation: ew-keeper-say .36s steps(1, end) infinite; }
+    /* Delight: one quick full-flap roll of the head, then it rests. */
+    @keyframes ew-keeper-roll {
+      0% { transform: scaleY(1); }
+      25% { transform: scaleY(0); }
+      50% { transform: scaleY(-1); }
+      75% { transform: scaleY(0); }
+      100% { transform: scaleY(1); }
+    }
+    .ew-keeper[data-state="delight"] .ew-keeper-head { animation: ew-keeper-roll .48s var(--ew-settle) 1 both; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .ew-keeper-head, .ew-keeper-eye { transition: none; }
+  }
+
+  .ew-keeper-button {
+    display: grid;
+    width: var(--keeper-size, 64px);
+    height: var(--keeper-size, 64px);
+    min-width: 44px;
+    min-height: 44px;
+    place-items: center;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    padding: 0;
+    cursor: pointer;
+  }
+
+  /* Free-floating keeper: fixed over the page, above the dock and band (its
+     bottom is measured from their top edge in KeeperFloat), under the Atlas
+     veil (39). At rest it peeks a third off its edge, which keeps a 44px
+     target in view; it slides fully in on a station change or a new title. */
+  .ew-keeper-float {
+    position: fixed;
+    z-index: 38;
+    width: 64px;
+    height: 64px;
+    touch-action: none;
+    -webkit-user-select: none;
+    user-select: none;
+    transition: transform .45s var(--ew-settle), opacity .2s ease, visibility 0s linear;
+  }
+  .ew-keeper-float[data-side="right"] { margin-right: max(8px, env(safe-area-inset-right, 0px)); }
+  .ew-keeper-float[data-side="left"] { margin-left: max(8px, env(safe-area-inset-left, 0px)); }
+  .ew-keeper-float[data-side="right"][data-peek] { transform: translateX(calc(30% + 8px)); }
+  .ew-keeper-float[data-side="left"][data-peek] { transform: translateX(calc(-30% - 8px)); }
+  .ew-keeper-float[data-dragging] { margin: 0; transition: none; cursor: grabbing; }
+  .ew-keeper-float[data-away] { visibility: hidden; opacity: 0; transition: opacity .15s ease, visibility 0s linear .15s; }
+  :root:has(.rp-overlay) .ew-keeper-float { visibility: hidden; opacity: 0; pointer-events: none; }
+  @media (max-width: 960px) {
+    :root:has(.rp-board-sheet[data-state="open"]) .ew-keeper-float { visibility: hidden; opacity: 0; pointer-events: none; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .ew-keeper-float { transition: none; }
+  }
+
+  /* The keeper's sheet. Phone: from the bottom, standing on the dock (its
+     floor is the dock's measured top), so play/next stay in reach and the
+     scrim never covers them. Desktop: a quiet side panel, no scrim tint. */
+  .ew-keeper-layer { position: fixed; inset: 0; z-index: 42; pointer-events: none; }
+  .ew-keeper-scrim {
+    position: absolute;
+    inset: 0 0 var(--keeper-floor, 0px) 0;
+    background: var(--ew-ink);
+    opacity: .6;
+    pointer-events: auto;
+  }
+  .ew-keeper-sheet {
+    position: absolute;
+    right: 0;
+    bottom: var(--keeper-floor, 0px);
+    left: 0;
+    display: flex;
+    flex-direction: column;
+    max-height: calc(100dvh - var(--keeper-floor, 0px) - 56px - env(safe-area-inset-top, 0px));
+    border-top: 1px solid var(--ew-foil-line);
+    border-radius: 0;
+    background: var(--ew-leather);
+    pointer-events: auto;
+    animation: ew-keeper-rise .32s var(--ew-settle) both;
+  }
+  @keyframes ew-keeper-rise { from { transform: translateY(24px); opacity: 0; } to { transform: none; opacity: 1; } }
+  .ew-keeper-grip {
+    display: grid;
+    flex: none;
+    width: 100%;
+    min-height: 44px;
+    place-items: center;
+    padding: 0;
+    touch-action: none;
+    cursor: grab;
+  }
+  .ew-keeper-grip-bar { display: block; width: 44px; height: 4px; border-radius: 2px; background: var(--ew-ghost); }
+  .ew-keeper-grip:hover .ew-keeper-grip-bar, .ew-keeper-grip:focus-visible .ew-keeper-grip-bar { background: var(--ew-foil); }
+  .ew-keeper-top {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: start;
+    gap: 12px;
+    padding: 0 16px 14px;
+    border-bottom: 1px solid var(--ew-rule);
+  }
+  .ew-keeper-heading { min-width: 0; padding-top: 4px; }
+  .ew-keeper-eyebrow { margin: 0; color: var(--ew-foil); font: 500 10px/1.4 "Azeret Mono", ui-monospace, monospace; letter-spacing: .16em; text-transform: uppercase; }
+  .ew-keeper-eyebrow { display: grid; gap: 4px; }
+  .ew-keeper-eyebrow .ew-flap-line.is-meta .ew-flap { color: var(--ew-dust); }
+  .ew-keeper-line { margin: 8px 0 0; color: var(--ew-bone); font: italic 400 20px/1.3 "Newsreader", "Iowan Old Style", serif; letter-spacing: -.01em; }
+  .ew-keeper-close { min-width: 44px; min-height: 44px; }
+  .ew-keeper-body {
+    display: grid;
+    min-height: 0;
+    gap: 16px;
+    overflow: auto;
+    overscroll-behavior: contain;
+    padding: 14px 16px 16px;
+  }
+  .ew-keeper-onair { display: grid; gap: 4px; margin: 0; }
+  .ew-keeper-label, .ew-keeper-facts dt { color: var(--ew-dust); font: 500 10px/1.3 "Azeret Mono", ui-monospace, monospace; letter-spacing: .16em; text-transform: uppercase; }
+  .ew-keeper-track { color: var(--ew-bone); font: 500 15px/1.35 "Schibsted Grotesk", sans-serif; }
+  .ew-keeper-notrack { color: var(--ew-dust); font: 400 14px/1.4 "Schibsted Grotesk", sans-serif; }
+  .ew-keeper-facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 16px; margin: 0; }
+  .ew-keeper-facts dd { margin: 3px 0 0; overflow-wrap: anywhere; color: var(--ew-bone); font: 400 14px/1.35 "Schibsted Grotesk", sans-serif; }
+  .ew-keeper-talk:empty { display: none; }
+  .ew-keeper-talk { display: grid; gap: 6px; border-top: 1px solid var(--ew-rule); padding-top: 12px; }
+  .ew-keeper-q { margin: 0; color: var(--ew-dust); font: 500 13px/1.35 "Schibsted Grotesk", sans-serif; }
+  .ew-keeper-a { margin: 0; color: var(--ew-bone); font: italic 400 18px/1.4 "Newsreader", "Iowan Old Style", serif; }
+  .ew-keeper-a.is-pending { color: var(--ew-foil); }
+  .ew-keeper-hop { justify-self: start; }
+  .ew-keeper-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .ew-keeper-ask { display: flex; gap: 8px; }
+  .ew-keeper-ask input {
+    flex: 1 1 auto;
+    min-width: 0;
+    min-height: 44px;
+    border: 1px solid var(--ew-rule-2, var(--ew-ghost));
+    border-radius: 0;
+    background: var(--ew-ink);
+    padding: 0 12px;
+    color: var(--ew-bone);
+    font: 400 16px/1.2 "Schibsted Grotesk", sans-serif;
+  }
+  .ew-keeper-ask input::placeholder { color: var(--ew-dust); }
+  .ew-keeper-ask input:focus-visible { outline: 1px solid var(--ew-foil); outline-offset: 0; }
+  .ew-keeper-ask .rp-surprise { min-height: 44px; padding: 0 16px; }
+
+  /* The keeper's lines land like a board: each character a flap. */
+  .ew-flaptext-word { display: inline-block; white-space: nowrap; perspective: 240px; }
+  .ew-flaptext-char { display: inline-block; white-space: pre; backface-visibility: hidden; transform-origin: 50% 0; animation: ew-flap-in 80ms var(--ew-settle) both; }
+
+  @media (min-width: 961px) {
+    .ew-keeper-scrim { background: transparent; }
+    .ew-keeper-sheet {
+      top: 76px;
+      right: 20px;
+      bottom: calc(var(--keeper-floor, 0px) + 16px);
+      left: auto;
+      width: min(400px, calc(100vw - 40px));
+      max-height: none;
+      border: 1px solid var(--ew-foil-line);
+    }
+    .ew-keeper-grip { display: none; }
+    .ew-keeper-top { padding-top: 16px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .ew-keeper-sheet, .ew-flaptext-char { animation: none; }
+  }
+}

@@ -11,6 +11,7 @@ describe("ui Button / Chip", () => {
     expect(buttonClass({ variant: "text" })).toBe("rp-text-button");
     expect(buttonClass({ variant: "atlas" })).toBe("ew-atlas");
     expect(buttonClass({ variant: "chip" })).toBe("rp-chip");
+    expect(buttonClass({ variant: "keeper" })).toBe("ew-keeper-button");
   });
 
   it("adds state classes and keeps caller classes last", () => {

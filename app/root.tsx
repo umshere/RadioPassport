@@ -1,4 +1,5 @@
-import type { LinksFunction } from "@remix-run/node";
+import { json, type LinksFunction } from "@remix-run/node";
+import type { ShouldRevalidateFunction } from "@remix-run/react";
 import { Eyebrow } from "~/components/ui/Eyebrow";
 import {
   isRouteErrorResponse,
@@ -46,6 +47,14 @@ import { ToastChannel } from "~/components/radio-passport/ToastChannel";
 import { useAtmosphereStore } from "~/state/atmosphereStore";
 import { ATMOSPHERE_BOOT_SCRIPT, ATMOSPHERE_THEME_COLOR } from "~/utils/atmosphere";
 import { Button, ButtonLink, Chip } from "~/components/ui/Button";
+import { KeeperHost } from "~/components/keeper/KeeperHost";
+import { isKeeperAskEnabled } from "~/services/keeper/flag.server";
+
+/** Public flags only. The keeper's ask flag is not a secret; keys stay server-side. */
+export const loader = () => json({ keeperAskEnabled: isKeeperAskEnabled() });
+
+/** Flags are read once per visit; page navigations never re-run this loader. */
+export const shouldRevalidate: ShouldRevalidateFunction = () => false;
 
 export const links: LinksFunction = () => [
   { rel: "stylesheet", href: stylesheet },
@@ -217,6 +226,9 @@ export default function App() {
         </SiteSeekProvider>
 
         <PlayerDock />
+        {/* The keeper floats above the dock (never in its row) and owns the
+            one keeper sheet. It reads the Room and never touches playback. */}
+        <KeeperHost />
         {/* Phone band: fixed at the root beside the dock, outside the sticky
             header and the overflow-hidden frame, so WebKit keeps painting it
             while the Atlas veil stands. */}

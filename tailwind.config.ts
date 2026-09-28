@@ -12,6 +12,7 @@ export default {
     "./app/components/ui/**/*.{ts,tsx}",
     "./app/components/PretextMeasuredText.tsx",
     "./app/components/radio-passport/**/*.{ts,tsx}",
+    "./app/components/keeper/**/*.{ts,tsx}",
   ],
   theme: {
     extend: {
