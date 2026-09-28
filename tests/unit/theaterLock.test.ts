@@ -795,10 +795,18 @@ describe("theater lock", () => {
     // keeps no second set of controls.
     expect(listen).not.toContain("TheaterTransport");
     expect(listen).toContain("UpNextRow");
-    // Both stamped rings are the emblem: thin foil ring, lacquer heart.
+    // The deck ring and the play disc carry the emblem: foil ring, lacquer
+    // heart. The row's separate stamp ring merged into the play disc.
     expect(dock).toContain("rp-dock-ring-dot");
     expect(dock).not.toContain('"EW"');
-    expect(dock).toContain("ew-stamp-ring-dot");
+    expect(dock).not.toContain("ew-stamp-ring");
+    expect(dock).toMatch(/className=\{`rp-dock-play ew-stamp-disc/);
+    expect(dock).toContain('<i className="ew-stamp-heart" aria-hidden="true" />');
+    expect(dock).toContain("data-stamped={stamped || undefined}");
+    expect(dock).toContain("data-fresh={fresh || undefined}");
+    expect(dock).toContain('aria-describedby="ew-dock-stamp-state"');
+    expect(dock).toContain('"Stay 60 seconds to ink this city"');
+    expect(dock).toContain('aria-label={isPlaying ? "Pause" : "Play"}');
     expect(dock).toContain("rp-dock-deck");
     expect(dock).toContain("theaterTransportCopy");
     // Pause must freeze the folio on the last aired title, never collapse it.
@@ -838,7 +846,14 @@ describe("theater lock", () => {
     expect(stylesheet).toContain(".ew-plate-caption");
     expect(stylesheet).toContain(".ew-theater-folio.is-star .ew-letter-phone");
     expect(stylesheet).toContain(".ew-known.is-collapsed");
-    expect(stylesheet).toContain(".ew-stamp-ring-dot");
+    expect(stylesheet).not.toContain(".ew-stamp-ring");
+    expect(stylesheet).toMatch(
+      /\.ew-stamp-disc \.ew-stamp-heart \{[^}]*var\(--stamp-ink, 0\)/,
+    );
+    expect(stylesheet).toMatch(/\.rp-dock-play\.ew-stamp-disc\[data-fresh\] \{[^}]*ew-stamp-slam/);
+    expect(stylesheet).toMatch(
+      /@media \(prefers-reduced-motion: reduce\) \{\s*\.ew-stamp-disc \.ew-stamp-heart \{ transition: none; \}/,
+    );
     expect(stylesheet).toContain(".rp-dock-ring-dot");
     expect(stylesheet).not.toMatch(/\.ew-known,\s*\.ew-waiting/);
     expect(listen).toContain("deskSigned");

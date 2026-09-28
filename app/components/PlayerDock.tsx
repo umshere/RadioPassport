@@ -180,6 +180,11 @@ export default function PlayerDock() {
   const kept = favorites.includes(nowPlaying.uuid);
   const secondsLeft =
     ink === null ? null : Math.max(0, Math.ceil((1 - ink) * 60));
+  const stampTitle = fresh
+    ? "Freshly inked — this city just stamped itself"
+    : stamped
+      ? "Stamped"
+      : "Stay 60 seconds to ink this city";
   const deckCopy = theaterTransportCopy({
     isPlaying,
     kept,
@@ -316,37 +321,6 @@ export default function PlayerDock() {
       </div>
       <button
         type="button"
-        className="ew-stamp-ring"
-        onClick={() =>
-          openPassportNow(location.pathname, () =>
-            navigate(homeWithPassportHref())
-          )
-        }
-        aria-label={
-          stamped ? "Open passport — this city is stamped" : "Open passport"
-        }
-        title={
-          fresh
-            ? "Freshly inked — this city just stamped itself"
-            : stamped
-              ? "Stamped"
-              : "Stay 60 seconds to ink this city"
-        }
-        data-stamped={stamped || undefined}
-        data-fresh={fresh || undefined}
-        style={{
-          borderRadius: "50%",
-          border: `1px solid ${stamped ? "var(--ew-foil)" : "var(--ew-ghost)"
-            }`,
-          // Unstamped background belongs to the stylesheet: the ink fill is a
-          // conic-gradient driven by --stamp-ink, written by JourneyBridge.
-          ...(stamped ? { background: "var(--ew-foil-wash-strong)" } : {}),
-        }}
-      >
-        <i className="ew-stamp-ring-dot" aria-hidden="true" />
-      </button>
-      <button
-        type="button"
         onClick={() =>
           canMutateJourney(hydrated) &&
           toggleFavorite(nowPlaying.uuid, nowPlaying)
@@ -366,14 +340,29 @@ export default function PlayerDock() {
       >
         ‹
       </button>
+      {/* The play disc is also the stamp: while this city is unstamped a
+          lacquer heart grows inside it over the minute (--stamp-ink, from
+          JourneyBridge), the ink slams when it lands (data-fresh), and a
+          stamped city rests as a full lacquer disc. Passport lives in the
+          site bar and the stamp toast. */}
       <button
         type="button"
-        className={`rp-dock-play${isPlaying ? " is-live" : ""}`}
+        className={`rp-dock-play ew-stamp-disc${isPlaying ? " is-live" : ""}`}
         onClick={togglePlay}
         aria-label={isPlaying ? "Pause" : "Play"}
+        aria-describedby="ew-dock-stamp-state"
+        title={stampTitle}
+        data-stamped={stamped || undefined}
+        data-fresh={fresh || undefined}
       >
-        {isPlaying ? "Ⅱ" : "▶"}
+        <i className="ew-stamp-heart" aria-hidden="true" />
+        <span className="ew-stamp-glyph" aria-hidden="true">
+          {isPlaying ? "Ⅱ" : "▶"}
+        </span>
       </button>
+      <span id="ew-dock-stamp-state" className="sr-only">
+        {stampTitle}
+      </span>
       <button
         type="button"
         className="rp-dock-control rp-dock-next"
