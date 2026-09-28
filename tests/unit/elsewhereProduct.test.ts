@@ -700,9 +700,13 @@ describe("home cover panes", () => {
     // and ← Atlas dismiss them. (Passport keeps its ×.)
     expect(overlays.match(/<Overlay[^>]*hideClose/g)?.length).toBe(2);
     expect(home).toContain('className="rp-intro-board"');
-    expect(home).toContain('className="rp-intro-copy"');
-    expect(home).toContain('className="rp-land-slot"');
-    expect(home).toContain('className="rp-intel-slot"');
+    const homeIntro = readFileSync(
+      new URL("../../app/components/radio-passport/HomeIntro.tsx", import.meta.url),
+      "utf8",
+    );
+    expect(homeIntro).toContain('className="rp-intro-copy"');
+    expect(homeIntro).toContain('className="rp-land-slot"');
+    expect(homeIntro).toContain('className="rp-intel-slot"');
     expect(home).toContain("is-landed");
     expect(home).not.toContain("{arrival.headline}");
     expect(homeGlobeSide).toContain('className="ew-coverline ew-arrive"');

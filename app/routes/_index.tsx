@@ -11,7 +11,6 @@ import { useListeningMode } from "~/hooks/useListeningMode";
 import { roomForStation, useRoomStore } from "~/state/roomStore";
 import { loadWorldDescriptorPreview } from "~/services/aiOrchestrator";
 import { stationLocation } from "~/components/radio-passport/StationRow";
-import { AtmospherePin } from "~/components/radio-passport/AtmospherePin";
 import { applyAiPreviewPool } from "~/components/radio-passport/aiPreview";
 import {
   hourTapNextState,
@@ -21,7 +20,6 @@ import {
 } from "~/components/radio-passport/searchState";
 import { IntentBar } from "~/components/radio-passport/IntentBar";
 import { SeekShell } from "~/components/radio-passport/SeekShell";
-import { HourRail } from "~/components/radio-passport/HourRail";
 import {
   BoardSheet,
   type BoardSheetState,
@@ -35,7 +33,6 @@ import { SiteSeekPortal, SiteSeekRail } from "~/components/radio-passport/SiteSe
 import {
   resolveCoverArrival,
   describeCoverEmpty,
-  sameHourPillLabel,
   hourTravelHead,
   looksLikeIntentSentence,
   hourBoardLabel,
@@ -43,12 +40,10 @@ import {
   seekingBoardLabel,
   seekingStatus,
   theaterIntelligenceFromRoom,
-  homeWelcomeCopy,
 } from "~/components/radio-passport/productFlow";
 import { resolveTypedIntent, solarHourFromWord } from "~/services/ai/intent/promptIntent";
 import {
   formatClock,
-  formatLocalLabel,
   localDateAtLongitude,
   solarHourAtLongitude,
   type SolarHour,
@@ -58,6 +53,7 @@ import { useHomeStations } from "~/hooks/home/useHomeStations";
 import { useCatalogSearch } from "~/hooks/home/useCatalogSearch";
 import { useHomeIntent } from "~/hooks/home/useHomeIntent";
 import { useHomeOverlays } from "~/hooks/home/useHomeOverlays";
+import { HomeIntro } from "~/components/radio-passport/HomeIntro";
 import { HomeOverlays } from "~/components/radio-passport/HomeOverlays";
 import { HomeGlobeSide } from "~/components/radio-passport/HomeGlobeSide";
 import { StationBoard } from "~/components/radio-passport/StationBoard";
@@ -497,126 +493,40 @@ export default function Index() {
         <div className="ew-home-seek">
           <SiteSeekRail />
         </div>
-        <section className="rp-intro">
-          {/* The horizon row: the room-hour pin stands on the same line as the
-              local-time readout it answers, directly above the four-hour
-              filter it mirrors. The pin stays mounted even when the readout
-              is hidden, so the room is always reachable. */}
-          <div className="rp-horizon-row">
-            {localNow && !seekingCover ? (
-              <p className="rp-eyebrow text-ether">
-                <i className="rp-live-dot" />
-                {formatLocalLabel(arrivalCity, localNow)} ·{" "}
-                {solarHourAtLongitude(
-                  arrivalStation && typeof arrivalStation.longitude === "number"
-                    ? arrivalStation.longitude
-                    : 0
-                ).toUpperCase()}
-              </p>
-            ) : null}
-            <AtmospherePin />
-          </div>
-          <div className="rp-intro-copy">
-            {nowPlaying && trackLine && !seekingCover ? (
-              <p className="ew-track ew-arrive" key={trackLine}>
-                {trackLine}
-              </p>
-            ) : nowPlaying && !seekingCover ? (
-              <p className="rp-lede">
-                Live from {arrivalCity}. This station sends no track titles.
-              </p>
-            ) : (
-              <p className="rp-lede">{homeWelcomeCopy().lede}</p>
-            )}
-            <div className="rp-intel-slot">
-              {!seekingCover && coverIntel.dispatchBody ? (
-                <p className="ew-caption">{coverIntel.dispatchBody}</p>
-              ) : null}
-              {!seekingCover && coverIntel.facts[0] ? (
-                <p className="mt-3 max-w-[36ch] text-sm text-dust">
-                  <span className="rp-eyebrow mr-2 text-foil">
-                    {coverIntel.facts[0].label}
-                  </span>
-                  {coverIntel.facts[0].value}
-                </p>
-              ) : !seekingCover && coverIntel.summary ? (
-                <p className="ew-caption">{coverIntel.summary}</p>
-              ) : null}
-            </div>
-          </div>
-          <div className="rp-land-slot">
-            {/* First visit only: the brand line and the promise, once. After the
-                first stamp the button is enough. */}
-            {!isPlaying && arrivalStation && arrival.ctaKind === "land" && stamps.length === 0 ? (
-              <p className="ew-hook">
-                <em>You are not here.</em> Hear {arrivalCity} right now.
-              </p>
-            ) : null}
-            {!isPlaying && arrivalStation && arrival.ctaKind !== "none" ? (
-              <Button
-                variant="land"
-                kicker={arrival.ctaKind === "continue" ? "EW · Re-entry" : "EW · Arrival"}
-                onClick={() =>
-                  // The button always plays the city it names: the arrival
-                  // station already resolves playing → hour travel → resume →
-                  // featured, in that order.
-                  play(
-                    arrivalStation,
-                    selectedPool,
-                    arrival.ctaKind === "continue" ? "Continue" : "Land here"
-                  )
-                }
-              >
-                {arrival.cta}
-              </Button>
-            ) : null}
-          </div>
-          <div className="ew-horizon">
-            <HourRail
-              hour={hour}
-              onTap={(item) => {
-                const next = hourTapNextState(hour, item, query);
-                setHour(next.hour as SolarHour | null);
-                setPlace(next.place);
-                if (next.query !== query) setQuery(next.query);
-              }}
-            />
-            <Button variant="atlas" onClick={() => setAtlas(true)}>
-              <i className="ew-atlas-globe" aria-hidden="true" />
-              Atlas
-              <span aria-hidden="true">→</span>
-            </Button>
-          </div>
-          {hour ? (
-            <p className="mt-3 rp-eyebrow text-dust">
-              Live where it is {hour.toLowerCase()}
-            </p>
-          ) : sameHour.length > 0 && !isSeeking ? (
-            <p className="mt-3 rp-eyebrow text-dust">Also at this hour</p>
-          ) : null}
-          {!hour && !isSeeking && stamps.length === 0 ? (
-            <p className="mt-3 rp-eyebrow text-dust">
-              {homeWelcomeCopy().hourDecoder}
-            </p>
-          ) : null}
-          {sameHour.length > 0 && !isSeeking ? (
-            <div className="ew-same-hour">
-              {sameHour.map((station) => {
-                const pill = sameHourPillLabel(stationLocation(station));
-                return (
-                  <button
-                    type="button"
-                    key={station.uuid}
-                    title={pill.spoken}
-                    aria-label={pill.spoken}
-                    onClick={() => play(station, selectedPool, "Same hour")}
-                  >
-                    {pill.label}
-                  </button>
-                );
-              })}
-            </div>
-          ) : null}
+        <HomeIntro
+          nowPlaying={nowPlaying}
+          isPlaying={isPlaying}
+          arrivalStation={arrivalStation}
+          arrivalCity={arrivalCity}
+          arrival={arrival}
+          localNow={localNow}
+          seekingCover={seekingCover}
+          isSeeking={isSeeking}
+          trackLine={trackLine}
+          coverIntel={coverIntel}
+          firstVisit={stamps.length === 0}
+          hour={hour}
+          query={query}
+          sameHour={sameHour}
+          onLand={() =>
+            // The button always plays the city it names: the arrival station
+            // already resolves playing → hour travel → resume → featured.
+            arrivalStation &&
+            play(
+              arrivalStation,
+              selectedPool,
+              arrival.ctaKind === "continue" ? "Continue" : "Land here"
+            )
+          }
+          onSameHour={(station) => play(station, selectedPool, "Same hour")}
+          onHourTap={(item) => {
+            const next = hourTapNextState(hour, item, query);
+            setHour(next.hour as SolarHour | null);
+            setPlace(next.place);
+            if (next.query !== query) setQuery(next.query);
+          }}
+          onAtlas={() => setAtlas(true)}
+        >
           <BoardSheet
             state={boardSheet}
             onStateChange={setBoardSheet}
@@ -696,7 +606,7 @@ export default function Index() {
             />
           </div>
           </BoardSheet>
-        </section>
+        </HomeIntro>
         <HomeGlobeSide
           places={places}
           catalogReady={catalog.length > 0}

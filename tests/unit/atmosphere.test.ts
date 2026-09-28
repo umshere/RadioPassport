@@ -174,9 +174,13 @@ describe("AtmospherePin placement", () => {
     expect(home).toContain("SiteSeekPortal");
     expect(home).not.toContain("rp-home-header");
     expect(home).not.toMatch(/rp-home-header[\s\S]*AtmospherePin/);
-    const intro = home.slice(
-      home.indexOf('className="rp-intro"'),
-      home.indexOf('className="ew-horizon"')
+    const introSource = readFileSync(
+      new URL("../../app/components/radio-passport/HomeIntro.tsx", import.meta.url),
+      "utf8"
+    );
+    const intro = introSource.slice(
+      introSource.indexOf('className="rp-intro"'),
+      introSource.indexOf('className="ew-horizon"')
     );
     expect(intro).toContain('className="rp-horizon-row"');
     expect(intro).toContain("formatLocalLabel(arrivalCity, localNow)");
