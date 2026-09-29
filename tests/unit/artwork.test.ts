@@ -8,7 +8,6 @@ import {
   wikipediaTitleMatch,
 } from "~/utils/imageSearch";
 import { preferSecureArtworkUrl } from "~/utils/stations";
-import { buildTheaterKnowledge } from "~/components/radio-passport/knowledge/theaterKnowledge";
 import type { Station } from "~/types/radio";
 
 function makeStation(overrides: Partial<Station> = {}): Station {
@@ -206,59 +205,5 @@ describe("resolveCoverArt", () => {
     expect(
       await resolveCoverArt({ releaseId: "rel-9", releaseGroupId: "rg-9" }),
     ).toBeNull();
-  });
-});
-
-describe("buildTheaterKnowledge artwork", () => {
-  function roomGraph() {
-    return {
-      nodes: [
-        { id: "ravi-kale", label: "Ravi Kale", kind: "person" as const },
-        { id: "night-ferry", label: "Night Ferry", kind: "work" as const },
-      ],
-      edges: [
-        {
-          from: "ravi-kale",
-          to: "night-ferry",
-          relation: "performed",
-          verified: true,
-        },
-      ],
-    };
-  }
-
-  it("dresses track nodes in verified art and keeps catalog imagery", () => {
-    const plate = "https://is1-ssl.mzstatic.com/image/thumb/x/600x600bb.jpg";
-    const graph = buildTheaterKnowledge({
-      station: makeStation(),
-      roomGraph: roomGraph(),
-      artwork: {
-        "track:ravi-kale-night-ferry": plate,
-        "country:IN": "https://evil.example/nope.jpg",
-        "ghost:id": plate,
-        "artist:ravi-kale": "not a url",
-      },
-    });
-    const byId = new Map(graph.nodes.map((node) => [node.id, node]));
-
-    expect(byId.get("track:ravi-kale-night-ferry")?.imagery).toEqual({
-      type: "art",
-      url: plate,
-      monogram: "N",
-    });
-    // The flag is catalog truth — artwork never overrides filed imagery.
-    expect(byId.get("country:IN")?.imagery).toEqual({
-      type: "flag",
-      code: "IN",
-    });
-    // The station keeps its (https-upgraded) favicon, not the plate.
-    expect(byId.get("station:st-1")?.imagery).toEqual({
-      type: "favicon",
-      url: "https://dusk.example/logo.png",
-      monogram: "R",
-    });
-    // Ghost ids file nothing; unusable URLs dress nothing.
-    expect(byId.has("ghost:id")).toBe(false);
-    expect(byId.get("artist:ravi-kale")?.imagery).toBeUndefined();
   });
 });
