@@ -562,8 +562,7 @@
   }
   .ew-atlas:hover { color: var(--ew-bone); }
   /* Wayfinding links carry the meridian: a foil rule that draws itself on approach. */
-  .ew-atlas::after,
-  .ew-theater-back::after {
+  .ew-atlas::after{
     content: "";
     position: absolute;
     bottom: 8px;
@@ -575,11 +574,8 @@
     pointer-events: none;
   }
   .ew-atlas::after { left: 14px; right: 2px; }
-  .ew-theater-back::after { left: 0; width: 100%; bottom: 4px; }
   .ew-atlas:hover::after,
-  .ew-atlas:focus-visible::after,
-  .ew-theater-back:hover::after,
-  .ew-theater-back:focus-visible::after {
+  .ew-atlas:focus-visible::after{
     transform: scaleX(1);
   }
   /* The Day/Night pin stands inline on the intro's horizon row, typeset in the
@@ -728,7 +724,6 @@
   .ew-cover-row.is-bare { grid-template-columns: minmax(0, 1fr); }
   /* The cover caption carries the dispatch once the plate block stands —
      the desk letter above it would read the same words twice. */
-  .ew-theater-well:has(.ew-cover-row) .ew-letter-desk { display: none; }
   .ew-cover-title {
     margin: 0;
     color: var(--ew-bone);
@@ -757,52 +752,6 @@
     color: var(--ew-dust);
     font-size: 14px;
     line-height: 1.4;
-  }
-  .ew-journey {
-    position: relative;
-    margin: 22px 0 0;
-    padding: 0 0 0 20px;
-    list-style: none;
-    max-width: 36ch;
-  }
-  .ew-journey::before {
-    content: "";
-    position: absolute;
-    left: 4px;
-    top: 8px;
-    bottom: 10px;
-    width: 1px;
-    background: var(--ew-foil-line);
-  }
-  .ew-journey li {
-    position: relative;
-    display: grid;
-    gap: 4px;
-    margin: 0 0 16px;
-  }
-  .ew-journey li:last-child { margin-bottom: 0; }
-  .ew-journey-star {
-    position: absolute;
-    left: -20px;
-    top: 6px;
-    width: 7px;
-    height: 7px;
-    border-radius: 50%;
-    background: var(--ew-foil);
-    box-shadow: 0 0 10px color-mix(in srgb, var(--ew-foil) 55%, transparent);
-  }
-  .ew-journey-value {
-    color: var(--ew-bone);
-    font-family: "Newsreader", serif;
-    font-size: 18px;
-    font-style: italic;
-    line-height: 1.25;
-  }
-  .ew-journey-label {
-    color: var(--ew-foil);
-    font: 500 10px/1 "Azeret Mono", monospace;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
   }
   .ew-plate {
     margin: 0;
@@ -1230,101 +1179,13 @@
     overflow: hidden;
     transition: background-color .28s ease, color .28s ease;
   }
-  .ew-theater:not(:has(.ew-theater-room)) {
-    padding: 20px 24px 12px;
-  }
-  .ew-theater-room {
-    display: grid;
-    grid-template-columns: minmax(0, 28rem) minmax(18rem, 1fr);
-    grid-template-areas: "folio sky";
-    gap: 0;
-    flex: 1 1 auto;
-    align-items: stretch;
-    min-height: 0;
-    overflow: hidden;
-  }
-  .ew-theater-sky {
-    grid-area: sky;
-    position: relative;
-    align-self: stretch;
-    min-width: 0;
-    min-height: 0;
-    height: auto;
-    overflow: hidden;
-    margin-left: -7.5rem;
-    -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 32%);
-    mask-image: linear-gradient(90deg, transparent 0%, #000 32%);
-  }
-  .ew-theater-field {
-    position: absolute;
-    left: 0;
-    top: 0;
-    z-index: 0;
-    display: block;
-    width: 100%;
-    height: 100%;
-    min-height: 0;
-    pointer-events: none;
-  }
-  .ew-theater-back {
-    position: relative;
-    z-index: 3;
-    display: inline-flex;
-    flex: none;
-    align-items: center;
-    min-height: 44px;
-    background: var(--ew-ink);
-  }
-  .ew-theater-folio {
-    grid-area: folio;
-    position: relative;
-    z-index: 1;
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-start;
-    min-width: 0;
-    min-height: 0;
-    max-width: 36rem;
-    padding: 20px 48px 12px 24px;
-    background: linear-gradient(90deg, var(--ew-ink) 0%, var(--ew-ink) 68%, transparent 100%);
-    overflow-x: hidden;
-    overflow-y: auto;
-    overscroll-behavior: contain;
-    -webkit-overflow-scrolling: touch;
-  }
-  .ew-theater-folio .ew-track {
-    min-height: 1.4em;
-    margin-top: 1.15rem;
-  }
-  .ew-theater-well {
-    display: flex;
-    flex-direction: column;
-    min-height: 16.75rem;
-    max-width: 36ch;
-    margin-top: 1.35rem;
-  }
-  .ew-theater-well .ew-cover-rule { margin-bottom: 16px; }
   /* Desktop fold: the well's reserved letter-height pushed the station board
      below the fold in every state that had room to spare. On desktop the
      letter keeps only the height its words need; the board rides right
      beneath the horizon. Mobile keeps the reservation (the sheet floats). */
   @media (min-width: 961px) {
-    .ew-theater-well,
-    .ew-theater-well:not(:has(.ew-cover-row)) { min-height: 0; }
     .ew-horizon { margin-top: 18px; }
   }
-  .ew-theater-well.is-filed { min-height: 0; }
-  .ew-theater-well.is-filed .ew-caption,
-  .ew-theater-well.is-filed .ew-cover-row,
-  .ew-theater-well.is-filed .ew-journey li,
-  .ew-theater-well.is-filed .ew-meridians {
-    animation: ew-file .48s ease both;
-  }
-  .ew-theater-well.is-filed .ew-cover-row { animation-delay: .07s; }
-  .ew-theater-well.is-filed .ew-journey li:nth-child(2) { animation-delay: .07s; }
-  .ew-theater-well.is-filed .ew-journey li:nth-child(3) { animation-delay: .14s; }
-  .ew-theater-well.is-filed .ew-journey li:nth-child(4) { animation-delay: .21s; }
-  .ew-theater-well.is-filed .ew-meridians { animation-delay: .21s; }
   .ew-letter:not(.is-open) .ew-caption {
     display: -webkit-box;
     overflow: hidden;
@@ -1401,8 +1262,7 @@
   /* Seam: home and theater hand one world to the next. The globe dissolves
      into the night sky, the city name carries across. Browsers without the
      View Transitions API keep the Passage rise above. */
-  .rp-globe-wrap,
-  .ew-theater-sky {
+  .rp-globe-wrap{
     view-transition-name: vt-globe-sky;
   }
   .ew-theater .ew-coverline,
@@ -1442,9 +1302,6 @@
   }
   .ew-desk-label {
     margin-bottom: 10px;
-  }
-  .ew-journey-wrap {
-    position: relative;
   }
   .ew-upnext {
     display: flex;
@@ -1636,60 +1493,19 @@
     .ew-theater {
       padding: 0;
     }
-    .ew-theater:not(:has(.ew-theater-room)) {
-      padding: 12px 16px 8px;
-    }
     .ew-theater .ew-coverline { font-size: clamp(36px, 12vw, 52px); }
-    .ew-theater-room {
-      grid-template-columns: minmax(0, 1fr);
-      grid-template-rows: clamp(11.5rem, 30vh, 220px) minmax(0, 1fr);
-      grid-template-areas: "sky" "folio";
-      gap: 0;
-      min-height: 0;
-    }
-    .ew-theater-sky {
-      position: relative;
-      top: auto;
-      z-index: 1;
-      min-height: 0;
-      height: auto;
-      max-height: none;
-      margin-left: 0;
-      background: var(--ew-ink);
-      -webkit-mask-image: none;
-      mask-image: none;
-    }
-    .ew-theater-field {
-      min-height: 0;
-    }
-    .ew-theater-sky::after {
-      content: "";
-      position: absolute;
-      inset: auto 0 0;
-      z-index: 2;
-      height: 36px;
-      background: linear-gradient(180deg, transparent, var(--ew-ink));
-      pointer-events: none;
-    }
-    .ew-theater-folio {
-      max-width: none;
-      z-index: 0;
-      padding: 8px 16px 8px;
-      background: var(--ew-ink);
-    }
-  .ew-theater-well { min-height: 16rem; }
   .ew-cover-row { grid-template-columns: 72px minmax(0, 1fr); gap: 12px; }
     .ew-plate { width: 72px; height: 72px; }
     .ew-cover-title { font-size: 18px; }
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .rp-live-dot, .rp-eq i, .rp-toast, .ew-theater-well.is-filed .ew-caption, .ew-theater-well.is-filed .ew-cover-row, .ew-theater-well.is-filed .ew-journey li, .ew-theater-well.is-filed .ew-meridians { animation: none; }
+    .rp-live-dot, .rp-eq i, .rp-toast{ animation: none; }
     .ew-page, .ew-arrive, .ew-cover-rule, .rp-overlay, .rp-overlay-inner, .ew-passage-bar i { animation: none; }
     .ew-star-twinkle { animation: none; }
     .rp-chip, .rp-station, .rp-dock-play { transition: none; }
     .rp-dock-play::before { animation: none; }
-    .ew-land, .ew-atlas::after, .ew-theater-back::after { transition: none; }
+    .ew-land, .ew-atlas::after{ transition: none; }
     .ew-hour, .ew-hour-icon, .ew-hour-dot, .ew-hours-cursor { transition: none; }
     body, .rp-home, .rp-globe-side, .rp-dock, .ew-theater { transition: none; }
     ::view-transition-group(*),
@@ -1844,8 +1660,6 @@
    the type. Top margin matches the track's step (1.15rem); the track and
    up-next rows bring their own top margins, so no bottom margin here. The
    rail gives up its bar flex so the pill sizes itself. */
-.ew-theater-seek-row { margin: 1.15rem 0 0; }
-.ew-theater-seek-row .ew-theater-rail { flex: none; }
 /* Home holds the shell open in its rail: a full-bleed capsule with the same
    lens inset and foil border — the bar's own width rules still bound it. */
 .ew-home-seek .ew-seek.is-open { width: 100%; }
@@ -2184,13 +1998,8 @@ html, body {
 }
 
 /* Theater knowledge layer — DOM buttons over the sky; keep one-line rules. */
-.ew-theater-field-wrap { position: absolute; inset: 0; }
-.ew-theater-field-wrap .ew-theater-field { position: absolute; inset: 0; width: 100%; height: 100%; }
 /* Living layer: declarative SVG motion over the static sky. Dotted flows
    crawl via dashoffset, travelers ride SMIL paths, stars twinkle. */
-.ew-orbit { position: absolute; inset: 0; z-index: 1; width: 100%; height: 100%; pointer-events: none; }
-.ew-journey { fill: none; stroke: var(--ew-lacquer); stroke-width: 0.7; opacity: 0.3; }
-.ew-journey-pulse { fill: var(--ew-bone); opacity: 0.7; }
 .ew-tuned-ring { fill: none; stroke: var(--ew-lacquer); stroke-width: 1.1; opacity: 0.75; }
 .ew-tuned-halo { fill: var(--ew-lacquer); opacity: 0.08; }
 .ew-thread { stroke-width: 0.8; opacity: 0.34; }
@@ -2199,62 +2008,21 @@ html, body {
 .ew-star-twinkle { opacity: 0.3; animation: ew-star-twinkle 4s ease-in-out infinite; }
 .ew-star-core { opacity: 0.9; }
 @keyframes ew-star-twinkle { 0%, 100% { opacity: 0.18; } 50% { opacity: 0.42; } }
-.ew-knode-layer { position: absolute; inset: 0; pointer-events: none; z-index: 2; }
-.ew-knode { pointer-events: auto; position: absolute; display: flex; align-items: center; gap: 6px; min-width: 28px; min-height: 28px; padding: 3px 8px 3px 4px; border: 0; background: color-mix(in srgb, var(--ew-ink) 78%, transparent); border-radius: 999px; cursor: pointer; color: var(--ew-bone); font: 500 11px/1.2 "Azeret Mono", ui-monospace, monospace; letter-spacing: 0.08em; z-index: 1; }
-.ew-knode[data-anchor="w"] { flex-direction: row-reverse; padding: 3px 4px 3px 8px; }
-.ew-knode[data-anchor="n"] { flex-direction: column-reverse; }
-.ew-knode[data-anchor="s"] { flex-direction: column; }
-.ew-knode:hover, .ew-knode:focus-visible, .ew-knode[data-focused="true"] { z-index: 4; }
-.ew-knode[data-kind="country"], .ew-knode[data-kind="artist"], .ew-knode[data-kind="album"] { color: var(--ew-foil); }
-.ew-knode[data-kind="language"], .ew-knode[data-kind="year"], .ew-knode[data-kind="genre"], .ew-knode[data-kind="city"], .ew-knode[data-kind="place"] { color: var(--ew-ether); }
-.ew-knode[data-kind="station"], .ew-knode[data-kind="track"] { color: var(--ew-bone); }
-.ew-knode[data-kind="event"] { color: var(--ew-lacquer); }
-.ew-knode:hover .ew-knode-label, .ew-knode:focus-visible .ew-knode-label { opacity: 1; }
-.ew-knode:focus-visible { outline: 1px solid var(--ew-foil); outline-offset: 2px; }
-.ew-knode-mark { display: block; width: 7px; height: 7px; border-radius: 50%; background: currentColor; box-shadow: 0 0 7px currentColor; flex: none; }
-.ew-knode-imagery { display: block; width: 18px; height: 18px; border-radius: 50%; overflow: hidden; background: color-mix(in srgb, currentColor 22%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, currentColor 55%, transparent); }
-.ew-knode-imagery img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.ew-knode-label { color: currentColor; opacity: 0.92; white-space: nowrap; max-width: 12em; overflow: hidden; text-overflow: ellipsis; }
-@media (max-width: 720px) {
-  .ew-knode-label { display: none; }
-  .ew-knode[data-focused="true"] .ew-knode-label,
-  .ew-knode[data-tuned="true"] .ew-knode-label,
-  .ew-knode:hover .ew-knode-label,
-  .ew-knode:focus-visible .ew-knode-label { display: inline; }
-}
-.ew-knode[data-kind="country"] .ew-knode-label, .ew-knode[data-kind="language"] .ew-knode-label { font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; }
-.ew-knode[data-motion="wake"] { animation: ew-knode-wake .56s var(--ew-settle) both; }
 @keyframes ew-knode-wake { from { opacity: 0; } to { opacity: 1; } }
-@media (prefers-reduced-motion: reduce) { .ew-knode[data-motion="wake"] { animation: none; } }
 /* Tide water — roomier taps; seat changes glide like a body in water. */
-.ew-theater-field-wrap .ew-knode { min-width: 44px; min-height: 44px; transition: left 0.9s cubic-bezier(0.22, 1, 0.36, 1), top 0.9s cubic-bezier(0.22, 1, 0.36, 1); }
-@media (prefers-reduced-motion: reduce) { .ew-theater-field-wrap .ew-knode { transition: none; } }
 /* The water reads as water: six still depth lanes hold the seating, and a
    cool wash settles over the canvas and threads — above the living layer,
    below the knode buttons, so the stars stay crisp. */
-.ew-theater-field-wrap::after { content: ""; position: absolute; inset: 0; z-index: 1; pointer-events: none; background: linear-gradient(180deg, transparent 28%, color-mix(in srgb, var(--ew-ether) 7%, transparent) 72%, color-mix(in srgb, var(--ew-ether) 13%, transparent)); }
-.ew-tide-lane { stroke: var(--ew-ether); stroke-width: 0.6; opacity: 0.16; }
 /* Hubs and stars wear different clothes: a country is a flag medallion —
    no kind dot, the flag large — while a station keeps the favicon pill
    with its dot. Land first, then the stations it opens onto. */
-.ew-knode[data-kind="country"] { padding: 4px 14px 4px 5px; }
-.ew-knode[data-kind="country"] .ew-knode-mark { display: none; }
-.ew-knode[data-kind="country"] .ew-knode-imagery { display: grid; place-items: center; width: 26px; height: 26px; font-size: 16px; }
-.ew-knode[data-kind="station"] .ew-knode-imagery { width: 16px; height: 16px; font-size: 11px; }
 .ew-letter-phone { display: none; }
 .ew-plate-caption { display: none; }
-.ew-theater-desk, .ew-theater-star { display: grid; grid-template-rows: 1fr; min-height: 0; }
-.ew-theater-layer { overflow: hidden; min-height: 0; }
 /* Theater folio — selected node details + trail. */
 .ew-ktrail { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 10px 0 2px; }
 .ew-ktrail button { border: 0; background: none; padding: 2px 0; cursor: pointer; color: var(--ew-dust); font: 500 11px/1.4 "Azeret Mono", monospace; letter-spacing: 0.1em; text-transform: uppercase; }
 .ew-ktrail button:hover { color: var(--ew-foil); }
 .ew-ktrail [aria-current="true"] { color: var(--ew-foil); }
-.ew-knode-detail { margin-top: 12px; border-top: 1px solid var(--ew-rule); padding-top: 12px; }
-.ew-knode-detail h2 { margin: 0; font-size: 22px; line-height: 1.15; color: var(--ew-bone); }
-.ew-knode-detail p { margin: 4px 0 0; color: var(--ew-dust); font-size: 13px; }
-.ew-knode-detail .ew-knode-tune { margin-top: 10px; display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--ew-foil); border-radius: 999px; padding: 6px 14px; background: none; color: var(--ew-foil); font: 500 12px/1 "Azeret Mono", monospace; letter-spacing: 0.14em; text-transform: uppercase; cursor: pointer; }
-.ew-knode-detail .ew-knode-tune:hover { background: color-mix(in srgb, var(--ew-foil) 12%, transparent); }
 .ew-known { margin-top: 16px; border-top: 1px solid var(--ew-rule); padding-top: 12px; }
 .ew-known-lab { color: var(--ew-dust); }
 .ew-krow { display: flex; align-items: baseline; gap: 12px; min-height: 44px; border-bottom: 1px solid var(--ew-rule); padding: 7px 0; }
@@ -2266,13 +2034,6 @@ html, body {
 .ew-waiting-dot { display: block; flex: none; width: 7px; height: 7px; border-radius: 50%; background: var(--ew-ether); }
 .ew-desk-verified { margin: 12px 0 0; color: var(--ew-foil); font: 500 9px/1.35 "Azeret Mono", monospace; letter-spacing: .14em; text-transform: uppercase; }
 .ew-meridian-host { margin-left: 8px; color: var(--ew-dust); font-style: normal; letter-spacing: .06em; text-transform: none; }
-.ew-knode-also { margin-top: 18px; border-top: 1px solid var(--ew-rule); padding-top: 12px; }
-.ew-knode-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 9px; }
-.ew-knode-chip { display: inline-flex; align-items: center; gap: 8px; min-height: 40px; border: 1px solid var(--ew-rule); background: transparent; padding: 0 12px; color: var(--ew-bone); font: 500 10px/1 "Azeret Mono", monospace; letter-spacing: .1em; text-transform: uppercase; cursor: pointer; }
-.ew-knode-chip i { display: block; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
-.ew-knode-chip[data-kind="country"], .ew-knode-chip[data-kind="artist"], .ew-knode-chip[data-kind="album"] { color: var(--ew-foil); }
-.ew-knode-chip[data-kind="language"], .ew-knode-chip[data-kind="year"], .ew-knode-chip[data-kind="genre"], .ew-knode-chip[data-kind="city"], .ew-knode-chip[data-kind="place"] { color: var(--ew-ether); }
-.ew-knode-chip[data-kind="event"] { color: var(--ew-lacquer); }
 @media (max-width: 960px) {
 :root[data-atmosphere="day"] .ew-meridian-host { color: #665F55; }
 :root[data-atmosphere="day"] .ew-krow-key, :root[data-atmosphere="day"] .ew-krow-prov, :root[data-atmosphere="day"] .ew-waiting, :root[data-atmosphere="day"] .ew-known-line { color: #665F55; }
@@ -2281,57 +2042,16 @@ html, body {
 /* Theater phone = Theater.html / Knowledge.html. Desktop sky stays the wide field. */
 .ew-plate { display: grid; place-items: center; }
 .ew-plate:has(img) .ew-plate-mark { display: none; }
-.ew-theater-queue, .ew-theater-telemetry, .ew-theater-folio-rule { display: none; }
+.ew-theater-queue{ display: none; }
 @media (max-width: 960px) {
 .ew-site-bar.is-theater .ew-theater-rail { display: none; }
 .ew-theater { --ew-theater-sky: 236px; }
-.ew-theater-room { grid-template-rows: var(--ew-theater-sky, 236px) minmax(0, 1fr); }
-.ew-theater-sky { height: 100%; border-bottom: 1px solid var(--ew-rule); background: var(--ew-ink); }
-.ew-theater-field { opacity: 1; }
-.ew-theater-sky::after { height: 40px; }
-.ew-theater-sky .ew-knode, .ew-theater-sky .ew-knode[data-anchor="w"], .ew-theater-sky .ew-knode[data-anchor="n"], .ew-theater-sky .ew-knode[data-anchor="s"] { flex-direction: row; gap: 6px; min-width: 0; padding: 3px 8px 3px 4px; border-radius: 999px; background: rgba(12, 11, 9, .78); font-size: 10px; letter-spacing: .08em; }
-.ew-theater-sky .ew-knode-imagery { display: none; }
-.ew-theater-sky .ew-knode-mark { display: block; width: 7px; height: 7px; box-shadow: 0 0 7px currentColor; }
-.ew-theater-sky .ew-knode-label, .ew-theater-sky .ew-knode[data-kind="country"] .ew-knode-label, .ew-theater-sky .ew-knode[data-kind="language"] .ew-knode-label { display: inline; max-width: 14em; font-weight: 500; letter-spacing: .08em; text-transform: none; }
-.ew-theater-folio { min-height: 0; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; padding: 14px 16px 16px; display: flex; flex-direction: column; align-items: stretch; }
-.ew-theater-folio-rule { display: block; width: 24px; height: 1px; margin-bottom: 9px; }
 .ew-theater .ew-coverline { margin-top: 0; font-size: 42px; line-height: .96; letter-spacing: -.02em; }
-.ew-theater-telemetry { display: block; margin-top: 8px; color: var(--ew-dust); }
-.ew-theater-desk-live, .ew-theater-lede, .ew-theater-folio .ew-track, .ew-theater-folio .ew-upnext { display: none; }
 /* Phone theater keeps no seek — the letter row stands down with the lede. */
-.ew-theater-seek-row { display: none; }
-.ew-theater-folio > * { flex: none; }
-.ew-theater-well { flex: none; min-height: 0; max-width: none; margin-top: 0; overflow: visible; }
-.ew-theater-well .ew-cover-rule, .ew-letter-desk { display: none; }
-.ew-theater-star { display: none; }
-.ew-theater-folio.is-star .ew-theater-folio-rule, .ew-theater-folio.is-star .ew-coverline, .ew-theater-folio.is-star .ew-theater-telemetry, .ew-theater-folio.is-star .ew-theater-desk, .ew-theater-folio.is-star .ew-theater-queue { display: none; }
-.ew-theater-folio.is-star .ew-theater-star { display: grid; }
-.ew-theater-folio.is-star .ew-theater-layer { overflow: visible; }
-.ew-theater-folio.is-star .ew-letter-phone { display: block; margin-top: 0; }
-.ew-theater-folio.is-star .ew-letter-phone .ew-caption { margin: 0; max-width: none; color: var(--ew-bone); font-family: "Schibsted Grotesk", sans-serif; font-size: 14px; font-style: normal; line-height: 1.6; }
-.ew-theater-folio.is-star .ew-letter-more { text-transform: uppercase; letter-spacing: .16em; }
-.ew-theater-folio.is-star .ew-meridians { display: flex; flex-direction: column; align-items: stretch; gap: 8px; }
-.ew-theater-folio.is-star .ew-meridians a { display: flex; width: 100%; min-height: 40px; border: 1px solid var(--ew-rule); padding: 0 11px; }
-.ew-theater-folio.is-star .ew-knode-detail { margin-top: 18px; }
-.ew-theater-folio.is-star .ew-knode-detail h2 { font-size: 16px; font-weight: 500; }
-.ew-theater-folio.is-star .ew-knode-tune { min-height: 44px; margin-top: 12px; }
+ .ew-letter-desk { display: none; }
 .ew-known.is-collapsed { display: none; }
 .ew-krow-prov::before { content: ""; display: inline-block; width: 5px; height: 5px; margin-right: 6px; border-radius: 50%; background: currentColor; opacity: .8; vertical-align: middle; }
-.ew-theater-folio .ew-journey { margin: 8px 0 0; padding: 0; max-width: none; }
-.ew-theater-folio .ew-journey::before { display: none; }
-.ew-theater-folio .ew-journey li { display: flex; align-items: baseline; gap: 11px; min-height: 44px; margin: 0; border-bottom: 1px solid var(--ew-rule); padding: 7px 0; }
-.ew-theater-folio .ew-journey-star { position: static; width: 5px; height: 5px; border-radius: 0; transform: rotate(45deg); box-shadow: none; flex: none; top: auto; left: auto; }
-.ew-theater-folio .ew-journey-value { font-family: "Schibsted Grotesk", sans-serif; font-size: 15px; font-style: normal; font-weight: 500; }
-.ew-theater-folio .ew-journey-label { margin-left: auto; color: var(--ew-dust); }
 .ew-meridian-lab { margin: 16px 0 8px; }
-.ew-theater-folio .ew-meridians { margin: 0; gap: 8px; }
-.ew-theater-folio .ew-meridians a { border: 1px solid var(--ew-rule); padding: 0 11px; }
-.ew-theater-folio .ew-cover-row { display: grid; grid-template-columns: 72px minmax(0, 1fr); gap: 12px; margin-top: 16px; border-top: 1px solid var(--ew-rule); padding-top: 14px; }
-.ew-theater-folio .ew-cover-title { font-family: "Schibsted Grotesk", sans-serif; font-size: 18px; font-style: normal; font-weight: 500; line-height: 1.25; }
-.ew-theater-folio .ew-plate { display: grid; width: 72px; height: 72px; place-items: center; overflow: hidden; border: 1px solid rgba(198,165,106,.28); background: #0C0B09; color: var(--ew-foil); }
-.ew-theater-folio .ew-plate img { display: block; width: 100%; height: 100%; object-fit: cover; }
-.ew-theater-folio .ew-plate:has(img) .ew-plate-mark { display: none; }
-.ew-theater-folio .ew-plate:not(:has(img)) .ew-plate-mark { display: grid; width: 34px; height: 34px; place-items: center; color: var(--ew-foil); }
 .ew-plate-mark svg { display: block; width: 34px; height: 34px; }
 .ew-plate-copy { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 .ew-plate-caption { display: block; margin: 0; color: var(--ew-dust); font-family: "Newsreader", "Iowan Old Style", "Palatino Linotype", serif; font-style: italic; font-size: 13px; line-height: 1.5; }
@@ -2391,9 +2111,6 @@ html, body {
 .ew-secret-hint { color: var(--ew-dust) !important; font-size: 14px !important; }
 .ew-secret-answers { display: flex; flex-wrap: wrap; gap: 8px; }
 .ew-secret-answers button, .ew-secret-clue > a, .ew-trail-whisper button, .ew-trail-whisper a, .ew-secret-ask button { min-height: 44px; border: 0; border-bottom: 1px solid var(--ew-foil-line); background: transparent; padding: 8px 4px; color: var(--ew-foil); cursor: pointer; font: 500 11px/1.3 "Azeret Mono", monospace; letter-spacing: .12em; text-transform: uppercase; }
-.ew-theater-folio.is-star .ew-secret-trail, .ew-theater-folio.is-star .ew-theater-ambient { display: none; }
-.ew-theater-ambient { flex: none; max-width: 42ch; margin: 12px 0 18px; border-top: 1px solid var(--ew-rule); padding-top: 15px; }
-.ew-theater-ambient p:last-child:not(.ew-theater-story-detail) { margin: 9px 0 0; color: var(--ew-bone); font: italic clamp(17px, 2vw, 22px)/1.35 "Newsreader", serif; }
 .ew-trail-whisper { position: fixed; z-index: 42; top: calc(62px + env(safe-area-inset-top, 0px)); left: 50%; display: flex; align-items: center; gap: 16px; width: min(calc(100% - 32px), 700px); transform: translateX(-50%); border-top: 1px solid var(--ew-foil-line); border-bottom: 1px solid var(--ew-rule); background: var(--ew-ink); box-shadow: 0 12px 35px rgba(0,0,0,.22); padding: 12px 16px; }
 .ew-trail-whisper > div { flex: 1 1 auto; min-width: 0; }.ew-trail-whisper p:not(.rp-eyebrow) { margin: 5px 0 0; color: var(--ew-bone); font: italic 15px/1.3 "Newsreader", serif; }
 .rp-overlay .ew-trail-whisper { top: auto; bottom: calc(var(--player-dock-clearance, 88px) + 16px + env(safe-area-inset-bottom, 0px)); }
@@ -2478,8 +2195,6 @@ html, body {
 
 /* Theater storytelling v1. Kept outside @layer (Tailwind v3 nondeterministic
    layer-drop gremlin — see docs/SESSION_HANDOFF.md). */
-.ew-theater-story-hour { margin: 9px 0 0; color: var(--ew-bone); font: italic clamp(17px, 2vw, 22px)/1.35 "Newsreader", serif; }
-.ew-theater-story-detail { margin: 6px 0 0; color: var(--ew-dust); font: 400 14px/1.5 "Azeret Mono", monospace; letter-spacing: .02em; }
 
 /* Passport — paper and ink. Outside @layer, scoped to this book only.
    Postmarks are abstract ornament, not fabricated geographical evidence. */
@@ -2643,10 +2358,10 @@ html, body {
    → busy → disabled. Touch gets a pressed state instead of a sticky hover. */
 button, a, [role="button"] { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
 .rp-chip, .rp-surprise, .rp-passport-button, .rp-text-button, .ew-atlas, .rp-country, .rp-mic,
-.ew-hour, .ew-atmosphere button, .ew-theater-back, .ew-theater-qrow { transition: color .15s, background-color .15s, border-color .15s, transform .12s var(--ew-settle); }
+.ew-hour, .ew-atmosphere button, .ew-theater-qrow { transition: color .15s, background-color .15s, border-color .15s, transform .12s var(--ew-settle); }
 .rp-chip:active, .rp-surprise:active, .rp-passport-button:active, .rp-country:active,
 .ew-theater-qrow:active { background: var(--ew-foil-wash-strong); transform: translateY(1px); }
-.rp-text-button:active, .ew-atlas:active, .ew-theater-back:active, .rp-mic:active { opacity: .6; }
+.rp-text-button:active, .ew-atlas:active, .rp-mic:active { opacity: .6; }
 .ew-hour:active { color: var(--ew-bone); }
 .ew-land:active { transform: translateY(2px); }
 .rp-dock-play:active, .rp-dock-control:active { transform: scale(.94); }

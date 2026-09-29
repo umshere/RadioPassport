@@ -584,10 +584,7 @@ describe("live stylesheet", () => {
     expect(css).not.toMatch(/\.ew-site-bar \{[^}]*backdrop-filter:/);
     expect(css).toMatch(/\.rp-overlay \{[^}]*z-index: 39/);
     expect(css).toContain(".ew-atlas");
-    expect(css).toContain(".ew-theater-back");
-    expect(css).toContain(".ew-theater-field");
-    expect(css).toContain(".ew-theater-sky");
-    expect(css).toContain(".ew-theater-folio");
+    expect(css).toContain(".ew-desk-top");
     expect(css).toContain("mask-image: linear-gradient(90deg, transparent 0%, #000 32%)");
     expect(css).toContain(".ew-site-bar");
     expect(css).toContain(".ew-frame.is-home-frame");
