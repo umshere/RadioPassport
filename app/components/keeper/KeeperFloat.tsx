@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useKeeperStore } from "~/state/keeperStore";
 import { usePlayerStore } from "~/state/playerStore";
+import { Eyebrow } from "~/components/ui/Eyebrow";
+import { FlapText } from "./FlapText";
 import { Keeper } from "./Keeper";
 import {
   clampKeeperSpot,
@@ -82,6 +84,8 @@ function sameBounds(a: KeeperBounds, b: KeeperBounds) {
  */
 export function KeeperFloat({ view }: { view: KeeperView }) {
   const openSheet = useKeeperStore((state) => state.openSheet);
+  const murmur = useKeeperStore((state) => state.murmur);
+  const setMurmur = useKeeperStore((state) => state.setMurmur);
   const stationId = usePlayerStore((state) => state.nowPlaying?.uuid ?? null);
   const [spot, setSpot] = useState<KeeperSpot>(DEFAULT_KEEPER_SPOT);
   const [bounds, setBounds] = useState<KeeperBounds | null>(null);
@@ -143,7 +147,7 @@ export function KeeperFloat({ view }: { view: KeeperView }) {
   const peek = keeperPeeks({
     state: view.state,
     engaged: hovered || focused || Boolean(drag),
-    hopping,
+    hopping: hopping || Boolean(murmur),
   });
   const style: React.CSSProperties = drag
     ? {
@@ -236,6 +240,32 @@ export function KeeperFloat({ view }: { view: KeeperView }) {
           openSheet();
         }}
       />
+      {murmur && !view.sheetOpen ? (
+        <div
+          className="ew-keeper-murmur"
+          data-side={resting.side}
+          role="status"
+          onPointerDown={(event) => event.stopPropagation()}
+        >
+          <button
+            type="button"
+            className="ew-keeper-murmur-body"
+            aria-label={`The keeper, on ${murmur.topic}: ${murmur.text} Open the keeper for more.`}
+            onClick={() => openSheet()}
+          >
+            <Eyebrow as="span" tone="foil">{murmur.topic}</Eyebrow>
+            <FlapText key={murmur.id} className="ew-keeper-murmur-text" text={murmur.text} />
+          </button>
+          <button
+            type="button"
+            className="ew-keeper-murmur-x"
+            aria-label="Dismiss"
+            onClick={() => setMurmur(null)}
+          >
+            &times;
+          </button>
+        </div>
+      ) : null}
       <span id="ew-keeper-move-hint" className="sr-only">
         Drag the keeper, or use the arrow keys, to move it.
       </span>

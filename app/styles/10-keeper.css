@@ -287,3 +287,21 @@
 .ew-keeper-onair-row .ew-keeper-onair { min-width: 0; flex: 1 1 auto; }
 .ew-keeper-plate-art { flex: none; width: 56px; height: 56px; object-fit: cover; border: 1px solid var(--ew-foil-line); background: var(--ew-ink); }
 .ew-keeper-desk { margin-top: 14px; }
+
+/* ---- keeper murmurs — a line spoken unasked, beside the figure. */
+.ew-keeper-murmur { position: absolute; bottom: 10px; z-index: 3; width: min(252px, calc(100vw - 104px)); border: 1px solid var(--ew-foil-line); background: var(--ew-dock); animation: ew-murmur-in .32s var(--ew-settle) both; }
+.ew-keeper-float[data-side="right"] .ew-keeper-murmur { right: calc(100% + 8px); }
+.ew-keeper-float[data-side="left"] .ew-keeper-murmur { left: calc(100% + 8px); }
+.ew-keeper-murmur-body { display: grid; gap: 4px; width: 100%; min-height: 44px; padding: 10px 34px 10px 12px; border: 0; background: none; color: var(--ew-bone); text-align: left; cursor: pointer; }
+.ew-keeper-murmur-text { font: italic 15px/1.35 "Newsreader", serif; color: var(--ew-bone); }
+.ew-keeper-murmur-x { position: absolute; top: 0; right: 0; width: 34px; height: 34px; border: 0; background: none; color: var(--ew-dust); font: 18px/1 "Azeret Mono", monospace; cursor: pointer; }
+.ew-keeper-murmur-x:hover, .ew-keeper-murmur-body:hover .ew-keeper-murmur-text { color: var(--ew-foil); }
+@keyframes ew-murmur-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .ew-keeper-murmur { animation: none; } }
+
+/* ---- keeper sheet: worth knowing — facts the desk found about the place. */
+.ew-keeper-know { display: grid; gap: 10px; margin: 14px 0; padding: 12px 0; border-top: 1px solid var(--ew-rule); border-bottom: 1px solid var(--ew-rule); }
+.ew-keeper-know-item { display: grid; gap: 2px; }
+.ew-keeper-know-item p { margin: 0; font: italic 16px/1.4 "Newsreader", serif; color: var(--ew-bone); }
+.ew-keeper-know-wait { margin: 0; font: italic 15px/1.4 "Newsreader", serif; color: var(--ew-dust); }
+.ew-keeper-hush { margin-top: 10px; min-height: 44px; }

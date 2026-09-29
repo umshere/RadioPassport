@@ -65,6 +65,9 @@ export type KeeperStateInput = {
   /** Hour of day at the station, 0–23; null when the station has no coordinates. */
   localHour: number | null;
   delight: boolean;
+  /** The keeper is fetching a fact to tell, or telling one unasked. */
+  reading?: boolean;
+  murmuring?: boolean;
 };
 
 /**
@@ -77,6 +80,8 @@ export function deriveKeeperState(input: KeeperStateInput): KeeperState {
   if (input.exchange === "thinking") return "thinking";
   if (input.exchange === "speaking") return "speaking";
   if (input.delight) return "delight";
+  if (input.reading && !input.sheetOpen) return "thinking";
+  if (input.murmuring && !input.sheetOpen) return "speaking";
   if (input.sheetOpen) return input.typing ? "listening" : "idle";
   if (isDeepNight(input.localHour)) return "sleeping";
   return "idle";

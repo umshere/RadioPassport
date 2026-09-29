@@ -6,10 +6,13 @@ import { FlipBoard } from "~/components/radio-passport/FlipBoard";
 import { Button, ButtonLink, Chip } from "~/components/ui/Button";
 import { markArtworkUrlFailed } from "~/utils/stations";
 import { useKeeperStore } from "~/state/keeperStore";
+import { usePlayerStore } from "~/state/playerStore";
 import type { SolarHour } from "~/utils/localTime";
 import { FlapText } from "./FlapText";
 import { Keeper } from "./Keeper";
 import { askKeeper } from "./keeperClient";
+import { readKeeperFact } from "./keeperFactClient";
+import { planMurmurs } from "./keeperMurmur";
 import {
   answerLocally,
   keeperOpeningLine,
@@ -98,6 +101,13 @@ export function KeeperSheet({ view }: { view: KeeperView & { facts: KeeperFacts 
   const setTyping = useKeeperStore((state) => state.setTyping);
   const setExchange = useKeeperStore((state) => state.setExchange);
   const requestHour = useKeeperStore((state) => state.requestHour);
+  const factLog = useKeeperStore((state) => state.factLog);
+  const reading = useKeeperStore((state) => state.reading);
+  const hushed = useKeeperStore((state) => state.hushed);
+  const setHushed = useKeeperStore((state) => state.setHushed);
+  const stationId = usePlayerStore((state) => state.nowPlaying?.uuid ?? null);
+  const entries = stationId && factLog.stationId === stationId ? factLog.entries : [];
+  const topicSteps = planMurmurs(facts).flatMap((step) => (step.type === "fact" ? [step] : [])).slice(0, 3);
   const sheetRef = useRef<HTMLElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const timers = useRef<number[]>([]);
@@ -130,6 +140,18 @@ export function KeeperSheet({ view }: { view: KeeperView & { facts: KeeperFacts 
     window.addEventListener("resize", update);
     return () => window.removeEventListener("resize", update);
   }, []);
+
+  // Opened with nothing to say yet? Read up on the place and the country now,
+  // so the sheet is never a dead end.
+  useEffect(() => {
+    if (!askEnabled || !stationId) return;
+    const held = useKeeperStore.getState().factLog;
+    if (held.stationId === stationId && held.entries.length >= 2) return;
+    for (const step of planMurmurs(facts)) {
+      if (step.type === "fact") void readKeeperFact(stationId, step.kind, step.name);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [askEnabled, stationId]);
 
   const close = useCallback(() => {
     turn.current += 1;
@@ -209,6 +231,13 @@ export function KeeperSheet({ view }: { view: KeeperView & { facts: KeeperFacts 
     [close, location.pathname, navigate, requestHour],
   );
 
+  /** A dead end ("no titles") never ends the exchange: offer what the desk knows. */
+  const withPivot = (text: string, intent: string) => {
+    if (facts.track || (intent !== "track" && intent !== "artist")) return text;
+    const pivot = entries[0];
+    return pivot ? `${text} While you wait: ${pivot.text}` : text;
+  };
+
   const onChip = (question: KeeperQuestion) => {
     if (question.intent === "hour_hop" && question.hour) {
       hopTo(question.hour);
@@ -220,16 +249,11 @@ export function KeeperSheet({ view }: { view: KeeperView & { facts: KeeperFacts 
     setExchange("thinking");
     later(() => {
       if (turn.current !== mine) return;
-      speak(question.label, answerLocally(question.intent, facts).text);
+      speak(question.label, withPivot(answerLocally(question.intent, facts).text, question.intent));
     }, THINK_MS);
   };
 
-  const onAsk = async (event: React.FormEvent) => {
-    event.preventDefault();
-    const question = draft.trim().slice(0, KEEPER_QUESTION_MAX);
-    if (!question) return;
-    setDraft("");
-    setTyping(false);
+  const ask = async (question: string) => {
     turn.current += 1;
     const mine = turn.current;
     if (!askEnabled) {
@@ -247,8 +271,18 @@ export function KeeperSheet({ view }: { view: KeeperView & { facts: KeeperFacts 
       });
       return;
     }
-    const local = answerLocally(ruleClassify(question), facts);
-    speak(question, local.text, local.action?.hour);
+    const intent = ruleClassify(question);
+    const local = answerLocally(intent, facts);
+    speak(question, withPivot(local.text, intent), local.action?.hour);
+  };
+
+  const onAsk = async (event: React.FormEvent) => {
+    event.preventDefault();
+    const question = draft.trim().slice(0, KEEPER_QUESTION_MAX);
+    if (!question) return;
+    setDraft("");
+    setTyping(false);
+    await ask(question);
   };
 
   const chips = suggestedQuestions(facts);
@@ -353,6 +387,25 @@ export function KeeperSheet({ view }: { view: KeeperView & { facts: KeeperFacts 
               </span>
             </p>
           </div>
+          {entries.length || (reading && askEnabled) ? (
+            <section className="ew-keeper-know" aria-label="Worth knowing">
+              <Eyebrow tone="foil">Worth knowing</Eyebrow>
+              {entries.slice(-3).map((entry) => (
+                <div key={`${entry.kind}:${entry.topic}`} className="ew-keeper-know-item">
+                  <Eyebrow as="span" tone="dust">{entry.topic}</Eyebrow>
+                  <p>{entry.text}</p>
+                </div>
+              ))}
+              {reading && entries.length < 3 ? (
+                <p className="ew-keeper-know-wait">Reading up on {facts.city || facts.station.country}&hellip;</p>
+              ) : null}
+              {entries.length ? (
+                <Eyebrow as="span" tone="dust" className="ew-keeper-basis">
+                  From general knowledge &mdash; not from the station
+                </Eyebrow>
+              ) : null}
+            </section>
+          ) : null}
           <dl className="ew-keeper-facts">
             {factRows(facts).map((row) => (
               <div key={row.label}>
@@ -395,6 +448,13 @@ export function KeeperSheet({ view }: { view: KeeperView & { facts: KeeperFacts 
                 {chip.label}
               </Chip>
             ))}
+            {askEnabled
+              ? topicSteps.map((step) => (
+                  <Chip key={`${step.kind}:${step.name}`} onClick={() => void ask(`Tell me about ${step.name}`)}>
+                    About {step.name}
+                  </Chip>
+                ))
+              : null}
           </div>
           <form className="ew-keeper-ask" onSubmit={onAsk}>
             <label htmlFor="ew-keeper-input" className="sr-only">
@@ -425,6 +485,9 @@ export function KeeperSheet({ view }: { view: KeeperView & { facts: KeeperFacts 
               Ask
             </Button>
           </form>
+          <Button variant="text" className="ew-keeper-hush" aria-pressed={hushed} onClick={() => setHushed(!hushed)}>
+            {hushed ? "Let the keeper speak up again" : "Keep the keeper quiet"}
+          </Button>
           {/* SPA link: the audio bridge in root keeps playing. */}
           <ButtonLink to="/listen" variant="atlas" className="ew-keeper-desk" onClick={close}>
             Open the desk <span aria-hidden="true">&rarr;</span>

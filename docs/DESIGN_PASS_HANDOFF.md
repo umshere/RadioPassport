@@ -39,3 +39,6 @@ Not done: hour-rail local-hour highlight (needs a decision); UpNextRow stays a c
 
 ## Update 3
 Hour rail marks the listener's own hour (dotted underline, `data-home`); dock ink is opaque (page text ghosted through at 94%); test guards every raw `<button>` has `type`. Decisions: remaining raw buttons stay raw (each already carries its design-system class; `Button` variants only fit land/mono/frame/text/atlas/chip); `UpNextRow` stays a callout card.
+
+## Update 4 — the keeper does something
+Murmurs: while a station plays the keeper reads up (searching pose) then speaks a line in a bubble beside it every ~34s (first at 7s, max 8/station, stops when sheet opens/tab hidden/hushed). Local lines (hour, sun offset vs listener, stay time, language) alternate with grounded facts from `POST /api/keeper/fact` (Wikipedia snippet → model picks the vivid sentence, numbers must be in the snippet → fallback first sentence; own 60/h bucket; 30-min cache). Sheet gains "Worth knowing" (latest 3 facts, labelled general knowledge), "About <place/country/language/genre>" chips, a pivot after "no titles" answers, and a hush toggle (`elsewhere.keeper.hush`). Code: `keeperMurmur.ts`, `useKeeperMurmurs.ts`, `keeperFactClient.ts`, `keeperFact.server.ts`.

@@ -50,6 +50,8 @@ export function useKeeperView(): KeeperView {
   const typing = useKeeperStore((state) => state.typing);
   const exchange = useKeeperStore((state) => state.exchange);
   const delighting = useKeeperStore((state) => state.delighting);
+  const reading = useKeeperStore((state) => state.reading);
+  const murmuring = useKeeperStore((state) => Boolean(state.murmur));
   const now = useMinute();
   const station = hydrated ? nowPlaying : null;
   const room = roomForStation(storedRoom, station?.uuid);
@@ -74,6 +76,8 @@ export function useKeeperView(): KeeperView {
     exchange,
     localHour: facts?.hour?.localHour ?? null,
     delight: delighting,
+    reading,
+    murmuring,
   });
   return {
     present: playing,
