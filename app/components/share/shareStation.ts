@@ -1,43 +1,115 @@
 import type { Station } from "~/types/radio";
 import { VOICE } from "~/components/keeper/keeperVoice";
 import { logUsage } from "~/utils/usage";
+import { useTicketStore } from "~/state/ticketStore";
+import { ticketPagePath, ticketPlace } from "./ticketModel";
 
 export const TUNE_PARAM = "tune";
+/** Marks an arrival that came through a ticket page, for the tune_join count only. */
+export const TUNE_FROM_PARAM = "from";
 
-/** A link that lands a friend on this station, ready to play. */
-export function tuneLink(station: Pick<Station, "uuid">, origin = "https://elsewheremusic.com") {
-  return `${origin}/?${TUNE_PARAM}=${encodeURIComponent(station.uuid)}`;
+export const SITE_ORIGIN = "https://elsewheremusic.com";
+
+export type ShareableStation = Pick<Station, "uuid" | "name" | "city" | "country"> &
+  Partial<Pick<Station, "state" | "longitude">>;
+
+/**
+ * The link a friend gets: the station's ticket page. It carries a real link
+ * preview (the ticket image) and hands the friend on to `/?tune=<uuid>`, which
+ * keeps working forever for links already out in the world.
+ */
+export function tuneLink(station: Pick<Station, "uuid">, origin = SITE_ORIGIN) {
+  return `${origin}${ticketPagePath(station.uuid)}`;
 }
 
-export function shareCopy(station: Pick<Station, "name" | "city" | "country">, clock?: string | null) {
-  const place = station.city || station.country || "somewhere else";
+/** Where the ticket page hands a friend on to: the arrival card on home. */
+export function tuneLandingPath(uuid: string, from?: "ticket") {
+  const query = new URLSearchParams({ [TUNE_PARAM]: uuid });
+  if (from) query.set(TUNE_FROM_PARAM, from);
+  return `/?${query.toString()}`;
+}
+
+export function shareCopy(
+  station: Pick<Station, "name" | "city" | "country"> & Partial<Pick<Station, "state">>,
+  clock?: string | null,
+) {
+  const place = ticketPlace(station);
   return {
     title: `${station.name} · ${place}`,
     text: VOICE.shareText(place, clock),
   };
 }
 
-export type ShareResult = "shared" | "copied" | "failed";
+export type ShareResult = "shared" | "copied" | "cancelled" | "failed" | "opened";
 
-/** The phone's share sheet where there is one, else the clipboard. */
-export async function shareStation(
-  station: Pick<Station, "uuid" | "name" | "city" | "country">,
-  clock?: string | null,
-): Promise<ShareResult> {
-  const url = tuneLink(station, typeof window !== "undefined" ? window.location.origin : undefined);
-  const { title, text } = shareCopy(station, clock);
-  logUsage("station_share");
+function currentOrigin() {
+  return typeof window !== "undefined" && window.location?.origin ? window.location.origin : undefined;
+}
+
+/** The phone's share sheet can take the ticket itself as a picture. */
+export function canShareFile(file: File | null | undefined) {
+  if (!file || typeof navigator === "undefined") return false;
+  if (typeof navigator.share !== "function" || typeof navigator.canShare !== "function") return false;
   try {
-    if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
-      await navigator.share({ title, text, url });
-      return "shared";
-    }
-  } catch (error) {
-    // The listener closed the share sheet: nothing to do, nothing failed.
-    if (error instanceof DOMException && error.name === "AbortError") return "failed";
+    return navigator.canShare({ files: [file] });
+  } catch {
+    return false;
   }
+}
+
+/**
+ * Every share control's entry point: open the ticket sheet, where the listener
+ * sees the ticket before it goes anywhere. Nothing is sent from here.
+ */
+export async function shareStation(station: ShareableStation, clock?: string | null): Promise<ShareResult> {
+  useTicketStore.getState().open(station, clock ?? null);
+  logUsage("ticket_open");
+  return "opened";
+}
+
+/**
+ * Send the ticket: the share sheet with the ticket picture attached where the
+ * phone allows files, else the sheet with the link, else the clipboard. The
+ * picture must already be in hand (a File): fetching it after the tap would
+ * spend the tap, and Safari refuses a share sheet that is not a direct answer
+ * to one.
+ */
+export async function sendTicket(
+  station: ShareableStation,
+  clock?: string | null,
+  file?: File | null,
+): Promise<ShareResult> {
+  const url = tuneLink(station, currentOrigin());
+  const { title, text } = shareCopy(station, clock);
+  if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
+    try {
+      if (canShareFile(file)) {
+        // Some share targets drop `url` when files ride along, so the link travels in the text.
+        await navigator.share({ files: [file!], title, text: `${text} ${url}` });
+      } else {
+        await navigator.share({ title, text, url });
+      }
+      logUsage("ticket_share");
+      return "shared";
+    } catch (error) {
+      // The listener closed the share sheet: nothing to do, nothing failed.
+      if (error instanceof DOMException && error.name === "AbortError") return "cancelled";
+    }
+  }
+  return copyTicketLink(station, clock, { withText: true });
+}
+
+/** Copy the ticket link (optionally with the keeper's line in front of it). */
+export async function copyTicketLink(
+  station: ShareableStation,
+  clock?: string | null,
+  { withText = false }: { withText?: boolean } = {},
+): Promise<ShareResult> {
+  const url = tuneLink(station, currentOrigin());
+  const { text } = shareCopy(station, clock);
   try {
-    await navigator.clipboard.writeText(`${text} ${url}`);
+    await navigator.clipboard.writeText(withText ? `${text} ${url}` : url);
+    logUsage("ticket_copy");
     return "copied";
   } catch {
     return "failed";

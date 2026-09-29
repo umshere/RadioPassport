@@ -1,6 +1,7 @@
 /**
- * Anonymous usage counters. A name only — no id, no station, no text. The
- * server writes one log line per beacon; counting happens in the log drain.
+ * Anonymous usage counters. A name only (plus, for a few, where it came
+ * from) — no id, no station, no text. The server writes one log line per
+ * beacon; counting happens in the log drain.
  */
 export const USAGE_EVENTS = [
   "keeper_open",
@@ -8,13 +9,21 @@ export const USAGE_EVENTS = [
   "desk_view",
   "station_share",
   "tune_join",
+  "ticket_open",
+  "ticket_share",
+  "ticket_copy",
+  "ticket_save",
 ] as const;
 export type UsageEvent = (typeof USAGE_EVENTS)[number];
 
-export function logUsage(event: UsageEvent) {
+/** Where an event came from, when that is the whole point of counting it. */
+export const USAGE_SOURCES = ["ticket", "link"] as const;
+export type UsageSource = (typeof USAGE_SOURCES)[number];
+
+export function logUsage(event: UsageEvent, source?: UsageSource) {
   try {
     if (typeof navigator === "undefined") return;
-    const body = JSON.stringify({ event });
+    const body = JSON.stringify(source ? { event, source } : { event });
     if (navigator.sendBeacon) {
       navigator.sendBeacon("/api/usage", new Blob([body], { type: "application/json" }));
     }

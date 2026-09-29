@@ -9,3 +9,52 @@
 /* Share lives in the header whenever a station is loaded — never hidden. */
 .ew-site-share { display: inline-grid; place-items: center; width: 44px; height: 44px; border: 1px solid var(--ew-foil-line); background: none; color: var(--ew-foil); cursor: pointer; }
 .ew-site-share:hover { border-color: var(--ew-foil); }
+
+/* ---- the ticket sheet — "Your ticket", seen before it is sent.
+   Flex columns only (WebKit sizes scrolling grid items badly); square edges;
+   44–48px controls. A bottom sheet on phones, a centred card from 640px. */
+.ew-ticket-layer { position: fixed; inset: 0; z-index: 150; display: flex; flex-direction: column; justify-content: flex-end; align-items: stretch; padding: 0 16px; padding-top: calc(12px + env(safe-area-inset-top, 0px)); }
+.ew-ticket-scrim { position: absolute; inset: 0; background: rgba(8, 7, 5, .72); }
+.ew-ticket { position: relative; display: flex; flex-direction: column; gap: 12px; width: 100%; max-width: 560px; max-height: 100%; margin-inline: auto; overflow-y: auto; overscroll-behavior: contain; padding: 16px 16px calc(16px + env(safe-area-inset-bottom, 0px)); border: 1px solid var(--ew-foil-line); border-bottom: 0; border-radius: 0; background: var(--ew-dock); color: var(--ew-bone); animation: ew-ticket-in .34s var(--ew-settle) both; }
+.ew-ticket > * { flex: none; }
+.ew-ticket-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.ew-ticket-title { margin: 0; font: italic 400 26px/1.1 "Newsreader", serif; color: var(--ew-bone); }
+.ew-ticket-close { display: inline-grid; place-items: center; width: 44px; height: 44px; margin-right: -8px; border: 1px solid transparent; border-radius: 0; background: none; color: var(--ew-dust); cursor: pointer; }
+.ew-ticket-close:hover { color: var(--ew-bone); border-color: var(--ew-foil-line); }
+.ew-ticket-lead { margin: -4px 0 0; font: 400 14px/1.4 "Schibsted Grotesk", sans-serif; color: var(--ew-dust); }
+.ew-ticket-shapes { display: flex; gap: 0; border: 1px solid var(--ew-foil-line); align-self: flex-start; }
+.ew-ticket-shape { min-width: 88px; min-height: 44px; padding: 0 16px; border: 0; border-radius: 0; background: none; color: var(--ew-dust); font: 500 11px/1 "Azeret Mono", ui-monospace, monospace; letter-spacing: .16em; text-transform: uppercase; cursor: pointer; }
+.ew-ticket-shape + .ew-ticket-shape { border-left: 1px solid var(--ew-foil-line); }
+.ew-ticket-shape[aria-pressed="true"] { background: var(--ew-foil-wash-strong); color: var(--ew-bone); }
+.ew-ticket-figure { position: relative; display: flex; align-items: center; justify-content: center; width: 100%; margin: 0; aspect-ratio: 1200 / 630; border: 1px solid var(--ew-passport-paper-edge); border-radius: 0; background: var(--ew-passport-paper); overflow: hidden; }
+.ew-ticket-figure[data-format="story"] { aspect-ratio: 1080 / 1350; width: min(100%, calc(min(42svh, 420px) * .8)); margin-inline: auto; background: var(--ew-ink); }
+.ew-ticket-figure img { display: block; width: 100%; height: 100%; object-fit: contain; opacity: 0; transition: opacity .24s ease; }
+.ew-ticket-figure[data-ready] img { opacity: 1; }
+.ew-ticket-printing { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 16px; font: italic 400 16px/1.3 "Newsreader", serif; color: var(--ew-postcard-ink); text-align: center; }
+.ew-ticket-figure[data-format="story"] .ew-ticket-printing { color: var(--ew-dust); }
+.ew-ticket-message { margin: 0; font: 400 14px/1.45 "Schibsted Grotesk", sans-serif; color: var(--ew-bone); overflow-wrap: anywhere; }
+.ew-ticket-link { font: 400 12px/1.45 "Azeret Mono", ui-monospace, monospace; color: var(--ew-dust); user-select: all; -webkit-user-select: all; }
+.ew-ticket-actions { display: flex; flex-direction: column; gap: 8px; }
+.ew-ticket-send { display: flex; align-items: center; justify-content: center; min-height: 48px; padding: 0 16px; border: 1px solid var(--ew-lacquer); border-radius: 0; background: var(--ew-lacquer); color: var(--ew-on-lacquer); font: 500 13px/1 "Azeret Mono", ui-monospace, monospace; letter-spacing: .16em; text-transform: uppercase; cursor: pointer; }
+.ew-ticket-send:hover { filter: brightness(1.08); }
+.ew-ticket-send:disabled { opacity: .7; cursor: progress; }
+.ew-ticket-row { display: flex; gap: 8px; }
+.ew-ticket-act { flex: 1 1 0; min-width: 0; min-height: 44px; padding: 0 12px; border: 1px solid var(--ew-foil-line); border-radius: 0; background: none; color: var(--ew-bone); font: 500 11px/1.2 "Azeret Mono", ui-monospace, monospace; letter-spacing: .14em; text-transform: uppercase; cursor: pointer; }
+.ew-ticket-act:hover { border-color: var(--ew-foil); }
+.ew-ticket-status { min-height: 1.4em; margin: 0; font: italic 400 15px/1.4 "Newsreader", serif; color: var(--ew-foil); }
+.ew-ticket :is(button, a):focus-visible { outline: 2px solid var(--ew-foil); outline-offset: 2px; }
+.ew-site-share:focus-visible { outline: 2px solid var(--ew-foil); outline-offset: 2px; }
+@keyframes ew-ticket-in { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+@media (min-width: 640px) {
+  .ew-ticket-layer { justify-content: center; padding: 24px; }
+  .ew-ticket { padding: 20px 24px 20px; border-bottom: 1px solid var(--ew-foil-line); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ew-ticket { animation: none; }
+  .ew-ticket-figure img { transition: none; }
+}
+
+/* ---- /t/<uuid> — the ticket page a friend opens, for the moment before the hand-off. */
+.ew-ticket-page { display: flex; flex-direction: column; align-items: center; gap: 16px; max-width: 720px; margin: 0 auto; padding: 32px 16px 48px; text-align: center; }
+.ew-ticket-page-img { display: block; width: 100%; height: auto; border: 1px solid var(--ew-passport-paper-edge); border-radius: 0; }
+.ew-ticket-page-go { display: inline-flex; align-items: center; justify-content: center; min-height: 48px; padding: 0 24px; border: 1px solid var(--ew-lacquer); border-radius: 0; background: var(--ew-lacquer); color: var(--ew-on-lacquer); font: 500 13px/1 "Azeret Mono", ui-monospace, monospace; letter-spacing: .16em; text-transform: uppercase; text-decoration: none; }

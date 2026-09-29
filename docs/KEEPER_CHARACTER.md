@@ -20,5 +20,7 @@ Lands you ("Landed in Lagos. Papers in order."), reads up and tells one thing ev
 ## Where the words live
 `app/components/keeper/keeperVoice.ts` (fixed strings), `keeperFacts.ts` (answers, chips, opening line), `keeperMurmur.ts` (unasked lines), and the three system prompts in `app/services/keeper/`. Change the character there, in one voice.
 
+Tickets (what a listener sends a friend) have their own lines in `app/components/share/ticketVoice.ts`; see `docs/TICKETS.md`.
+
 ## As Elsewhere's avatar
 He is the brand's face: "You are not here." → "Land here." The pixel clerk at the desk, stamping. Candidate campaign line: **"Your papers, please."** (15 seconds: the clerk stamps a passport at night; the stamp lands on a city; a station starts.) Others: "Somewhere it's morning." / "Get lost. Land somewhere."

@@ -24,6 +24,7 @@
         "@remix-run/node": "2.16.7",
         "@remix-run/react": "2.16.7",
         "@remix-run/serve": "2.16.7",
+        "@resvg/resvg-js": "^2.6.2",
         "@tabler/icons-react": "^2.47.0",
         "@vercel/remix": "2.16.7",
         "framer-motion": "^12.23.24",
@@ -32,6 +33,7 @@
         "react-country-flag": "^3.0.6",
         "react-dom": "^18.2.0",
         "react-swipeable": "^7.0.2",
+        "satori": "^0.18.4",
         "three": "^0.169.0"
     },
     "devDependencies": {
