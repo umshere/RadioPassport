@@ -121,16 +121,19 @@
 }
 .ew-flap-line.is-clock .ew-flap::after { background: var(--ew-rule); }
 .ew-sky-place {
+  position: relative;
+  z-index: 1;
   margin: 0;
+  padding-top: .1em;
   max-width: 100%;
-  font: italic 400 clamp(52px, 18cqi, 124px)/.9 "Newsreader", "Iowan Old Style", serif;
+  font: italic 400 clamp(52px, 18cqi, 124px)/.92 "Newsreader", "Iowan Old Style", serif;
   letter-spacing: -.035em;
   overflow-wrap: anywhere;
   hyphens: auto;
   text-wrap: balance;
   color: var(--ew-bone);
 }
-.ew-sky-place.is-quiet { font-size: clamp(40px, 12cqi, 84px); line-height: .98; }
+.ew-sky-place.is-quiet { font-size: clamp(40px, 12cqi, 84px); line-height: .98; padding-top: .06em; }
 .ew-sky-sub { display: flex; align-items: center; gap: 10px; margin: 0; font: 500 11px/1.4 "Azeret Mono", ui-monospace, monospace; letter-spacing: .14em; text-transform: uppercase; color: var(--ew-bone); opacity: .82; }
 .ew-sky-flag { flex: none; }
 .ew-sky-note { margin: 0; max-width: 34ch; font: italic 400 16px/1.4 "Newsreader", serif; color: var(--ew-dust); }
