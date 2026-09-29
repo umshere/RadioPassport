@@ -107,7 +107,19 @@ export function EnvLayer() {
     if (!ready || arrived) return;
     let second = 0;
     const first = requestAnimationFrame(() => {
-      second = requestAnimationFrame(() => setArrived(true));
+      second = requestAnimationFrame(() => {
+        setArrived(true);
+        // The bloom: the first light is bright and settles slowly into the page.
+        const root = rootRef.current;
+        if (root && typeof root.animate === "function" && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+          root.querySelectorAll<HTMLElement>(".ew-env-bloom").forEach((el) => {
+            el.animate(
+              [{ opacity: 1, offset: 0 }, { opacity: 1, offset: 0.14 }, { opacity: 0.25 }],
+              { duration: 5600, easing: "cubic-bezier(.3,0,.2,1)", fill: "none" }
+            );
+          });
+        }
+      });
     });
     return () => {
       cancelAnimationFrame(first);
@@ -225,6 +237,7 @@ export function EnvLayer() {
       className="ew-env"
       aria-hidden="true"
       data-hour={shown}
+      data-arrived={arrived || undefined}
       data-lite={lite}
       style={style}
     >
@@ -232,15 +245,19 @@ export function EnvLayer() {
       {ready && !saver ? (
         <div className="ew-env-rig">
           <span className="ew-env-layer is-far" data-gust="far">
+            <span className="ew-env-bloom">
             <span className="ew-env-breath">
               <img className="ew-env-img is-fleck" src="/env/fleck-far.webp" alt="" decoding="async" />
               <img className="ew-env-img is-shade" src="/env/shade-far.webp" alt="" decoding="async" />
             </span>
+            </span>
           </span>
           <span className="ew-env-layer is-near" data-gust="near">
+            <span className="ew-env-bloom">
             <span className="ew-env-breath">
               <img className="ew-env-img is-fleck" src="/env/fleck-near.webp" alt="" decoding="async" />
               <img className="ew-env-img is-shade" src="/env/shade-near.webp" alt="" decoding="async" />
+            </span>
             </span>
           </span>
         </div>
