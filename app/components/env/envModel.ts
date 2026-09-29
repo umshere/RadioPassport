@@ -87,3 +87,31 @@ export function envPageTilt(pathname: string): number {
   if (pathname === "/about") return -5;
   return 3;
 }
+
+/**
+ * The arrival swing: a much bigger, slower-to-die version of the gust. The light
+ * swings wide, overshoots, and settles: attack ~0.15s, decay tau 2.0s, one full
+ * swing every 2.8s, plus a small breath of scale on the first push.
+ */
+export function swingFrames(options: {
+  seconds: number;
+  turn: number;
+  push: number;
+  direction: 1 | -1;
+  steps?: number;
+}): Array<{ translate: string; rotate: string; scale: string }> {
+  const { seconds, turn, push, direction, steps = 40 } = options;
+  const frames: Array<{ translate: string; rotate: string; scale: string }> = [];
+  for (let i = 0; i <= steps; i++) {
+    const t = (i / steps) * seconds;
+    const env = (1 - Math.exp(-t / 0.15)) * Math.exp(-t / 2.0);
+    const sway = env * Math.cos((2 * Math.PI * t) / 2.8);
+    const swayLate = env * Math.cos((2 * Math.PI * (t - 0.25)) / 2.8);
+    frames.push({
+      translate: `${(direction * push * swayLate).toFixed(2)}px ${(push * 0.4 * sway).toFixed(2)}px`,
+      rotate: `${(direction * turn * sway).toFixed(3)}deg`,
+      scale: (1 + 0.05 * env).toFixed(4),
+    });
+  }
+  return frames;
+}

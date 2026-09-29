@@ -13,6 +13,7 @@ import {
   envNudge,
   envPageTilt,
   gustFrames,
+  swingFrames,
   type EnvHour,
 } from "./envModel";
 
@@ -37,6 +38,7 @@ export function EnvLayer() {
   const rootRef = useRef<HTMLDivElement>(null);
   const prevHour = useRef<EnvHour | null>(null);
   const gusts = useRef<Animation[]>([]);
+  const swings = useRef<Animation[]>([]);
 
   // The listener's own hour, refreshed every few minutes.
   useEffect(() => {
@@ -114,9 +116,27 @@ export function EnvLayer() {
         if (root && typeof root.animate === "function" && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
           root.querySelectorAll<HTMLElement>(".ew-env-bloom").forEach((el) => {
             el.animate(
-              [{ opacity: 1, offset: 0 }, { opacity: 1, offset: 0.14 }, { opacity: 0.25 }],
-              { duration: 5600, easing: "cubic-bezier(.3,0,.2,1)", fill: "none" }
+              [{ opacity: 1, offset: 0 }, { opacity: 1, offset: 0.1 }, { opacity: 0.1818 }],
+              { duration: 5200, easing: "cubic-bezier(.25,0,.2,1)", fill: "none" }
             );
+          });
+          // Swing the light wide and let it settle. Started a frame later so the
+          // hour change's own gust (which resets running ones) has already begun.
+          requestAnimationFrame(() => {
+            root.querySelectorAll<HTMLElement>("[data-gust]").forEach((layer) => {
+              const far = layer.dataset.gust === "far";
+              swings.current.push(
+                layer.animate(
+                  swingFrames({
+                    seconds: lite ? 5.2 : 6.4,
+                    turn: (lite ? 22 : 34) * (far ? 0.6 : 1),
+                    push: (lite ? 26 : 44) * (far ? 0.6 : 1),
+                    direction: GUST_BREEZE[hour].direction,
+                  }),
+                  { duration: (lite ? 5.2 : 6.4) * 1000, delay: far ? 120 : 0, easing: "linear", fill: "none", composite: "add" }
+                )
+              );
+            });
           });
         }
       });

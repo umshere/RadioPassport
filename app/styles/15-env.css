@@ -61,14 +61,14 @@
 }
 
 .ew-env-layer { position: absolute; inset: 0; display: block; }
-.ew-env-bloom { position: absolute; inset: 0; display: block; opacity: .25; }
+.ew-env-bloom { position: absolute; inset: 0; display: block; opacity: .1818; }
 .ew-env-breath { position: absolute; inset: 0; display: block; }
 /* Tilt parallax (phones): near leaves shift more than far ones. */
 .ew-env-layer.is-near .ew-env-breath { translate: calc(var(--env-px) * -16px) calc(var(--env-py) * -12px); }
 .ew-env-layer.is-far  .ew-env-breath { translate: calc(var(--env-px) * -7px) calc(var(--env-py) * -5px); }
 .ew-env-breath { transition: translate .16s linear; }
-.ew-env-layer.is-near { opacity: calc(var(--env-peak) * (1 - var(--env-far)) * var(--env-gain) * var(--env-mob) * var(--env-soft) * 4); }
-.ew-env-layer.is-far  { opacity: calc(var(--env-peak) * var(--env-far) * var(--env-gain) * var(--env-mob) * var(--env-soft) * 4); }
+.ew-env-layer.is-near { opacity: calc(var(--env-peak) * (1 - var(--env-far)) * var(--env-gain) * var(--env-mob) * var(--env-soft) * 5.5); }
+.ew-env-layer.is-far  { opacity: calc(var(--env-peak) * var(--env-far) * var(--env-gain) * var(--env-mob) * var(--env-soft) * 5.5); }
 .ew-env-layer { transition: opacity var(--env-dur) var(--env-ease); }
 
 .ew-env-img { position: absolute; inset: 0; width: 100%; height: 100%; display: none; max-width: none; }
@@ -114,10 +114,10 @@ html.ew-atmosphere-shift .ew-env * { transition: none !important; animation: non
   .ew-env-rig { left: calc(75% - 60vmax); top: calc(10% - 60vmax); }
   .ew-env-layer.is-far { display: none; }
   .ew-env { --env-mob: .85; }
-  .ew-env-layer.is-near { opacity: calc(var(--env-peak) * var(--env-gain) * var(--env-mob) * var(--env-soft) * 4); }
+  .ew-env-layer.is-near { opacity: calc(var(--env-peak) * var(--env-gain) * var(--env-mob) * var(--env-soft) * 5.5); }
 }
 .ew-env[data-lite] .ew-env-layer.is-far { display: none; }
-.ew-env[data-lite] .ew-env-layer.is-near { opacity: calc(var(--env-peak) * var(--env-gain) * var(--env-mob) * var(--env-soft) * 4); }
+.ew-env[data-lite] .ew-env-layer.is-near { opacity: calc(var(--env-peak) * var(--env-gain) * var(--env-mob) * var(--env-soft) * 5.5); }
 
 /* Reduced motion keeps the light, drops the drift and the gust. */
 @media (prefers-reduced-motion: reduce) {
