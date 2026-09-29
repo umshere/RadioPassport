@@ -31,7 +31,7 @@ export function ShareButton({
         }
       }}
     >
-      {VOICE.share} <span aria-hidden="true">&nearr;</span>
+      {VOICE.share} <span aria-hidden="true">↗</span>
     </Button>
   );
 }

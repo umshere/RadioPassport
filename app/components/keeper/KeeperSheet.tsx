@@ -1,4 +1,4 @@
-import { useLocation, useNavigate, useRouteLoaderData } from "@remix-run/react";
+import { Link, useLocation, useNavigate, useRouteLoaderData } from "@remix-run/react";
 import { Eyebrow } from "~/components/ui/Eyebrow";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { snapBoardSheet } from "~/components/radio-passport/BoardSheet";
@@ -7,7 +7,8 @@ import { Button, ButtonLink, Chip } from "~/components/ui/Button";
 import { markArtworkUrlFailed } from "~/utils/stations";
 import { useKeeperStore } from "~/state/keeperStore";
 import { usePlayerStore } from "~/state/playerStore";
-import { ShareButton } from "~/components/share/ShareButton";
+import { shareStation } from "~/components/share/shareStation";
+import { usePlayerNoticeStore } from "~/state/playerNoticeStore";
 import type { SolarHour } from "~/utils/localTime";
 import { FlapText } from "./FlapText";
 import { Keeper } from "./Keeper";
@@ -116,6 +117,8 @@ export function KeeperSheet({ view }: { view: KeeperView & { facts: KeeperFacts 
   const timers = useRef<number[]>([]);
   const turn = useRef(0);
   const [talk, setTalk] = useState<Talk | null>(null);
+  const [tab, setTab] = useState<"postcards" | "onair" | "station">("postcards");
+  const setNotice = usePlayerNoticeStore((state) => state.setNotice);
   const [draft, setDraft] = useState("");
   const [floor, setFloor] = useState(0);
   const [dragY, setDragY] = useState<number | null>(null);
@@ -167,7 +170,9 @@ export function KeeperSheet({ view }: { view: KeeperView & { facts: KeeperFacts 
     if (!sheet) return;
     const previous = document.activeElement as HTMLElement | null;
     const first =
-      sheet.querySelector<HTMLElement>(".ew-keeper-chips button") ??
+      // Not the input: focusing a text field would raise the phone keyboard
+      // the moment the sheet opens.
+      sheet.querySelector<HTMLElement>(".ew-keeper-close") ??
       sheet.querySelector<HTMLElement>(FOCUSABLE);
     first?.focus({ preventScroll: true });
     const onKey = (event: KeyboardEvent) => {
@@ -288,6 +293,13 @@ export function KeeperSheet({ view }: { view: KeeperView & { facts: KeeperFacts 
     await ask(question);
   };
 
+  const onShare = async () => {
+    if (!nowStation) return;
+    const clock = facts.hour ? spokenHour(facts.hour.clock, facts.hour.localHour) : null;
+    const result = await shareStation(nowStation, clock);
+    if (result === "copied") setNotice({ kind: "info", message: VOICE.shared, durationMs: 3200 });
+  };
+
   const chips = suggestedQuestions(facts);
   const opening = keeperOpeningLine(facts);
   const where = [facts.city || facts.station.country, facts.hour?.clock]
@@ -369,96 +381,7 @@ export function KeeperSheet({ view }: { view: KeeperView & { facts: KeeperFacts 
           </Button>
         </header>
         <div className="ew-keeper-body">
-          <div className="ew-keeper-onair-row">
-            {view.plate && !plateFailed ? (
-              <img
-                className="ew-keeper-plate-art"
-                src={view.plate}
-                alt=""
-                width={56}
-                height={56}
-                onError={() => {
-                  markArtworkUrlFailed(view.plate!);
-                  setPlateFailed(true);
-                }}
-              />
-            ) : null}
-            <p className="ew-keeper-onair">
-              <span className="ew-keeper-label">On air</span>
-              <span className={facts.track ? "ew-keeper-track" : "ew-keeper-notrack"}>
-                {keeperTrackLine(facts)}
-              </span>
-            </p>
-          </div>
-          {entries.length || (reading && askEnabled) ? (
-            <section className="ew-keeper-know" aria-label={VOICE.postcards(facts.city || facts.station.country)}>
-              <Eyebrow tone="foil">{VOICE.postcards(facts.city || facts.station.country)}</Eyebrow>
-              {entries.slice(-3).map((entry) => (
-                <div key={`${entry.kind}:${entry.topic}`} className="ew-keeper-know-item">
-                  <Eyebrow as="span" tone="dust">{entry.topic}</Eyebrow>
-                  <p>{entry.text}</p>
-                </div>
-              ))}
-              {reading && entries.length < 3 ? (
-                <p className="ew-keeper-know-wait">{VOICE.reading(facts.city || facts.station.country)}</p>
-              ) : null}
-              {entries.length ? (
-                <Eyebrow as="span" tone="dust" className="ew-keeper-basis">
-                  {VOICE.notebook}
-                </Eyebrow>
-              ) : null}
-            </section>
-          ) : null}
-          <dl className="ew-keeper-facts">
-            {factRows(facts).map((row) => (
-              <div key={row.label}>
-                <dt>{row.label}</dt>
-                <dd>{row.value}</dd>
-              </div>
-            ))}
-          </dl>
-          <div className="ew-keeper-talk" aria-live="polite">
-            {talk ? (
-              <>
-                <p className="ew-keeper-q">{talk.question}</p>
-                {talk.answer && talk.basis === "knowledge" ? (
-                  <Eyebrow as="span" tone="dust" className="ew-keeper-basis">
-                    {VOICE.notebook}
-                  </Eyebrow>
-                ) : null}
-                {talk.answer ? (
-                  <FlapText className="ew-keeper-a" text={talk.answer} />
-                ) : (
-                  <p className="ew-keeper-a is-pending">
-                    <span className="sr-only">The keeper is thinking.</span>
-                    <span aria-hidden="true">&hellip;</span>
-                  </p>
-                )}
-                {talk.answer && talk.stationLine ? (
-                  <p className="ew-keeper-station-line">{talk.stationLine}</p>
-                ) : null}
-                {talk.answer && talk.hop ? (
-                  <Chip className="ew-keeper-hop" onClick={() => hopTo(talk.hop!)}>
-                    Off we go &rarr;
-                  </Chip>
-                ) : null}
-              </>
-            ) : null}
-          </div>
-          <div className="ew-keeper-chips" role="group" aria-label="Ask the keeper">
-            {chips.map((chip) => (
-              <Chip key={chip.label} onClick={() => onChip(chip)}>
-                {chip.label}
-              </Chip>
-            ))}
-            {askEnabled
-              ? topicSteps.map((step) => (
-                  <Chip key={`${step.kind}:${step.name}`} onClick={() => void ask(VOICE.askAbout(step.name))}>
-                    {VOICE.askAbout(step.name)}
-                  </Chip>
-                ))
-              : null}
-          </div>
+          {/* 1 — Ask. The first thing on the sheet, not the last. */}
           <form className="ew-keeper-ask" onSubmit={onAsk}>
             <label htmlFor="ew-keeper-input" className="sr-only">
               Ask the desk a question
@@ -488,16 +411,159 @@ export function KeeperSheet({ view }: { view: KeeperView & { facts: KeeperFacts 
               Ask
             </Button>
           </form>
-          {nowStation ? (
-            <ShareButton station={nowStation} clock={facts.hour ? spokenHour(facts.hour.clock, facts.hour.localHour) : null} className="ew-keeper-share" />
-          ) : null}
-          <Button variant="text" className="ew-keeper-hush" aria-pressed={hushed} onClick={() => setHushed(!hushed)}>
-            {hushed ? VOICE.hushOff : VOICE.hushOn}
-          </Button>
-          {/* SPA link: the audio bridge in root keeps playing. */}
-          <ButtonLink to="/listen" variant="atlas" className="ew-keeper-desk" onClick={close}>
-            Open the desk <span aria-hidden="true">&rarr;</span>
-          </ButtonLink>
+          <div className="ew-keeper-chips" role="group" aria-label="Ask the keeper">
+            {chips.map((chip) => (
+              <Chip key={chip.label} onClick={() => onChip(chip)}>
+                {chip.label}
+              </Chip>
+            ))}
+            {askEnabled
+              ? topicSteps.map((step) => (
+                  <Chip key={`${step.kind}:${step.name}`} onClick={() => void ask(VOICE.askAbout(step.name))}>
+                    {VOICE.askAbout(step.name)}
+                  </Chip>
+                ))
+              : null}
+          </div>
+
+          {/* 2 — The answer lands right under the question. */}
+          <div className="ew-keeper-talk" aria-live="polite">
+            {talk ? (
+              <>
+                <p className="ew-keeper-q">{talk.question}</p>
+                {talk.answer && talk.basis === "knowledge" ? (
+                  <Eyebrow as="span" tone="dust" className="ew-keeper-basis">
+                    {VOICE.notebook}
+                  </Eyebrow>
+                ) : null}
+                {talk.answer ? (
+                  <FlapText className="ew-keeper-a" text={talk.answer} />
+                ) : (
+                  <p className="ew-keeper-a is-pending">
+                    <span className="sr-only">The keeper is thinking.</span>
+                    <span aria-hidden="true">&hellip;</span>
+                  </p>
+                )}
+                {talk.answer && talk.stationLine ? (
+                  <p className="ew-keeper-station-line">{talk.stationLine}</p>
+                ) : null}
+                {talk.answer && talk.hop ? (
+                  <Chip className="ew-keeper-hop" onClick={() => hopTo(talk.hop!)}>
+                    Off we go &rarr;
+                  </Chip>
+                ) : null}
+              </>
+            ) : null}
+          </div>
+
+          {/* 3 — One panel at a time: postcards, what is on air, the station. */}
+          <div className="ew-keeper-tabs" role="tablist" aria-label="The desk">
+            {(
+              [
+                ["postcards", VOICE.tabPostcards],
+                ["onair", VOICE.tabOnAir],
+                ["station", VOICE.tabStation],
+              ] as const
+            ).map(([id, label]) => (
+              <button
+                key={id}
+                type="button"
+                role="tab"
+                id={`ew-keeper-tab-${id}`}
+                aria-selected={tab === id}
+                aria-controls="ew-keeper-panel"
+                className="ew-keeper-tab"
+                onClick={() => setTab(id)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <div
+            className="ew-keeper-panel"
+            id="ew-keeper-panel"
+            role="tabpanel"
+            aria-labelledby={`ew-keeper-tab-${tab}`}
+          >
+            {tab === "postcards" ? (
+              <>
+                {entries.slice(-4).map((entry) => (
+                  <div key={`${entry.kind}:${entry.topic}`} className="ew-keeper-know-item">
+                    <Eyebrow as="span" tone="foil">{entry.topic}</Eyebrow>
+                    <p>{entry.text}</p>
+                  </div>
+                ))}
+                {reading && askEnabled && entries.length < 3 ? (
+                  <p className="ew-keeper-know-wait">{VOICE.reading(facts.city || facts.station.country)}</p>
+                ) : null}
+                {!entries.length && !reading ? (
+                  <p className="ew-keeper-know-wait">{VOICE.noPostcards(facts.city || facts.station.country)}</p>
+                ) : null}
+                {entries.length ? (
+                  <Eyebrow as="span" tone="dust" className="ew-keeper-basis">
+                    {VOICE.notebook}
+                  </Eyebrow>
+                ) : null}
+              </>
+            ) : null}
+            {tab === "onair" ? (
+              <div className="ew-keeper-onair-row">
+                {view.plate && !plateFailed ? (
+                  <img
+                    className="ew-keeper-plate-art"
+                    src={view.plate}
+                    alt=""
+                    width={56}
+                    height={56}
+                    onError={() => {
+                      markArtworkUrlFailed(view.plate!);
+                      setPlateFailed(true);
+                    }}
+                  />
+                ) : null}
+                <p className="ew-keeper-onair">
+                  <span className="ew-keeper-label">On air</span>
+                  <span className={facts.track ? "ew-keeper-track" : "ew-keeper-notrack"}>
+                    {keeperTrackLine(facts)}
+                  </span>
+                </p>
+              </div>
+            ) : null}
+            {tab === "station" ? (
+              <dl className="ew-keeper-facts">
+                {factRows(facts).map((row) => (
+                  <div key={row.label}>
+                    <dt>{row.label}</dt>
+                    <dd>{row.value}</dd>
+                  </div>
+                ))}
+              </dl>
+            ) : null}
+          </div>
+
+          {/* 4 — Three plain actions, each saying what it does. */}
+          <div className="ew-keeper-actions">
+            {nowStation ? (
+              <button type="button" className="ew-keeper-act" onClick={() => void onShare()}>
+                <span className="ew-keeper-act-main">{VOICE.actShare} <span aria-hidden="true">↗</span></span>
+                <span className="ew-keeper-act-sub">{VOICE.actShareSub}</span>
+              </button>
+            ) : null}
+            <button
+              type="button"
+              className="ew-keeper-act"
+              aria-pressed={!hushed}
+              onClick={() => setHushed(!hushed)}
+            >
+              <span className="ew-keeper-act-main">{hushed ? VOICE.actChatterOff : VOICE.actChatterOn}</span>
+              <span className="ew-keeper-act-sub">{hushed ? VOICE.actChatterOffSub : VOICE.actChatterOnSub}</span>
+            </button>
+            {/* SPA link: the audio bridge in root keeps playing. */}
+            <Link to="/listen" className="ew-keeper-act" onClick={close}>
+              <span className="ew-keeper-act-main">{VOICE.actDesk} <span aria-hidden="true">&rarr;</span></span>
+              <span className="ew-keeper-act-sub">{VOICE.actDeskSub}</span>
+            </Link>
+          </div>
         </div>
       </section>
     </div>

@@ -1,0 +1,4 @@
+/* ---- about: the Keeper's welcome. */
+.ew-about-host { display: flex; align-items: flex-end; gap: 14px; margin-top: 18px; }
+.ew-about-keeper { flex: none; width: 112px; height: 112px; object-fit: contain; }
+.ew-about-hello { position: relative; margin: 0 0 14px; padding: 10px 14px; border: 1px solid var(--ew-foil-line); background: var(--ew-dock); font: italic 17px/1.35 "Newsreader", serif; color: var(--ew-bone); }
