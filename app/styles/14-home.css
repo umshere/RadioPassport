@@ -1,0 +1,190 @@
+/* ---- The departures hall (home). Outside @layer on purpose (the purge
+   gremlin). Every colour is a token, so Day is the same page.
+   Structure: one scrolling flex column (never a grid on a scroll container:
+   iOS WebKit collapses it) with three bands: the sky (shared .ew-sky from the
+   desk), the gates (sticky under the header), the departures board. From
+   1100px of home the sky becomes a sticky left column. Container queries,
+   not viewport ones: the home sizes itself. Square system, no pills. */
+
+.ew-home {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+  container: home / inline-size;
+  padding: 0 0 calc(var(--home-floor, 0px) + 24px);
+  background: var(--ew-ink);
+  color: var(--ew-bone);
+  font-family: "Schibsted Grotesk", sans-serif;
+}
+.ew-home > * { flex: none; min-width: 0; }
+.ew-home-inner {
+  --desk-pad-l: max(16px, env(safe-area-inset-left, 0px));
+  --desk-pad-r: max(16px, env(safe-area-inset-right, 0px));
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.ew-home-inner > * { flex: none; min-width: 0; }
+.ew-home-main { display: flex; flex-direction: column; min-width: 0; }
+.ew-home-main > * { flex: none; min-width: 0; }
+
+/* ---- Band 1: the sky over the arrival city. */
+.ew-home-sky { min-height: 300px; }
+.ew-home-sky .ew-atmosphere--split { width: auto; }
+.ew-home-sky .ew-horizon-kicker { display: none; }
+.ew-home-city { margin: 0; min-width: 0; max-width: 100%; font-size: clamp(26px, min(12cqi, calc(92cqi / var(--chars, 8) / .74)), 84px); line-height: 1; }
+.ew-flap-line.is-city .ew-flap {
+  width: .68em;
+  height: 1.08em;
+  margin-left: .04em;
+  font-size: 1em;
+  border: 1px solid var(--ew-rule);
+  background: color-mix(in srgb, var(--ew-ink) 72%, transparent);
+  color: var(--ew-bone);
+}
+.ew-flap-line.is-city .ew-flap:first-child { margin-left: 0; }
+.ew-flap-line.is-city .ew-flap::after { background: var(--ew-rule); }
+.ew-home-sky-track { margin: 0; max-width: 40ch; font: 500 15px/1.35 "Schibsted Grotesk", sans-serif; color: var(--ew-bone); overflow-wrap: anywhere; }
+.ew-home-cta { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; min-height: 48px; margin-top: 4px; }
+.ew-home-cta .ew-land { margin-top: 0; }
+.ew-home-desk-link { min-height: 48px; }
+/* The keeper is a button here (he opens his sheet once you are aboard): the
+   button takes his desk size, not the 64px float box. */
+.ew-home-sky .ew-keeper-button.ew-sky-keeper { display: block; width: auto; height: auto; }
+/* A little smaller than on the desk, so the board stands in the first screen. */
+.ew-home-sky .ew-keeper[data-size="desk"] { --keeper-size: clamp(104px, 22cqi, 160px); }
+.ew-home-say { max-width: min(30ch, 100%); padding: 10px 12px 11px; }
+.ew-home-say .ew-sky-bubble-text { display: block; }
+/* Seeking: the sky folds to one flap line of the question. */
+.ew-home-sky[data-compact] { min-height: 140px; padding-bottom: 14px; }
+.ew-home-sky-seek { gap: 10px; }
+.ew-home-sky-query { margin: 0; min-width: 0; font-size: clamp(20px, 7cqi, 34px); line-height: 1; }
+.ew-home-sky-line { margin: 0; font: italic 400 16px/1.35 "Newsreader", "Iowan Old Style", serif; color: var(--ew-dust); }
+@container home (max-width: 1099px) {
+  .ew-home-sky[data-compact] .ew-sky-ground { display: none; }
+}
+
+/* ---- Band 2: the gates. The field is the shared .ew-gate-field (11-desk). */
+.ew-gates {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px var(--desk-pad-r) 10px var(--desk-pad-l);
+  border-bottom: 1px solid var(--ew-rule);
+  background: var(--ew-ink);
+}
+.ew-gates > * { flex: none; min-width: 0; }
+.ew-gates-seek { display: flex; min-width: 0; }
+.ew-gates-seek .ew-theater-rail .rp-intent { width: 100%; max-width: none; }
+.ew-gates-row { display: flex; align-items: stretch; gap: 8px; min-width: 0; }
+.ew-gates .ew-hours { display: flex; flex: 1 1 auto; min-width: 0; max-width: none; min-height: 48px; padding: 0; border: 1px solid var(--ew-rule); border-radius: 0; background: var(--ew-ink); }
+.ew-gates .ew-hours::after, .ew-gates .ew-hours-cursor, .ew-gates .ew-hour-dot { display: none; }
+.ew-gates .ew-hour { flex: 1 1 0%; justify-content: center; gap: 4px; min-width: 0; min-height: 46px; padding: 4px 2px; border-right: 1px solid var(--ew-rule); letter-spacing: .1em; }
+.ew-gates .ew-hour:last-of-type { border-right: 0; }
+.ew-gates .ew-hour-icon { width: 16px; height: 16px; }
+.ew-gates .ew-hour.on { background: color-mix(in srgb, var(--hour-hue) 14%, var(--ew-ink)); }
+.ew-gates .ew-hour.on::before { content: ""; position: absolute; right: 0; bottom: 0; left: 0; height: 2px; background: var(--hour-hue); }
+.ew-gates .ew-hour:focus-visible { outline-offset: -2px; }
+.ew-gates-atlas { flex: none; justify-content: center; min-height: 48px; margin: 0; padding: 0 14px; border: 1px solid var(--ew-foil-line); }
+.ew-gates-atlas:focus-visible { outline: 1px solid var(--ew-foil); outline-offset: -2px; }
+
+/* ---- Band 3: the departures board (the desk's .ew-board, inline). */
+.ew-home-board { display: flex; flex-direction: column; min-width: 0; padding: 16px var(--desk-pad-r) 8px var(--desk-pad-l); }
+.ew-home-board > * { flex: none; min-width: 0; }
+.ew-home-board-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; min-height: 44px; margin-bottom: 8px; }
+.ew-home-board-title { display: flex; flex: 1 1 100%; align-items: center; gap: 10px; min-width: 0; margin: 0; }
+.ew-flap-line.is-heading .ew-flap { width: .72em; height: 1.35em; font-size: 15px; color: var(--ew-foil); }
+.ew-home-live { flex: none; width: 7px; height: 7px; background: var(--ew-ether); }
+.ew-home-board-count { flex: 1 1 auto; min-width: 0; font: 500 10px/1.3 "Azeret Mono", ui-monospace, monospace; letter-spacing: .14em; text-transform: uppercase; color: var(--ew-dust); overflow-wrap: anywhere; }
+.ew-home-fresh { display: inline-flex; flex: none; align-items: center; gap: 8px; min-height: 44px; padding: 0 12px; border: 1px solid var(--ew-rule); background: none; color: var(--ew-dust); font: 500 10px/1 "Azeret Mono", ui-monospace, monospace; letter-spacing: .12em; text-transform: uppercase; cursor: pointer; }
+.ew-home-fresh:hover { border-color: var(--ew-foil-line); color: var(--ew-foil); }
+.ew-home-dep { display: flex; align-items: stretch; min-width: 0; border-bottom: 1px solid var(--ew-rule); }
+.ew-home-dep .ew-board-row { flex: 1 1 auto; min-width: 0; min-height: 60px; padding: 8px 8px 8px 0; border-bottom: 0; }
+.ew-home-dep .ew-board-go { display: none; }
+.ew-home-dep[data-live] { background: color-mix(in srgb, var(--ew-ether) 8%, transparent); }
+.ew-home-dep[data-live] .ew-board-dest b, .ew-home-dep[data-live] .ew-board-go { color: var(--ew-ether); }
+.ew-home-dep .ew-board-row.is-pending, .ew-home-dep .ew-board-row.is-empty { cursor: default; }
+.ew-home-dep .ew-board-row:focus-visible, .ew-home-heart:focus-visible { outline: 1px solid var(--ew-foil); outline-offset: -1px; }
+.ew-home-heart { display: grid; flex: none; place-items: center; width: 48px; min-height: 48px; padding: 0; border: 0; background: none; color: var(--ew-dust); cursor: pointer; }
+.ew-home-heart:hover { color: var(--ew-foil); }
+.ew-home-heart[aria-pressed="true"] { color: var(--ew-lacquer-text); }
+.ew-home-more { align-self: flex-start; min-height: 48px; margin-top: 12px; padding: 0 16px; border: 1px solid var(--ew-foil-line); background: none; color: var(--ew-foil); font: 500 10px/1 "Azeret Mono", ui-monospace, monospace; letter-spacing: .14em; text-transform: uppercase; cursor: pointer; }
+.ew-home-more:hover { color: var(--ew-bone); border-color: var(--ew-foil); }
+.ew-home-empty { display: flex; flex-direction: column; min-width: 0; }
+.ew-home-empty > * { flex: none; }
+.ew-home-empty-line { margin: 14px 0 10px; max-width: 40ch; font: italic 400 17px/1.4 "Newsreader", "Iowan Old Style", serif; color: var(--ew-bone); }
+.ew-home-empty-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.ew-home-action { min-height: 48px; padding: 0 16px; border: 1px solid var(--ew-rule); background: var(--ew-ink); color: var(--ew-bone); font: 500 10px/1 "Azeret Mono", ui-monospace, monospace; letter-spacing: .14em; text-transform: uppercase; cursor: pointer; }
+.ew-home-action:hover, .ew-home-action:focus-visible { border-color: var(--ew-foil-line); color: var(--ew-foil); }
+.ew-home-notice { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-bottom: 8px; }
+.ew-home-notice p { margin: 0; font: 400 13px/1.4 "Schibsted Grotesk", sans-serif; color: var(--ew-dust); }
+
+/* ---- Recent stamps: the last three, as postcards; they open the passport. */
+.ew-home-stamps { display: flex; flex-direction: column; min-width: 0; padding: 20px var(--desk-pad-r) 8px var(--desk-pad-l); }
+.ew-home-stamps > * { flex: none; min-width: 0; }
+.ew-home-stamps-list { display: flex; flex-direction: column; gap: 12px; margin: 0; padding: 0; list-style: none; }
+.ew-home-stamps-list > li { flex: none; min-width: 0; }
+.ew-home-stamp { display: block; width: 100%; min-height: 96px; font: inherit; text-align: left; cursor: pointer; }
+.ew-home-stamp:focus-visible { outline: 2px solid var(--ew-foil); outline-offset: 2px; }
+.ew-home-stamp .ew-postcard-topic { display: block; }
+.ew-home-stamp-city { display: block; font: italic 400 24px/1.1 "Newsreader", "Iowan Old Style", serif; color: var(--ew-postcard-ink); overflow-wrap: anywhere; }
+.ew-home-stamp-station { display: block; margin-top: 6px; font: 400 13px/1.3 "Schibsted Grotesk", sans-serif; color: var(--ew-postcard-ink); opacity: .75; overflow-wrap: anywhere; }
+
+/* ---- The quiet foot line: About lives here (and in the site bar on wider screens). */
+.ew-home-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 16px; margin-top: 24px; padding: 8px var(--desk-pad-r) 0 var(--desk-pad-l); border-top: 1px solid var(--ew-rule); font: 500 10px/1.3 "Azeret Mono", ui-monospace, monospace; letter-spacing: .14em; text-transform: uppercase; color: var(--ew-dust); }
+.ew-home-foot a { display: inline-flex; align-items: center; min-height: 44px; color: var(--ew-dust); text-decoration: none; }
+.ew-home-foot a:hover, .ew-home-foot a:focus-visible { color: var(--ew-foil); }
+.ew-site-room { display: none; }
+@media (min-width: 561px) {
+  .ew-site-bar .ew-site-room { display: inline-flex; align-items: center; min-height: 44px; padding: 0 8px; text-decoration: none; }
+  .ew-site-bar .ew-site-room:hover { color: var(--ew-foil); }
+}
+
+/* ---- Wider halls. */
+@container home (min-width: 700px) {
+  .ew-home-inner { --desk-pad-l: max(24px, env(safe-area-inset-left, 0px)); --desk-pad-r: max(24px, env(safe-area-inset-right, 0px)); }
+  .ew-home-sky { min-height: 360px; padding-top: 22px; }
+  .ew-gates { flex-direction: row; align-items: stretch; }
+  .ew-gates-seek, .ew-gates-row { flex: 1 1 0%; }
+  .ew-home-dep .ew-board-go { display: inline; padding-left: 8px; }
+  .ew-home-stamps-list { flex-direction: row; align-items: stretch; }
+  .ew-home-stamps-list > li { flex: 1 1 0%; }
+  .ew-home-stamp { height: 100%; }
+}
+@container home (min-width: 1100px) {
+  .ew-home-inner { flex-direction: row; align-items: flex-start; gap: 28px; padding: 24px var(--desk-pad-r) 0 var(--desk-pad-l); }
+  .ew-home-sky-col { flex: 0 0 clamp(380px, 38%, 520px); position: sticky; top: 24px; align-self: flex-start; }
+  .ew-home-main { flex: 1 1 0%; }
+  /* Fills the visible hall but never clips: the keeper stands whole. */
+  .ew-home-sky, .ew-home-sky[data-compact] { min-height: max(420px, calc(var(--home-h, 760px) - var(--home-floor, 0px) - 48px)); padding: 22px 24px 0; border: 1px solid var(--ew-foil-line); }
+  .ew-gates { flex-direction: column; padding-right: 0; padding-left: 0; }
+  .ew-home-board, .ew-home-stamps, .ew-home-foot { padding-right: 0; padding-left: 0; }
+}
+@container home (min-width: 1400px) {
+  .ew-gates { flex-direction: row; }
+}
+
+/* ---- Motion: stepped, like the character. Reduced motion stills it all. */
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes ew-home-spin { to { transform: rotate(360deg); } }
+  @keyframes ew-home-drop { from { clip-path: inset(0 0 100% 0); } to { clip-path: inset(0); } }
+  @keyframes ew-home-blink { 0%, 60% { opacity: 1; } 61%, 100% { opacity: .25; } }
+  .ew-home { scroll-behavior: smooth; }
+  .ew-home-fresh-icon { animation: ew-home-spin .48s steps(8, end); }
+  .ew-home-live { animation: ew-home-blink 1.6s steps(1, end) infinite; }
+  .ew-home-say { animation: ew-home-drop .24s steps(3, end) both; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ew-home *, .ew-home *::before, .ew-home *::after { animation: none !important; transition: none !important; }
+  .ew-home { scroll-behavior: auto; }
+}

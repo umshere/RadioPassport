@@ -124,8 +124,12 @@ describe("flip board", () => {
     expect(home).toContain("loadHomeBoard");
     // Rows are plain, readable type; the flip board is kept for the place name and overlay titles.
     expect(row).not.toContain("FlipBoard");
-    expect(home).toContain("Show fresh stations");
     expect(home).toContain("setShuffle");
+    const departures = readFileSync(
+      new URL("../../app/components/home/HomeDepartures.tsx", import.meta.url),
+      "utf8",
+    );
+    expect(departures).toContain("Show fresh stations");
     expect(css).toContain(".ew-flap-line");
     expect(css).toContain("@keyframes ew-flap-in");
     expect(css).toContain("prefers-reduced-motion: reduce");

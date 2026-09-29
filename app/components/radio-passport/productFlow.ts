@@ -31,7 +31,7 @@ export type FlowAction =
   | "atlas"
   | "country"
   | "play-station"
-  | "board-sheet"
+  | "departures"
   | "favorite"
   | "passport"
   | "replay-stamp"
@@ -53,7 +53,6 @@ export type FlowSurface =
   | "cover"
   | "header"
   | "dock"
-  | "globe"
   | "atlas"
   | "country"
   | "passport"
@@ -259,11 +258,19 @@ export const SURFACE_CONNECTIONS: SurfaceConnection[] = [
     keepsPlayback: false,
   },
   {
-    id: "board-sheet",
+    id: "departures-board",
     surface: "cover",
-    label: "Station board sheet grip",
+    label: "Departures board: more departures, fresh board",
     step: "tune",
-    action: "board-sheet",
+    action: "departures",
+    keepsPlayback: true,
+  },
+  {
+    id: "gate",
+    surface: "cover",
+    label: "Gates: the intent field, the hour gates, the Atlas door",
+    step: "intent",
+    action: "intent-catalog",
     keepsPlayback: true,
   },
   {
@@ -281,14 +288,6 @@ export const SURFACE_CONNECTIONS: SurfaceConnection[] = [
     step: "tune",
     action: "atlas",
     keepsPlayback: true,
-  },
-  {
-    id: "globe-dot",
-    surface: "globe",
-    label: "Globe city",
-    step: "land",
-    action: "play-station",
-    keepsPlayback: false,
   },
   {
     id: "atlas-country",

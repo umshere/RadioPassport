@@ -1,7 +1,7 @@
 import { Link, useRouteLoaderData } from "@remix-run/react";
 import { Eyebrow } from "~/components/ui/Eyebrow";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
-import { snapBoardSheet } from "~/components/radio-passport/BoardSheet";
+import { snapSheet } from "./sheetSnap";
 import { FlipBoard } from "~/components/radio-passport/FlipBoard";
 import { Button, ButtonLink, Chip } from "~/components/ui/Button";
 import { markArtworkUrlFailed } from "~/utils/stations";
@@ -250,7 +250,7 @@ export function KeeperSheet({ view }: { view: KeeperView & { facts: KeeperFacts 
             suppressGripClick.current = true;
             const travel = event.clientY - start.startY;
             const velocity = travel / Math.max(1, performance.now() - start.startT);
-            if (snapBoardSheet(travel, velocity, "open") === "peek") close();
+            if (snapSheet(travel, velocity, "open") === "peek") close();
           }}
           onPointerCancel={() => {
             drag.current = null;

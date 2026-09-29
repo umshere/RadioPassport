@@ -4,13 +4,6 @@
 @media (prefers-reduced-motion: reduce) {
 .ew-seek, .ew-seek-say { transition: none; }
 }
-/* Letter seek — the pill stands under the heading block, left-aligned with
-   the type. Top margin matches the track's step (1.15rem); the track and
-   up-next rows bring their own top margins, so no bottom margin here. The
-   rail gives up its bar flex so the pill sizes itself. */
-/* Home holds the shell open in its rail: a full-bleed capsule with the same
-   lens inset and foil border — the bar's own width rules still bound it. */
-.ew-home-seek .ew-seek.is-open { width: 100%; }
 
 /* Held for the length of a room swap (see applyAtmosphere). Unlayered so it
    outranks every transition it silences. */
@@ -239,13 +232,9 @@ html, body {
 :root[data-atmosphere="day"] { --ew-rule-2: rgba(26, 22, 18, 0.18); }
 .ew-band-nav { display: none; }
 .ew-horizon-kicker { display: none; }
-.ew-home-seek { flex: none; grid-column: 1 / -1; margin: 14px 32px 0; }
-.ew-home-seek .ew-theater-rail { width: 100%; min-height: 48px; }
-.ew-home-seek .ew-theater-rail .rp-intent { width: 100%; max-width: none; min-height: 48px; }
-.rp-stage { grid-template-rows: auto minmax(0, 1fr); }
 .ew-cover-strip { display: none; }
 @media (max-width: 960px) {
-.ew-band-nav.is-band { position: fixed; z-index: 41; right: 0; bottom: 0; left: 0; display: grid; grid-template-columns: repeat(4, 1fr); height: calc(44px + env(safe-area-inset-bottom, 0px)); padding-bottom: env(safe-area-inset-bottom, 0px); border-top: 1px solid var(--ew-rule); background: var(--ew-dock); transform: translateZ(0); }
+.ew-band-nav.is-band { position: fixed; z-index: 41; right: 0; bottom: 0; left: 0; display: grid; grid-template-columns: repeat(3, 1fr); height: calc(44px + env(safe-area-inset-bottom, 0px)); padding-bottom: env(safe-area-inset-bottom, 0px); border-top: 1px solid var(--ew-rule); background: var(--ew-dock); transform: translateZ(0); }
 /* Own compositing layer: mobile Safari has dropped this fixed band's paint
    (while keeping its hit-testing) whenever a neighboring fixed surface —
    the dock's old backdrop blur — pulled it through the wrong path. */
@@ -260,10 +249,6 @@ html, body {
 .ew-band-nav-slot.is-current { color: var(--ew-foil); box-shadow: inset 0 -1px 0 var(--ew-foil); }
 .ew-band-nav-slot.is-disabled { color: rgba(154,143,128,.4); cursor: default; pointer-events: none; }
 :root[data-atmosphere="day"] .ew-band-nav-slot.is-disabled { color: rgba(111,103,92,.4); }
-.ew-site-room { display: none; }
-.ew-home-seek { order: -2; margin: 14px 16px 0; }
-.ew-home-seek .rp-surprise { border: 0; border-left: 1px solid var(--ew-rule-2); min-height: 48px; padding: 0 12px; }
-.rp-globe-side { position: relative; top: auto; z-index: auto; }
 .ew-cover-strip { position: absolute; z-index: 1; top: 100%; right: 0; left: 0; display: flex; align-items: center; gap: 9px; height: 44px; padding: 0 16px; border-bottom: 1px solid var(--ew-rule); background: var(--ew-ink); opacity: 0; visibility: hidden; pointer-events: none; transition: opacity .18s ease, visibility 0s linear .18s; }
 /* The strip is a real child of the sticky site bar, so top: 100% docks it to
    the header's true bottom edge — no hardcoded 52px, no safe-area math, and
@@ -290,8 +275,6 @@ html, body {
 .ew-hours::after, .ew-hours-cursor { display: none; }
 .ew-hour { border-right: 1px solid var(--ew-rule); min-height: 44px; padding: 8px 0; }
 .ew-hour:last-of-type { border-right: 0; }
-.ew-horizon > .ew-atlas { display: none; }
-.rp-horizon-row { position: relative; top: auto; right: auto; left: auto; z-index: 4; width: 100%; min-height: 44px; margin: 0; }
 .ew-atmosphere--split { display: flex; width: 100%; min-height: 44px; justify-content: space-between; }
 .ew-horizon-kicker { display: inline-flex; align-items: center; min-height: 44px; color: var(--ew-dust); font: 500 10px/1 "Azeret Mono", monospace; letter-spacing: .16em; text-transform: uppercase; }
 .ew-atmosphere button { min-height: 44px; }
@@ -308,7 +291,6 @@ html, body {
 .ew-band-nav-slot { display: grid; place-items: center; min-height: 52px; border: 0; background: transparent; padding: 0 16px; color: var(--ew-dust); font: 500 11px/1 "Azeret Mono", monospace; letter-spacing: .18em; text-transform: uppercase; text-decoration: none; cursor: pointer; }
 .ew-band-nav-slot.is-current { color: var(--ew-foil); box-shadow: inset 0 -1px 0 var(--ew-foil); }
 .ew-band-nav-slot.is-disabled { color: rgba(154,143,128,.4); cursor: default; pointer-events: none; }
-.ew-site-room { display: none; }
 :root[data-atmosphere="day"] .ew-band-nav-slot { color: #665F55; }
 :root[data-atmosphere="day"] .ew-band-nav-slot.is-current { color: #6F582D; }
 :root[data-atmosphere="day"] .ew-band-nav-slot.is-disabled { color: rgba(111,103,92,.4); }
@@ -322,7 +304,6 @@ html, body {
    open a strip for a dock that is not there. */
 @media (max-width: 960px) {
 :root:has(.rp-dock) { --player-dock-clearance: 108px; }
-:root:has(.rp-dock) .rp-home { --player-dock-clearance: 108px; }
 }
 
 /* Day nav ink. The shared dust and foil land at 4.25:1 and 3.66:1 on the day dock
@@ -433,14 +414,6 @@ html, body {
 :root[data-atmosphere="day"] .ew-flap { background: color-mix(in srgb, #EFE3CE 70%, #C6A56A); color: #2A241C; }
 :root[data-atmosphere="day"] .ew-flap::after { background: rgba(42, 36, 28, .28); }
 :root[data-atmosphere="day"] .ew-flap-line.is-meta .ew-flap { background: transparent; color: #665F55; }
-/* Board reshuffle — one ghost glyph beside LIVE NOW. It remounts on every
-   reshuffle (keyed by the shuffle count), so the full spin replays exactly
-   when the board deals fresh stations — not just while held. */
-.rp-board-shuffle { display: inline-grid; place-items: center; width: 28px; height: 28px; margin: -7px -4px -7px 0; border-radius: 50%; color: var(--ew-dust); line-height: 0; }
-.rp-board-shuffle:hover { color: var(--ew-foil); }
-.rp-board-shuffle-spin { animation: rp-board-spin .55s var(--ew-settle, cubic-bezier(.2,.8,.2,1)); }
-@keyframes rp-board-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-@media (prefers-reduced-motion: reduce) { .rp-board-shuffle-spin { animation: none; } }
 
 /* Optional secret trail and Room. Kept separate from listening and removable. */
 .ew-secret-trail { flex: none; margin: 2px 0 8px; }
@@ -465,75 +438,6 @@ html, body {
 .ew-secret-coffee { display: grid; grid-template-columns: minmax(130px,210px) minmax(0,1fr); align-items: center; gap: 18px; max-width: 610px; margin: 20px 0 4px; padding-top: 18px; border-top: 1px solid color-mix(in srgb,var(--ew-foil) 46%,transparent); }.ew-secret-coffee img { width: 100%; height: auto; max-height: 180px; object-fit: contain; }.ew-secret-coffee p:not(.rp-eyebrow) { max-width: 31rem; margin: 6px 0 12px; color: color-mix(in srgb,var(--ew-bone) 74%,transparent); font: 400 .9rem/1.5 var(--ew-serif); }.ew-secret-coming { display: block; margin-bottom: 10px; color: var(--ew-dust); font: 500 10px/1.4 "Azeret Mono",monospace; letter-spacing: .12em; text-transform: uppercase; }
 @media (max-width:700px) { .ew-trail-whisper { top: calc(56px + env(safe-area-inset-top,0px)); gap: 9px; padding: 9px 12px; }.ew-trail-whisper button,.ew-trail-whisper a { max-width:100px; white-space:normal; }.ew-secret-room { padding:22px 20px calc(132px + env(safe-area-inset-bottom,0px)); }.ew-secret-room-inner { display:flex; flex-direction:column; min-height:0; }.ew-secret-story { margin-top:26px; }.ew-secret-story h1 { margin-top:17px; font-size:clamp(40px,12vw,56px); }.ew-secret-traveler { align-self:center; width:min(46vw,180px); max-height:240px; margin:8px 0 -8px; }.ew-secret-coffee { grid-template-columns:110px minmax(0,1fr); gap:12px; margin-top:16px; padding-top:14px; }.ew-secret-coffee img { max-height:120px; }.ew-secret-ask { width:100%; padding-top:17px; } }
 
-/* Board sheet — the station board as a draggable sheet on the phone, the
-   same board inline on desktop. Outside @layer (Tailwind v3 drop gremlin).
-   Desktop: the wrapper collapses to contents and the grip never renders, so
-   the wide layout keeps the board exactly where it always stood. */
-.rp-board-sheet { display: contents; }
-.rp-board-grip { display: none; }
-@media (max-width: 960px) {
-  .rp-board-sheet {
-    position: fixed;
-    z-index: 38; /* under the Atlas veil (39), the dock (40), the band (41) */
-    right: 0;
-    left: 0;
-    bottom: calc(44px + env(safe-area-inset-bottom, 0px));
-    display: flex;
-    flex-direction: column;
-    height: min(72svh, 620px);
-    min-height: 220px;
-    /* A layer, not a page section — but still the dark theme: same ink as
-       the page, and only the edge tells it apart. A foil hairline on top, a
-       faint foil glow just beneath it, and the design system's one lift. */
-    border-top: 1px solid var(--ew-foil-line);
-    background: var(--ew-ink);
-    box-shadow: var(--ew-lift), inset 0 1px 0 var(--ew-foil-wash-strong), inset 0 14px 18px -14px var(--ew-foil-wash-strong);
-    transform: translateY(calc(100% - var(--ew-peek, 84px)));
-    /* Collapsed, the sheet is pushed down under the dock and the phone band.
-       Clip it to the peek (84px, or whatever BoardSheet measures) (in its own box, so the clip travels with the
-       transform) or its first station row shows through them as ghost text.
-       The -60px top edge keeps the lift shadow. */
-    clip-path: inset(-60px 0 calc(100% - var(--ew-peek, 84px)) 0);
-    transition: transform .38s var(--ew-settle), clip-path .38s var(--ew-settle);
-  }
-  /* The dock stands taller than the band: the sheet rides above whichever
-     is present so the grip never hides under the player. */
-  .rp-board-sheet.is-docked { bottom: calc(108px + env(safe-area-inset-bottom, 0px)); }
-  .rp-board-sheet[data-state="open"] { transform: translateY(0); }
-  .rp-board-sheet[data-state="open"] { clip-path: inset(-60px 0 0 0); }
-  .rp-board-grip {
-    display: grid;
-    place-items: center;
-    flex: none;
-    width: 100%;
-    min-height: 28px;
-    border: 0;
-    background: transparent;
-    padding: 8px 0 4px;
-    cursor: grab;
-    touch-action: none; /* the gesture belongs to the sheet, not the page */
-  }
-  .rp-board-grip:active { cursor: grabbing; }
-  .rp-board-grip-bar { display: block; width: 44px; height: 4px; border-radius: 2px; background: var(--ew-dust); opacity: .6; }
-  .rp-board-grip:hover .rp-board-grip-bar,
-  .rp-board-grip:focus-visible .rp-board-grip-bar { background: var(--ew-foil); }
-  /* The board scrolls inside the sheet; the page behind keeps the globe. */
-  .rp-board-sheet .rp-intro-board {
-    flex: 1 1 auto;
-    min-height: 0;
-    overflow: auto;
-    overscroll-behavior: contain;
-    padding: 0 16px calc(16px + env(safe-area-inset-bottom, 0px));
-  }
-  /* The label sits right under the grip: one object, not a handle floating
-     above a caption. */
-  .rp-board-sheet .rp-intro-board > #live-board { margin-top: 2px; }
-  /* The intro's own tail stays clear of the peeking sheet. */
-  .rp-intro { padding-bottom: 124px; }
-}
-@media (max-width: 960px) and (prefers-reduced-motion: reduce) {
-  .rp-board-sheet { transition: none; }
-}
 
 /* Theater storytelling v1. Kept outside @layer (Tailwind v3 nondeterministic
    layer-drop gremlin — see docs/SESSION_HANDOFF.md). */
@@ -593,20 +497,6 @@ html, body {
   .ew-passport-book .rp-stamp-ticket:hover { transform: none; }
 }
 
-/* Desktop fold — outside @layer (Tailwind drops in-layer home rules).
-   Phone already hides the letter and empty land slot so the board peeks.
-   Desktop keeps the letter; it must not keep a 92px ghost land slot. */
-@media (min-width: 961px) {
-  .rp-land-slot:not(:has(.ew-land)) {
-    min-height: 0;
-    height: 0;
-    overflow: hidden;
-    margin: 0;
-    padding: 0;
-  }
-  .rp-intro { padding-top: 16px; padding-bottom: 12px; }
-  .ew-horizon { margin-top: 12px; }
-}
 
 /* Phone tap targets — every control reaches 44px. Kept outside @layer with the
    other late overrides. Visual size is unchanged where a halo carries the reach. */
@@ -614,10 +504,8 @@ html, body {
   .ew-site-bar .rp-passport-button,
   .ew-site-bar > a,
   .ew-site-bar-left a { min-height: 44px; display: inline-flex; align-items: center; }
-  .rp-mic, .rp-intent-action, .rp-board-shuffle { min-width: 44px; min-height: 44px; }
+  .rp-mic, .rp-intent-action { min-width: 44px; min-height: 44px; }
   .ew-atmosphere button, .ew-atmosphere--split button { min-height: 44px; }
-  .rp-board-grip { position: relative; }
-  .rp-board-grip::before { content: ""; position: absolute; inset: -8px 0; } /* 44px reach, 28px footprint: the peek header must stay in view */
   /* Back lives in the opened deck; Next stays (it closes the loop). Freeing 52px gives the station name room to be read. */
   .rp-dock-row .rp-dock-prev { display: none; }
 }
@@ -647,9 +535,6 @@ html, body {
 .ew-appearance { margin-top: 8px; }
 .ew-appearance .ew-horizon-kicker { display: inline-flex; }
 .ew-appearance .ew-atmosphere--split { width: auto; justify-content: flex-start; gap: 8px; }
-@media (max-width: 960px) {
-  .rp-intro .rp-horizon-row { display: none; }
-}
 
 /* Loading is calm: the board shows the shape of what is coming (art tile, name,
    place) instead of scrambled letters or black squares. Artwork fades in over
@@ -666,33 +551,6 @@ html, body {
 @media (prefers-reduced-motion: reduce) {
   .ew-skel, .ew-skel-lines i { animation: none; }
   .rp-art.has-plate img { transition: none; }
-}
-
-/* Phone search: one 48px square bar like the Passport button and the hour rail,
-   not a 70px pill. The 64px round lens is a Theater/idle form; on the home
-   the field is always open, so it carries the system's square edge. */
-@media (max-width: 960px) {
-  .ew-home-seek .ew-seek.is-open { min-height: 48px; border-radius: 0; background: var(--ew-ink); }
-  .ew-home-seek .ew-seek.is-open .ew-seek-lens { top: 0; bottom: 0; left: 14px; align-items: center; width: 28px; height: auto; padding: 0; }
-  .ew-home-seek .ew-seek.is-open .ew-seek-say { padding: 0 8px 0 50px; }
-  .ew-home-seek .ew-seek .rp-intent { min-height: 46px; }
-  .ew-home-seek .ew-seek .rp-intent input { padding: 4px 0; }
-  .ew-home-seek { margin-top: 10px; }
-}
-
-/* First-visit hook: the brand line, then the promise. Serif is the human voice. */
-.ew-hook { margin: 0 0 10px; color: var(--ew-dust); font: 400 15px/1.4 "Newsreader", serif; }
-.ew-hook em { color: var(--ew-bone); font-style: italic; font-size: 15px; }
-
-/* Search status on the phone home: the board header already says "14 LIVE ·
-   MALAYALAM", so the caption under the bar (clipped by the 48px bar) is kept for
-   screen readers only. The searching / empty state still shows in the border. */
-@media (max-width: 960px) {
-  .ew-home-seek .rp-intent-status {
-    position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
-    overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0;
-  }
-  .ew-home-seek .rp-intent.is-empty { border-color: var(--ew-foil-line); }
 }
 
 /* The hour rail marks the listener's own hour with a dotted underline. */

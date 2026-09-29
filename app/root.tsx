@@ -10,6 +10,7 @@ import {
   Scripts,
   ScrollRestoration,
   useLocation,
+  useMatches,
   useNavigation,
   useRouteError,
 } from "@remix-run/react";
@@ -82,6 +83,12 @@ function Document({
   children: ReactNode;
   title?: string;
 }) {
+  // A page with its own social card (a ticket, /t/<uuid>) says so in its
+  // handle; the house card then stays out of the way, since crawlers read the
+  // first og:image they meet.
+  const ownCard = useMatches().some(
+    (match) => (match.handle as { socialCard?: boolean } | undefined)?.socialCard,
+  );
   return (
     <html lang="en" className="min-h-full" suppressHydrationWarning>
       <head>
@@ -104,17 +111,21 @@ function Document({
             The still is rendered from scripts/og-still.html (render-og.mjs). */}
         <meta property="og:site_name" content="Elsewhere" />
         <meta property="og:type" content="website" />
-        <meta
-          property="og:image"
-          content="https://elsewheremusic.com/elsewhere-og.jpg"
-        />
-        <meta property="og:image:width" content="1200" />
-        <meta property="og:image:height" content="630" />
-        <meta
-          property="og:image:alt"
-          content="Elsewhere — You are not here. Live radio from cities that are awake without you."
-        />
-        <meta name="twitter:card" content="summary_large_image" />
+        {ownCard ? null : (
+          <>
+            <meta
+              property="og:image"
+              content="https://elsewheremusic.com/elsewhere-og.jpg"
+            />
+            <meta property="og:image:width" content="1200" />
+            <meta property="og:image:height" content="630" />
+            <meta
+              property="og:image:alt"
+              content="Elsewhere — You are not here. Live radio from cities that are awake without you."
+            />
+            <meta name="twitter:card" content="summary_large_image" />
+          </>
+        )}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link
           rel="preconnect"
@@ -216,7 +227,9 @@ export default function App() {
             paddingBottom: onTheater
               ? "var(--player-dock-clearance, 0px)"
               : onHome
-                ? "var(--player-dock-clearance, 88px)"
+                ? // The home scrolls inside its own column and measures the
+                  // dock and band itself (--home-floor), like the desk.
+                  "0px"
                 : "calc(var(--player-dock-clearance, 0px) + 1.5rem)",
           }}
         >

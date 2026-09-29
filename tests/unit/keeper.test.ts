@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { readAppCss } from "./appCss";
 import { describe, expect, it } from "vitest";
+import { snapSheet } from "~/components/keeper/sheetSnap";
 import {
   answerLocally,
   buildKeeperFacts,
@@ -367,7 +368,7 @@ describe("keeper wiring", () => {
     expect(sheet).not.toContain("fetch(");
     expect(sheet).toContain('aria-modal="true"');
     expect(sheet).toContain('aria-labelledby="ew-keeper-title"');
-    expect(sheet).toContain("snapBoardSheet");
+    expect(sheet).toContain("snapSheet(");
     const client = read("app/components/keeper/keeperClient.ts");
     expect(client).toContain("Promise.race");
     expect(client).not.toContain("AbortController");
@@ -381,5 +382,16 @@ describe("keeper wiring", () => {
     expect(keeper).not.toMatch(/box-shadow/);
     expect(keeper).not.toMatch(/#[0-9a-fA-F]{3,6}\b/);
     expect(keeper).toContain(".ew-keeper-float");
+  });
+});
+
+describe("keeper sheet snap", () => {
+  it("decides a flick by direction and a slow drag by travel", () => {
+    expect(snapSheet(-12, -0.6, "peek")).toBe("open");
+    expect(snapSheet(10, 0.7, "open")).toBe("peek");
+    expect(snapSheet(-60, -0.1, "peek")).toBe("open");
+    expect(snapSheet(-30, -0.1, "peek")).toBe("peek");
+    expect(snapSheet(60, 0.1, "open")).toBe("peek");
+    expect(snapSheet(20, 0.1, "open")).toBe("open");
   });
 });

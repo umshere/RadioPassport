@@ -1,7 +1,6 @@
 import { json, type LoaderFunctionArgs } from "@remix-run/node";
-import { Eyebrow } from "~/components/ui/Eyebrow";
-import { useLoaderData, useSearchParams } from "@remix-run/react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { Link, useLoaderData, useSearchParams } from "@remix-run/react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { usePlayerStore } from "~/state/playerStore";
 import { useJourneyStore } from "~/state/journeyStore";
 import { resolveKeptSignals } from "~/state/favoriteSnapshot";
@@ -15,15 +14,9 @@ import {
 import { IntentBar } from "~/components/radio-passport/IntentBar";
 import { SeekShell } from "~/components/radio-passport/SeekShell";
 import {
-  BoardSheet,
-  type BoardSheetState,
-} from "~/components/radio-passport/BoardSheet";
-import { CoverStrip } from "~/components/CoverStrip";
-import { CoverSlotPortal } from "~/components/radio-passport/CoverSlot";
-import {
   boardDeal,
 } from "~/components/radio-passport/FlipBoard";
-import { SiteSeekPortal, SiteSeekRail } from "~/components/radio-passport/SiteSeek";
+import { SiteSeekPortal } from "~/components/radio-passport/SiteSeek";
 import {
   resolveCoverArrival,
   describeCoverEmpty,
@@ -31,14 +24,8 @@ import {
   hourBoardLabel,
   seekingBoardLabel,
   seekingStatus,
-  theaterIntelligenceFromRoom,
 } from "~/components/radio-passport/productFlow";
-import {
-  formatClock,
-  localDateAtLongitude,
-  solarHourAtLongitude,
-  type SolarHour,
-} from "~/utils/localTime";
+import type { SolarHour } from "~/utils/localTime";
 import { Button } from "~/components/ui/Button";
 import { useHomeStations } from "~/hooks/home/useHomeStations";
 import { useCatalogSearch } from "~/hooks/home/useCatalogSearch";
@@ -46,10 +33,26 @@ import { useHomePlay } from "~/hooks/home/useHomePlay";
 import { useHomeIntent } from "~/hooks/home/useHomeIntent";
 import { useHomeOverlays } from "~/hooks/home/useHomeOverlays";
 import { useKeeperHourHop } from "~/hooks/home/useKeeperHourHop";
-import { HomeIntro } from "~/components/radio-passport/HomeIntro";
 import { HomeOverlays } from "~/components/radio-passport/HomeOverlays";
-import { HomeGlobeSide } from "~/components/radio-passport/HomeGlobeSide";
-import { StationBoard } from "~/components/radio-passport/StationBoard";
+import { HomeSky } from "~/components/home/HomeSky";
+import { HomeGates } from "~/components/home/HomeGates";
+import { HomeDepartures } from "~/components/home/HomeDepartures";
+import {
+  arrivalSky,
+  canShowMore,
+  homeBoardCap,
+  homeBoardHeading,
+  homeDepartures,
+  homeKeeperLine,
+  homeKeeperState,
+  homePhase,
+  hoursFromListener,
+  isSeekQuery,
+} from "~/components/home/homeModel";
+import { useFloorClearance, useMinuteClock } from "~/components/desk/deskHooks";
+import { VOICE } from "~/components/keeper/keeperVoice";
+import { useKeeperStore } from "~/state/keeperStore";
+import { useHydrated } from "~/hooks/useHydrated";
 import { HOME_NO_STORE, loadHomeBoard } from "~/services/home/homeBoard.server";
 
 export const meta = () => [
@@ -87,6 +90,21 @@ export async function loader(_: LoaderFunctionArgs) {
   return json({ ...board, boardSeed }, { headers: HOME_NO_STORE });
 }
 
+
+/** Reduced motion scrolls instantly; everyone else glides. */
+function scrollBehavior(): ScrollBehavior {
+  return typeof window !== "undefined" &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    ? "auto"
+    : "smooth";
+}
+
+/**
+ * The home: the departures hall. One scrolling column of three bands (the
+ * arrival city's sky, the gates, the departures board) that becomes a sticky
+ * sky beside the gates and the board on wide screens. No globe: the Atlas
+ * keeps the world.
+ */
 export default function Index() {
   const {
     countries,
@@ -94,6 +112,7 @@ export default function Index() {
     boardSeed = 0,
   } = useLoaderData<typeof loader>();
   const [searchParams] = useSearchParams();
+  const hydrated = useHydrated();
   const nowPlaying = usePlayerStore((state) => state.nowPlaying);
   const isPlaying = usePlayerStore((state) => state.isPlaying);
   const favorites = useJourneyStore((state) => state.favoriteStationIds);
@@ -104,9 +123,13 @@ export default function Index() {
   const travelerNumber = useJourneyStore((state) => state.travelerNumber);
   const journeyReady = useJourneyStore((state) => state.hydrated);
   const toggleFavorite = useJourneyStore((state) => state.toggleFavorite);
+  const openKeeperSheet = useKeeperStore((state) => state.openSheet);
   const listening = useListeningMode();
   const storedRoom = useRoomStore((state) => state.room);
   const room = roomForStation(storedRoom, nowPlaying?.uuid);
+  const now = useMinuteClock();
+  const pageRef = useRef<HTMLElement>(null);
+  const pageBox = useFloorClearance(pageRef);
   const { hour, setHour, place, setPlace, query, setQuery } = useHomeIntent(
     searchParams.toString()
   );
@@ -118,23 +141,36 @@ export default function Index() {
   } = useCatalogSearch(query);
   const overlays = useHomeOverlays(searchParams.toString());
   const {
-    atlas,
     setAtlas,
-    country,
     countryCache,
     countryStations,
-    passport,
+    setPassport,
   } = overlays;
-  // The station board rests as a sheet on the phone: peek until a search
-  // asks for the rows, back to peek the moment a station lands.
-  const [boardSheet, setBoardSheet] = useState<BoardSheetState>("peek");
-  const settleSheet = useCallback(() => setBoardSheet("peek"), []);
+
+  // Bring the board into view below the sticky gates, only when it is not
+  // already on screen: no jump for a board you can already see.
+  const scrollToBoard = useCallback(() => {
+    window.requestAnimationFrame(() => {
+      const page = pageRef.current;
+      const board = document.getElementById("live-board");
+      if (!page || !board) return;
+      const gates = page.querySelector<HTMLElement>(".ew-gates");
+      const pageTop = page.getBoundingClientRect().top;
+      const gatesBottom = gates ? gates.getBoundingClientRect().bottom : pageTop;
+      const boardTop = board.getBoundingClientRect().top;
+      const visibleFloor = pageTop + page.clientHeight - 160;
+      if (boardTop >= gatesBottom - 1 && boardTop <= visibleFloor) return;
+      const target = page.scrollTop + boardTop - gatesBottom - 8;
+      page.scrollTo({ top: Math.max(0, target), behavior: scrollBehavior() });
+    });
+  }, []);
+
   useKeeperHourHop({
     query,
     setHour,
     setPlace,
     setQuery,
-    onHop: () => setBoardSheet("open"),
+    onHop: scrollToBoard,
   });
   const {
     featured,
@@ -158,11 +194,11 @@ export default function Index() {
     played,
     journeyReady,
   });
+  const noop = useCallback(() => {}, []);
   const {
     play,
     requestAiWorld,
     submitIntent,
-    playPlace,
     aiStatus,
     mixLabel,
     intentEcho,
@@ -178,21 +214,33 @@ export default function Index() {
     listening,
     globeStations,
     places,
-    onLanded: settleSheet,
+    onLanded: noop,
   });
 
-  const isSeeking = query.trim().length >= 2;
-  // A typed search is a request for rows: the sheet rises on its own so the
-  // results meet the eye instead of waiting behind the grip.
+  const isSeeking = isSeekQuery(query);
+  // A typed search is a request for rows: the board comes into view.
   useEffect(() => {
-    if (isSeeking) setBoardSheet("open");
-  }, [isSeeking]);
+    if (isSeeking) scrollToBoard();
+  }, [isSeeking, scrollToBoard]);
+
+  const phase = homePhase({
+    query,
+    hour,
+    isPlaying,
+    count: liveFiltered.length,
+    loading: catalogLoading,
+  });
+  // "More departures" steps 8 → 16 → 32; a fresh question starts again at 8.
+  const [more, setMore] = useState(0);
+  useEffect(() => {
+    setMore(0);
+  }, [query, hour, place]);
   // Manual reshuffle: a fresh idle window from the loaded pool, no refetch.
   // A real deal, not a rotation — rotating slides the window one slot and
   // leaves 7 of 8 rows standing.
   const [shuffle, setShuffle] = useState(0);
+  const cap = homeBoardCap(phase, more);
   const boardRows = useMemo(() => {
-    const cap = isSeeking ? 32 : 8;
     const ordered = isSeeking
       ? filtered
       : boardDeal(filtered.slice(0, Math.max(cap, 36)), boardSeed + shuffle);
@@ -203,25 +251,18 @@ export default function Index() {
     return ids.map(
       (id) => live.get(id) ?? ordered.find((station) => station.uuid === id)!,
     );
-  }, [boardSeed, filtered, isSeeking, liveFiltered, shuffle]);
-  // Time travel lands after the deal: the cover offers the head of the hour
+  }, [boardSeed, cap, filtered, isSeeking, liveFiltered, shuffle]);
+  // Time travel lands after the deal: the sky offers the head of the hour
   // rows it can see. Suspended resume returns when the hour is cleared.
-  const hourHead = hourTravelHead(hour, nowPlaying, boardRows);
-  const arrivalCity = nowPlaying
-    ? stationLocation(nowPlaying)
-    : hourHead
-      ? stationLocation(hourHead)
-      : continueStation
-        ? stationLocation(continueStation)
-        : featured
-          ? stationLocation(featured)
-          : "the world";
-  const arrivalStation = nowPlaying || hourHead || continueStation || featured;
-  const locatorShrunk = isSeeking || Boolean(hour);
-  const seekingCover = isSeeking && !isPlaying;
+  // A paused station does not hold the sky against an hour gate: the gate
+  // is a destination, so the sky retints to the head of its board.
+  const hourHead = hourTravelHead(hour, isPlaying ? nowPlaying : null, boardRows);
+  const arrivalStation =
+    (isPlaying ? nowPlaying : null) || hourHead || nowPlaying || continueStation || featured;
+  const arrivalCity = arrivalStation ? stationLocation(arrivalStation) : "the world";
   const arrival = resolveCoverArrival({
     isPlaying,
-    hasNowPlaying: Boolean(nowPlaying),
+    hasNowPlaying: Boolean(nowPlaying) && !hourHead,
     // Hour travel suspends resume: "Continue in {hour city}" must never
     // resume a different city. Clearing the hour brings resume back.
     hasContinue: Boolean(continueStation) && !hourHead,
@@ -231,45 +272,27 @@ export default function Index() {
     loading: catalogLoading,
     unreachable: catalogError,
   });
-  const localNow =
-    arrivalStation && typeof arrivalStation.longitude === "number"
-      ? localDateAtLongitude(arrivalStation.longitude)
-      : null;
+  const sky = arrivalSky(arrivalStation, now);
+  const offsetHours = hydrated ? hoursFromListener(sky.localHour, now.getHours()) : null;
   const trackLine = room.signal.track
     ? [room.signal.track.artist, room.signal.track.title].filter(Boolean).join(" — ")
     : null;
-  const coverIntel = theaterIntelligenceFromRoom({
-    hasTrack: Boolean(trackLine),
-    captionBody: room.caption?.body,
-    summary: room.dossier.summary,
-    facts: room.dossier.facts,
-    imageUrl: room.plate,
-    links: room.dossier.links,
-    track: trackLine,
+  const firstVisit = journeyReady && stamps.length === 0;
+  const keeperState = homeKeeperState({
+    phase,
+    loading: catalogLoading,
+    isPlaying,
+    localHour: sky.localHour,
   });
-  const sameHour = useMemo(() => {
-    const current =
-      hour ||
-      (arrivalStation && typeof arrivalStation.longitude === "number"
-        ? solarHourAtLongitude(arrivalStation.longitude)
-        : null);
-    if (!current) return [];
-    const seen = new Set<string>();
-    return initialStations
-      .filter((station) => {
-        if (typeof station.longitude !== "number") return false;
-        if (station.uuid === arrivalStation?.uuid) return false;
-        if (solarHourAtLongitude(station.longitude) !== current) return false;
-        // "Also at this hour" is a city affordance: a station with no city
-        // would render a country name on the pill (flow audit F1).
-        if (!(station.city || "").trim()) return false;
-        const key = stationLocation(station);
-        if (seen.has(key)) return false;
-        seen.add(key);
-        return true;
-      })
-      .slice(0, 4);
-  }, [arrivalStation, hour, initialStations]);
+  const keeperLine = homeKeeperLine({
+    phase,
+    city: arrivalCity,
+    query,
+    hour,
+    solar: sky.solar,
+    firstVisit,
+    asleep: keeperState === "sleeping",
+  });
 
   const favoriteStations = useMemo(() => {
     const pool = [...initialStations, ...catalog, ...countryStations];
@@ -282,27 +305,36 @@ export default function Index() {
     count: liveFiltered.length,
     unreachable: catalogError,
   });
-  const boardLabel =
-    seekingBoardLabel(
-      query,
-      catalogLoading,
-      liveFiltered.length,
-      catalogError
-    ) ??
+  const seekLabel = seekingBoardLabel(
+    query,
+    catalogLoading,
+    liveFiltered.length,
+    catalogError
+  );
+  const countLabel =
+    seekLabel ??
     hourBoardLabel(hour, catalogLoading, liveFiltered.length) ??
-    (mixLabel ? "WORLD MIX" : "LIVE NOW");
+    (mixLabel ? mixLabel : `${liveFiltered.length} LIVE`);
+  const heading = homeBoardHeading({ phase, hour, seekLabel });
   const coverEmpty = describeCoverEmpty({
     query,
     hour,
     place,
     unreachable: catalogError,
   });
+  const departures = useMemo(() => homeDepartures(boardRows, now), [boardRows, now]);
 
   return (
     <main
-      className={`rp-home${locatorShrunk ? " is-seeking" : ""}${
-        nowPlaying ? " is-landed" : ""
-      }`}
+      ref={pageRef}
+      className={`ew-home${nowPlaying ? " is-landed" : ""}`}
+      data-phase={phase}
+      style={
+        {
+          "--home-floor": `${pageBox.floor}px`,
+          "--home-h": pageBox.height ? `${pageBox.height}px` : undefined,
+        } as CSSProperties
+      }
     >
       <SiteSeekPortal>
         <SeekShell
@@ -334,148 +366,88 @@ export default function Index() {
         />
         </SeekShell>
       </SiteSeekPortal>
-      <CoverSlotPortal>
-        <CoverStrip
-          land={arrivalCity}
-          live={arrival.live}
-          clock={localNow ? formatClock(localNow) : null}
-          overlay={atlas || Boolean(country) || passport}
-          coverKey={seekingCover ? "seeking" : arrivalStation?.uuid ?? arrivalCity}
-        />
-      </CoverSlotPortal>
-      <div className="rp-stage">
-        <div className="ew-home-seek">
-          <SiteSeekRail />
+      <div className="ew-home-inner">
+        <div className="ew-home-sky-col">
+          <HomeSky
+            phase={phase}
+            place={arrivalCity}
+            station={arrivalStation}
+            sky={sky}
+            offset={VOICE.offset(offsetHours)}
+            playing={isPlaying}
+            trackLine={trackLine}
+            query={query}
+            keeperLine={keeperLine}
+            keeperState={keeperState}
+            cta={{ label: arrival.cta, kind: arrival.ctaKind }}
+            onLand={() =>
+              // The button always plays the city it names: the arrival station
+              // already resolves playing → hour travel → resume → featured.
+              arrivalStation &&
+              play(
+                arrivalStation,
+                selectedPool,
+                arrival.ctaKind === "continue" ? "Continue" : "Land here"
+              )
+            }
+            onOpenKeeper={nowPlaying ? openKeeperSheet : undefined}
+          />
         </div>
-        <HomeIntro
-          nowPlaying={nowPlaying}
-          isPlaying={isPlaying}
-          arrivalStation={arrivalStation}
-          arrivalCity={arrivalCity}
-          arrival={arrival}
-          localNow={localNow}
-          seekingCover={seekingCover}
-          isSeeking={isSeeking}
-          trackLine={trackLine}
-          coverIntel={coverIntel}
-          firstVisit={stamps.length === 0}
-          hour={hour}
-          query={query}
-          sameHour={sameHour}
-          onLand={() =>
-            // The button always plays the city it names: the arrival station
-            // already resolves playing → hour travel → resume → featured.
-            arrivalStation &&
-            play(
-              arrivalStation,
-              selectedPool,
-              arrival.ctaKind === "continue" ? "Continue" : "Land here"
-            )
-          }
-          onSameHour={(station) => play(station, selectedPool, "Same hour")}
-          onHourTap={(item) => {
-            const next = hourTapNextState(hour, item, query);
-            setHour(next.hour as SolarHour | null);
-            setPlace(next.place);
-            if (next.query !== query) setQuery(next.query);
-          }}
-          onAtlas={() => setAtlas(true)}
-        >
-          <BoardSheet
-            state={boardSheet}
-            onStateChange={setBoardSheet}
-            docked={Boolean(nowPlaying)}
-          >
-          <div className="rp-intro-board">
-            <div
-              className="mt-7 flex items-center justify-between"
-              id="live-board"
-            >
-              <span className="flex items-center gap-2">
-                <span
-                  className={`rp-eyebrow ${isSeeking ? "text-ether" : ""}`}
-                  role="status"
-                  aria-live="polite"
-                >
-                  <i className="rp-live-dot" /> {boardLabel}
-                </span>
-                {!isSeeking ? (
-                  <button
-                    type="button"
-                    className="rp-board-shuffle"
-                    onClick={() => setShuffle((value) => value + 1)}
-                    aria-label="Show fresh stations"
-                    title="Fresh stations"
-                  >
-                    <svg
-                      key={shuffle}
-                      className="rp-board-shuffle-spin"
-                      width="13"
-                      height="13"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.5"
-                      strokeLinecap="round"
-                      aria-hidden="true"
-                    >
-                      <path d="M20 12a8 8 0 1 1-2.34-5.66" />
-                      <path d="M20 3v4h-4" />
-                    </svg>
-                  </button>
-                ) : null}
-              </span>
-              {mixLabel ? (
-                <Eyebrow as="span" tone="foil">{mixLabel}</Eyebrow>
-              ) : (
-                <Eyebrow as="span" tone="dust">
-                  {liveFiltered.length} LANDS
-                </Eyebrow>
-              )}
-            </div>
-            {aiStatus === "error" && listening.exploreError && (
-              <div className="mt-2" role="alert">
-                <p className="text-xs text-dust">{listening.exploreError}</p>
-                <Button className="mt-2" onClick={() => void requestAiWorld()}>
-                  Try the mix again →
-                </Button>
-              </div>
-            )}
-            <StationBoard
-              rows={boardRows}
-              loading={catalogLoading}
-              playingUuid={isPlaying ? nowPlaying?.uuid ?? null : null}
-              favoriteIds={favorites}
-              onPlay={(station) => play(station)}
-              onFavorite={(station) => toggleFavorite(station.uuid, station)}
-              empty={liveFiltered.length === 0 ? coverEmpty : null}
-              onEmptyAction={(action) => {
-                if (action.id === "surprise") void requestAiWorld();
-                if (action.id === "atlas") setAtlas(true);
-                if (action.id === "clear-search") setQuery("");
-                if (action.id === "clear-hour") setHour(null);
-                if (action.id === "clear-place") setPlace(null);
-                if (action.id === "retry-catalog") retryCatalog();
-              }}
-            />
-          </div>
-          </BoardSheet>
-        </HomeIntro>
-        <HomeGlobeSide
-          places={places}
-          catalogReady={catalog.length > 0}
-          onSelectPlace={playPlace}
-          nowPlaying={nowPlaying}
-          query={query}
-          seekingCover={seekingCover}
-          arrivalStation={arrivalStation}
-          arrivalCity={arrivalCity}
-          live={arrival.live}
-          localNow={localNow}
-          seekLabel={
-            seekingBoardLabel(query, catalogLoading, liveFiltered.length, catalogError) ?? ""
-          }
-        />
+        <div className="ew-home-main">
+          <HomeGates
+            hour={hour}
+            onHourTap={(item) => {
+              const next = hourTapNextState(hour, item, query);
+              setHour(next.hour as SolarHour | null);
+              setPlace(next.place);
+              if (next.query !== query) setQuery(next.query);
+              if (next.hour) scrollToBoard();
+            }}
+            onAtlas={() => setAtlas(true)}
+          />
+          <HomeDepartures
+            phase={phase}
+            heading={heading}
+            countLabel={countLabel}
+            rows={departures}
+            loading={catalogLoading}
+            playingUuid={isPlaying ? nowPlaying?.uuid ?? null : null}
+            favoriteIds={favorites}
+            onPlay={(station) => play(station)}
+            onFavorite={(station) => toggleFavorite(station.uuid, station)}
+            empty={phase === "empty" ? coverEmpty : null}
+            onEmptyAction={(action) => {
+              if (action.id === "surprise") void requestAiWorld();
+              if (action.id === "atlas") setAtlas(true);
+              if (action.id === "clear-search") setQuery("");
+              if (action.id === "clear-hour") setHour(null);
+              if (action.id === "clear-place") setPlace(null);
+              if (action.id === "retry-catalog") retryCatalog();
+            }}
+            onShuffle={() => setShuffle((value) => value + 1)}
+            shuffleKey={shuffle}
+            canMore={canShowMore(phase, more, filtered.length)}
+            onMore={() => setMore((value) => value + 1)}
+            stamps={journeyReady ? stamps : []}
+            onOpenPassport={() => setPassport(true)}
+            notice={
+              aiStatus === "error" && listening.exploreError ? (
+                <div className="ew-home-notice" role="alert">
+                  <p>{listening.exploreError}</p>
+                  <Button onClick={() => void requestAiWorld()}>
+                    Try the mix again →
+                  </Button>
+                </div>
+              ) : null
+            }
+          />
+          <footer className="ew-home-foot">
+            <span>You are not here.</span>
+            <Link to="/about" prefetch="intent">
+              About Elsewhere
+            </Link>
+          </footer>
+        </div>
       </div>
       <HomeOverlays
         overlays={overlays}

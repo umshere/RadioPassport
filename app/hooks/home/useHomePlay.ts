@@ -29,7 +29,7 @@ type Args = {
   listening: ReturnType<typeof useListeningMode>;
   globeStations: Station[];
   places: { id: string; stationName: string }[];
-  /** A station landed: the board sheet settles back to its peek. */
+  /** A station landed (the home may answer it; the board stays where it is). */
   onLanded: () => void;
 };
 

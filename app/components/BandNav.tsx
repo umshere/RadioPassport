@@ -14,8 +14,10 @@ const SLOTS = [
   { id: "elsewhere", label: "Elsewhere", to: "/" },
   { id: "atlas", label: "Atlas" },
   { id: "theater", label: "Desk", to: "/listen" },
-  { id: "room", label: "About", to: "/about" },
 ] as const;
+
+// About is not a place you travel to: it is a quiet link in the site bar,
+// not a tab. Route ids stay stable ("theater" is the desk).
 
 // Two mounts, one component. The phone band ("band") is position: fixed and
 // must live at the root beside the dock: nested in the sticky site bar (inside
@@ -46,9 +48,7 @@ export default function BandNav({ variant }: { variant: "band" | "rail" }) {
   const theaterEmpty = mounted && !nowPlaying;
 
   const current =
-    location.pathname === "/about"
-      ? "room"
-      : location.pathname === "/listen"
+    location.pathname === "/listen"
         ? "theater"
         : atlasOpen
           ? "atlas"
@@ -74,6 +74,7 @@ export default function BandNav({ variant }: { variant: "band" | "rail" }) {
               onClick={() => {
                 requestCloseAtlas();
                 window.scrollTo({ top: 0 });
+                document.querySelector(".ew-home")?.scrollTo({ top: 0 });
               }}
             >
               {slot.label}

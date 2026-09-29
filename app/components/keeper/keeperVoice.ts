@@ -86,6 +86,26 @@ export const VOICE = {
   changeGate: "Change gate",
   deskEmptyTitle: "Nobody at the desk yet.",
   deskEmptyLine: "Pick a city, press play, and I’ll stamp you in.",
+
+  /* ---- The departures hall (home): one line per state, no chatter. ---- */
+  homeWelcome: "You are not here. Pick a gate, or land where I point.",
+  homeSomewhere: (word: string) => `Somewhere it’s ${word}.`,
+  homeSeeking: (query: string) => `Looking for ${query}.`,
+  homeHourGate: (word: string) => `This gate: everywhere it’s ${word}.`,
+  homeEmpty: "Nothing at that gate tonight.",
+  homeLanded: (place: string) => `Landed in ${place}.`,
+  homeAsleep: "Quiet hours here. Land anywhere and I’ll wake up.",
+  homeAtDesk: "At the desk",
+  homeGates: "Gates",
+  homeBoard: "Departures",
+  homeBoardAboard: "Other departures",
+  homeBoardHour: (hour: string) => `Live where it is ${hour.toLowerCase()}`,
+  homeNoDepartures: "NO DEPARTURES",
+  homeMore: "More departures",
+  homeFresh: "Fresh board",
+  homeRecent: "Recent stamps",
+  homeRecentOpen: "Open the passport",
+  homeLeaving: "Now leaving",
 } as const;
 
 /** "Dawn" → "morning", for the lines that say where the sun is. */

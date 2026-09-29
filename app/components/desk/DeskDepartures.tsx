@@ -53,7 +53,7 @@ export function DeskDepartures({ rows, children }: { rows: Departure[]; children
         <p className="ew-cards-empty">{VOICE.departuresNone}</p>
       )}
       {children ? (
-        <div className="ew-departures-gate">
+        <div className="ew-departures-gate ew-gate-field">
           <span className="ew-departures-gate-label">{VOICE.changeGate}</span>
           {children}
         </div>

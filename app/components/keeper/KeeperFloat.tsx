@@ -41,14 +41,13 @@ function writeSpot(spot: KeeperSpot) {
 
 /**
  * The floor is whatever stands at the bottom of the screen: the dock (with
- * its deck, if open) and, on the phone home, the peeking board sheet. The
- * keeper rests above the highest of them, so it never sits on the play or
- * next controls or the sheet's grip.
+ * its deck, if open) and the phone band. The keeper rests above the highest
+ * of them, so it never sits on the play or next controls.
  */
 function measureBounds(): KeeperBounds {
   const height = window.innerHeight;
   let top = height;
-  for (const selector of [".rp-dock", ".ew-band-nav.is-band", ".rp-board-sheet"]) {
+  for (const selector of [".rp-dock", ".ew-band-nav.is-band"]) {
     const node = document.querySelector<HTMLElement>(selector);
     if (!node) continue;
     const style = window.getComputedStyle(node);
@@ -85,8 +84,10 @@ function sameBounds(a: KeeperBounds, b: KeeperBounds) {
  */
 export function KeeperFloat({ view }: { view: KeeperView }) {
   const openSheet = useKeeperStore((state) => state.openSheet);
-  // On the desk the keeper stands on the page's own horizon; no second figure.
-  const onDesk = useLocation().pathname === "/listen";
+  // On the desk and the home the keeper stands on the page's own horizon
+  // (the sky); no second figure.
+  const { pathname } = useLocation();
+  const onDesk = pathname === "/listen" || pathname === "/";
   const murmur = useKeeperStore((state) => state.murmur);
   const setMurmur = useKeeperStore((state) => state.setMurmur);
   const stationId = usePlayerStore((state) => state.nowPlaying?.uuid ?? null);

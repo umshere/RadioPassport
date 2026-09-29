@@ -138,9 +138,6 @@
   .ew-keeper-float[data-dragging] { margin: 0; transition: none; cursor: grabbing; }
   .ew-keeper-float[data-away] { visibility: hidden; opacity: 0; transition: opacity .15s ease, visibility 0s linear .15s; }
   :root:has(.rp-overlay) .ew-keeper-float { visibility: hidden; opacity: 0; pointer-events: none; }
-  @media (max-width: 960px) {
-    :root:has(.rp-board-sheet[data-state="open"]) .ew-keeper-float { visibility: hidden; opacity: 0; pointer-events: none; }
-  }
   @media (prefers-reduced-motion: reduce) {
     .ew-keeper-float { transition: none; }
   }

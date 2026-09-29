@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useRef, type CSSProperties } from "react";
 import { logUsage } from "~/utils/usage";
 import { useHydrated } from "~/hooks/useHydrated";
 import { usePlayerStore } from "~/state/playerStore";
@@ -39,6 +39,7 @@ import {
   postmarkDate,
 } from "~/components/desk/deskModel";
 import type { NowPlayingTrack } from "~/types/nowPlaying";
+import { useFloorClearance, useMinuteClock } from "~/components/desk/deskHooks";
 
 export const meta = () => [
   { title: `The desk · ${BRAND.name}` },
@@ -53,62 +54,6 @@ export const meta = () => [
   },
   { property: "og:url", content: "https://elsewheremusic.com/listen" },
 ];
-
-/** The clock, re-read on each minute boundary so the flaps turn on time. */
-function useMinuteClock() {
-  const [now, setNow] = useState(() => new Date());
-  useEffect(() => {
-    let interval: number | undefined;
-    const first = window.setTimeout(() => {
-      setNow(new Date());
-      interval = window.setInterval(() => setNow(new Date()), 60_000);
-    }, 60_000 - (Date.now() % 60_000) + 50);
-    return () => {
-      window.clearTimeout(first);
-      if (interval) window.clearInterval(interval);
-    };
-  }, []);
-  return now;
-}
-
-/**
- * The page scrolls inside the app frame; its last card must clear the dock
- * and the phone band, which stand fixed over the bottom of it. Measured, since
- * the dock's deck opens and the band comes and goes.
- */
-function useDeskFloor(ref: React.RefObject<HTMLElement>, active: boolean) {
-  const [box, setBox] = useState({ floor: 0, height: 0 });
-  useLayoutEffect(() => {
-    if (!active) return;
-    const update = () => {
-      const desk = ref.current;
-      if (!desk) return;
-      const bottom = desk.getBoundingClientRect().bottom;
-      let top = bottom;
-      for (const selector of [".rp-dock", ".ew-band-nav.is-band"]) {
-        const node = document.querySelector<HTMLElement>(selector);
-        if (!node) continue;
-        const style = window.getComputedStyle(node);
-        if (style.display === "none" || style.position !== "fixed") continue;
-        const rect = node.getBoundingClientRect();
-        if (rect.height > 0) top = Math.min(top, rect.top);
-      }
-      const floor = Math.max(0, Math.round(bottom - top));
-      const height = Math.round(desk.clientHeight);
-      setBox((current) =>
-        current.floor === floor && current.height === height ? current : { floor, height },
-      );
-    };
-    update();
-    window.addEventListener("resize", update);
-    const timer = window.setInterval(update, 800);
-    return () => {
-      window.removeEventListener("resize", update);
-      window.clearInterval(timer);
-    };
-  }, [active, ref]);
-  return box;
-}
 
 /**
  * The desk: the keeper's own page for the station you are inside. The sky at
@@ -139,7 +84,7 @@ export default function DeskPage() {
   const stamps = useJourneyStore((state) => state.stamps);
   const now = useMinuteClock();
   const deskRef = useRef<HTMLElement>(null);
-  const deskBox = useDeskFloor(deskRef, Boolean(nowPlaying));
+  const deskBox = useFloorClearance(deskRef, Boolean(nowPlaying));
   const lastTrackStationRef = useRef<string | null>(null);
   const lastTrackRef = useRef<NowPlayingTrack | null>(null);
 

@@ -564,7 +564,7 @@ describe("live stylesheet", () => {
     );
     expect(css).not.toMatch(/@mantine\/(core|carousel)/);
     expect(css).not.toMatch(/travel-stack|app-header__inner|hero-morph/);
-    expect(css).toContain(".rp-home");
+    expect(css).toContain(".ew-home {");
     expect(css).toContain("not-found-easter-egg");
     expect(css).toContain("minmax(min(258px, 100%), 1fr)");
     expect(css).toContain("grid-template-columns: minmax(0, 1fr)");
@@ -585,16 +585,12 @@ describe("live stylesheet", () => {
     expect(css).toContain(".ew-sky {");
     expect(css).toContain(".ew-site-bar");
     expect(css).toContain(".ew-frame.is-home-frame");
-    expect(css).toContain(".rp-intro-board");
-    expect(css).toContain(".rp-land-slot");
     expect(css).toContain("contain: layout paint");
     expect(css).toContain("flex-wrap: nowrap");
     expect(css).toContain(".ew-theater-rail .rp-intent");
-    expect(css).toContain(".ew-home-seek");
+    expect(css).toContain(".ew-gate-field .ew-seek");
     expect(css).not.toContain(".ew-site-bar.is-home");
     expect(css).not.toContain(".ew-atmosphere-icon");
-    expect(css).toContain(".rp-home.is-landed .rp-land-slot");
-    expect(css).toMatch(/\.rp-intro-board \{[\s\S]*?min-height: 16rem/);
     expect(css).not.toContain(".ew-site-bar:has(.ew-theater-rail .rp-intent)");
     expect(css).toContain(".rp-art-mark");
     expect(css).toContain(".rp-art img");
@@ -610,8 +606,8 @@ describe("live stylesheet", () => {
   });
 });
 
-describe("home cover panes", () => {
-  it("keeps the intro board and globe as independent shells", () => {
+describe("home: the departures hall", () => {
+  it("keeps the shell, the nav and the overlays wired; no globe on the home", () => {
     const home = readFileSync(
       new URL("../../app/routes/_index.tsx", import.meta.url),
       "utf8"
@@ -634,6 +630,9 @@ describe("home cover panes", () => {
     expect(siteBar).toContain('<BandNav variant="rail" />');
     expect(siteBar).toContain("ew-site-bar-left");
     expect(siteBar).toContain("requestCloseAtlas");
+    // About is a quiet link in the bar and the home's foot line, not a tab.
+    expect(siteBar).toContain('to="/about"');
+    expect(home).toContain('to="/about"');
     const band = readFileSync(
       new URL("../../app/components/BandNav.tsx", import.meta.url),
       "utf8",
@@ -642,20 +641,16 @@ describe("home cover panes", () => {
     expect(band).toContain("Atlas");
     expect(band).toContain("Desk");
     expect(band).not.toContain('"Theater"');
-    expect(band).toContain("About");
+    expect(band).not.toContain('label: "About"');
+    expect(band).toContain('id: "theater"');
     expect(band).toContain("aria-disabled");
     expect(band).toContain("homeWithAtlasHref");
     expect(band).not.toContain("/atlas");
     expect(band).toContain("ATLAS_SYNC_EVENT");
     expect(band).toContain("requestCloseAtlas");
     expect(band).toContain("preventScrollReset");
-    // Overlay orchestration and the globe/cover pane moved out of Index().
     const homeOverlaysHook = readFileSync(
       new URL("../../app/hooks/home/useHomeOverlays.ts", import.meta.url),
-      "utf8",
-    );
-    const homeGlobeSide = readFileSync(
-      new URL("../../app/components/radio-passport/HomeGlobeSide.tsx", import.meta.url),
       "utf8",
     );
     const homeOverlays = readFileSync(
@@ -664,10 +659,8 @@ describe("home cover panes", () => {
     );
     expect(homeOverlaysHook).toContain("announceAtlas");
     expect(homeOverlaysHook).toContain("CLOSE_ATLAS_EVENT");
-    expect(homeGlobeSide).toContain("CountryFlag");
-    expect(homeGlobeSide).toContain("ew-coverline-flag");
     expect(homeOverlays).toContain("playFromCountryNextState");
-    // The instant-board derivation moved into the home stations hook.
+    // The instant-board derivation lives in the home stations hook.
     const homeStations = readFileSync(
       new URL("../../app/hooks/home/useHomeStations.ts", import.meta.url),
       "utf8",
@@ -690,32 +683,32 @@ describe("home cover panes", () => {
     // Atlas and the country drilldown share one way back: no ×, the tabs
     // and ← Atlas dismiss them. (Passport keeps its ×.)
     expect(overlays.match(/<Sheet[^>]*hideClose/g)?.length).toBe(2);
-    expect(home).toContain('className="rp-intro-board"');
-    const homeIntro = readFileSync(
-      new URL("../../app/components/radio-passport/HomeIntro.tsx", import.meta.url),
+    // Three bands: the sky, the gates (with the intent field as a real child
+    // of its rail), the departures board. The Atlas keeps the world.
+    expect(home).toContain("<HomeSky");
+    expect(home).toContain("<HomeGates");
+    expect(home).toContain("<HomeDepartures");
+    expect(home).toContain("is-landed");
+    expect(home).not.toMatch(/ParticleGlobe|HomeGlobeSide|GalaxyBackdrop|BoardSheet|CoverStrip/);
+    const gates = readFileSync(
+      new URL("../../app/components/home/HomeGates.tsx", import.meta.url),
       "utf8",
     );
-    expect(homeIntro).toContain('className="rp-intro-copy"');
-    expect(homeIntro).toContain('className="rp-land-slot"');
-    expect(homeIntro).toContain('className="rp-intel-slot"');
-    expect(home).toContain("is-landed");
-    expect(home).not.toContain("{arrival.headline}");
-    expect(homeGlobeSide).toContain('className="ew-coverline ew-arrive"');
-    expect(home).toContain("CoverStrip");
-    expect(home).toMatch(/className="rp-stage"[\s\S]*SiteSeekRail/);
-    expect(home).not.toContain("scrollIntoView");
-    expect(homeGlobeSide).toMatch(
-      /className=\{`ew-cover\$\{arrivalCity \? " ew-seam-city" : ""\}`\}\s*>/
+    expect(gates).toContain("<SiteSeekRail />");
+    expect(gates).toContain("<HourRail");
+    const sky = readFileSync(
+      new URL("../../app/components/home/HomeSky.tsx", import.meta.url),
+      "utf8",
     );
+    expect(sky).toContain('className="ew-sky ew-home-sky"');
+    expect(sky).toContain("CountryFlag");
+    expect(sky).toContain("<AtmospherePin />");
+    expect(sky).toContain('size="desk"');
   });
 });
 
 describe("mobile cover strip", () => {
-  it("condenses the home coverline with IntersectionObserver, never on theater or room", () => {
-    const strip = readFileSync(
-      new URL("../../app/components/CoverStrip.tsx", import.meta.url),
-      "utf8",
-    );
+  it("is retired from the home: the gates stand sticky instead", () => {
     const css = readAppCss();
     const home = readFileSync(
       new URL("../../app/routes/_index.tsx", import.meta.url),
@@ -725,61 +718,16 @@ describe("mobile cover strip", () => {
       new URL("../../app/routes/listen.tsx", import.meta.url),
       "utf8",
     );
-    const about = readFileSync(
-      new URL("../../app/routes/about.tsx", import.meta.url),
-      "utf8",
-    );
-    const siteBar = readFileSync(
-      new URL("../../app/components/SiteBar.tsx", import.meta.url),
-      "utf8",
-    );
-    const root = readFileSync(
-      new URL("../../app/root.tsx", import.meta.url),
-      "utf8",
-    );
-    const slot = readFileSync(
-      new URL("../../app/components/radio-passport/CoverSlot.tsx", import.meta.url),
-      "utf8",
-    );
-    const layerIndex = css.indexOf("@layer components");
-    const stripCss = css.indexOf(".ew-cover-strip {");
-    expect(strip).toContain("IntersectionObserver");
-    expect(strip).toContain('root: null');
-    expect(strip).toContain('const ROOT_MARGIN = "-52px 0px 0px 0px"');
-    expect(strip).toContain("rootMargin: ROOT_MARGIN");
-    expect(strip).toContain(".rp-home .ew-coverline");
-    expect(strip).toContain("overlay");
-    expect(strip).not.toContain("addEventListener(\"scroll\"");
-    expect(home).toContain("CoverStrip");
-    expect(home).toContain("overlay={atlas || Boolean(country) || passport}");
+    expect(home).not.toContain("CoverStrip");
     expect(listen).not.toContain("CoverStrip");
-    expect(about).not.toContain("CoverStrip");
-    expect(stripCss).toBeGreaterThan(layerIndex);
-    // The strip docks to the sticky bar as a real child (slot, never a DOM
-    // portal — Safari drops portaled nodes out of sticky headers), so its
-    // edge is the header's true bottom, not a hardcoded 52px guess.
-    expect(siteBar).toContain("CoverSlotRail");
-    expect(root).toContain("CoverSlotProvider");
-    expect(home).toContain("CoverSlotPortal");
-    expect(slot).toContain("useSyncExternalStore");
-    expect(slot).not.toContain("createPortal");
-    expect(css).toContain(".ew-cover-strip { position: absolute;");
-    expect(css).toContain("top: 100%");
-    expect(css).not.toContain("top: calc(52px + env(safe-area-inset-top, 0px))");
-    expect(css).toContain("0 10px 28px rgba(0, 0, 0, .5)");
     // The dock keeps no backdrop blur: the ink is 94% opaque so the blur
     // paints nothing, but on mobile Safari it pulled the neighboring fixed
     // band through a path where it stopped painting yet kept hit-testing.
     expect(css).not.toMatch(/\.rp-dock \{[^}]*backdrop-filter:/);
-    // The Atlas veil keeps none either, for the same reason: it is a
-    // full-screen fixed filter layer over the band, 97% opaque, so the blur
-    // painted nothing while the band went invisible-but-tappable on phones.
+    // The Atlas veil keeps none either, for the same reason.
     expect(css).not.toMatch(/\.rp-overlay \{[^}]*backdrop-filter:/);
     expect(css).toContain("transform: translateZ(0)");
-    expect(css).toContain(":root[data-atmosphere=\"day\"] .ew-cover-strip-land { color: #6F582D; }");
-    expect(css).toContain(":root[data-atmosphere=\"day\"] .ew-cover-strip-dot { background: #35635F; }");
-    expect(css).toContain("@media (max-width: 960px) and (prefers-reduced-motion: reduce)");
-    expect(css).toContain(".rp-globe-side { position: relative; top: auto; z-index: auto; }");
+    expect(css).toMatch(/\.ew-gates \{[^}]*position: sticky/);
   });
 });
 

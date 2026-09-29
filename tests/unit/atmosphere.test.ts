@@ -168,27 +168,18 @@ describe("AtmospherePin placement", () => {
   );
   const stylesheet = readAppCss();
 
-  it("stands on the intro horizon row instead of tacked onto the header", () => {
+  it("stands in the sky's head on the home, never tacked onto the header", () => {
     expect(home).toContain("SiteSeekPortal");
     expect(home).not.toContain("rp-home-header");
-    expect(home).not.toMatch(/rp-home-header[\s\S]*AtmospherePin/);
-    const introSource = readFileSync(
-      new URL("../../app/components/radio-passport/HomeIntro.tsx", import.meta.url),
+    const sky = readFileSync(
+      new URL("../../app/components/home/HomeSky.tsx", import.meta.url),
       "utf8"
     );
-    const intro = introSource.slice(
-      introSource.indexOf('className="rp-intro"'),
-      introSource.indexOf('className="ew-horizon"')
+    const head = sky.slice(
+      sky.indexOf('className="ew-sky-head"'),
+      sky.indexOf("</div>", sky.indexOf('className="ew-sky-head"'))
     );
-    expect(intro).toContain('className="rp-horizon-row"');
-    expect(intro).toContain("formatLocalLabel(arrivalCity, localNow)");
-    expect(intro).toContain("<AtmospherePin />");
-    const row = intro.slice(
-      intro.indexOf('className="rp-horizon-row"'),
-      intro.indexOf("</div>", intro.indexOf('className="rp-horizon-row"'))
-    );
-    expect(row).toContain("formatLocalLabel(arrivalCity, localNow)");
-    expect(row).toContain("<AtmospherePin />");
+    expect(head).toContain("<AtmospherePin />");
   });
 
   it("keeps the Room hour group and both doors wherever it is mounted", () => {
@@ -196,6 +187,6 @@ describe("AtmospherePin placement", () => {
     expect(pin).toContain('aria-label="Room hour"');
     expect(pin).toContain('"Day room"');
     expect(pin).toContain('"Night room"');
-    expect(stylesheet).toContain(".rp-horizon-row");
+    expect(stylesheet).toContain(".ew-home-sky .ew-atmosphere--split");
   });
 });
