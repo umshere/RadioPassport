@@ -104,6 +104,51 @@ export function sanitizeArtworkUrl(url?: string | null): string | null {
   return null;
 }
 
+let regionNames: Map<string, string> | null = null;
+
+function foldPlace(value: string) {
+  return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLowerCase();
+}
+
+/** English country names by folded spelling → ISO code ("mexico" → "MX"). */
+function regionByName() {
+  if (regionNames) return regionNames;
+  regionNames = new Map();
+  try {
+    const display = new Intl.DisplayNames(["en"], { type: "region" });
+    for (let a = 65; a <= 90; a += 1) {
+      for (let b = 65; b <= 90; b += 1) {
+        const code = String.fromCharCode(a, b);
+        const name = display.of(code);
+        if (name && name !== code) regionNames.set(foldPlace(name), code);
+      }
+    }
+  } catch {
+    // Intl.DisplayNames unavailable: the guard simply stays off.
+  }
+  return regionNames;
+}
+
+/**
+ * The directory sometimes files a station under the wrong country while its
+ * state names the real one ("Veracruz, México" under AX). When the state ends
+ * in ", <country>" and that country differs from the record's, the state wins.
+ */
+export function correctCountryFromState(
+  state: string | null,
+  countryCode: string | null,
+): { code: string; name: string } | null {
+  const tail = state?.match(/,\s*([^,]+)$/)?.[1];
+  if (!tail) return null;
+  const code = regionByName().get(foldPlace(tail));
+  if (!code || code === (countryCode ?? "").toUpperCase()) return null;
+  try {
+    return { code, name: new Intl.DisplayNames(["en"], { type: "region" }).of(code) ?? tail };
+  } catch {
+    return null;
+  }
+}
+
 export function normalizeStation(
   raw: StationLike | null | undefined
 ): Station | null {
@@ -200,20 +245,24 @@ export function normalizeStation(
   else if (isStreamHealthy) healthStatus = "good";
   if (sslError && lastCheckOk === false) healthStatus = "error";
 
+  const stateText = raw.state && raw.state.trim() ? raw.state : null;
+  const claimedCode =
+    typeof raw.countrycode === "string"
+      ? raw.countrycode || null
+      : typeof raw.iso_3166_1 === "string"
+      ? raw.iso_3166_1 || null
+      : null;
+  const corrected = correctCountryFromState(stateText, claimedCode);
+
   return {
     uuid,
     name,
     url: streamUrl ?? "",
     streamUrl,
     favicon: sanitizeArtworkUrl(raw.favicon) ?? "",
-    country: raw.country ?? raw.countrycode ?? FALLBACK_COUNTRY,
-    countryCode:
-      typeof raw.countrycode === "string"
-        ? raw.countrycode || null
-        : typeof raw.iso_3166_1 === "string"
-        ? raw.iso_3166_1 || null
-        : null,
-    state: raw.state && raw.state.trim() ? raw.state : null,
+    country: corrected?.name ?? raw.country ?? raw.countrycode ?? FALLBACK_COUNTRY,
+    countryCode: corrected?.code ?? claimedCode,
+    state: stateText,
     city: raw.city && raw.city.trim() ? raw.city.trim() : null,
     latitude:
       Number.isFinite(latitude) && latitude! >= -90 && latitude! <= 90
