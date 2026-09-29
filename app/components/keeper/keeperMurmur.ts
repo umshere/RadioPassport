@@ -1,3 +1,4 @@
+import { foldName } from "./keeperAliases";
 import { spokenHour, titleCase, type KeeperFacts } from "./keeperFacts";
 
 /**
@@ -29,7 +30,15 @@ export function planMurmurs(facts: KeeperFacts): MurmurStep[] {
   const place = facts.city || "";
   const country = facts.station.country || "";
   const language = firstOf(facts.station.language);
-  const genre = facts.station.tags.find((tag) => tag.length > 2 && tag.length < 30) ?? null;
+  // A tag that only repeats the place, the language or the station's own name
+  // ("india" on an Indian station) is not a genre worth a fact.
+  const known = new Set(
+    [place, country, language, ...facts.station.name.split(/\s+/)].map((v) => foldName(v ?? "")),
+  );
+  const genre =
+    facts.station.tags.find(
+      (tag) => tag.length > 2 && tag.length < 30 && !known.has(foldName(tag)),
+    ) ?? null;
   if (facts.hour) steps.push({ type: "local", id: "hour" });
   if (place) steps.push({ type: "fact", kind: "place", name: place });
   if (facts.hour) steps.push({ type: "local", id: "offset" });
@@ -38,7 +47,15 @@ export function planMurmurs(facts: KeeperFacts): MurmurStep[] {
   steps.push({ type: "local", id: "stay" });
   if (genre) steps.push({ type: "fact", kind: "genre", name: genre });
   if (language) steps.push({ type: "local", id: "language" });
-  return steps;
+  // One step per name: "India" as a place and as a country is one fact.
+  const seen = new Set<string>();
+  return steps.filter((step) => {
+    if (step.type !== "fact") return true;
+    const key = foldName(step.name);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
 
 /** Hours the station's sun is ahead of (+) or behind (−) the listener's own. */

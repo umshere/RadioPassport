@@ -95,10 +95,23 @@ export function KeeperFloat({ view }: { view: KeeperView }) {
   const [hopping, setHopping] = useState(false);
   const pointer = useRef<{ id: number; x: number; y: number; moved: boolean } | null>(null);
   const suppressClick = useRef(false);
+  const floatRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setSpot(readSpot());
   }, []);
+
+  // Dragging the keeper must never scroll the page under the finger (that is
+  // the scrollbar that used to flash): CSS touch-action is not honoured by
+  // every iOS gesture, so also cancel touchmove on the figure itself.
+  const present = view.present;
+  useEffect(() => {
+    const node = floatRef.current;
+    if (!node) return;
+    const stop = (event: TouchEvent) => event.preventDefault();
+    node.addEventListener("touchmove", stop, { passive: false });
+    return () => node.removeEventListener("touchmove", stop);
+  }, [present, bounds]);
 
   // Keep the floor honest: the dock deck opens, the board sheet slides,
   // the phone rotates. A light poll beats wiring observers to three owners.
@@ -161,6 +174,7 @@ export function KeeperFloat({ view }: { view: KeeperView }) {
 
   return (
     <div
+      ref={floatRef}
       className="ew-keeper-float"
       data-side={resting.side}
       data-peek={peek || undefined}

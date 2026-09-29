@@ -261,7 +261,9 @@
    stamp ink above). Pixel-art poses in a square foil-hairline frame; the
    sprite flaps in (stepped, like the departure board) when the state
    changes, and idles with a two-step bob. Reduced motion: still poses. */
-.ew-keeper { outline: 1px solid var(--ew-foil-line); outline-offset: -1px; background: var(--ew-ink); overflow: hidden; }
+/* The sprites are cut out (transparent); the figure stands on the page, no plate or frame. */
+.ew-keeper { background: none; }
+.ew-keeper-button:focus-visible .ew-keeper { outline: 1px solid var(--ew-foil); outline-offset: 2px; }
 .ew-keeper-sprite { display: block; width: 100%; height: 100%; object-fit: cover; user-select: none; -webkit-user-drag: none; }
 .ew-keeper-svg { display: none; }
 @media (prefers-reduced-motion: no-preference) {
