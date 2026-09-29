@@ -21,8 +21,8 @@ export function envDurationMs(from: EnvHour, to: EnvHour): number {
 /** How strongly each page lets the light in. The map and the rest stay quiet. */
 export function envGain(pathname: string): number {
   if (pathname === "/") return 1;
-  if (pathname === "/listen") return 0.8;
-  return 0.7;
+  if (pathname === "/listen") return 0.9;
+  return 0.85;
 }
 
 /**
