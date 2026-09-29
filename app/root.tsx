@@ -154,7 +154,12 @@ function Document({
   );
 }
 
-export default function App() {
+/**
+ * The standard chrome: site bar, page frame, dock, band, keeper, light and the
+ * audio bridge. Every screen, errors and 404s included, renders inside it, so
+ * the top bar never vanishes and the music never stops on a bad route.
+ */
+function Shell({ children, title }: { children: ReactNode; title?: string }) {
   const previousTitleRef = useRef("Elsewhere");
   const navigation = useNavigation();
   const location = useLocation();
@@ -199,8 +204,46 @@ export default function App() {
   const onHome = location.pathname === "/";
   const onShell = onTheater || onHome;
 
+  // The home and the desk are fixed-height shells with the site bar on top. On
+  // iPhone Safari the keyboard (or a focus jump) can slide the whole shell up and
+  // leave the bar out of view. Once nothing is being typed into, put it back.
+  useEffect(() => {
+    if (!onShell) return;
+    const frame = document.querySelector<HTMLElement>(".ew-frame");
+    let timer = 0;
+    const typing = () => {
+      const el = document.activeElement;
+      return el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement;
+    };
+    const restore = () => {
+      if (typing()) return;
+      if (window.scrollY !== 0) window.scrollTo(0, 0);
+      if (frame && frame.scrollTop !== 0) frame.scrollTop = 0;
+    };
+    const later = () => {
+      window.clearTimeout(timer);
+      timer = window.setTimeout(restore, 120);
+    };
+    // Coming back to a shell (a route change, or the browser's back/forward cache)
+    // must never land with the bar scrolled away.
+    restore();
+    window.addEventListener("pageshow", later);
+    window.addEventListener("scroll", later, { passive: true });
+    frame?.addEventListener("scroll", later, { passive: true });
+    document.addEventListener("focusout", later);
+    window.visualViewport?.addEventListener("resize", later);
+    return () => {
+      window.clearTimeout(timer);
+      window.removeEventListener("pageshow", later);
+      window.removeEventListener("scroll", later);
+      frame?.removeEventListener("scroll", later);
+      document.removeEventListener("focusout", later);
+      window.visualViewport?.removeEventListener("resize", later);
+    };
+  }, [onShell, location.pathname]);
+
   return (
-    <Document>
+    <Document title={title}>
       <>
         <SiteSeekProvider>
         <CoverSlotProvider>
@@ -234,7 +277,7 @@ export default function App() {
                 : "calc(var(--player-dock-clearance, 0px) + 1.5rem)",
           }}
         >
-          <Outlet />
+          {children}
         </div>
         <EnvLayer />
         </div>
@@ -256,6 +299,14 @@ export default function App() {
         <GlobalAudioBridge />
       </>
     </Document>
+  );
+}
+
+export default function App() {
+  return (
+    <Shell>
+      <Outlet />
+    </Shell>
   );
 }
 
@@ -287,14 +338,14 @@ export function ErrorBoundary() {
 
   if (isRouteErrorResponse(error) && error.status === 404) {
     return (
-      <Document title="404 | Elsewhere">
+      <Shell title="404 | Elsewhere">
         <NotFoundEasterEgg title={title} message={message} />
-      </Document>
+      </Shell>
     );
   }
 
   return (
-    <Document title={`${title} | Elsewhere`}>
+    <Shell title={`${title} | Elsewhere`}>
       <div className="min-h-screen bg-ink px-6 py-10 text-bone">
         <div className="mx-auto flex min-h-[calc(100dvh-5rem)] max-w-3xl items-center">
           <div className="w-full">
@@ -320,7 +371,7 @@ export function ErrorBoundary() {
           </div>
         </div>
       </div>
-    </Document>
+    </Shell>
   );
 }
 

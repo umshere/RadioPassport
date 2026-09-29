@@ -35,14 +35,9 @@ export function SignalWordmark({ compact = false, onHome }: SignalMarkProps) {
       }}
     >
       <SignalMark size={compact ? 26 : 32} />
-      <span className="leading-none">
-        <small className="block font-mono text-[10px] font-medium uppercase tracking-[0.32em] text-foil">
-          LIVE RADIO
-        </small>
-        <strong className="mt-0.5 block font-display text-[22px] font-normal italic tracking-[-0.02em] text-bone">
-          {BRAND.name}
-        </strong>
-      </span>
+      <strong className="block font-display text-[24px] font-normal italic leading-none tracking-[-0.02em] text-bone">
+        {BRAND.name}
+      </strong>
     </Link>
   );
 }

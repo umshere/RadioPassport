@@ -26,3 +26,14 @@
   .ew-about-step:nth-child(5) { grid-column: span 3; }
   .ew-about-no { left: 20px; top: 18px; font-size: 36px; }
 }
+
+/* ---- Where things are: the four places in the nav, in one line each. */
+.ew-about-where { margin-top: 40px; }
+.ew-about-where-list { display: flex; flex-direction: column; margin: 12px 0 0; border-top: 1px solid var(--ew-rule); }
+.ew-about-where-item { display: flex; flex-direction: column; gap: 4px; padding: 14px 0; border-bottom: 1px solid var(--ew-rule); }
+.ew-about-where-item dt { font: 500 12px/1.3 "Azeret Mono", ui-monospace, monospace; letter-spacing: .16em; text-transform: uppercase; color: var(--ew-foil); }
+.ew-about-where-item dd { margin: 0; max-width: 56ch; font: 400 15px/1.55 "Schibsted Grotesk", sans-serif; color: var(--ew-dust); }
+@media (min-width: 760px) {
+  .ew-about-where-item { flex-direction: row; gap: 24px; }
+  .ew-about-where-item dt { flex: none; width: 120px; padding-top: 3px; }
+}

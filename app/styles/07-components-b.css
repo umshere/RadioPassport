@@ -57,6 +57,8 @@
   flex-direction: column;
   height: 100dvh;
   overflow: hidden;
+  /* clip cannot be scrolled at all, not even by a focus jump: the bar stays put. */
+  overflow: clip;
 }
 .ew-frame.is-theater-frame .ew-page.is-theater,
 .ew-frame.is-home-frame .ew-page.is-home {

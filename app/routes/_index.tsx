@@ -36,6 +36,7 @@ import { useHomeOverlays } from "~/hooks/home/useHomeOverlays";
 import { useKeeperHourHop } from "~/hooks/home/useKeeperHourHop";
 import { HomeOverlays } from "~/components/radio-passport/HomeOverlays";
 import { HomeSky } from "~/components/home/HomeSky";
+import { HomeHow } from "~/components/home/HomeHow";
 import { HomeGates } from "~/components/home/HomeGates";
 import { HomeDepartures } from "~/components/home/HomeDepartures";
 import {
@@ -402,6 +403,7 @@ export default function Index() {
           />
         </div>
         <div className="ew-home-main">
+          <HomeHow show={firstVisit} />
           <HomeGates
             hour={hour}
             onHourTap={(item) => {
@@ -452,7 +454,7 @@ export default function Index() {
           <footer className="ew-home-foot">
             <span>You are not here.</span>
             <Link to="/about" prefetch="intent">
-              About Elsewhere
+              How Elsewhere works
             </Link>
           </footer>
         </div>

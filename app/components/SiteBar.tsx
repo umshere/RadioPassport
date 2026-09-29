@@ -47,7 +47,16 @@ export default function SiteBar() {
           className="rp-eyebrow text-dust ew-site-room"
           prefetch="intent"
         >
-          About
+          How it works
+        </Link>
+        {/* Phones: the text link is hidden, so a square "?" keeps the guide one tap away. */}
+        <Link
+          to="/about"
+          className="ew-site-help"
+          prefetch="intent"
+          aria-label="How Elsewhere works"
+        >
+          ?
         </Link>
         <Button
           variant="frame"
