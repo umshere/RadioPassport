@@ -19,6 +19,7 @@ import {
 } from "~/state/upNextStore";
 import type { DispatchResponse } from "~/types/ai";
 import { stationLocation } from "~/components/radio-passport/StationRow";
+import { cleanTrackLine } from "~/services/keeper/cleanTitle";
 
 export function shouldAnimateDock(isPlaying: boolean, reducedMotion: boolean) {
   return isPlaying && !reducedMotion;
@@ -174,9 +175,7 @@ export default function PlayerDock() {
   };
 
   const track = room.signal.track;
-  const trackLine = track
-    ? [track.artist, track.title].filter(Boolean).join(" — ")
-    : null;
+  const trackLine = cleanTrackLine(track);
   const kept = favorites.includes(nowPlaying.uuid);
   const secondsLeft =
     ink === null ? null : Math.max(0, Math.ceil((1 - ink) * 60));

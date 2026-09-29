@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { cleanField, cleanTrack } from "~/services/keeper/cleanTitle";
+import { cleanField, cleanTrack, cleanTrackLine } from "~/services/keeper/cleanTitle";
 
 describe("cleanField", () => {
   it("repairs mojibake, strips sites, brackets, bitrates and edit suffixes", () => {
@@ -33,5 +33,14 @@ describe("cleanTrack kinds", () => {
   it("gives a single field low confidence and no artist", () => {
     const one = cleanTrack(null, "Barco Negro", "X");
     expect(one).toMatchObject({ kind: "track", confidence: 0.6, artist: null });
+  });
+});
+
+describe("cleanTrackLine", () => {
+  it("joins cleaned artist and title, and is null for nothing", () => {
+    expect(cleanTrackLine({ artist: "ToddDulaney [CEENAIJA.COM]", title: "Victory || www.CeeNaija.com" })).toBe("ToddDulaney — Victory");
+    expect(cleanTrackLine({ artist: null, title: "Barco Negro" })).toBe("Barco Negro");
+    expect(cleanTrackLine(null)).toBeNull();
+    expect(cleanTrackLine({ artist: "", title: "www.example.com" })).toBeNull();
   });
 });

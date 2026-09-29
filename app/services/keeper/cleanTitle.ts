@@ -89,3 +89,12 @@ export function cleanTrack(
   if (both.length === 1 && words <= 10) return { artist, title, kind: "track", confidence: 0.6 };
   return junk(0.6);
 }
+
+/** "Artist — Title" as the listener should read it: fields cleaned, empties dropped. */
+export function cleanTrackLine(
+  track: { artist?: string | null; title?: string | null } | null | undefined,
+): string | null {
+  if (!track) return null;
+  const line = [cleanField(track.artist), cleanField(track.title)].filter(Boolean).join(" — ");
+  return line || null;
+}

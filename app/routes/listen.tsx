@@ -17,7 +17,7 @@ import {
   theaterRoomGate,
   theaterWithoutStation,
 } from "~/components/radio-passport/productFlow";
-import { cleanField } from "~/services/keeper/cleanTitle";
+import { cleanTrackLine } from "~/services/keeper/cleanTitle";
 import { Eyebrow } from "~/components/ui/Eyebrow";
 import { ButtonLink } from "~/components/ui/Button";
 import type { NowPlayingTrack } from "~/types/nowPlaying";
@@ -79,11 +79,7 @@ export default function ListeningPage() {
   if (liveTrack) lastTrackRef.current = liveTrack;
   const displayTrack = liveTrack ?? lastTrackRef.current;
   // Streams append their own site names and tags; show the cleaned pair.
-  const rawTrackLine = displayTrack
-    ? [cleanField(displayTrack.artist), cleanField(displayTrack.title)]
-        .filter(Boolean)
-        .join(" — ") || null
-    : null;
+  const rawTrackLine = cleanTrackLine(displayTrack);
   const trackLine = theaterTrackCopy({
     isPlaying,
     metadataStatus: room.signal.status,
