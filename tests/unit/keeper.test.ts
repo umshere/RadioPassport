@@ -161,7 +161,7 @@ describe("keeper facts", () => {
     const facts = buildKeeperFacts(lisbon, room("ready", null), at(22, 40));
     expect(facts.hour).toEqual({ clock: "21:40", localHour: 21, solar: "Night" });
     expect(keeperOpeningLine(facts)).toBe(
-      "It’s 9:40 at night in Lisbon. This is Radio Alfama.",
+      "Landed. It’s 9:40 at night in Lisbon. This is Radio Alfama.",
     );
     expect(spokenHour("06:05", 6)).toBe("6:05 in the morning");
     expect(spokenHour("12:00", 12)).toBe("12:00 in the afternoon");
@@ -171,7 +171,7 @@ describe("keeper facts", () => {
   it("never guesses an hour for a station without coordinates", () => {
     const facts = buildKeeperFacts({ ...lisbon, longitude: null }, room("ready", null));
     expect(facts.hour).toBeNull();
-    expect(keeperOpeningLine(facts)).toBe("This is Radio Alfama, live from Lisbon.");
+    expect(keeperOpeningLine(facts)).toBe("Landed in Lisbon: this is Radio Alfama.");
     expect(answerLocally("city", facts).text).toContain("can’t tell you the hour");
     expect(suggestedQuestions(facts).some((chip) => chip.intent === "city")).toBe(false);
   });
@@ -231,7 +231,7 @@ describe("keeper facts", () => {
   it("offers an hour hop to morning, or to night when it is already morning", () => {
     const night = buildKeeperFacts(lisbon, room("empty", null), at(22));
     const hop = suggestedQuestions(night).slice(-1)[0];
-    expect(hop).toEqual({ intent: "hour_hop", label: "Somewhere it’s morning →", hour: "Dawn" });
+    expect(hop).toEqual({ intent: "hour_hop", label: "Take me somewhere it’s morning →", hour: "Dawn" });
     expect(answerLocally("hour_hop", night).action).toEqual({ kind: "hour_hop", hour: "Dawn" });
     const dawn = buildKeeperFacts(lisbon, room("empty", null), at(7));
     expect(suggestedQuestions(dawn).slice(-1)[0]?.hour).toBe("Night");

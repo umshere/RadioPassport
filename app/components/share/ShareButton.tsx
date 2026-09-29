@@ -1,6 +1,7 @@
 import { Button } from "~/components/ui/Button";
 import { usePlayerNoticeStore } from "~/state/playerNoticeStore";
 import type { Station } from "~/types/radio";
+import { VOICE } from "~/components/keeper/keeperVoice";
 import { shareStation } from "./shareStation";
 
 /** "Send this station to a friend": the share sheet, or a copied link. */
@@ -21,7 +22,7 @@ export function ShareButton({
       onClick={async () => {
         const result = await shareStation(station, clock);
         if (result === "copied") {
-          setNotice({ kind: "info", message: "Link copied. Send it to a friend.", durationMs: 3200 });
+          setNotice({ kind: "info", message: VOICE.shared, durationMs: 3200 });
         } else if (result === "failed") {
           // A closed share sheet says nothing; only a real failure is worth a word.
           if (typeof navigator === "undefined" || !navigator.share) {
@@ -30,7 +31,7 @@ export function ShareButton({
         }
       }}
     >
-      Send this station to a friend <span aria-hidden="true">&nearr;</span>
+      {VOICE.share} <span aria-hidden="true">&nearr;</span>
     </Button>
   );
 }

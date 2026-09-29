@@ -1,4 +1,5 @@
 import type { Station } from "~/types/radio";
+import { VOICE } from "~/components/keeper/keeperVoice";
 import { logUsage } from "~/utils/usage";
 
 export const TUNE_PARAM = "tune";
@@ -12,9 +13,7 @@ export function shareCopy(station: Pick<Station, "name" | "city" | "country">, c
   const place = station.city || station.country || "somewhere else";
   return {
     title: `${station.name} · ${place}`,
-    text: clock
-      ? `It’s ${clock} in ${place} right now. Listen live with me.`
-      : `Listen live with me: ${station.name}, ${place}.`,
+    text: VOICE.shareText(place, clock),
   };
 }
 

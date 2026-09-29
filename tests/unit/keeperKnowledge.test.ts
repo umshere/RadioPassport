@@ -147,14 +147,14 @@ describe("/api/keeper/ask — knowledge mode", () => {
     const none = (async () => new Response("{}", { status: 500 })) as unknown as typeof fetch;
     const complete = vi.fn(async () => "He is playing right now, you should explore.");
     const reply = await ask("Who is Ilayaraja?", noTitle, { fetchImpl: none, complete });
-    expect(reply.answer).toBe("I don’t know enough about Ilaiyaraaja to say from this desk.");
+    expect(reply.answer).toBe("I haven’t got Ilaiyaraaja in my notebook. Not from this desk, anyway.");
     expect(reply.source).toMatch(/^knowledge\+fallback:rejected:/);
   });
   it("admits it when there is no snippet and the model fails", async () => {
     const none = (async () => new Response("{}", { status: 500 })) as unknown as typeof fetch;
     const complete = vi.fn(async () => { throw new Error("down"); });
     const reply = await ask("Who is Ilayaraja?", noTitle, { fetchImpl: none, complete });
-    expect(reply.answer).toBe("I don’t know enough about Ilaiyaraaja to say from this desk.");
+    expect(reply.answer).toBe("I haven’t got Ilaiyaraaja in my notebook. Not from this desk, anyway.");
   });
   it("keeps now-playing and injection questions strictly on the station", async () => {
     const complete = vi.fn(async () => "should not be called");

@@ -7,6 +7,8 @@ import { useKeeperStore } from "~/state/keeperStore";
 import { usePlayerStore } from "~/state/playerStore";
 import { roomForStation, useRoomStore } from "~/state/roomStore";
 import { preferSecureArtworkUrl, sanitizeArtworkUrl } from "~/utils/stations";
+import { stationLocation } from "~/components/radio-passport/StationRow";
+import { VOICE } from "./keeperVoice";
 import { buildKeeperFacts, type KeeperFacts } from "./keeperFacts";
 import {
   deriveKeeperState,
@@ -131,6 +133,16 @@ export function useKeeperDelight() {
     if (freshlyInkedStampIds(seen, stamps).length) {
       useKeeperStore.getState().delight(KEEPER_DELIGHT_MS);
       useKeeperStore.getState().showScene("passport", KEEPER_DELIGHT_MS);
+      // The keeper says so, in a bubble, the moment the stamp lands.
+      const here = usePlayerStore.getState().nowPlaying;
+      if (here) {
+        const id = Date.now();
+        const store = useKeeperStore.getState();
+        store.setMurmur({ id, topic: "Stamped", text: VOICE.stamped(stationLocation(here)) });
+        window.setTimeout(() => {
+          if (useKeeperStore.getState().murmur?.id === id) useKeeperStore.getState().setMurmur(null);
+        }, 7000);
+      }
     }
   }, [journeyReady, stamps]);
 }

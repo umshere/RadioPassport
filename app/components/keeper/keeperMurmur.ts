@@ -1,5 +1,6 @@
 import { foldName } from "./keeperAliases";
 import { spokenHour, titleCase, type KeeperFacts } from "./keeperFacts";
+import { VOICE } from "./keeperVoice";
 
 /**
  * What the keeper says unasked. A plan, not a script: local lines are built
@@ -11,7 +12,7 @@ import { spokenHour, titleCase, type KeeperFacts } from "./keeperFacts";
 export type FactKind = "place" | "country" | "language" | "genre" | "artist";
 
 export type MurmurStep =
-  | { type: "local"; id: "hour" | "offset" | "language" | "stay" }
+  | { type: "local"; id: "arrive" | "hour" | "offset" | "language" | "stay" }
   | { type: "fact"; kind: FactKind; name: string };
 
 export const MURMUR_FIRST_MS = 7000;
@@ -39,6 +40,7 @@ export function planMurmurs(facts: KeeperFacts): MurmurStep[] {
     facts.station.tags.find(
       (tag) => tag.length > 2 && tag.length < 30 && !known.has(foldName(tag)),
     ) ?? null;
+  steps.push({ type: "local", id: "arrive" });
   if (facts.hour) steps.push({ type: "local", id: "hour" });
   if (place) steps.push({ type: "fact", kind: "place", name: place });
   if (facts.hour) steps.push({ type: "local", id: "offset" });
@@ -80,6 +82,8 @@ export function localMurmur(
 ): string | null {
   const place = facts.city || facts.station.country || "there";
   switch (step.id) {
+    case "arrive":
+      return VOICE.arrive(place === "there" ? facts.station.name : place);
     case "hour": {
       if (!facts.hour) return null;
       const spoken = spokenHour(facts.hour.clock, facts.hour.localHour);

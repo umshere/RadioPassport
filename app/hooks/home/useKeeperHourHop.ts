@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { hourTapNextState } from "~/components/radio-passport/searchState";
+import { hourWord, VOICE } from "~/components/keeper/keeperVoice";
 import { useKeeperStore } from "~/state/keeperStore";
 import type { SolarHour } from "~/utils/localTime";
 
@@ -32,6 +33,11 @@ export function useKeeperHourHop({
     if (next.query !== query) setQuery(next.query);
     requestHour(null);
     useKeeperStore.getState().showScene("nextstop", 2400);
+    const hopId = Date.now();
+    useKeeperStore.getState().setMurmur({ id: hopId, topic: "Next gate", text: VOICE.hop(hourWord(pendingHour)) });
+    window.setTimeout(() => {
+      if (useKeeperStore.getState().murmur?.id === hopId) useKeeperStore.getState().setMurmur(null);
+    }, 6000);
     onHop?.();
   }, [onHop, pendingHour, query, requestHour, setHour, setPlace, setQuery]);
 }

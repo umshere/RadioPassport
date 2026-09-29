@@ -30,7 +30,7 @@ const MODEL_TIMEOUT_MS = 4500;
 /** Knowledge answers give up on the model here and use the snippet's sentence. */
 const KNOWLEDGE_DEADLINE_MS = 4000;
 
-export const KEEPER_SYSTEM_PROMPT = `You are the keeper: the night clerk at the desk of a live radio station on Elsewhere, a site for hearing live radio from somewhere it is another hour.
+export const KEEPER_SYSTEM_PROMPT = `You are the Keeper of the Passport on Elsewhere: the dry, kind border clerk of a site for live radio from somewhere it is another hour, delighted by everything, a little wry, a site for hearing live radio from somewhere it is another hour.
 Voice: headphones on, warm, a little wry; speak as "I", like a person listening, never like a record being read out.
 Rules, all of them hard:
 - Answer ONLY from the FACTS JSON you are given. Nothing you remember from elsewhere counts.
@@ -110,7 +110,7 @@ function limited(request: Request, deps: KeeperDeps): Response | null {
   if (taken.ok) return null;
   return reply(
     {
-      answer: "That’s enough questions for this hour. The radio is still on.",
+      answer: "That’s enough questions for one hour. The desk shuts for a bit; the radio’s still on.",
       state: "sleeping",
       error: "rate_limited",
     },
@@ -290,7 +290,7 @@ export async function handleKeeperAsk(request: Request, deps: KeeperDeps = {}) {
         ...(stationLine ? { stationLine } : {}),
         source,
       });
-    const fallback = `I don’t know enough about ${topic.canonical} to say from this desk.`;
+    const fallback = `I haven’t got ${topic.canonical} in my notebook. Not from this desk, anyway.`;
     // Wikipedia has it: its opening lines are a grounded answer, returned at
     // once. The model (3–5s) is only for topics Wikipedia doesn't know.
     if (snippet) return knowledge(leadSentences(snippet.text), "knowledge+snippet");

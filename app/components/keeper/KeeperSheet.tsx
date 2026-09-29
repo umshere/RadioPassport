@@ -14,6 +14,7 @@ import { Keeper } from "./Keeper";
 import { askKeeper } from "./keeperClient";
 import { readKeeperFact } from "./keeperFactClient";
 import { planMurmurs } from "./keeperMurmur";
+import { VOICE } from "./keeperVoice";
 import {
   answerLocally,
   keeperOpeningLine,
@@ -36,8 +37,7 @@ export function useKeeperAskEnabled(): boolean {
 
 /** A beat of thought before a local answer, so the figure can look up. */
 const THINK_MS = 420;
-const FLAG_OFF_LINE =
-  "The keeper can’t take questions yet. Tap one of the lines above instead.";
+const FLAG_OFF_LINE = VOICE.askOff;
 
 type Talk = {
   question: string;
@@ -391,8 +391,8 @@ export function KeeperSheet({ view }: { view: KeeperView & { facts: KeeperFacts 
             </p>
           </div>
           {entries.length || (reading && askEnabled) ? (
-            <section className="ew-keeper-know" aria-label="Worth knowing">
-              <Eyebrow tone="foil">Worth knowing</Eyebrow>
+            <section className="ew-keeper-know" aria-label={VOICE.postcards(facts.city || facts.station.country)}>
+              <Eyebrow tone="foil">{VOICE.postcards(facts.city || facts.station.country)}</Eyebrow>
               {entries.slice(-3).map((entry) => (
                 <div key={`${entry.kind}:${entry.topic}`} className="ew-keeper-know-item">
                   <Eyebrow as="span" tone="dust">{entry.topic}</Eyebrow>
@@ -400,11 +400,11 @@ export function KeeperSheet({ view }: { view: KeeperView & { facts: KeeperFacts 
                 </div>
               ))}
               {reading && entries.length < 3 ? (
-                <p className="ew-keeper-know-wait">Reading up on {facts.city || facts.station.country}&hellip;</p>
+                <p className="ew-keeper-know-wait">{VOICE.reading(facts.city || facts.station.country)}</p>
               ) : null}
               {entries.length ? (
                 <Eyebrow as="span" tone="dust" className="ew-keeper-basis">
-                  From general knowledge &mdash; not from the station
+                  {VOICE.notebook}
                 </Eyebrow>
               ) : null}
             </section>
@@ -423,7 +423,7 @@ export function KeeperSheet({ view }: { view: KeeperView & { facts: KeeperFacts 
                 <p className="ew-keeper-q">{talk.question}</p>
                 {talk.answer && talk.basis === "knowledge" ? (
                   <Eyebrow as="span" tone="dust" className="ew-keeper-basis">
-                    From general knowledge &mdash; not from the station
+                    {VOICE.notebook}
                   </Eyebrow>
                 ) : null}
                 {talk.answer ? (
@@ -439,7 +439,7 @@ export function KeeperSheet({ view }: { view: KeeperView & { facts: KeeperFacts 
                 ) : null}
                 {talk.answer && talk.hop ? (
                   <Chip className="ew-keeper-hop" onClick={() => hopTo(talk.hop!)}>
-                    Take me there &rarr;
+                    Off we go &rarr;
                   </Chip>
                 ) : null}
               </>
@@ -453,15 +453,15 @@ export function KeeperSheet({ view }: { view: KeeperView & { facts: KeeperFacts 
             ))}
             {askEnabled
               ? topicSteps.map((step) => (
-                  <Chip key={`${step.kind}:${step.name}`} onClick={() => void ask(`Tell me about ${step.name}`)}>
-                    About {step.name}
+                  <Chip key={`${step.kind}:${step.name}`} onClick={() => void ask(VOICE.askAbout(step.name))}>
+                    {VOICE.askAbout(step.name)}
                   </Chip>
                 ))
               : null}
           </div>
           <form className="ew-keeper-ask" onSubmit={onAsk}>
             <label htmlFor="ew-keeper-input" className="sr-only">
-              Ask the keeper a question
+              Ask the desk a question
             </label>
             <input
               ref={inputRef}
@@ -471,7 +471,7 @@ export function KeeperSheet({ view }: { view: KeeperView & { facts: KeeperFacts 
               maxLength={KEEPER_QUESTION_MAX}
               autoComplete="off"
               enterKeyHint="send"
-              placeholder="Ask about this station, its place, its hour"
+              placeholder={VOICE.askPlaceholder}
               onChange={(event) => {
                 const typing = event.target.value.trim().length > 0;
                 setDraft(event.target.value);
@@ -492,7 +492,7 @@ export function KeeperSheet({ view }: { view: KeeperView & { facts: KeeperFacts 
             <ShareButton station={nowStation} clock={facts.hour ? spokenHour(facts.hour.clock, facts.hour.localHour) : null} className="ew-keeper-share" />
           ) : null}
           <Button variant="text" className="ew-keeper-hush" aria-pressed={hushed} onClick={() => setHushed(!hushed)}>
-            {hushed ? "Let the keeper speak up again" : "Keep the keeper quiet"}
+            {hushed ? VOICE.hushOff : VOICE.hushOn}
           </Button>
           {/* SPA link: the audio bridge in root keeps playing. */}
           <ButtonLink to="/listen" variant="atlas" className="ew-keeper-desk" onClick={close}>

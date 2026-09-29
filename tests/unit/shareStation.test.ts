@@ -9,8 +9,8 @@ describe("share a station", () => {
     expect(tuneLink(station)).toBe(`https://elsewheremusic.com/?${TUNE_PARAM}=8a1b2c3d-1111-2222-3333-444455556666`);
   });
   it("writes a human line, with the hour there when known", () => {
-    expect(shareCopy(station, "9:47 at night").text).toBe("It’s 9:47 at night in Mumbai right now. Listen live with me.");
-    expect(shareCopy(station).text).toBe("Listen live with me: Mirchi Love, Mumbai.");
+    expect(shareCopy(station, "9:47 at night").text).toBe("It’s 9:47 at night in Mumbai right now. Come and land here with me.");
+    expect(shareCopy(station).text).toBe("Come and land in Mumbai with me.");
   });
   it("falls back to copying the link when there is no share sheet", async () => {
     const writeText = vi.fn().mockResolvedValue(undefined);

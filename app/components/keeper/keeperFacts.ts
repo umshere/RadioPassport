@@ -260,9 +260,9 @@ export function spokenHour(clock: string, localHour: number): string {
 export function keeperOpeningLine(facts: KeeperFacts): string {
   const place = facts.city || facts.station.country;
   if (facts.hour && place) {
-    return `It’s ${spokenHour(facts.hour.clock, facts.hour.localHour)} in ${place}. This is ${facts.station.name}.`;
+    return `Landed. It’s ${spokenHour(facts.hour.clock, facts.hour.localHour)} in ${place}. This is ${facts.station.name}.`;
   }
-  if (place) return `This is ${facts.station.name}, live from ${place}.`;
+  if (place) return `Landed in ${place}: this is ${facts.station.name}.`;
   return `This is ${facts.station.name}, live now.`;
 }
 
@@ -288,10 +288,10 @@ export function hopHour(facts: KeeperFacts): SolarHour {
 }
 
 const HOP_LABEL: Record<SolarHour, string> = {
-  Dawn: "Somewhere it’s morning →",
-  Midday: "Somewhere it’s midday →",
-  Dusk: "Somewhere it’s dusk →",
-  Night: "Somewhere it’s night →",
+  Dawn: "Take me somewhere it’s morning →",
+  Midday: "Take me somewhere it’s midday →",
+  Dusk: "Take me somewhere it’s dusk →",
+  Night: "Take me somewhere it’s night →",
 };
 
 /** Chips for this moment. "Who is this artist?" only when an artist was sent. */
@@ -307,7 +307,7 @@ export function suggestedQuestions(facts: KeeperFacts): KeeperQuestion[] {
   if (facts.hour) {
     chips.push({ intent: "city", label: "What’s the hour there?" });
   }
-  chips.push({ intent: "station", label: "About this station" });
+  chips.push({ intent: "station", label: "Who’s this station?" });
   const hour = hopHour(facts);
   chips.push({ intent: "hour_hop", label: HOP_LABEL[hour], hour });
   return chips;
@@ -393,7 +393,7 @@ export function answerLocally(intent: KeeperIntent, facts: KeeperFacts): KeeperA
     case "hour_hop": {
       const hour = hopHour(facts);
       return {
-        text: `Somewhere it’s ${hour === "Dawn" ? "morning" : hour.toLowerCase()} right now. I’ll open that board.`,
+        text: `Off we go: somewhere it’s ${hour === "Dawn" ? "morning" : hour.toLowerCase()} right now. Opening that board.`,
         action: { kind: "hour_hop", hour },
       };
     }

@@ -4,6 +4,7 @@ import { Eyebrow } from "~/components/ui/Eyebrow";
 import { usePlayerStore } from "~/state/playerStore";
 import type { Station } from "~/types/radio";
 import { stationLocation } from "~/components/radio-passport/StationRow";
+import { VOICE } from "~/components/keeper/keeperVoice";
 import { logUsage } from "~/utils/usage";
 import { TUNE_PARAM } from "./shareStation";
 
@@ -45,8 +46,8 @@ export function TuneBridge() {
   if (!station) return null;
   const place = stationLocation(station);
   return (
-    <aside className="ew-tune" role="dialog" aria-label="A friend tuned you in">
-      <Eyebrow tone="foil">A friend tuned you in</Eyebrow>
+    <aside className="ew-tune" role="dialog" aria-label={VOICE.friendCard}>
+      <Eyebrow tone="foil">{VOICE.friendCard}</Eyebrow>
       <strong className="ew-tune-name">{station.name}</strong>
       <span className="ew-tune-place">{[place, station.country].filter(Boolean).join(" · ")}</span>
       <div className="ew-tune-actions">
@@ -58,10 +59,10 @@ export function TuneBridge() {
             setStation(null);
           }}
         >
-          Listen live
+          {VOICE.listenLive}
         </Button>
         <Button variant="text" onClick={() => setStation(null)}>
-          Not now
+          {VOICE.notNow}
         </Button>
       </div>
     </aside>

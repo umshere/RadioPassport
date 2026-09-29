@@ -21,7 +21,8 @@ const facts = buildKeeperFacts(station, { signal: { status: "empty", track: null
 describe("keeper murmurs", () => {
   it("plans local lines and fact steps in turn, with no artist step until a title exists", () => {
     const steps = planMurmurs(facts);
-    expect(steps[0]).toEqual({ type: "local", id: "hour" });
+    expect(steps[0]).toEqual({ type: "local", id: "arrive" });
+    expect(steps[1]).toEqual({ type: "local", id: "hour" });
     expect(steps.some((s) => s.type === "fact" && s.kind === "place" && s.name === "Lagos")).toBe(true);
     expect(steps.some((s) => s.type === "fact" && s.kind === "country")).toBe(true);
     expect(steps.some((s) => s.type === "fact" && s.kind === "language" && s.name === "English")).toBe(true);
