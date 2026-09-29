@@ -47,10 +47,10 @@
    upper right so the light falls away from the reading column. */
 .ew-env-rig {
   position: absolute;
-  left: calc(70% - 80vmax);
-  top: calc(20% - 80vmax);
-  width: 160vmax;
-  height: 160vmax;
+  left: calc(70% - 60vmax);
+  top: calc(20% - 60vmax);
+  width: 120vmax;
+  height: 120vmax;
   rotate: var(--env-angle);
   scale: 1 var(--env-stretch);
   translate: var(--env-tx) var(--env-ty);
@@ -63,7 +63,7 @@
 .ew-env-layer.is-far  { opacity: calc(var(--env-peak) * var(--env-far) * var(--env-gain) * var(--env-mob)); }
 .ew-env-layer { transition: opacity var(--env-dur) var(--env-ease); }
 
-.ew-env-img { position: absolute; inset: 0; width: 100%; height: 100%; display: none; max-width: none; will-change: transform; }
+.ew-env-img { position: absolute; inset: 0; width: 100%; height: 100%; display: none; max-width: none; }
 /* The unused room's sprite is never painted. */
 .ew-env-img.is-fleck { display: block; }
 :root[data-atmosphere="day"] .ew-env-img.is-fleck { display: none; }
@@ -103,7 +103,7 @@ html.ew-atmosphere-shift .ew-env * { transition: none !important; animation: non
 /* Phones: one sprite, off the header, gates, dock and band; feathered edges. */
 @media (max-width: 767px) {
   .ew-env { top: 150px; bottom: calc(96px + env(safe-area-inset-bottom, 0px)); -webkit-mask-image: linear-gradient(transparent, black 48px, black calc(100% - 48px), transparent); mask-image: linear-gradient(transparent, black 48px, black calc(100% - 48px), transparent); }
-  .ew-env-rig { left: calc(75% - 80vmax); top: calc(10% - 80vmax); }
+  .ew-env-rig { left: calc(75% - 60vmax); top: calc(10% - 60vmax); }
   .ew-env-layer.is-near { display: none; }
   .ew-env { --env-mob: .7; }
   .ew-env-layer.is-far { opacity: calc(var(--env-peak) * var(--env-gain) * var(--env-mob)); }
