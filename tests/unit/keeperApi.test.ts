@@ -224,7 +224,7 @@ describe("POST /api/keeper/ask", () => {
       { env: ON, bucket: freshBucket(), complete },
     );
     expect(await response.json()).toMatchObject({
-      answer: "Radio Alfama lists Portuguese.",
+      answer: "That’s Portuguese in your ears. Listen for the rhythm before the words.",
       state: "speaking",
       intent: "language",
     });
@@ -239,7 +239,7 @@ describe("POST /api/keeper/ask", () => {
     );
     const body = await response.json();
     expect(complete).not.toHaveBeenCalled();
-    expect(body.answer).toContain("sends no track titles");
+    expect(body.answer).toMatch(/couldn’t tell you|guessing/);
     expect(body.answer).not.toContain("Amália");
   });
 
@@ -280,7 +280,7 @@ describe("POST /api/keeper/ask", () => {
       { env: ON, bucket: freshBucket(), complete: broken },
     );
     expect(await down.json()).toMatchObject({
-      answer: "The station says this is Mariza. That’s all it tells me.",
+      answer: "Mariza, is what comes through. Past that I’d be making it up.",
       state: "speaking",
     });
   });

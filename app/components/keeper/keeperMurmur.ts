@@ -66,23 +66,23 @@ export function localMurmur(
     case "hour": {
       if (!facts.hour) return null;
       const spoken = spokenHour(facts.hour.clock, facts.hour.localHour);
-      const late = facts.hour.localHour < 5 ? " The night is still going." : "";
+      const late = facts.hour.localHour < 5 ? " Someone is still up." : "";
       return `It’s ${spoken} in ${place}.${late}`;
     }
     case "offset": {
       const diff = hourOffsetFromListener(facts, input.listenerHour);
       if (diff === null) return null;
-      if (diff === 0) return `By the sun, ${place} keeps your hour.`;
+      if (diff === 0) return `${place} keeps your hour, by the sun. Same light as yours.`;
       const n = Math.abs(diff);
-      return `By the sun, ${place} is ${n} hour${n === 1 ? "" : "s"} ${diff > 0 ? "ahead of" : "behind"} you.`;
+      return `${place} is ${n} hour${n === 1 ? "" : "s"} ${diff > 0 ? "ahead of" : "behind"} you, by the sun. Strange to share a radio.`;
     }
     case "language": {
       const list = facts.station.language ? titleCase(facts.station.language) : null;
-      return list ? `${facts.station.name} speaks ${list}. Listen for the rhythm before the words.` : null;
+      return list ? `${list} on the air. Listen for the rhythm before the words.` : null;
     }
     case "stay": {
-      if (input.minutesHere < 2) return `You have just landed in ${place}. Stay a minute.`;
-      return `${input.minutesHere} minutes in ${place} now.`;
+      if (input.minutesHere < 2) return `You’ve only just landed in ${place}. Stay a minute; it opens up.`;
+      return `${input.minutesHere} minutes in ${place} now. You’re practically local.`;
     }
   }
 }

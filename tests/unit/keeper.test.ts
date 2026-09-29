@@ -172,7 +172,7 @@ describe("keeper facts", () => {
     const facts = buildKeeperFacts({ ...lisbon, longitude: null }, room("ready", null));
     expect(facts.hour).toBeNull();
     expect(keeperOpeningLine(facts)).toBe("This is Radio Alfama, live from Lisbon.");
-    expect(answerLocally("city", facts).text).toContain("can’t read its hour");
+    expect(answerLocally("city", facts).text).toContain("can’t tell you the hour");
     expect(suggestedQuestions(facts).some((chip) => chip.intent === "city")).toBe(false);
   });
 
@@ -180,9 +180,9 @@ describe("keeper facts", () => {
     const facts = buildKeeperFacts(lisbon, room("empty", null), at(9));
     expect(facts.titles).toBe("none");
     expect(facts.track).toBeNull();
-    expect(keeperTrackLine(facts)).toBe("This station sends no track titles.");
-    expect(answerLocally("track", facts).text).toBe("This station sends no track titles.");
-    expect(answerLocally("artist", facts).text).toContain("sends no track titles");
+    expect(keeperTrackLine(facts)).toMatch(/names|sound|playing/);
+    expect(answerLocally("track", facts).text).toMatch(/names|sound|playing/);
+    expect(answerLocally("artist", facts).text).toMatch(/couldn’t tell you|guessing/);
     const chips = suggestedQuestions(facts).map((chip) => chip.label);
     expect(chips).not.toContain("Who is this artist?");
     expect(chips).not.toContain("What’s playing?");
@@ -191,11 +191,11 @@ describe("keeper facts", () => {
   it("is still listening while the title feed loads", () => {
     const facts = buildKeeperFacts(lisbon, room("loading", null), at(9));
     expect(facts.titles).toBe("waiting");
-    expect(keeperTrackLine(facts)).toBe("Listening for a title from the station.");
+    expect(keeperTrackLine(facts)).toBe("Ears up. Waiting for a name…");
     // A re-poll after the feed already answered "none" stays "none".
     const repoll = buildKeeperFacts(lisbon, room("loading", null), at(9), true);
     expect(repoll.titles).toBe("none");
-    expect(keeperTrackLine(repoll)).toBe("This station sends no track titles.");
+    expect(keeperTrackLine(repoll)).toMatch(/names|sound|playing/);
   });
 
   it("repeats the ICY title exactly and offers the artist chip only with an artist", () => {
@@ -203,7 +203,7 @@ describe("keeper facts", () => {
     expect(facts.track).toEqual({ artist: "Mariza", title: "Barco Negro" });
     expect(keeperTrackLine(facts)).toBe("Mariza — Barco Negro");
     expect(answerLocally("artist", facts).text).toBe(
-      "The station says this is Mariza. That’s all it tells me.",
+      "Mariza, is what comes through. Past that I’d be making it up.",
     );
     expect(suggestedQuestions(facts)[0]?.label).toBe("Who is this artist?");
 
@@ -211,7 +211,7 @@ describe("keeper facts", () => {
     expect(suggestedQuestions(titleOnly).map((chip) => chip.label)).not.toContain(
       "Who is this artist?",
     );
-    expect(answerLocally("artist", titleOnly).text).toContain("no artist name");
+    expect(answerLocally("artist", titleOnly).text).toContain("no name to go with it");
   });
 
   it("uses the dossier only alongside a real title", () => {
@@ -222,7 +222,7 @@ describe("keeper facts", () => {
     };
     const withTitle = buildKeeperFacts(lisbon, room("ready", icy("Mariza", "Barco Negro"), dossier));
     expect(answerLocally("artist", withTitle).text).toBe(
-      "The station says this is Mariza. Portuguese fado singer.",
+      "That’s Mariza. Portuguese fado singer.",
     );
     const noTitle = buildKeeperFacts(lisbon, room("empty", null, dossier));
     expect(noTitle.dossier).toBeNull();
@@ -239,12 +239,12 @@ describe("keeper facts", () => {
 
   it("answers language and station from the record", () => {
     const facts = buildKeeperFacts(lisbon, room("empty", null), at(9));
-    expect(answerLocally("language", facts).text).toBe("Radio Alfama lists Portuguese.");
+    expect(answerLocally("language", facts).text).toBe("That’s Portuguese in your ears. Listen for the rhythm before the words.");
     expect(answerLocally("station", facts).text).toBe(
-      "Radio Alfama, Portugal. It streams at 128 kbps MP3. It tags itself fado, jazz.",
+      "That’s Radio Alfama, out of Portugal. The signal is 128 kbps MP3. They call themselves fado, jazz.",
     );
-    expect(answerLocally("off_topic", facts).text).toContain("only keep this desk");
-    expect(answerLocally("unknown", facts).text).toBe("I don’t know that from here.");
+    expect(answerLocally("off_topic", facts).text).toContain("past my desk");
+    expect(answerLocally("unknown", facts).text).toBe("I can’t make that one out from here.");
   });
 
   it("server re-reads facts: drops unknown keys, caps sizes, refuses junk", () => {

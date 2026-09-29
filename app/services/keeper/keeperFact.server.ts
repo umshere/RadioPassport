@@ -20,6 +20,7 @@ const cache = new Map<string, { at: number; value: FactBody }>();
 export type FactBody = { fact: string; topic: string; kind: FactKind; source: string };
 
 const FACT_SYSTEM_PROMPT = `You are the keeper, the night clerk of a live radio site. From SNIPPET only, pick the single most surprising or vivid concrete fact about TOPIC, the kind a listener would repeat to a friend.
+Voice: headphones on, warm, a little wry, like telling a friend across the desk, never a caption.
 Rules, all of them hard:
 - One sentence, at most ${FACT_WORDS} words. Plain, warm, a little literary.
 - Use only what SNIPPET states. No numbers, dates or names that SNIPPET does not contain.

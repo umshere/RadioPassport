@@ -81,7 +81,7 @@ describe("keeper fact route", () => {
       fetchImpl: wiki,
       complete: async () => "Lagos has 40 million people and 300 islands.",
     });
-    expect(out.source).toBe("snippet");
+    expect(out.source).toBe("snippet:rejected:number");
     expect(out.fact).toBe("Lagos is a port city in Nigeria.");
   });
 

@@ -220,6 +220,25 @@ export function sanitizeKeeperFacts(raw: unknown): KeeperFacts | null {
   };
 }
 
+/**
+ * The keeper's voice: a night clerk with headphones on, who has heard a lot of
+ * radio. Short, warm, a little wry; first person; never reads out a record.
+ * Each line has a few ways to be said, chosen by station so the same desk
+ * always sounds like itself but two desks do not sound alike.
+ */
+function say(pool: readonly string[], seed: string): string {
+  let h = 0;
+  for (let i = 0; i < seed.length; i += 1) h = (h * 31 + seed.charCodeAt(i)) >>> 0;
+  return pool[h % pool.length]!;
+}
+
+const DAYPART: Record<SolarHour, string> = {
+  Dawn: "The day is only just getting started there.",
+  Midday: "Full daylight there.",
+  Dusk: "The light is going there.",
+  Night: "Lamps on there.",
+};
+
 /** "9:40 at night" from a 24h clock. */
 export function spokenHour(clock: string, localHour: number): string {
   const minutes = clock.slice(3, 5);
@@ -252,8 +271,15 @@ export function keeperTrackLine(facts: KeeperFacts): string {
   if (facts.track) {
     return [facts.track.artist, facts.track.title].filter(Boolean).join(" — ");
   }
-  if (facts.titles === "waiting") return "Listening for a title from the station.";
-  return "This station sends no track titles.";
+  if (facts.titles === "waiting") return "Ears up. Waiting for a name…";
+  return say(
+    [
+      "They’re keeping the names to themselves on this one.",
+      "No names here, just the sound.",
+      "This one never says what it’s playing. Just listen.",
+    ],
+    facts.station.name,
+  );
 }
 
 /** Somewhere it is another hour: morning, unless it is already morning there. */
@@ -308,20 +334,26 @@ export function answerLocally(intent: KeeperIntent, facts: KeeperFacts): KeeperA
         return {
           text:
             facts.titles === "waiting"
-              ? "The station hasn’t sent a title yet. Give it a moment."
-              : "This station sends no track titles, so I can’t say who this is.",
+              ? "Hold on, I’m still catching it…"
+              : say(
+                  [
+                    `I couldn’t tell you. This one never says who’s singing. Ask me about ${place}, though. I’ve got stories.`,
+                    `They don’t name anyone on this stream, so I’d only be guessing. ${place}, on the other hand: ask away.`,
+                  ],
+                  facts.station.name,
+                ),
         };
       }
       if (!facts.track.artist) {
         return {
-          text: `The station sends a title, “${facts.track.title}”, but no artist name.`,
+          text: `I’m getting “${facts.track.title}” and no name to go with it. A little mysterious.`,
         };
       }
       const detail = facts.dossier?.summary ?? facts.dossier?.facts[0]?.value ?? null;
       return {
         text: detail
-          ? `The station says this is ${facts.track.artist}. ${detail}`
-          : `The station says this is ${facts.track.artist}. That’s all it tells me.`,
+          ? `That’s ${facts.track.artist}. ${detail}`
+          : `${facts.track.artist}, is what comes through. Past that I’d be making it up.`,
       };
     }
     case "track":
@@ -329,32 +361,32 @@ export function answerLocally(intent: KeeperIntent, facts: KeeperFacts): KeeperA
         return {
           text:
             facts.titles === "waiting"
-              ? "Listening for a title from the station."
-              : "This station sends no track titles.",
+              ? "Ears up. Waiting for a name…"
+              : keeperTrackLine(facts),
         };
       }
-      return { text: `The station sends: “${keeperTrackLine(facts)}”.` };
+      return { text: `Coming through right now: “${keeperTrackLine(facts)}”.` };
     case "language":
       return facts.station.language
-        ? { text: `${facts.station.name} lists ${titleCase(facts.station.language)}.` }
-        : { text: "The station doesn’t list a language. Stay a while and hear it." };
+        ? { text: `That’s ${titleCase(facts.station.language)} in your ears. Listen for the rhythm before the words.` }
+        : { text: "I couldn’t swear to the language yet. Stay a while and let your ear decide." };
     case "city":
       return facts.hour
         ? {
-            text: `It’s ${facts.hour.clock} in ${place} — ${facts.hour.solar.toLowerCase()} there.${facts.station.country && facts.station.country !== place ? ` ${place} is in ${facts.station.country}.` : ""}`,
+            text: `It’s ${spokenHour(facts.hour.clock, facts.hour.localHour)} in ${place}. ${DAYPART[facts.hour.solar]}${facts.station.country && facts.station.country !== place ? ` ${place} is in ${facts.station.country}.` : ""}`,
           }
         : {
-            text: `${facts.station.name} broadcasts from ${place}. It sends no coordinates, so I can’t read its hour.`,
+            text: `${facts.station.name} comes out of ${place}. Where exactly, it won’t say, so I can’t tell you the hour.`,
           };
     case "station": {
-      const parts = [`${facts.station.name}${facts.station.country ? `, ${facts.station.country}` : ""}.`];
+      const parts = [`That’s ${facts.station.name}${facts.station.country ? `, out of ${facts.station.country}` : ""}.`];
       if (facts.station.bitrate) {
         parts.push(
-          `It streams at ${facts.station.bitrate} kbps${facts.station.codec ? ` ${facts.station.codec.toUpperCase()}` : ""}.`,
+          `The signal is ${facts.station.bitrate} kbps${facts.station.codec ? ` ${facts.station.codec.toUpperCase()}` : ""}.`,
         );
       }
       if (facts.station.tags.length) {
-        parts.push(`It tags itself ${facts.station.tags.slice(0, 4).join(", ")}.`);
+        parts.push(`They call themselves ${facts.station.tags.slice(0, 4).join(", ")}.`);
       }
       return { text: parts.join(" ") };
     }
@@ -367,9 +399,9 @@ export function answerLocally(intent: KeeperIntent, facts: KeeperFacts): KeeperA
     }
     case "off_topic":
       return {
-        text: "I only keep this desk — the station, its place and its hour.",
+        text: "That’s past my desk, I’m afraid. Station, place, hour: those I can do.",
       };
     default:
-      return { text: "I don’t know that from here." };
+      return { text: "I can’t make that one out from here." };
   }
 }
