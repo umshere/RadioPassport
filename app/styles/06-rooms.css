@@ -308,7 +308,7 @@
     .rp-dock strong { font-size: 13px; }
     .rp-dock .ew-dock-sub { display: none; }
     .rp-dock-play { width: 44px; height: 44px; }
-    .rp-theater-link { display: inline !important; font-size: 8px; letter-spacing: .1em; }
+    .rp-theater-link { display: inline !important; font-size: 10px; letter-spacing: .1em; }
     .rp-toast { right: 14px; left: 14px; bottom: calc(var(--player-dock-clearance, 108px) + env(safe-area-inset-bottom, 0px)); min-width: 0; }
     .ew-theater {
       padding: 0;

@@ -27,47 +27,52 @@ export function useShelfProbe(stations: Station[], key = "default") {
 
   useEffect(() => {
     if (askedRef.current.size >= MAX_PROBED) return;
-    const batch = stations
-      .filter((station) => !askedRef.current.has(station.uuid))
-      .slice(0, SHELF);
-    if (!batch.length) return;
-    batch.forEach((station) => askedRef.current.add(station.uuid));
+    const fresh = stations
+      .slice(0, MAX_PROBED)
+      .filter((station) => !askedRef.current.has(station.uuid));
+    if (!fresh.length) return;
+    fresh.forEach((station) => askedRef.current.add(station.uuid));
 
+    // Every shelf is asked at once: the first eight land first, the rest do
+    // not wait behind them.
     let cancelled = false;
-    void fetch("/api/stations/probe", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        stations: batch.map((station) => ({
-          uuid: station.uuid,
-          url: station.url,
-          streamUrl: station.streamUrl,
-        })),
-      }),
-    })
-      .then(async (response) =>
-        response.ok
-          ? ((await response.json()) as { stations?: ProbePatch[] })
-          : { stations: [] }
-      )
-      .then((payload) => {
-        if (cancelled) return;
-        const next = payload.stations ?? [];
-        if (!next.length) return;
-        setPatches((current) => {
-          const merged = { ...current };
-          for (const patch of next) {
-            if (patch.uuid) merged[patch.uuid] = patch;
-          }
-          return merged;
-        });
+    for (let at = 0; at < fresh.length; at += SHELF) {
+      const batch = fresh.slice(at, at + SHELF);
+      void fetch("/api/stations/probe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          stations: batch.map((station) => ({
+            uuid: station.uuid,
+            url: station.url,
+            streamUrl: station.streamUrl,
+          })),
+        }),
       })
-      .catch(() => undefined);
+        .then(async (response) =>
+          response.ok
+            ? ((await response.json()) as { stations?: ProbePatch[] })
+            : { stations: [] }
+        )
+        .then((payload) => {
+          if (cancelled) return;
+          const next = payload.stations ?? [];
+          if (!next.length) return;
+          setPatches((current) => {
+            const merged = { ...current };
+            for (const patch of next) {
+              if (patch.uuid) merged[patch.uuid] = patch;
+            }
+            return merged;
+          });
+        })
+        .catch(() => undefined);
+    }
 
     return () => {
       cancelled = true;
     };
-  }, [identity, key, patches, stations]);
+  }, [identity, key, stations]);
 
   return useMemo(() => {
     const merged = stations.map((station) => {

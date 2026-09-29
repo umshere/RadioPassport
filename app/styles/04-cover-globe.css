@@ -27,7 +27,7 @@
   .ew-dossier dd {
     margin: 5px 0 0;
     color: var(--ew-dust);
-    font-size: 14px;
+    font-size: 15px;
     line-height: 1.4;
   }
   .ew-plate {
@@ -87,7 +87,7 @@
     background: transparent;
     padding: 0 2px;
     color: var(--ew-foil);
-    font: 500 12px/1 "Schibsted Grotesk", sans-serif;
+    font: 500 13px/1 "Schibsted Grotesk", sans-serif;
   }
 
   .rp-globe-side {
@@ -151,7 +151,7 @@
     display: block;
     margin-top: 4px;
     color: var(--ew-dust);
-    font: 500 9px/1.4 "Azeret Mono", monospace;
+    font: 500 10px/1.4 "Azeret Mono", monospace;
     letter-spacing: .12em;
     text-transform: uppercase;
   }
@@ -159,7 +159,7 @@
     display: block;
     margin-top: 6px;
     color: var(--ew-bone);
-    font: 500 12px/1.35 "Schibsted Grotesk", sans-serif;
+    font: 500 13px/1.35 "Schibsted Grotesk", sans-serif;
     font-style: normal;
   }
   .ew-cover {
@@ -283,7 +283,7 @@
     letter-spacing: -.04em;
     color: var(--ew-foil);
   }
-  .rp-stat span { display: block; margin-top: 7px; color: var(--ew-dust); font-size: 9px; }
+  .rp-stat span { display: block; margin-top: 7px; color: var(--ew-dust); font-size: 10px; }
   .rp-stamp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(168px, 1fr)); gap: 14px; margin-top: 12px; }
   .rp-stamp {
     min-height: 168px;
@@ -301,7 +301,7 @@
     letter-spacing: -.02em;
   }
   .rp-stamp p:not(.rp-eyebrow) { color: var(--ew-dust); font: 10px "Azeret Mono", monospace; }
-  .rp-stamp small { display: block; margin-top: 14px; color: var(--ew-dust); font: 9px "Azeret Mono", monospace; }
+  .rp-stamp small { display: block; margin-top: 14px; color: var(--ew-dust); font: 10px "Azeret Mono", monospace; }
   .rp-stamp-empty {
     display: grid;
     place-items: center;

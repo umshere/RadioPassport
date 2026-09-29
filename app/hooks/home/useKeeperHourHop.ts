@@ -31,6 +31,7 @@ export function useKeeperHourHop({
     setPlace(next.place);
     if (next.query !== query) setQuery(next.query);
     requestHour(null);
+    useKeeperStore.getState().showScene("nextstop", 2400);
     onHop?.();
   }, [onHop, pendingHour, query, requestHour, setHour, setPlace, setQuery]);
 }

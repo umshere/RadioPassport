@@ -301,14 +301,14 @@
     background: none;
     padding: 6px 0;
     color: var(--ew-foil);
-    font: 500 12px/1 "Schibsted Grotesk", sans-serif;
+    font: 500 13px/1 "Schibsted Grotesk", sans-serif;
   }
   .ew-caption {
     margin: 10px 0 0;
     max-width: 36ch;
     color: var(--ew-dust);
     font-family: "Newsreader", serif;
-    font-size: 17px;
+    font-size: 18px;
     font-style: italic;
     line-height: 1.45;
   }

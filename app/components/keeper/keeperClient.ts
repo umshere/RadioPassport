@@ -1,3 +1,4 @@
+import { logUsage } from "~/utils/usage";
 import type { SolarHour } from "~/utils/localTime";
 import type { KeeperFacts } from "./keeperFacts";
 import { isKeeperIntent, type KeeperIntent } from "./keeperIntent";
@@ -28,6 +29,7 @@ export async function askKeeper(
   fetchImpl: typeof fetch = fetch,
   timeoutMs = CLIENT_TIMEOUT_MS,
 ): Promise<KeeperReply | null> {
+  logUsage("keeper_ask");
   const request = fetchImpl("/api/keeper/ask", {
     method: "POST",
     headers: { "Content-Type": "application/json" },

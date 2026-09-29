@@ -55,35 +55,17 @@ export default function PlayerDock() {
     const next = queue.length
       ? queue[(index + 1) % queue.length]
       : null;
-    if (!isPlaying || !next || next.uuid === nowPlaying.uuid) return;
+    if (!next || next.uuid === nowPlaying.uuid) return;
     const id = next.uuid;
     const store = useUpNextStore.getState();
     if (upNextFresh(store.entries[id], Date.now())) return;
+    // The up-next row needs only the shared signals; no network call.
     store.put(id, {
       dispatch: null,
       shared: sharedSignals(nowPlaying, next),
       fetchedAt: Date.now(),
     });
-    let alive = true;
-    void fetch("/api/ai/dispatch", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(dispatchRequestFor(next, null)),
-    })
-      .then(async (response) => (response.ok ? response.json() : null))
-      .then((payload: DispatchResponse | null) => {
-        if (!alive || !payload?.dispatch) return;
-        useUpNextStore.getState().put(id, {
-          dispatch: payload.dispatch,
-          shared: sharedSignals(nowPlaying, next),
-          fetchedAt: Date.now(),
-        });
-      })
-      .catch(() => { });
-    return () => {
-      alive = false;
-    };
-  }, [index, isPlaying, mounted, nowPlaying, queue]);
+  }, [index, mounted, nowPlaying, queue]);
 
   useEffect(() => {
     if (!nowPlaying) return;
@@ -312,7 +294,7 @@ export default function PlayerDock() {
         <span className="ew-dock-sub rp-telemetry mt-0.5 block truncate">
           LIVE · {city}
         </span>
-        <span className="ew-dock-track mt-0.5 block truncate text-[12px] text-dust">
+        <span className="ew-dock-track mt-0.5 block truncate text-[13px] text-dust">
           {trackLine ||
             room.caption?.localLabel ||
             `Live from ${city}. No track title from this station.`}

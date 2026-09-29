@@ -1,5 +1,6 @@
 import { FlipBoard } from "~/components/radio-passport/FlipBoard";
 import { Button } from "~/components/ui/Button";
+import { useKeeperStore, type KeeperScene } from "~/state/keeperStore";
 import {
   keeperPlate,
   keeperStateLabel,
@@ -100,14 +101,17 @@ const SPRITE: Record<KeeperState, string> = {
   delight: "found",
 };
 
-export function keeperSpriteUrl(state: KeeperState) {
-  return `/keeper/${SPRITE[state]}.webp`;
+export function keeperSpriteUrl(state: KeeperState, scene?: KeeperScene | null) {
+  return `/keeper/${scene ?? SPRITE[state]}.webp`;
 }
+
+/** A scene pose only replaces the resting poses; a question in flight wins. */
+const SCENE_OVER: KeeperState[] = ["idle", "delight", "sleeping"];
 
 /** Warm the cache so a state change never shows a blank frame. */
 export function preloadKeeperSprites() {
   if (typeof Image === "undefined") return;
-  for (const name of new Set(Object.values(SPRITE))) {
+  for (const name of new Set([...Object.values(SPRITE), "passport", "nextstop"])) {
     const img = new Image();
     img.src = `/keeper/${name}.webp`;
   }
@@ -115,11 +119,13 @@ export function preloadKeeperSprites() {
 
 /** The sprite. `key` restarts the flap-in each time the state changes. */
 export function KeeperFigure({ state }: { state: KeeperState }) {
+  const sceneNow = useKeeperStore((store) => store.scene);
+  const scene = sceneNow && SCENE_OVER.includes(state) ? sceneNow : null;
   return (
     <img
-      key={state}
+      key={scene ?? state}
       className="ew-keeper-sprite"
-      src={keeperSpriteUrl(state)}
+      src={keeperSpriteUrl(state, scene)}
       alt=""
       width={214}
       height={214}

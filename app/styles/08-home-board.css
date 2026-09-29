@@ -208,14 +208,14 @@ html, body {
   color: var(--ew-bone);
 }
 .rp-stamp-ticket .rp-stamp-stub em {
-  font: 500 9px/1 "Azeret Mono", monospace;
+  font: 500 10px/1 "Azeret Mono", monospace;
   font-style: normal;
   letter-spacing: 0.14em;
   color: var(--ew-dust);
 }
 .rp-stamp-ticket .rp-stamp-stub small {
   margin-top: 0;
-  font: 9px/1.3 "Azeret Mono", monospace;
+  font: 10px/1.3 "Azeret Mono", monospace;
   color: var(--ew-dust);
 }
 /* Appended outside any @layer: Tailwind v3 nondeterministically drops rules
@@ -228,7 +228,7 @@ html, body {
   background: transparent;
   padding: 0;
   color: var(--ew-dust);
-  font: 400 16px/1 "Azeret Mono", monospace;
+  font: 400 15px/1 "Azeret Mono", monospace;
 }
 .rp-intent-clear:hover {
   color: var(--ew-lacquer);
@@ -256,7 +256,7 @@ html, body {
    page, the same condition Room paints under. Passport and country drill
    down ride the same veil, so they keep their chrome too. */
 .rp-overlay { bottom: calc(44px + env(safe-area-inset-bottom, 0px)); }
-.ew-band-nav-slot { display: grid; place-items: center; min-height: 44px; border: 0; background: transparent; padding: 0; color: var(--ew-dust); font: 500 9px/1 "Azeret Mono", monospace; letter-spacing: .16em; text-transform: uppercase; text-decoration: none; cursor: pointer; }
+.ew-band-nav-slot { display: grid; place-items: center; min-height: 44px; border: 0; background: transparent; padding: 0; color: var(--ew-dust); font: 500 10px/1 "Azeret Mono", monospace; letter-spacing: .16em; text-transform: uppercase; text-decoration: none; cursor: pointer; }
 .ew-band-nav-slot.is-current { color: var(--ew-foil); box-shadow: inset 0 -1px 0 var(--ew-foil); }
 .ew-band-nav-slot.is-disabled { color: rgba(154,143,128,.4); cursor: default; pointer-events: none; }
 :root[data-atmosphere="day"] .ew-band-nav-slot.is-disabled { color: rgba(111,103,92,.4); }
@@ -293,7 +293,7 @@ html, body {
 .ew-horizon > .ew-atlas { display: none; }
 .rp-horizon-row { position: relative; top: auto; right: auto; left: auto; z-index: 4; width: 100%; min-height: 44px; margin: 0; }
 .ew-atmosphere--split { display: flex; width: 100%; min-height: 44px; justify-content: space-between; }
-.ew-horizon-kicker { display: inline-flex; align-items: center; min-height: 44px; color: var(--ew-dust); font: 500 9px/1 "Azeret Mono", monospace; letter-spacing: .16em; text-transform: uppercase; }
+.ew-horizon-kicker { display: inline-flex; align-items: center; min-height: 44px; color: var(--ew-dust); font: 500 10px/1 "Azeret Mono", monospace; letter-spacing: .16em; text-transform: uppercase; }
 .ew-atmosphere button { min-height: 44px; }
 }
 
@@ -374,13 +374,13 @@ html, body {
 .ew-known { margin-top: 16px; border-top: 1px solid var(--ew-rule); padding-top: 12px; }
 .ew-known-lab { color: var(--ew-dust); }
 .ew-krow { display: flex; align-items: baseline; gap: 12px; min-height: 44px; border-bottom: 1px solid var(--ew-rule); padding: 7px 0; }
-.ew-krow-key { flex: none; width: 62px; color: var(--ew-dust); font: 500 9px/1.35 "Azeret Mono", monospace; letter-spacing: .16em; text-transform: uppercase; }
+.ew-krow-key { flex: none; width: 62px; color: var(--ew-dust); font: 500 10px/1.35 "Azeret Mono", monospace; letter-spacing: .16em; text-transform: uppercase; }
 .ew-krow-value { min-width: 0; font-size: 15px; font-weight: 500; color: var(--ew-bone); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
-.ew-krow-prov { display: inline-flex; align-items: center; margin: 0 0 0 auto; color: var(--ew-dust); font: 500 9px/1.35 "Azeret Mono", monospace; letter-spacing: .14em; text-transform: uppercase; }
+.ew-krow-prov { display: inline-flex; align-items: center; margin: 0 0 0 auto; color: var(--ew-dust); font: 500 10px/1.35 "Azeret Mono", monospace; letter-spacing: .14em; text-transform: uppercase; }
 .ew-known-line { margin: 14px 0 0; color: var(--ew-dust); font: 500 10px/1.35 "Azeret Mono", monospace; letter-spacing: .16em; text-transform: uppercase; }
 .ew-waiting { display: flex; align-items: center; gap: 9px; margin: 14px 0 0; color: var(--ew-dust); font: 500 10px/1.35 "Azeret Mono", monospace; letter-spacing: .16em; text-transform: uppercase; }
 .ew-waiting-dot { display: block; flex: none; width: 7px; height: 7px; border-radius: 50%; background: var(--ew-ether); }
-.ew-desk-verified { margin: 12px 0 0; color: var(--ew-foil); font: 500 9px/1.35 "Azeret Mono", monospace; letter-spacing: .14em; text-transform: uppercase; }
+.ew-desk-verified { margin: 12px 0 0; color: var(--ew-foil); font: 500 10px/1.35 "Azeret Mono", monospace; letter-spacing: .14em; text-transform: uppercase; }
 .ew-meridian-host { margin-left: 8px; color: var(--ew-dust); font-style: normal; letter-spacing: .06em; text-transform: none; }
 @media (max-width: 960px) {
 :root[data-atmosphere="day"] .ew-meridian-host { color: #665F55; }
@@ -405,9 +405,6 @@ html, body {
 .ew-plate-caption { display: block; margin: 0; color: var(--ew-dust); font-family: "Newsreader", "Iowan Old Style", "Palatino Linotype", serif; font-style: italic; font-size: 13px; line-height: 1.5; }
 .ew-theater-queue { display: flex; flex-direction: column; margin-top: 16px; }
 .ew-theater-queue > .rp-eyebrow { color: var(--ew-dust); }
-.ew-theater-qrow { display: flex; align-items: baseline; justify-content: space-between; gap: 14px; min-height: 44px; border: 0; border-bottom: 1px solid var(--ew-rule); background: transparent; padding: 8px 0; text-align: left; color: var(--ew-bone); cursor: pointer; }
-.ew-theater-qrow b { overflow: hidden; font-size: 14px; font-weight: 500; text-overflow: ellipsis; white-space: nowrap; }
-.ew-theater-qrow .rp-eyebrow { flex: none; color: var(--ew-dust); }
 }
 
 /* Home board — split-flap letters. Outside @layer (Tailwind v3 drops layered rules). */
@@ -456,7 +453,7 @@ html, body {
 .ew-secret-return { color: var(--ew-dust); font: 500 10px/1.5 "Azeret Mono", monospace; letter-spacing: .08em; }
 .ew-secret-clue { max-width: 56ch; margin: 4px 0 18px; border-top: 1px solid var(--ew-rule); padding-top: 17px; }
 .ew-secret-clue > p:not(.rp-eyebrow) { margin: 11px 0 13px; color: var(--ew-bone); font: italic 18px/1.45 "Newsreader", serif; }
-.ew-secret-hint { color: var(--ew-dust) !important; font-size: 14px !important; }
+.ew-secret-hint { color: var(--ew-dust) !important; font-size: 15px !important; }
 .ew-secret-answers { display: flex; flex-wrap: wrap; gap: 8px; }
 .ew-secret-answers button, .ew-secret-clue > a, .ew-trail-whisper button, .ew-trail-whisper a, .ew-secret-ask button { min-height: 44px; border: 0; border-bottom: 1px solid var(--ew-foil-line); background: transparent; padding: 8px 4px; color: var(--ew-foil); cursor: pointer; font: 500 11px/1.3 "Azeret Mono", monospace; letter-spacing: .12em; text-transform: uppercase; }
 .ew-trail-whisper { position: fixed; z-index: 42; top: calc(62px + env(safe-area-inset-top, 0px)); left: 50%; display: flex; align-items: center; gap: 16px; width: min(calc(100% - 32px), 700px); transform: translateX(-50%); border-top: 1px solid var(--ew-foil-line); border-bottom: 1px solid var(--ew-rule); background: var(--ew-ink); box-shadow: 0 12px 35px rgba(0,0,0,.22); padding: 12px 16px; }
@@ -467,7 +464,7 @@ html, body {
 .ew-secret-story { grid-column: 1; grid-row: 2; align-self: center; max-width: 58ch; }.ew-secret-story p { margin: 0 0 15px; color: var(--ew-dust); font: italic clamp(18px,2vw,24px)/1.3 "Newsreader",serif; }.ew-secret-story h1 { max-width: 12ch; margin: 30px 0 0; font: 400 clamp(42px,6vw,80px)/.94 "Newsreader",serif; letter-spacing: -.04em; }
 .ew-secret-traveler { grid-column: 2; grid-row: 2 / 4; align-self: end; width: 100%; max-height: min(70svh,540px); object-fit: contain; object-position: bottom; }
 .ew-secret-ask { grid-column: 1; grid-row: 3; max-width: 58ch; border-top: 1px solid var(--ew-rule); padding-top: 20px; }.ew-secret-ask > p:first-child { margin: 0; color: var(--ew-dust); font: italic 18px/1.2 "Newsreader",serif; }.ew-secret-ask h2 { margin: 8px 0 18px; font: 400 clamp(24px,3vw,36px)/1.04 "Newsreader",serif; }
-.ew-secret-choice { display: flex; flex-wrap: wrap; gap: 16px; }.ew-secret-choice button + button { color: var(--ew-dust); border-bottom-color: var(--ew-rule); }.ew-secret-answer { max-width: 52ch; margin: 0 0 12px; color: var(--ew-dust); font: italic 16px/1.4 "Newsreader",serif; }.ew-secret-home { display: inline-block; margin-top: 25px; color: var(--ew-dust); font: 500 10px/1.3 "Azeret Mono",monospace; letter-spacing: .14em; text-transform: uppercase; }.ew-secret-room-empty { display: flex; flex-direction: column; align-items: flex-start; justify-content: center; max-width: 850px; margin: 0 auto; }
+.ew-secret-choice { display: flex; flex-wrap: wrap; gap: 16px; }.ew-secret-choice button + button { color: var(--ew-dust); border-bottom-color: var(--ew-rule); }.ew-secret-answer { max-width: 52ch; margin: 0 0 12px; color: var(--ew-dust); font: italic 15px/1.4 "Newsreader",serif; }.ew-secret-home { display: inline-block; margin-top: 25px; color: var(--ew-dust); font: 500 10px/1.3 "Azeret Mono",monospace; letter-spacing: .14em; text-transform: uppercase; }.ew-secret-room-empty { display: flex; flex-direction: column; align-items: flex-start; justify-content: center; max-width: 850px; margin: 0 auto; }
 .ew-secret-coffee { display: grid; grid-template-columns: minmax(130px,210px) minmax(0,1fr); align-items: center; gap: 18px; max-width: 610px; margin: 20px 0 4px; padding-top: 18px; border-top: 1px solid color-mix(in srgb,var(--ew-foil) 46%,transparent); }.ew-secret-coffee img { width: 100%; height: auto; max-height: 180px; object-fit: contain; }.ew-secret-coffee p:not(.rp-eyebrow) { max-width: 31rem; margin: 6px 0 12px; color: color-mix(in srgb,var(--ew-bone) 74%,transparent); font: 400 .9rem/1.5 var(--ew-serif); }.ew-secret-coming { display: block; margin-bottom: 10px; color: var(--ew-dust); font: 500 10px/1.4 "Azeret Mono",monospace; letter-spacing: .12em; text-transform: uppercase; }
 @media (max-width:700px) { .ew-trail-whisper { top: calc(56px + env(safe-area-inset-top,0px)); gap: 9px; padding: 9px 12px; }.ew-trail-whisper button,.ew-trail-whisper a { max-width:100px; white-space:normal; }.ew-secret-room { padding:22px 20px calc(132px + env(safe-area-inset-bottom,0px)); }.ew-secret-room-inner { display:flex; flex-direction:column; min-height:0; }.ew-secret-story { margin-top:26px; }.ew-secret-story h1 { margin-top:17px; font-size:clamp(40px,12vw,56px); }.ew-secret-traveler { align-self:center; width:min(46vw,180px); max-height:240px; margin:8px 0 -8px; }.ew-secret-coffee { grid-template-columns:110px minmax(0,1fr); gap:12px; margin-top:16px; padding-top:14px; }.ew-secret-coffee img { max-height:120px; }.ew-secret-ask { width:100%; padding-top:17px; } }
 
@@ -552,7 +549,7 @@ html, body {
 .ew-passport-edition { display: flex; align-items: center; justify-content: center; gap: 20px; margin: 0 50px 28px; color: var(--ew-foil); font: 400 11px/1.4 "Azeret Mono", monospace; letter-spacing: .4em; text-transform: uppercase; }
 .ew-passport-edition span { height: 1px; flex: 1; background: var(--ew-foil-line-strong); }
 .ew-passport-book .ew-passport-head h2 { color: var(--ew-foil); font: 400 clamp(36px, 6vw, 64px)/1.15 "Newsreader", serif; letter-spacing: .22em; text-transform: uppercase; padding-left: .22em; }
-.ew-passport-head .rp-eyebrow { margin: 14px 0 0; color: var(--ew-dust); font-size: 9px; letter-spacing: .14em; }
+.ew-passport-head .rp-eyebrow { margin: 14px 0 0; color: var(--ew-dust); font-size: 10px; letter-spacing: .14em; }
 .ew-passport-lede { margin: 24px 0 28px; text-align: center; color: var(--ew-bone); font: italic clamp(28px, 4vw, 40px)/1.2 "Newsreader", serif; }
 .ew-passport-lede::before { content: ""; display: block; width: 30px; height: 1px; background: var(--ew-foil); margin: 0 auto 20px; }
 .ew-passport-book .ew-book { display: flex; flex-direction: column; gap: 24px; margin: 0; padding: 0; border: 0; }
@@ -560,36 +557,36 @@ html, body {
 .ew-passport-book .rp-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-top: 1px solid var(--ew-rule); border-bottom: 1px solid var(--ew-rule); margin: 10px 0 22px; padding: 16px 0; gap: 12px; }
 .ew-passport-book .rp-stat { min-height: 0; padding: 0; border: 0; background: none; text-align: center; }
 .ew-passport-book .rp-stat strong { font-size: 25px; }
-.ew-passport-book .rp-stat span { font-size: 8px; line-height: 1.5; letter-spacing: .08em; }
-.ew-passport-hint { margin: 8px 0 18px; color: var(--ew-dust); font: 9px/1.5 "Azeret Mono", monospace; letter-spacing: .12em; text-transform: uppercase; }
+.ew-passport-book .rp-stat span { font-size: 10px; line-height: 1.5; letter-spacing: .08em; }
+.ew-passport-hint { margin: 8px 0 18px; color: var(--ew-dust); font: 10px/1.5 "Azeret Mono", monospace; letter-spacing: .12em; text-transform: uppercase; }
 .ew-passport-book .rp-stamp-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px 20px; margin-top: 16px; }
-.ew-passport-book .rp-stamp-ticket { --passport-ink: var(--ew-passport-ink-0); position: relative; display: grid; grid-template-columns: 100px minmax(0, 1fr); align-items: center; gap: 0 16px; min-height: 205px; padding: 22px; border: 1px solid var(--ew-passport-paper-edge); border-radius: 8px; -webkit-mask: none; mask: none; color: var(--passport-ink); background-color: var(--ew-passport-paper); background-image: radial-gradient(ellipse at 10% 15%, #fff7df88, transparent 65%), repeating-linear-gradient(22deg, transparent 0 3px, #8b754508 3px 4px); box-shadow: 0 5px 18px #0003, inset 0 0 0 5px var(--ew-passport-paper), inset 0 0 0 6px #bca882; text-align: left; transition: transform .2s ease, box-shadow .2s ease; }
+.ew-passport-book .rp-stamp-ticket { --passport-ink: var(--ew-passport-ink-0); position: relative; display: grid; grid-template-columns: 100px minmax(0, 1fr); align-items: center; gap: 0 16px; min-height: 205px; padding: 22px; border: 1px solid var(--ew-passport-paper-edge); border-radius: 4px; -webkit-mask: none; mask: none; color: var(--passport-ink); background-color: var(--ew-passport-paper); background-image: radial-gradient(ellipse at 10% 15%, #fff7df88, transparent 65%), repeating-linear-gradient(22deg, transparent 0 3px, #8b754508 3px 4px); box-shadow: 0 5px 18px #0003, inset 0 0 0 5px var(--ew-passport-paper), inset 0 0 0 6px #bca882; text-align: left; transition: transform .2s ease, box-shadow .2s ease; }
 .ew-passport-book .rp-stamp-ticket[data-ink="1"] { --passport-ink: var(--ew-passport-ink-1); }
 .ew-passport-book .rp-stamp-ticket[data-ink="2"] { --passport-ink: var(--ew-passport-ink-2); }
 .ew-passport-book .rp-stamp-ticket:hover { transform: translateY(-3px); box-shadow: 0 10px 24px #0004, inset 0 0 0 5px var(--ew-passport-paper), inset 0 0 0 6px #bca882; }
 .ew-passport-book .rp-stamp-ticket:focus-visible { outline: 3px solid var(--ew-foil); outline-offset: 5px; }
 .ew-passport-postmark { display: block; align-self: stretch; border-right: 1px solid currentColor; padding-right: 12px; color: var(--passport-ink); }
 .ew-passport-postmark svg { width: 100%; height: auto; margin-top: 8px; }
-.ew-passport-postmark > span { display: block; text-align: center; font: 8px/1.6 "Azeret Mono", monospace; letter-spacing: .13em; margin-top: 6px; }
-.ew-passport-book .rp-stamp-main .rp-eyebrow { color: var(--passport-ink); font-size: 9px; line-height: 1.5; letter-spacing: .16em; }
+.ew-passport-postmark > span { display: block; text-align: center; font: 10px/1.6 "Azeret Mono", monospace; letter-spacing: .13em; margin-top: 6px; }
+.ew-passport-book .rp-stamp-main .rp-eyebrow { color: var(--passport-ink); font-size: 10px; line-height: 1.5; letter-spacing: .16em; }
 .ew-passport-book .rp-stamp-ticket h3 { color: var(--passport-ink); margin: 8px 0; font: 400 clamp(24px, 3vw, 32px)/1.05 "Newsreader", serif; overflow-wrap: anywhere; }
 .ew-passport-book .rp-stamp-ticket .rp-stamp-main > p:not(.rp-eyebrow) { color: var(--passport-ink); font: 10px/1.5 "Azeret Mono", monospace; white-space: normal; overflow: visible; overflow-wrap: anywhere; }
 .ew-passport-book .rp-stamp-lang { margin-top: 5px; }
-.ew-passport-book .rp-stamp-replay { display: block; margin-top: 13px; color: var(--passport-ink); font: 500 9px/1.5 "Azeret Mono", monospace; letter-spacing: .1em; text-transform: uppercase; }
+.ew-passport-book .rp-stamp-replay { display: block; margin-top: 13px; color: var(--passport-ink); font: 500 10px/1.5 "Azeret Mono", monospace; letter-spacing: .1em; text-transform: uppercase; }
 .ew-passport-book .rp-stamp-ticket:hover .rp-stamp-replay { text-decoration: underline; text-underline-offset: 3px; }
 .ew-passport-book .rp-stamp-ticket .rp-stamp-stub { grid-column: 1 / -1; display: flex; flex-direction: row; flex-wrap: wrap; align-items: center; justify-content: space-between; border: 0; border-top: 1px dashed currentColor; padding: 10px 0 0; margin-top: 14px; gap: 8px; }
-.ew-passport-book .rp-stamp-ticket .rp-stamp-stub strong, .ew-passport-book .rp-stamp-ticket .rp-stamp-stub em, .ew-passport-book .rp-stamp-ticket .rp-stamp-stub small { color: var(--passport-ink); font: 9px/1.4 "Azeret Mono", monospace; margin: 0; }
-.ew-passport-book .rp-stamp-empty { min-height: 66px; border: 1px dashed var(--ew-foil-line-strong); border-radius: 6px; background: transparent; color: var(--ew-dust); font: 10px/1.4 "Azeret Mono", monospace; letter-spacing: .2em; }
-.ew-passport-book .rp-stamp-empty::after { content: "AN HOUR TO COME"; display: block; font-size: 8px; letter-spacing: .16em; }
+.ew-passport-book .rp-stamp-ticket .rp-stamp-stub strong, .ew-passport-book .rp-stamp-ticket .rp-stamp-stub em, .ew-passport-book .rp-stamp-ticket .rp-stamp-stub small { color: var(--passport-ink); font: 10px/1.4 "Azeret Mono", monospace; margin: 0; }
+.ew-passport-book .rp-stamp-empty { min-height: 66px; border: 1px dashed var(--ew-foil-line-strong); border-radius: 4px; background: transparent; color: var(--ew-dust); font: 10px/1.4 "Azeret Mono", monospace; letter-spacing: .2em; }
+.ew-passport-book .rp-stamp-empty::after { content: "AN HOUR TO COME"; display: block; font-size: 10px; letter-spacing: .16em; }
 .ew-passport-book .rp-stamp-empty:hover { color: var(--ew-foil); background: var(--ew-foil-wash); }
 .ew-passport-book .rp-stamp-empty:focus-visible, .ew-passport-book .rp-text-button:focus-visible { outline: 2px solid var(--ew-foil); outline-offset: 4px; }
 .ew-passport-empty { text-align: center; margin: 12px 0 25px; padding: 28px 20px; border-top: 1px solid var(--ew-foil-line); border-bottom: 1px solid var(--ew-foil-line); }
 .ew-passport-empty-rule { margin: 0 0 12px; color: var(--ew-bone); font: italic 26px/1.2 "Newsreader", serif; }
-.ew-passport-empty p:not(.ew-passport-empty-rule) { max-width: 36ch; margin: 0 auto; color: var(--ew-dust); font: 14px/1.6 "Newsreader", serif; }
+.ew-passport-empty p:not(.ew-passport-empty-rule) { max-width: 36ch; margin: 0 auto; color: var(--ew-dust); font: 15px/1.6 "Newsreader", serif; }
 .ew-passport-empty .rp-text-button { min-height: 44px; }
 @media (max-width: 700px) {
   .ew-passport-book { padding-top: 12px; }
-  .ew-passport-edition { margin: 0 46px 24px; gap: 10px; font-size: 8px; letter-spacing: .2em; }
+  .ew-passport-edition { margin: 0 46px 24px; gap: 10px; font-size: 10px; letter-spacing: .2em; }
   .ew-passport-book .rp-stamp-grid { grid-template-columns: minmax(0, 1fr); gap: 16px; }
   .ew-passport-book .rp-stamp-ticket { grid-template-columns: 90px minmax(0, 1fr); padding: 20px; min-height: 185px; gap: 0 14px; }
   .ew-passport-book .rp-stamp-empty { min-height: 56px; }
@@ -687,7 +684,7 @@ html, body {
 }
 
 /* First-visit hook: the brand line, then the promise. Serif is the human voice. */
-.ew-hook { margin: 0 0 10px; color: var(--ew-dust); font: 400 14px/1.4 "Newsreader", serif; }
+.ew-hook { margin: 0 0 10px; color: var(--ew-dust); font: 400 15px/1.4 "Newsreader", serif; }
 .ew-hook em { color: var(--ew-bone); font-style: italic; font-size: 15px; }
 
 /* Search status on the phone home: the board header already says "14 LIVE ·

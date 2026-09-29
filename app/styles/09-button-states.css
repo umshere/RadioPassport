@@ -3,9 +3,8 @@
    → busy → disabled. Touch gets a pressed state instead of a sticky hover. */
 button, a, [role="button"] { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
 .rp-chip, .rp-surprise, .rp-passport-button, .rp-text-button, .ew-atlas, .rp-country, .rp-mic,
-.ew-hour, .ew-atmosphere button, .ew-theater-qrow { transition: color .15s, background-color .15s, border-color .15s, transform .12s var(--ew-settle); }
+.ew-hour, .ew-atmosphere button { transition: color .15s, background-color .15s, border-color .15s, transform .12s var(--ew-settle); }
 .rp-chip:active, .rp-surprise:active, .rp-passport-button:active, .rp-country:active,
-.ew-theater-qrow:active { background: var(--ew-foil-wash-strong); transform: translateY(1px); }
 .rp-text-button:active, .ew-atlas:active, .rp-mic:active { opacity: .6; }
 .ew-hour:active { color: var(--ew-bone); }
 .ew-land:active { transform: translateY(2px); }

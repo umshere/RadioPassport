@@ -1,4 +1,5 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { logUsage } from "~/utils/usage";
 import { useHydrated } from "~/hooks/useHydrated";
 import { usePlayerStore } from "~/state/playerStore";
 import { roomForStation, useRoomStore } from "~/state/roomStore";
@@ -57,6 +58,9 @@ export default function ListeningPage() {
   const lastTrackStationRef = useRef<string | null>(null);
   const lastTrackRef = useRef<NowPlayingTrack | null>(null);
   const [sheet, setSheet] = useState<BoardSheetState>("peek");
+  useEffect(() => {
+    logUsage("desk_view");
+  }, []);
   const [plateFailed, setPlateFailed] = useState<string | null>(null);
 
   const city = nowPlaying ? stationLocation(nowPlaying) : "";

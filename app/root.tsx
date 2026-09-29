@@ -295,7 +295,7 @@ export function ErrorBoundary() {
                 <summary className="cursor-pointer text-bone">
                   Technical details
                 </summary>
-                <pre className="mt-3 overflow-x-auto whitespace-pre-wrap break-words font-mono text-[12px] leading-6">
+                <pre className="mt-3 overflow-x-auto whitespace-pre-wrap break-words font-mono text-[13px] leading-6">
                   {details}
                 </pre>
               </details>

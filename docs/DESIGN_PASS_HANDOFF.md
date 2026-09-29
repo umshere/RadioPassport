@@ -32,3 +32,7 @@ Live: https://elsewheremusic.com · last shipped: dock shows cleaned track title
 5. Speed: dock "up next" fetch; parallel probe batches.
 6. Optional: keeper scenes (passport on stamp, next stop on hour hop); Theater/keeper usage counters; hour rail highlighting local hour (needs decision); type scale 20→9, radii 8→4.
 7. User to test on iPhone: keeper sheet + questions, drop-up sheet edge, desk page, compact seal tile.
+
+## Update (later, same day)
+Shipped: dead Theater CSS/helpers pruned; Åland guard (`correctCountryFromState`); tailwind split; TheaterQueue on `Row`; dock up-next no longer calls the AI dispatch (it was never read); shelf probes run in parallel; keeper scenes (passport on a stamp, next stop on an hour hop via `keeperStore.showScene`); anonymous usage beacon (`/api/usage`, events keeper_open/keeper_ask/desk_view, logged as `{"usage":name}`); type sizes snapped (8,9→10; 12→13; 14,16→15; 17→18) and 6/8px radii → 4px.
+Not done: hour-rail local-hour highlight (needs a decision); UpNextRow stays a callout card, not a Row; remaining raw `<button>`s are bespoke (dock cells, hour rail, etc.).

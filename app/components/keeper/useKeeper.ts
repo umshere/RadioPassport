@@ -126,6 +126,7 @@ export function useKeeperDelight() {
     if (!seen) return;
     if (freshlyInkedStampIds(seen, stamps).length) {
       useKeeperStore.getState().delight(KEEPER_DELIGHT_MS);
+      useKeeperStore.getState().showScene("passport", KEEPER_DELIGHT_MS);
     }
   }, [journeyReady, stamps]);
 }

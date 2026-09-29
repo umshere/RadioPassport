@@ -9,13 +9,13 @@
   /* Deck cells wear their names: first-time eyes should not have to guess
      what the heart does or what `42s` is counting down to. */
   .rp-dock-cell { display: flex; flex-direction: column; align-items: center; gap: 4px; }
-  .rp-dock-clabel { font: 500 9px/1 "Azeret Mono", ui-monospace, monospace; letter-spacing: .14em; text-transform: uppercase; color: var(--ew-dust); }
+  .rp-dock-clabel { font: 500 10px/1 "Azeret Mono", ui-monospace, monospace; letter-spacing: .14em; text-transform: uppercase; color: var(--ew-dust); }
   .rp-dock-cell.is-on .rp-dock-clabel { color: var(--ew-foil); }
   .rp-dock-tbtn { display: grid; width: 44px; height: 44px; place-items: center; border: 0; background: transparent; padding: 0; color: var(--ew-dust); cursor: pointer; }
   .rp-dock-tbtn.is-on { color: var(--ew-foil); }
   .rp-dock-tplay { display: grid; width: 56px; height: 56px; place-items: center; border: 1.5px solid var(--ew-foil); border-radius: 50%; background: var(--ew-lacquer); padding: 0; color: var(--ew-bone); cursor: pointer; }
   .rp-dock-ring { position: relative; display: grid; width: 44px; height: 44px; place-items: center; border: 0; border-radius: 50%; background: conic-gradient(var(--ew-lacquer) calc(var(--stamp-ink, 0) * 100%), transparent 0); padding: 0; cursor: pointer; }
-  .rp-dock-ring span { display: grid; width: 32px; height: 32px; place-items: center; border-radius: 50%; background: var(--ew-ink); color: var(--ew-foil); font: 500 9px/1 "Azeret Mono", monospace; }
+  .rp-dock-ring span { display: grid; width: 32px; height: 32px; place-items: center; border-radius: 50%; background: var(--ew-ink); color: var(--ew-foil); font: 500 10px/1 "Azeret Mono", monospace; }
   .rp-dock-ring.is-stamped { background: var(--ew-foil); }
   /* The stamped ring is the emblem: foil ring, lacquer heart. */
   .rp-dock-ring-dot { display: block; width: 9px; height: 9px; border-radius: 50%; background: var(--ew-lacquer); }
@@ -101,7 +101,7 @@
     font-weight: 400;
   }
   .rp-toast small { color: var(--ew-dust); font: 10px "Azeret Mono", monospace; }
-  .rp-toast-line { color: var(--ew-dust); font-family: "Newsreader", serif; font-style: italic; font-size: 14px; line-height: 1.4; }
+  .rp-toast-line { color: var(--ew-dust); font-family: "Newsreader", serif; font-style: italic; font-size: 15px; line-height: 1.4; }
   .rp-toast.is-warning { border-top-color: rgba(199, 58, 58, .5); cursor: default; }
   .rp-toast.is-error { border-top-color: var(--ew-lacquer); cursor: default; }
   .ew-theater {
