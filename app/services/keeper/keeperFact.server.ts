@@ -13,7 +13,7 @@ export type FactKind = (typeof FACT_KINDS)[number];
 const factBucket = createTokenBucket({ capacity: 60, refillPerHour: 60 });
 
 const FACT_WORDS = 26;
-const FACT_DEADLINE_MS = 3200;
+const FACT_DEADLINE_MS = 6000;
 const FACT_TTL_MS = 30 * 60 * 1000;
 const cache = new Map<string, { at: number; value: FactBody }>();
 
@@ -85,9 +85,12 @@ export async function handleKeeperFact(request: Request, deps: KeeperDeps = {}) 
     if (verdict.ok && numbersAreInSnippet(candidate, snippet.text)) {
       fact = candidate;
       source = "snippet+model";
+    } else {
+      source = `snippet:rejected:${verdict.ok ? "number" : verdict.reason}`;
     }
-  } catch {
+  } catch (error) {
     // The snippet's own first sentence is the safe fact.
+    source = `snippet:${error instanceof Error && error.message === "timeout" ? "timeout" : "error"}`;
   }
   if (!fact) fact = clampWords(firstSentence(snippet.text), FACT_WORDS + 6);
   const value: FactBody = { fact, topic: name, kind, source };

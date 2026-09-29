@@ -1,7 +1,7 @@
 import { useKeeperStore } from "~/state/keeperStore";
 import type { FactKind } from "./keeperMurmur";
 
-const CLIENT_TIMEOUT_MS = 7000;
+const CLIENT_TIMEOUT_MS = 10000;
 const seen = new Map<string, Promise<string | null>>();
 let inFlight = 0;
 
