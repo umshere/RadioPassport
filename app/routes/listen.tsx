@@ -312,7 +312,7 @@ export default function DeskPage() {
               </section>
             ) : null}
             <DeskDepartures rows={departures}>
-              <TheaterSeek />
+              <TheaterSeek held />
             </DeskDepartures>
           </div>
         </div>

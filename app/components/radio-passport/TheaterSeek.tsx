@@ -37,9 +37,11 @@ function stationMatches(station: Station, query: string) {
  * the land / catalog / surprise / voice / status behavior. Lands in this
  * room — never sends you home.
  */
-export function TheaterSeek() {
+export function TheaterSeek({ held = false }: { held?: boolean }) {
   const railRef = useRef<HTMLDivElement>(null);
-  const [open, setOpen] = useState(false);
+  const [openState, setOpen] = useState(false);
+  // Held: the field is always on (the desk's gate row), never a collapsing pill.
+  const open = held || openState;
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("");
   const [loading, setLoading] = useState(false);
@@ -136,7 +138,7 @@ export function TheaterSeek() {
   );
 
   useEffect(() => {
-    if (!open) return;
+    if (!open || held) return;
     const node = railRef.current?.querySelector("input");
     node?.focus();
     const onKey = (event: KeyboardEvent) => {
@@ -150,7 +152,7 @@ export function TheaterSeek() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [open ]);
+  }, [open, held]);
 
   const busy = loading || mixLoading;
 
@@ -161,7 +163,7 @@ export function TheaterSeek() {
     >
       <SeekShell
         open={open}
-        toggleable
+        toggleable={!held}
         busy={busy}
         onLensClick={() => {
           if (open) {
