@@ -334,7 +334,7 @@
     border-radius: 0;
     background: var(--ew-dock);
     box-shadow: var(--ew-lift);
-    /* No backdrop-filter here on purpose: the dock ink is 94% opaque so a
+    /* No backdrop-filter here on purpose: the dock ink is opaque (page text must not ghost through it) so a
        blur paints nothing — but on mobile Safari the filter drags the
        neighboring fixed phone band through a compositing path where it stops
        painting while still hit-testing: an invisible band you can still tap. */

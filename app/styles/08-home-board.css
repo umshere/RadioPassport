@@ -697,3 +697,6 @@ html, body {
   }
   .ew-home-seek .rp-intent.is-empty { border-color: var(--ew-foil-line); }
 }
+
+/* The hour rail marks the listener's own hour with a dotted underline. */
+.ew-hour[data-home] .ew-hour-label { text-decoration: underline dotted; text-decoration-color: var(--ew-dust); text-underline-offset: 5px; }

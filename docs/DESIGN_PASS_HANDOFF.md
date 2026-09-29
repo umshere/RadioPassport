@@ -36,3 +36,6 @@ Live: https://elsewheremusic.com · last shipped: dock shows cleaned track title
 ## Update (later, same day)
 Shipped: dead Theater CSS/helpers pruned; Åland guard (`correctCountryFromState`); tailwind split; TheaterQueue on `Row`; dock up-next no longer calls the AI dispatch (it was never read); shelf probes run in parallel; keeper scenes (passport on a stamp, next stop on an hour hop via `keeperStore.showScene`); anonymous usage beacon (`/api/usage`, events keeper_open/keeper_ask/desk_view, logged as `{"usage":name}`); type sizes snapped (8,9→10; 12→13; 14,16→15; 17→18) and 6/8px radii → 4px.
 Not done: hour-rail local-hour highlight (needs a decision); UpNextRow stays a callout card, not a Row; remaining raw `<button>`s are bespoke (dock cells, hour rail, etc.).
+
+## Update 3
+Hour rail marks the listener's own hour (dotted underline, `data-home`); dock ink is opaque (page text ghosted through at 94%); test guards every raw `<button>` has `type`. Decisions: remaining raw buttons stay raw (each already carries its design-system class; `Button` variants only fit land/mono/frame/text/atlas/chip); `UpNextRow` stays a callout card.

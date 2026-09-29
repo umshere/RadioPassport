@@ -31,7 +31,7 @@
     --ew-passport-ink-1: #375345;
     --ew-passport-ink-2: #783F38;
     --ew-header: rgba(26, 20, 16, .88);
-    --ew-dock: rgba(26, 20, 16, .94);
+    --ew-dock: rgb(26, 20, 16);
     --ew-veil: rgba(12, 11, 9, .97);
     --ew-tip: rgba(26, 20, 16, .96);
     --ew-row-hover: rgba(36, 28, 22, .55);
@@ -66,7 +66,7 @@
     --ew-on-ink: #E8DFD0;
     --ew-lacquer-text: #B5302F;
     --ew-header: rgba(242, 235, 225, .90);
-    --ew-dock: rgba(232, 223, 210, .94);
+    --ew-dock: rgb(232, 223, 210);
     --ew-veil: rgba(242, 235, 225, .97);
     --ew-tip: rgba(248, 243, 236, .96);
     --ew-row-hover: rgba(26, 22, 18, .06);

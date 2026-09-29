@@ -1,4 +1,5 @@
-import type { SolarHour } from "~/utils/localTime";
+import { useEffect, useState } from "react";
+import { solarHourFromDate, type SolarHour } from "~/utils/localTime";
 
 const HOURS: SolarHour[] = ["Dawn", "Midday", "Dusk", "Night"];
 
@@ -72,6 +73,15 @@ export function HourRail({
   hour: SolarHour | null;
   onTap: (item: SolarHour) => void;
 }) {
+  // The listener's own hour, marked with a dotted underline: "you are here"
+  // on the same dial. Read after mount so server and client markup agree.
+  const [home, setHome] = useState<SolarHour | null>(null);
+  useEffect(() => {
+    const read = () => setHome(solarHourFromDate(new Date()));
+    read();
+    const timer = window.setInterval(read, 60_000);
+    return () => window.clearInterval(timer);
+  }, []);
   const activeIndex = hour ? HOURS.indexOf(hour) : -1;
   return (
     <div
@@ -86,8 +96,9 @@ export function HourRail({
           key={item}
           className={`ew-hour${hour === item ? " on" : ""}`}
           data-hour={item.toLowerCase()}
+          data-home={home === item ? "" : undefined}
           aria-pressed={hour === item}
-          title={`Cities where it is ${item.toLowerCase()} now`}
+          title={`Cities where it is ${item.toLowerCase()} now${home === item ? " (your hour)" : ""}`}
           onClick={() => onTap(item)}
         >
           <HourIcon hour={item} />
