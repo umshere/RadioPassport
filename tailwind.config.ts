@@ -13,6 +13,7 @@ export default {
     "./app/components/PretextMeasuredText.tsx",
     "./app/components/radio-passport/**/*.{ts,tsx}",
     "./app/components/keeper/**/*.{ts,tsx}",
+    "./app/components/desk/**/*.{ts,tsx}",
   ],
   theme: {
     extend: {

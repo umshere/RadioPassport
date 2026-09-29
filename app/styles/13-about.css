@@ -1,4 +1,28 @@
-/* ---- about: the Keeper's welcome. */
-.ew-about-host { display: flex; align-items: flex-end; gap: 14px; margin-top: 18px; }
-.ew-about-keeper { flex: none; width: 112px; height: 112px; object-fit: contain; }
-.ew-about-hello { position: relative; margin: 0 0 14px; padding: 10px 14px; border: 1px solid var(--ew-foil-line); background: var(--ew-dock); font: italic 17px/1.35 "Newsreader", serif; color: var(--ew-bone); }
+/* ---- about: the Keeper's welcome. A desk scene, then five numbered stamps. */
+.ew-about { max-width: 1040px; margin-inline: auto; padding: 56px 20px 72px; }
+.ew-about-head { max-width: 640px; }
+.ew-about-scene { position: relative; margin: 40px 0 0; border: 1px solid var(--ew-foil-line); background: var(--ew-ink); }
+.ew-about-scene > picture, .ew-about-scene > picture > img { display: block; width: 100%; height: auto; }
+.ew-about-host { position: absolute; left: 12px; right: 12px; bottom: 12px; display: flex; align-items: flex-end; gap: 10px; pointer-events: none; }
+.ew-about-keeper { flex: none; width: 88px; height: 88px; object-fit: contain; }
+.ew-about-hello { position: relative; margin: 0 0 10px; padding: 9px 12px; border: 1px solid var(--ew-foil-line); background: var(--ew-dock); font: italic 16px/1.35 "Newsreader", serif; color: var(--ew-bone); }
+.ew-about-steps { list-style: none; margin: 40px 0 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
+.ew-about-step { position: relative; flex: none; padding: 20px 18px 20px 64px; border: 1px solid var(--ew-foil-line); background: var(--ew-dock); }
+.ew-about-step p { margin: 10px 0 0; max-width: 46ch; font-size: 15px; line-height: 1.7; color: var(--ew-dust); }
+.ew-about-no { position: absolute; left: 16px; top: 16px; font: 300 30px/1 "Newsreader", serif; font-style: italic; color: var(--ew-foil); }
+.ew-about-appearance { margin-top: 32px; }
+.ew-about-go { margin: 48px 0 0; }
+.ew-about-foot { margin: 48px 0 0; }
+@media (min-width: 760px) {
+  .ew-about { padding: 88px 32px 96px; }
+  .ew-about-host { left: 28px; bottom: 24px; right: auto; max-width: 60%; }
+  .ew-about-keeper { width: 128px; height: 128px; }
+  .ew-about-hello { font-size: 19px; padding: 12px 16px; }
+  .ew-about-steps { display: grid; grid-template-columns: repeat(6, 1fr); gap: 14px; }
+  .ew-about-step { grid-column: span 2; padding: 64px 20px 22px; }
+  .ew-about-step:nth-child(1) { grid-column: span 4; }
+  .ew-about-step:nth-child(2) { grid-column: span 2; }
+  .ew-about-step:nth-child(4) { grid-column: span 3; }
+  .ew-about-step:nth-child(5) { grid-column: span 3; }
+  .ew-about-no { left: 20px; top: 18px; font-size: 36px; }
+}

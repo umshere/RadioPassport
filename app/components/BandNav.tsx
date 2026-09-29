@@ -13,7 +13,7 @@ import { usePlayerStore } from "~/state/playerStore";
 const SLOTS = [
   { id: "elsewhere", label: "Elsewhere", to: "/" },
   { id: "atlas", label: "Atlas" },
-  { id: "theater", label: "Theater", to: "/listen" },
+  { id: "theater", label: "Desk", to: "/listen" },
   { id: "room", label: "About", to: "/about" },
 ] as const;
 

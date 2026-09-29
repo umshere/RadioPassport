@@ -8,8 +8,9 @@ import {
   type KeeperState,
 } from "./keeperState";
 
-/** float: the free-floating 64px figure; sheet: the 88px figure heading the sheet. */
-export type KeeperSize = "float" | "sheet";
+/** float: the free-floating 64px figure; sheet: the 88px figure heading the sheet;
+ *  desk: the figure standing on the horizon of the desk page. */
+export type KeeperSize = "float" | "sheet" | "desk";
 
 type Props = {
   state: KeeperState;

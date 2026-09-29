@@ -1,4 +1,4 @@
-import { Link, useLocation, useNavigate, useRouteLoaderData } from "@remix-run/react";
+import { Link, useRouteLoaderData } from "@remix-run/react";
 import { Eyebrow } from "~/components/ui/Eyebrow";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { snapBoardSheet } from "~/components/radio-passport/BoardSheet";
@@ -9,15 +9,12 @@ import { useKeeperStore } from "~/state/keeperStore";
 import { usePlayerStore } from "~/state/playerStore";
 import { shareStation } from "~/components/share/shareStation";
 import { usePlayerNoticeStore } from "~/state/playerNoticeStore";
-import type { SolarHour } from "~/utils/localTime";
 import { FlapText } from "./FlapText";
 import { Keeper } from "./Keeper";
-import { askKeeper } from "./keeperClient";
 import { readKeeperFact } from "./keeperFactClient";
 import { planMurmurs } from "./keeperMurmur";
 import { VOICE } from "./keeperVoice";
 import {
-  answerLocally,
   keeperOpeningLine,
   spokenHour,
   titleCase,
@@ -26,8 +23,9 @@ import {
   type KeeperFacts,
   type KeeperQuestion,
 } from "./keeperFacts";
-import { KEEPER_QUESTION_MAX, ruleClassify } from "./keeperIntent";
-import { speakingDurationMs } from "./keeperState";
+import { KEEPER_QUESTION_MAX } from "./keeperIntent";
+import { useKeeperTalk } from "./useKeeperTalk";
+import { skyHour } from "~/components/desk/deskModel";
 import type { KeeperView } from "./useKeeper";
 
 /** Root loader data: the one public flag the keeper reads. */
@@ -35,19 +33,6 @@ export function useKeeperAskEnabled(): boolean {
   const data = useRouteLoaderData("root") as { keeperAskEnabled?: boolean } | undefined;
   return Boolean(data?.keeperAskEnabled);
 }
-
-/** A beat of thought before a local answer, so the figure can look up. */
-const THINK_MS = 420;
-const FLAG_OFF_LINE = VOICE.askOff;
-
-type Talk = {
-  question: string;
-  answer: string | null;
-  hop?: SolarHour;
-  /** Knowledge answers wear a label: they are not about the station. */
-  basis?: "station" | "knowledge";
-  stationLine?: string;
-};
 
 const FOCUSABLE =
   'button:not([disabled]), input:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])';
@@ -98,12 +83,9 @@ function dockFloor(): number {
 export function KeeperSheet({ view }: { view: KeeperView & { facts: KeeperFacts } }) {
   const { facts } = view;
   const askEnabled = useKeeperAskEnabled();
-  const navigate = useNavigate();
-  const location = useLocation();
   const closeSheet = useKeeperStore((state) => state.closeSheet);
   const setTyping = useKeeperStore((state) => state.setTyping);
   const setExchange = useKeeperStore((state) => state.setExchange);
-  const requestHour = useKeeperStore((state) => state.requestHour);
   const factLog = useKeeperStore((state) => state.factLog);
   const reading = useKeeperStore((state) => state.reading);
   const hushed = useKeeperStore((state) => state.hushed);
@@ -114,9 +96,6 @@ export function KeeperSheet({ view }: { view: KeeperView & { facts: KeeperFacts 
   const topicSteps = planMurmurs(facts).flatMap((step) => (step.type === "fact" ? [step] : [])).slice(0, 3);
   const sheetRef = useRef<HTMLElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const timers = useRef<number[]>([]);
-  const turn = useRef(0);
-  const [talk, setTalk] = useState<Talk | null>(null);
   const [tab, setTab] = useState<"postcards" | "onair" | "station">("postcards");
   const setNotice = usePlayerNoticeStore((state) => state.setNotice);
   const [draft, setDraft] = useState("");
@@ -127,17 +106,12 @@ export function KeeperSheet({ view }: { view: KeeperView & { facts: KeeperFacts 
   const drag = useRef<{ startY: number; startT: number; moved: boolean } | null>(null);
   const suppressGripClick = useRef(false);
 
-  const later = useCallback((fn: () => void, ms: number) => {
-    timers.current.push(window.setTimeout(fn, ms));
-  }, []);
-
-  useEffect(
-    () => () => {
-      timers.current.forEach((id) => window.clearTimeout(id));
-      timers.current = [];
-    },
-    [],
-  );
+  const { talk, ask, onChip, hopTo, interrupt } = useKeeperTalk({
+    facts,
+    askEnabled,
+    entries,
+    onLeave: closeSheet,
+  });
 
   // The sheet stands on the dock, never over it.
   useLayoutEffect(() => {
@@ -160,9 +134,9 @@ export function KeeperSheet({ view }: { view: KeeperView & { facts: KeeperFacts 
   }, [askEnabled, stationId]);
 
   const close = useCallback(() => {
-    turn.current += 1;
+    interrupt();
     closeSheet();
-  }, [closeSheet]);
+  }, [closeSheet, interrupt]);
 
   // Focus in, trap, Esc, focus back to the keeper.
   useEffect(() => {
@@ -209,80 +183,6 @@ export function KeeperSheet({ view }: { view: KeeperView & { facts: KeeperFacts 
       });
     };
   }, [close]);
-
-  const speak = useCallback(
-    (
-      question: string,
-      answer: string,
-      hop?: SolarHour,
-      extra?: { basis?: "station" | "knowledge"; stationLine?: string },
-    ) => {
-      setTalk({ question, answer, hop, ...extra });
-      setExchange("speaking");
-      const mine = turn.current;
-      later(() => {
-        if (turn.current === mine) setExchange("none");
-      }, speakingDurationMs(answer));
-    },
-    [later, setExchange],
-  );
-
-  const hopTo = useCallback(
-    (hour: SolarHour) => {
-      close();
-      if (location.pathname === "/") {
-        requestHour(hour);
-      } else {
-        navigate(`/?hour=${hour}`);
-      }
-    },
-    [close, location.pathname, navigate, requestHour],
-  );
-
-  /** A dead end ("no titles") never ends the exchange: offer what the desk knows. */
-  const withPivot = (text: string, intent: string) => {
-    if (facts.track || (intent !== "track" && intent !== "artist")) return text;
-    const pivot = entries[0];
-    return pivot ? `${text} While you wait: ${pivot.text}` : text;
-  };
-
-  const onChip = (question: KeeperQuestion) => {
-    if (question.intent === "hour_hop" && question.hour) {
-      hopTo(question.hour);
-      return;
-    }
-    turn.current += 1;
-    const mine = turn.current;
-    setTalk({ question: question.label, answer: null });
-    setExchange("thinking");
-    later(() => {
-      if (turn.current !== mine) return;
-      speak(question.label, withPivot(answerLocally(question.intent, facts).text, question.intent));
-    }, THINK_MS);
-  };
-
-  const ask = async (question: string) => {
-    turn.current += 1;
-    const mine = turn.current;
-    if (!askEnabled) {
-      speak(question, FLAG_OFF_LINE);
-      return;
-    }
-    setTalk({ question, answer: null });
-    setExchange("thinking");
-    const reply = await askKeeper(question, facts);
-    if (turn.current !== mine) return;
-    if (reply) {
-      speak(question, reply.answer, reply.action?.hour, {
-        basis: reply.basis,
-        stationLine: reply.stationLine,
-      });
-      return;
-    }
-    const intent = ruleClassify(question);
-    const local = answerLocally(intent, facts);
-    speak(question, withPivot(local.text, intent), local.action?.hour);
-  };
 
   const onAsk = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -366,7 +266,7 @@ export function KeeperSheet({ view }: { view: KeeperView & { facts: KeeperFacts 
         >
           <i className="ew-keeper-grip-bar" aria-hidden="true" />
         </Button>
-        <header className="ew-keeper-top">
+        <header className="ew-keeper-top" data-hour={skyHour(facts.hour?.solar)}>
           <Keeper state={view.state} mood={view.mood} size="sheet" />
           <div className="ew-keeper-heading">
             <h2 id="ew-keeper-title" className="ew-keeper-eyebrow">
@@ -401,7 +301,7 @@ export function KeeperSheet({ view }: { view: KeeperView & { facts: KeeperFacts 
                 setTyping(typing);
                 // Typing interrupts the keeper: it stops talking and listens.
                 if (typing && useKeeperStore.getState().exchange === "speaking") {
-                  turn.current += 1;
+                  interrupt();
                   setExchange("none");
                 }
               }}
@@ -441,7 +341,7 @@ export function KeeperSheet({ view }: { view: KeeperView & { facts: KeeperFacts 
                 ) : (
                   <p className="ew-keeper-a is-pending">
                     <span className="sr-only">The keeper is thinking.</span>
-                    <span aria-hidden="true">&hellip;</span>
+                    <span aria-hidden="true">…</span>
                   </p>
                 )}
                 {talk.answer && talk.stationLine ? (
@@ -449,7 +349,7 @@ export function KeeperSheet({ view }: { view: KeeperView & { facts: KeeperFacts 
                 ) : null}
                 {talk.answer && talk.hop ? (
                   <Chip className="ew-keeper-hop" onClick={() => hopTo(talk.hop!)}>
-                    Off we go &rarr;
+                    Off we go →
                   </Chip>
                 ) : null}
               </>
@@ -561,7 +461,7 @@ export function KeeperSheet({ view }: { view: KeeperView & { facts: KeeperFacts 
             </button>
             {/* SPA link: the audio bridge in root keeps playing. */}
             <Link to="/listen" className="ew-keeper-act" onClick={close}>
-              <span className="ew-keeper-act-main">{VOICE.actDesk} <span aria-hidden="true">&rarr;</span></span>
+              <span className="ew-keeper-act-main">{VOICE.actDesk} <span aria-hidden="true">→</span></span>
               <span className="ew-keeper-act-sub">{VOICE.actDeskSub}</span>
             </Link>
           </div>

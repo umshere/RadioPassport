@@ -389,7 +389,7 @@ export const SURFACE_CONNECTIONS: SurfaceConnection[] = [
   {
     id: "dock-theater",
     surface: "dock",
-    label: "Theater",
+    label: "Desk",
     step: "inhabit",
     action: "theater",
     keepsPlayback: true,

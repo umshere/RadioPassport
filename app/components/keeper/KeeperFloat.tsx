@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useLocation } from "@remix-run/react";
 import { useKeeperStore } from "~/state/keeperStore";
 import { usePlayerStore } from "~/state/playerStore";
 import { Eyebrow } from "~/components/ui/Eyebrow";
@@ -84,6 +85,8 @@ function sameBounds(a: KeeperBounds, b: KeeperBounds) {
  */
 export function KeeperFloat({ view }: { view: KeeperView }) {
   const openSheet = useKeeperStore((state) => state.openSheet);
+  // On the desk the keeper stands on the page's own horizon; no second figure.
+  const onDesk = useLocation().pathname === "/listen";
   const murmur = useKeeperStore((state) => state.murmur);
   const setMurmur = useKeeperStore((state) => state.setMurmur);
   const stationId = usePlayerStore((state) => state.nowPlaying?.uuid ?? null);
@@ -154,7 +157,7 @@ export function KeeperFloat({ view }: { view: KeeperView }) {
     [bounds],
   );
 
-  if (!view.present || !bounds) return null;
+  if (!view.present || !bounds || onDesk) return null;
 
   const resting = clampKeeperSpot(spot, bounds);
   const peek = keeperPeeks({

@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { useKeeperStore } from "~/state/keeperStore";
+import { usePlayerStore } from "~/state/playerStore";
 import { preloadKeeperSprites } from "./Keeper";
 import { KeeperFloat } from "./KeeperFloat";
 import { KeeperSheet, useKeeperAskEnabled } from "./KeeperSheet";
@@ -17,6 +18,14 @@ export function KeeperHost() {
   const view = useKeeperView();
   useKeeperMurmurs(view, useKeeperAskEnabled());
   const closeSheet = useKeeperStore((state) => state.closeSheet);
+  const land = useKeeperStore((state) => state.land);
+  const stationId = usePlayerStore((state) => state.nowPlaying?.uuid ?? null);
+
+  // Note when each station was first heard, so the desk can say how long
+  // you have been aboard.
+  useEffect(() => {
+    land(stationId);
+  }, [land, stationId]);
 
   // No station, no desk: a sheet left open when the dial empties closes.
   useEffect(() => {

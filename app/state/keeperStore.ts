@@ -41,6 +41,9 @@ type KeeperStoreState = {
   /** Facts the keeper has told about this station, newest last. */
   factLog: { stationId: string | null; entries: KeeperFactEntry[] };
   addFact: (stationId: string, entry: KeeperFactEntry) => void;
+  /** When this station was first heard in this visit (for "aboard N min"). */
+  landed: { stationId: string | null; at: number };
+  land: (stationId: string | null) => void;
   /** The listener asked the keeper to keep quiet. */
   hushed: boolean;
   setHushed: (hushed: boolean) => void;
@@ -73,6 +76,11 @@ export const useKeeperStore = create<KeeperStoreState>((set) => ({
       if (held.some((e) => e.topic === entry.topic && e.kind === entry.kind)) return state;
       return { factLog: { stationId, entries: [...held, entry].slice(-12) } };
     }),
+  landed: { stationId: null, at: 0 },
+  land: (stationId) =>
+    set((state) =>
+      state.landed.stationId === stationId ? state : { landed: { stationId, at: Date.now() } },
+    ),
   hushed: readHush(),
   setHushed: (hushed) => {
     try {

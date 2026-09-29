@@ -90,6 +90,7 @@ export function DeskDossier({
   hasTitle,
   catalog,
   stationName,
+  showWaiting = true,
 }: {
   phase: TheaterPhase;
   caption: string | null;
@@ -100,6 +101,8 @@ export function DeskDossier({
   hasTitle: boolean;
   catalog: { land?: string | null; city?: string | null; spoken?: string | null };
   stationName?: string | null;
+  /** The desk page says what is on air elsewhere; it hides the waiting line. */
+  showWaiting?: boolean;
 }) {
   const aria = theaterWellAria(phase);
   const rows = (
@@ -137,7 +140,7 @@ export function DeskDossier({
       aria-live={aria ? "polite" : undefined}
       aria-label={aria}
     >
-      {waiting ? <Eyebrow tone="dust" className="ew-desk-waiting">{waiting}</Eyebrow> : null}
+      {waiting && showWaiting ? <Eyebrow tone="dust" className="ew-desk-waiting">{waiting}</Eyebrow> : null}
       {caption ? <Letter text={caption} signed={deskSigned} /> : null}
       {rows.length > 0 ? (
         <dl className="ew-desk-known">

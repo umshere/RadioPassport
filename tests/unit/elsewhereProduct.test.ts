@@ -582,7 +582,7 @@ describe("live stylesheet", () => {
     expect(css).not.toMatch(/\.ew-site-bar \{[^}]*backdrop-filter:/);
     expect(css).toMatch(/\.rp-overlay \{[^}]*z-index: 39/);
     expect(css).toContain(".ew-atlas");
-    expect(css).toContain(".ew-desk-top");
+    expect(css).toContain(".ew-sky {");
     expect(css).toContain(".ew-site-bar");
     expect(css).toContain(".ew-frame.is-home-frame");
     expect(css).toContain(".rp-intro-board");
@@ -640,7 +640,8 @@ describe("home cover panes", () => {
     );
     expect(band).toContain("Elsewhere");
     expect(band).toContain("Atlas");
-    expect(band).toContain("Theater");
+    expect(band).toContain("Desk");
+    expect(band).not.toContain('"Theater"');
     expect(band).toContain("About");
     expect(band).toContain("aria-disabled");
     expect(band).toContain("homeWithAtlasHref");

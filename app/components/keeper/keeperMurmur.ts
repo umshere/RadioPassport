@@ -60,12 +60,12 @@ export function planMurmurs(facts: KeeperFacts): MurmurStep[] {
   });
 }
 
-/** Hours the station's sun is ahead of (+) or behind (−) the listener's own. */
+/** Hours the station's sun is ahead of (+, up to 12) or behind (−, under 12) the listener's own. */
 export function hourOffsetFromListener(facts: KeeperFacts, listenerHour: number): number | null {
   if (!facts.hour) return null;
-  let diff = facts.hour.localHour - listenerHour;
+  // The smaller way round the clock; exactly half a day reads as ahead.
+  let diff = (((facts.hour.localHour - listenerHour) % 24) + 24) % 24;
   if (diff > 12) diff -= 24;
-  if (diff < -12) diff += 24;
   return diff;
 }
 

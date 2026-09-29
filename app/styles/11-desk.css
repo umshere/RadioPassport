@@ -1,26 +1,309 @@
-/* ---- The desk (Theater) — a calm page: artwork, place, hour; the dossier in
-   the same drop-up sheet as the station list. Outside @layer on purpose (the
-   purge gremlin). Every colour is a token, so Day is the same page. */
-.ew-desk { position: relative; min-height: 100%; padding: 16px 16px 300px; background: var(--ew-ink); color: var(--ew-bone); }
-.ew-desk-empty { display: flex; flex-direction: column; align-items: flex-start; justify-content: center; min-height: 70svh; padding-bottom: 16px; }
-.ew-desk-top { display: grid; gap: 16px; }
-.ew-desk-plate { margin: 0; width: 100%; max-height: 40svh; aspect-ratio: 1 / 1; display: grid; place-items: center; overflow: hidden; border: 1px solid var(--ew-foil-line); background: var(--ew-leather); }
-.ew-desk-plate[data-empty] { width: 96px; max-height: none; }
-.ew-desk-plate img { display: block; width: 100%; height: 100%; object-fit: cover; }
-.ew-desk-seal { display: block; width: 34%; color: var(--ew-foil); }
-.ew-desk-seal svg { display: block; width: 100%; height: auto; }
-.ew-desk-folio { display: grid; gap: 8px; min-width: 0; }
-.ew-desk .ew-coverline { margin: 0; font-size: clamp(36px, 12vw, 52px); line-height: .96; letter-spacing: -.02em; }
-.ew-desk-lede { margin: 0; color: var(--ew-dust); }
-.ew-desk-seek { margin-top: 6px; }
-.ew-desk-sheet-head { display: flex; align-items: center; justify-content: space-between; margin: 2px 0 10px; }
-.ew-desk-dossier { display: grid; gap: 20px; padding-bottom: 12px; }
+/* ---- The desk (/listen) — the keeper's own page. Outside @layer on purpose
+   (the purge gremlin). Every colour is a token, so Day is the same page.
+   Structure: one scrolling column of flex children on the phone (never a
+   grid of scroll containers: iOS WebKit collapses those), two columns of
+   cards from 700px of desk, and a sticky sky beside the cards from 1100px.
+   Container queries, not viewport ones: the desk sizes itself. */
+
+.ew-desk {
+  --desk-pad-l: max(16px, env(safe-area-inset-left, 0px));
+  --desk-pad-r: max(16px, env(safe-area-inset-right, 0px));
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+  container: desk / inline-size;
+  padding: 0 0 calc(var(--desk-floor, 0px) + 32px);
+  background: var(--ew-ink);
+  color: var(--ew-bone);
+}
+.ew-desk-inner { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.ew-desk-inner > * { flex: none; }
+.ew-desk-body { display: flex; flex-direction: column; gap: 16px; min-width: 0; padding: 0 var(--desk-pad-r) 0 var(--desk-pad-l); }
+.ew-desk-col { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.ew-desk-col > * { flex: none; min-width: 0; }
+
+/* Hour tints, shared by the sky, the keeper sheet's head and the board. */
+:is(.ew-sky, .ew-keeper-top, .ew-board-row) { --sky-tint: var(--ew-foil); }
+:is(.ew-sky, .ew-keeper-top, .ew-board-row)[data-hour="dawn"] { --sky-tint: var(--ew-hour-dawn); }
+:is(.ew-sky, .ew-keeper-top, .ew-board-row)[data-hour="midday"] { --sky-tint: var(--ew-hour-midday); }
+:is(.ew-sky, .ew-keeper-top, .ew-board-row)[data-hour="dusk"] { --sky-tint: var(--ew-hour-dusk); }
+:is(.ew-sky, .ew-keeper-top, .ew-board-row)[data-hour="night"] { --sky-tint: var(--ew-hour-night); }
+
+/* ---- The sky: the station's hour, the keeper on its horizon. */
+.ew-sky {
+  position: relative;
+  isolation: isolate;
+  container: sky / inline-size;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 340px;
+  padding: 16px var(--desk-pad-r) 0 var(--desk-pad-l);
+  overflow: hidden;
+  border-bottom: 1px solid var(--ew-foil-line);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--sky-tint) var(--ew-sky-mix), var(--ew-ink)) 0%,
+    color-mix(in srgb, var(--sky-tint) var(--ew-sky-mix-low), var(--ew-ink)) 72%,
+    var(--ew-ink) 100%
+  );
+}
+.ew-sky[data-hour="unknown"] { --ew-sky-mix: 10%; }
+.ew-sky-field { position: absolute; inset: 0; z-index: -1; pointer-events: none; }
+.ew-sky-stars {
+  position: absolute;
+  inset: 0 0 38% 0;
+  opacity: 0;
+  background-image:
+    radial-gradient(circle, var(--ew-bone) 0 1px, transparent 1.5px),
+    radial-gradient(circle, var(--ew-bone) 0 .75px, transparent 1.25px),
+    radial-gradient(circle, var(--ew-bone) 0 .6px, transparent 1.1px);
+  background-size: 131px 97px, 211px 167px, 307px 241px;
+  background-position: 23px 17px, 61px 44px, 151px 88px;
+  -webkit-mask-image: linear-gradient(to bottom, black, transparent);
+  mask-image: linear-gradient(to bottom, black, transparent);
+}
+.ew-sky[data-hour="night"] .ew-sky-stars { opacity: .5; }
+.ew-sky[data-hour="dusk"] .ew-sky-stars, .ew-sky[data-hour="unknown"] .ew-sky-stars { opacity: .18; }
+:root[data-atmosphere="day"] .ew-sky[data-hour="night"] .ew-sky-stars { opacity: .28; }
+.ew-sky-grain {
+  position: absolute;
+  inset: 0;
+  opacity: .1;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+/* The sun or the moon: a pixel disc on a quarter-hour step along its arc. */
+.ew-sky-body {
+  --pixel-disc: polygon(30% 0, 70% 0, 70% 10%, 85% 10%, 85% 20%, 92% 20%, 92% 30%, 100% 30%, 100% 70%, 92% 70%, 92% 80%, 85% 80%, 85% 90%, 70% 90%, 70% 100%, 30% 100%, 30% 90%, 15% 90%, 15% 80%, 8% 80%, 8% 70%, 0 70%, 0 30%, 8% 30%, 8% 20%, 15% 20%, 15% 10%, 30% 10%);
+  position: absolute;
+  /* Rises and sets on the horizon (the sky's bottom edge) and keeps left of
+     the keeper, who stands on the right of it. */
+  left: calc(8% + var(--sky-x, .5) * 58%);
+  bottom: calc(10px + var(--sky-y, .5) * 62%);
+  width: 30px;
+  height: 30px;
+  transform: translate(-50%, 50%);
+  clip-path: var(--pixel-disc);
+  background: var(--ew-hour-dawn);
+}
+.ew-sky-body::before { content: ""; position: absolute; inset: 0; background: var(--ew-hour-midday); clip-path: var(--pixel-disc); transform: scale(.5); opacity: .45; }
+.ew-sky-body[data-kind="moon"] {
+  background: var(--ew-bone);
+  opacity: .82;
+  -webkit-mask-image: radial-gradient(circle at 78% 30%, transparent 44%, black 45%);
+  mask-image: radial-gradient(circle at 78% 30%, transparent 44%, black 45%);
+}
+.ew-sky-body[data-kind="moon"]::before { display: none; }
+
+.ew-sky-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 28px; }
+.ew-sky-status { display: inline-flex; align-items: center; gap: 8px; font: 500 10px/1.3 "Azeret Mono", ui-monospace, monospace; letter-spacing: .14em; text-transform: uppercase; color: var(--ew-dust); text-align: right; }
+.ew-sky-status i { flex: none; width: 7px; height: 7px; background: var(--ew-dust); }
+.ew-sky-status[data-live] { color: var(--ew-ether); }
+.ew-sky-status[data-live] i { background: var(--ew-ether); }
+
+.ew-sky-copy { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.ew-sky-copy > * { flex: none; }
+.ew-sky-clock { margin: 0; font-size: clamp(34px, 11cqi, 60px); line-height: 1; }
+.ew-sky-clock.is-unknown { font: 500 11px/1.4 "Azeret Mono", ui-monospace, monospace; letter-spacing: .16em; text-transform: uppercase; color: var(--ew-dust); }
+.ew-flap-line.is-clock .ew-flap {
+  width: .64em;
+  height: 1.1em;
+  margin-left: .05em;
+  font-size: 1em;
+  border: 1px solid var(--ew-rule);
+  background: color-mix(in srgb, var(--ew-ink) 72%, transparent);
+  color: var(--ew-bone);
+}
+.ew-flap-line.is-clock .ew-flap::after { background: var(--ew-rule); }
+.ew-sky-place {
+  margin: 0;
+  max-width: 100%;
+  font: italic 400 clamp(52px, 18cqi, 124px)/.9 "Newsreader", "Iowan Old Style", serif;
+  letter-spacing: -.035em;
+  overflow-wrap: anywhere;
+  hyphens: auto;
+  text-wrap: balance;
+  color: var(--ew-bone);
+}
+.ew-sky-place.is-quiet { font-size: clamp(40px, 12cqi, 84px); line-height: .98; }
+.ew-sky-sub { display: flex; align-items: center; gap: 10px; margin: 0; font: 500 11px/1.4 "Azeret Mono", ui-monospace, monospace; letter-spacing: .14em; text-transform: uppercase; color: var(--ew-bone); opacity: .82; }
+.ew-sky-flag { flex: none; }
+.ew-sky-note { margin: 0; max-width: 34ch; font: italic 400 16px/1.4 "Newsreader", serif; color: var(--ew-dust); }
+.ew-sky-copy .ew-secret-trail { min-height: 0; }
+
+/* The horizon: the keeper stands on it; his lines appear beside him. */
+.ew-sky-ground { display: flex; align-items: flex-end; justify-content: flex-end; gap: 10px; margin-top: auto; min-width: 0; }
+.ew-sky-say { flex: 1 1 auto; display: flex; justify-content: flex-end; min-width: 0; padding-bottom: 28px; }
+.ew-sky-keeper { flex: none; display: block; }
+.ew-keeper[data-size="desk"] { --keeper-size: clamp(112px, 30cqi, 184px); }
+.ew-sky-bubble {
+  position: relative;
+  display: grid;
+  gap: 4px;
+  max-width: min(32ch, 100%);
+  padding: 10px 36px 11px 12px;
+  border: 1px solid var(--ew-foil-line);
+  background: color-mix(in srgb, var(--ew-dock) 80%, transparent);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  animation: ew-murmur-in .32s var(--ew-settle) both;
+}
+.ew-sky-bubble::after { content: ""; position: absolute; right: -7px; bottom: 14px; width: 12px; height: 12px; border-top: 1px solid var(--ew-foil-line); border-right: 1px solid var(--ew-foil-line); background: inherit; transform: rotate(45deg); }
+.ew-sky-bubble-text { margin: 0; font: italic 400 16px/1.35 "Newsreader", serif; color: var(--ew-bone); }
+.ew-sky-bubble-x { position: absolute; top: 0; right: 0; width: 44px; height: 44px; border: 0; background: none; color: var(--ew-dust); font: 18px/1 "Azeret Mono", monospace; cursor: pointer; }
+.ew-sky-bubble-x:hover { color: var(--ew-foil); }
+.ew-desk-empty-cta { align-self: flex-start; margin-top: 16px; }
+.ew-desk.is-empty .ew-sky { min-height: min(640px, 72svh); }
+
+/* ---- Cards: square, hairline, a little leather. */
+.ew-desk-card, .ew-onair { position: relative; min-width: 0; padding: 16px; border: 1px solid var(--ew-rule); background: color-mix(in srgb, var(--ew-leather) 72%, var(--ew-ink)); }
+.ew-desk-card-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 44px; margin: -6px 0 8px; }
+.ew-desk-card-title { margin: 0; min-width: 0; font: italic 400 24px/1.1 "Newsreader", "Iowan Old Style", serif; letter-spacing: -.01em; color: var(--ew-bone); overflow-wrap: anywhere; }
+.ew-desk-notebook { display: block; margin: 0 0 12px; }
+.ew-cards-empty { margin: 0; font: italic 400 16px/1.45 "Newsreader", serif; color: var(--ew-dust); }
+
+/* ---- Boarding pass: perforated, with a stub for the stamp and the ticket. */
+.ew-pass { container: pass / inline-size; position: relative; border: 1px solid var(--ew-foil-line); background: var(--ew-leather); }
+.ew-pass-body { display: flex; flex-direction: column; }
+.ew-pass-main { display: flex; flex-direction: column; gap: 12px; min-width: 0; padding: 16px; }
+.ew-pass-main > * { flex: none; }
+.ew-pass-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.ew-pass-count { font: 500 10px/1.3 "Azeret Mono", ui-monospace, monospace; letter-spacing: .14em; text-transform: uppercase; color: var(--ew-dust); white-space: nowrap; }
+.ew-pass-name { margin: 0; font: 500 clamp(22px, 7cqi, 30px)/1.1 "Schibsted Grotesk", sans-serif; letter-spacing: -.01em; color: var(--ew-bone); overflow-wrap: anywhere; }
+.ew-pass-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 16px; margin: 0; padding-top: 12px; border-top: 1px solid var(--ew-rule); }
+.ew-pass-field { min-width: 0; }
+.ew-pass-field dt { font: 500 10px/1.3 "Azeret Mono", ui-monospace, monospace; letter-spacing: .16em; text-transform: uppercase; color: var(--ew-dust); }
+.ew-pass-field dd { display: flex; flex-direction: column; gap: 2px; margin: 4px 0 0; min-width: 0; }
+.ew-pass-value { display: inline-flex; align-items: center; gap: 7px; min-width: 0; font: 500 15px/1.25 "Azeret Mono", ui-monospace, monospace; letter-spacing: .02em; text-transform: uppercase; color: var(--ew-bone); overflow-wrap: anywhere; }
+.ew-pass-flag { flex: none; }
+.ew-pass-field[data-missing] .ew-pass-value { font: italic 400 15px/1.3 "Newsreader", serif; letter-spacing: 0; text-transform: none; color: var(--ew-dust); }
+.ew-pass-sub { font: 400 13px/1.3 "Schibsted Grotesk", sans-serif; color: var(--ew-dust); overflow-wrap: anywhere; }
+.ew-pass-tags { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.ew-pass-tags li { padding: 4px 8px; border: 1px solid var(--ew-rule); font: 500 10px/1.3 "Azeret Mono", ui-monospace, monospace; letter-spacing: .1em; text-transform: uppercase; color: var(--ew-dust); overflow-wrap: anywhere; }
+.ew-pass-stub { position: relative; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 16px; border-top: 1px dashed var(--ew-foil-line); }
+.ew-pass-stub::before, .ew-pass-stub::after { content: ""; position: absolute; top: -10px; width: 18px; height: 18px; border: 1px solid var(--ew-foil-line); border-radius: 50%; background: var(--ew-ink); }
+.ew-pass-stub::before { left: -10px; clip-path: inset(0 0 0 50%); }
+.ew-pass-stub::after { right: -10px; clip-path: inset(0 50% 0 0); }
+.ew-pass-stamp { display: flex; align-items: center; gap: 12px; min-width: 0; flex: 1 1 200px; }
+.ew-pass-stamp-ring {
+  flex: none;
+  display: grid;
+  place-content: center;
+  gap: 2px;
+  width: 64px;
+  height: 64px;
+  padding: 6px;
+  border: 1.5px dashed var(--ew-ghost);
+  border-radius: 50%;
+  color: var(--ew-dust);
+  text-align: center;
+  transform: rotate(-9deg);
+}
+.ew-pass-stamp-ring b { font: 600 9px/1 "Azeret Mono", ui-monospace, monospace; letter-spacing: .12em; text-transform: uppercase; }
+.ew-pass-stamp-ring i { overflow: hidden; max-width: 50px; font: italic 400 11px/1.1 "Newsreader", serif; white-space: nowrap; text-overflow: ellipsis; }
+.ew-pass-stamp[data-stamped] .ew-pass-stamp-ring { border: 2px solid var(--ew-lacquer-text); outline: 1px solid var(--ew-lacquer-text); outline-offset: 2px; color: var(--ew-lacquer-text); }
+.ew-pass-stamp-copy { min-width: 0; font: 400 14px/1.35 "Schibsted Grotesk", sans-serif; color: var(--ew-dust); }
+.ew-pass-stamp[data-stamped] .ew-pass-stamp-copy { color: var(--ew-bone); }
+.ew-pass-share { min-height: 44px; }
+@container pass (min-width: 440px) {
+  .ew-pass-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@container pass (min-width: 560px) {
+  .ew-pass-body { flex-direction: row; }
+  .ew-pass-main { flex: 1 1 auto; }
+  .ew-pass-stub { flex: none; flex-direction: column; flex-wrap: nowrap; justify-content: center; width: 176px; border-top: 0; border-left: 1px dashed var(--ew-foil-line); text-align: center; }
+  .ew-pass-stub::before { top: -10px; left: -10px; clip-path: inset(50% 0 0 0); }
+  .ew-pass-stub::after { top: auto; right: auto; bottom: -10px; left: -10px; clip-path: inset(0 0 50% 0); }
+  .ew-pass-stamp { flex: none; flex-direction: column; }
+  .ew-pass-stamp-ring { width: 84px; height: 84px; }
+}
+
+/* ---- On air. */
+.ew-onair { container: onair / inline-size; display: flex; align-items: flex-start; gap: 14px; }
+.ew-onair-art { position: relative; flex: none; display: grid; place-items: center; width: 88px; height: 88px; margin: 0; overflow: hidden; border: 1px solid var(--ew-foil-line); background: var(--ew-ink); color: var(--ew-foil); }
+.ew-onair-art img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.ew-onair-art svg { width: 40%; height: auto; }
+.ew-onair-eq { position: absolute; left: 6px; bottom: 6px; display: flex; align-items: flex-end; gap: 2px; height: 14px; padding: 2px; background: var(--ew-ink); }
+.ew-onair-eq b { display: block; width: 3px; height: 100%; background: var(--ew-ether); transform-origin: bottom; }
+.ew-onair-eq b:nth-child(2) { transform: scaleY(.55); }
+.ew-onair-eq b:nth-child(3) { transform: scaleY(.8); }
+.ew-onair-copy { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.ew-onair-label { display: inline-flex; align-items: center; gap: 8px; margin: 0; }
+.ew-onair-title { margin: 0; font: 500 21px/1.2 "Schibsted Grotesk", sans-serif; letter-spacing: -.01em; color: var(--ew-bone); overflow-wrap: anywhere; }
+.ew-onair-title.is-programme { font: italic 400 22px/1.2 "Newsreader", serif; }
+.ew-onair-artist { margin: 0; font: 400 15px/1.35 "Schibsted Grotesk", sans-serif; color: var(--ew-dust); overflow-wrap: anywhere; }
+.ew-onair-src { font: 500 10px/1.3 "Azeret Mono", ui-monospace, monospace; letter-spacing: .14em; text-transform: uppercase; color: var(--ew-ether); }
+.ew-onair-note { margin: 0; font: 400 14px/1.4 "Schibsted Grotesk", sans-serif; color: var(--ew-dust); }
+.ew-onair-note.is-lead { font: italic 400 18px/1.35 "Newsreader", serif; color: var(--ew-bone); }
+.ew-onair-note.is-waiting { color: var(--ew-foil); }
+@container onair (min-width: 420px) {
+  .ew-onair-art { width: 132px; height: 132px; }
+  .ew-onair-title { font-size: 26px; }
+}
+
+/* ---- Ask the desk. */
+.ew-ask-chatter { display: inline-flex; flex: none; align-items: center; gap: 8px; min-height: 44px; padding: 0 12px; border: 1px solid var(--ew-foil-line); background: none; color: var(--ew-foil); font: 500 10px/1 "Azeret Mono", ui-monospace, monospace; letter-spacing: .12em; text-transform: uppercase; cursor: pointer; }
+.ew-ask-chatter i { width: 7px; height: 7px; background: var(--ew-ether); }
+.ew-ask-chatter[aria-pressed="false"] { color: var(--ew-dust); border-color: var(--ew-rule); }
+.ew-ask-chatter[aria-pressed="false"] i { background: var(--ew-ghost); }
+.ew-ask-chatter:hover { border-color: var(--ew-foil); }
+.ew-ask-talk { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+.ew-ask-talk > * { flex: none; }
+.ew-ask-q { margin: 0; font: 500 13px/1.35 "Schibsted Grotesk", sans-serif; color: var(--ew-dust); }
+.ew-ask-a { margin: 0; font: italic 400 21px/1.35 "Newsreader", "Iowan Old Style", serif; letter-spacing: -.005em; color: var(--ew-bone); }
+.ew-ask-a.is-pending { color: var(--ew-foil); }
+.ew-ask-lead { margin: 2px 0 0; font: 400 14px/1.4 "Schibsted Grotesk", sans-serif; color: var(--ew-dust); }
+.ew-ask-station { margin: 4px 0 0; font: 500 11px/1.4 "Azeret Mono", ui-monospace, monospace; letter-spacing: .08em; text-transform: uppercase; color: var(--ew-foil); }
+.ew-ask-hop { align-self: flex-start; }
+.ew-ask-form { display: flex; gap: 8px; }
+.ew-ask-form input { flex: 1 1 auto; min-width: 0; min-height: 44px; padding: 0 12px; border: 1px solid var(--ew-ghost); border-radius: 0; background: var(--ew-ink); color: var(--ew-bone); font: 400 16px/1.2 "Schibsted Grotesk", sans-serif; }
+.ew-ask-form input::placeholder { color: var(--ew-dust); }
+.ew-ask-form input:focus-visible { outline: 1px solid var(--ew-foil); outline-offset: 0; }
+.ew-ask-form .rp-surprise { flex: none; min-height: 44px; padding: 0 16px; }
+.ew-ask-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+/* A phone-width desk keeps one "Tell me about…" (six chips at most). */
+@container desk (max-width: 699px) {
+  .ew-ask-chips > .is-topic ~ .is-topic { display: none; }
+}
+.ew-ask-chips > * { min-height: 44px; max-width: 100%; white-space: normal; text-align: left; }
+
+/* ---- Postcards: cream card, blue ink, a red postmark. */
+.ew-cards { container: cards / inline-size; }
+.ew-cards-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; margin: 0; padding: 0; list-style: none; }
+.ew-postcard { position: relative; min-width: 0; padding: 16px 16px 18px; border: 1px solid var(--ew-postcard-edge); background: var(--ew-postcard); color: var(--ew-postcard-ink); }
+.ew-postcard::after { content: ""; position: absolute; top: 30px; right: 74px; width: 64px; height: 17px; background: repeating-linear-gradient(to bottom, var(--ew-postmark) 0 1px, transparent 1px 5px); opacity: .32; pointer-events: none; }
+.ew-postmark { float: right; display: grid; place-content: center; gap: 3px; width: 62px; height: 62px; margin: -4px -4px 8px 14px; border: 1.5px solid var(--ew-postmark); border-radius: 50%; outline: 1px solid var(--ew-postmark); outline-offset: 2px; color: var(--ew-postmark); text-align: center; transform: rotate(-12deg); opacity: .86; }
+.ew-postmark b { font: 600 9px/1 "Azeret Mono", ui-monospace, monospace; letter-spacing: .12em; text-transform: uppercase; }
+.ew-postmark i { font: 500 9px/1 "Azeret Mono", ui-monospace, monospace; font-style: normal; letter-spacing: .06em; }
+.ew-postcard-topic { margin: 0 0 8px; font: 600 10px/1.3 "Azeret Mono", ui-monospace, monospace; letter-spacing: .16em; text-transform: uppercase; color: var(--ew-postmark); overflow-wrap: anywhere; }
+.ew-postcard-text { margin: 0; font: italic 400 17px/1.45 "Newsreader", "Iowan Old Style", serif; color: var(--ew-postcard-ink); }
+.ew-postcard.is-reading { display: flex; align-items: center; gap: 12px; border: 1px dashed var(--ew-foil-line); background: none; color: var(--ew-dust); }
+.ew-postcard.is-reading::after { display: none; }
+.ew-postcard.is-reading p { margin: 0; font: italic 400 16px/1.4 "Newsreader", serif; }
+.ew-postcard-keeper { flex: none; width: 56px; height: 56px; object-fit: contain; }
+@container cards (min-width: 460px) {
+  .ew-cards-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ew-cards-grid > .ew-postcard:not(.is-reading):first-of-type,
+  .ew-cards-grid > .is-reading + .ew-postcard { grid-column: 1 / -1; }
+  .ew-cards-grid > .ew-postcard:not(.is-reading):first-of-type .ew-postcard-text,
+  .ew-cards-grid > .is-reading + .ew-postcard .ew-postcard-text { font-size: 21px; }
+  .ew-postcard.is-reading { grid-column: 1 / -1; }
+}
+
+/* ---- The station's file (DeskDossier inside a card). */
+.ew-desk-dossier { display: flex; flex-direction: column; gap: 20px; }
+.ew-desk-dossier > * { flex: none; }
 .ew-desk-known { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 0; }
 .ew-desk-known dt { font: 10px "Azeret Mono", monospace; letter-spacing: .14em; text-transform: uppercase; color: var(--ew-dust); }
 .ew-desk-known dd { margin: 3px 0 0; overflow-wrap: anywhere; font: 500 15px/1.35 "Schibsted Grotesk", sans-serif; color: var(--ew-bone); }
 .ew-desk-found ol { margin: 8px 0 0; padding: 0; list-style: none; }
 .ew-desk-found li { display: flex; align-items: baseline; gap: 11px; min-height: 44px; border-bottom: 1px solid var(--ew-rule); padding: 7px 0; }
-.ew-desk-found-value { font: 500 15px/1.3 "Schibsted Grotesk", sans-serif; color: var(--ew-bone); }
+.ew-desk-found-value { min-width: 0; overflow-wrap: anywhere; font: 500 15px/1.3 "Schibsted Grotesk", sans-serif; color: var(--ew-bone); }
 .ew-desk-found-label { margin-left: auto; font: 10px "Azeret Mono", monospace; letter-spacing: .12em; text-transform: uppercase; color: var(--ew-dust); }
 .ew-desk-source { margin: 8px 0 0; font: 10px "Azeret Mono", monospace; letter-spacing: .1em; text-transform: uppercase; color: var(--ew-dust); }
 .ew-desk-links .ew-meridians { display: flex; flex-direction: column; gap: 8px; margin: 8px 0 0; }
@@ -32,8 +315,88 @@
 .ew-desk .ew-letter.is-open .ew-caption { display: block; -webkit-line-clamp: unset; }
 .ew-desk .ew-letter-more { margin-top: 6px; min-height: 44px; padding: 0; background: none; border: 0; font: 10px "Azeret Mono", monospace; letter-spacing: .16em; text-transform: uppercase; color: var(--ew-foil); }
 .ew-desk .ew-letter-sign { display: block; margin-top: 4px; font: italic 13px "Newsreader", serif; color: var(--ew-dust); }
-@media (min-width: 961px) {
-  .ew-desk { display: grid; grid-template-columns: minmax(0, 28rem) minmax(18rem, 1fr); gap: 40px; align-items: start; padding: 32px 40px; }
-  .ew-desk-empty { display: flex; }
-  .ew-desk .rp-intro-board { padding: 0; }
+
+/* ---- Next departures: the room's queue as a split-flap board. */
+.ew-board { margin: 0; padding: 0; list-style: none; border-top: 1px solid var(--ew-rule); }
+.ew-board-row { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 60px; padding: 8px 0; border: 0; border-bottom: 1px solid var(--ew-rule); background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.ew-board-row:hover .ew-board-go, .ew-board-row:focus-visible .ew-board-go { color: var(--ew-bone); }
+.ew-board-time { flex: none; }
+.ew-flap-line.is-board .ew-flap { width: .7em; height: 1.3em; font-size: 15px; color: var(--sky-tint); }
+.ew-board-dest { display: flex; flex: 1 1 auto; flex-direction: column; gap: 2px; min-width: 0; }
+.ew-board-dest b { overflow: hidden; font: 500 16px/1.25 "Schibsted Grotesk", sans-serif; color: var(--ew-bone); text-overflow: ellipsis; white-space: nowrap; }
+.ew-board-dest small { overflow: hidden; font: 400 12px/1.3 "Schibsted Grotesk", sans-serif; color: var(--ew-dust); text-overflow: ellipsis; white-space: nowrap; }
+.ew-board-go { flex: none; font: 500 10px/1 "Azeret Mono", ui-monospace, monospace; letter-spacing: .12em; text-transform: uppercase; color: var(--ew-foil); }
+.ew-departures-gate { display: flex; align-items: center; gap: 12px; margin-top: 14px; min-width: 0; }
+.ew-departures-gate-label { flex: none; font: 500 10px/1.3 "Azeret Mono", ui-monospace, monospace; letter-spacing: .14em; text-transform: uppercase; color: var(--ew-dust); }
+.ew-departures-gate .ew-theater-rail { flex: 1 1 auto; min-width: 0; }
+
+/* ---- Wider desks. */
+@container desk (min-width: 700px) {
+  .ew-desk { --desk-pad-l: max(24px, env(safe-area-inset-left, 0px)); --desk-pad-r: max(24px, env(safe-area-inset-right, 0px)); }
+  .ew-sky { min-height: 380px; padding-top: 22px; }
+  .ew-desk-body { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; gap: 20px; }
+  .ew-desk-col.is-c { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; gap: 20px; }
+  .ew-desk-col.is-c > :only-child { grid-column: 1 / -1; }
 }
+@container desk (min-width: 1100px) {
+  .ew-desk-inner { display: grid; grid-template-columns: minmax(380px, 5fr) minmax(0, 8fr); align-items: start; gap: 28px; padding: 24px var(--desk-pad-r) 0 var(--desk-pad-l); }
+  /* Fills the visible desk but never clips: the sky grows to its content, so
+     the keeper always stands whole on the horizon. */
+  .ew-sky { position: sticky; top: 0; height: auto; min-height: max(420px, calc(var(--desk-h, 760px) - var(--desk-floor, 0px) - 48px)); padding: 22px 24px 0; border: 1px solid var(--ew-foil-line); }
+  .ew-desk.is-empty .ew-desk-inner { grid-template-columns: minmax(0, 1fr); }
+  .ew-desk-body { padding: 0; }
+}
+
+/* ---- Motion: stepped, like the character. Reduced motion stills it all. */
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes ew-sky-arrive { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
+  @keyframes ew-sky-twinkle { 0%, 100% { opacity: .5; } 50% { opacity: .32; } }
+  @keyframes ew-desk-blink { 0%, 60% { opacity: 1; } 61%, 100% { opacity: .25; } }
+  @keyframes ew-desk-eq { 0%, 100% { transform: scaleY(.35); } 33% { transform: scaleY(1); } 66% { transform: scaleY(.6); } }
+  @keyframes ew-stamp-thunk {
+    0% { transform: rotate(-24deg) scale(2.1); opacity: 0; }
+    60% { transform: rotate(-7deg) scale(.94); opacity: 1; }
+    100% { transform: rotate(-9deg) scale(1); opacity: 1; }
+  }
+  @keyframes ew-postmark-thunk {
+    0% { transform: rotate(-30deg) scale(2); opacity: 0; }
+    60% { transform: rotate(-10deg) scale(.94); opacity: .9; }
+    100% { transform: rotate(-12deg) scale(1); opacity: .86; }
+  }
+  @keyframes ew-card-in { from { transform: translateY(10px); opacity: 0; } to { transform: none; opacity: 1; } }
+  .ew-sky-place { animation: ew-sky-arrive .48s steps(6, end) both; }
+  /* At desk size the sheet's flap-in reads as a squash: the keeper steps in instead. */
+  @keyframes ew-sky-keeper-in { from { opacity: .35; transform: translateY(4%); } to { opacity: 1; transform: none; } }
+  .ew-sky .ew-keeper .ew-keeper-sprite { animation: ew-sky-keeper-in .24s steps(3, end) both; transform-origin: 50% 100%; }
+  .ew-sky .ew-keeper[data-state="idle"] .ew-keeper-sprite { animation: ew-sky-keeper-in .24s steps(3, end) both, ew-keeper-bob 2.6s steps(2, end) .3s infinite; }
+  .ew-sky .ew-keeper[data-state="speaking"] .ew-keeper-sprite { animation: ew-sky-keeper-in .24s steps(3, end) both, ew-keeper-bob .6s steps(2, end) .3s infinite; }
+  .ew-sky[data-hour="night"] .ew-sky-stars { animation: ew-sky-twinkle 4.8s steps(2, end) infinite; }
+  .ew-sky-status[data-live] i { animation: ew-desk-blink 1.6s steps(1, end) infinite; }
+  .ew-onair-eq b { animation: ew-desk-eq .9s steps(3, end) infinite; }
+  .ew-onair-eq b:nth-child(2) { animation-delay: -.3s; }
+  .ew-onair-eq b:nth-child(3) { animation-delay: -.6s; }
+  .ew-pass-stamp[data-fresh] .ew-pass-stamp-ring { animation: ew-stamp-thunk .42s steps(5, end) both; }
+  .ew-postcard[data-fresh] { animation: ew-card-in .3s var(--ew-settle) both; }
+  .ew-postcard[data-fresh] .ew-postmark { animation: ew-postmark-thunk .42s steps(5, end) .18s both; }
+  @supports (animation-timeline: view()) {
+    .ew-desk-body :is(.ew-pass, .ew-onair, .ew-desk-card) {
+      animation: ew-card-in linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 24%;
+    }
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ew-desk *, .ew-desk *::before, .ew-desk *::after { animation: none !important; transition: none !important; }
+}
+
+/* ---- The keeper's sheet, in the desk's language: its head wears the
+   station's sky, its postcards are cream card and blue ink. The footer and
+   its actions are untouched (always in view). */
+.ew-keeper-top[data-hour] {
+  padding-top: 12px;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--sky-tint) var(--ew-sky-mix), var(--ew-leather)) 0%, var(--ew-leather) 100%);
+}
+.ew-keeper-know-item { position: relative; gap: 6px; padding: 12px 14px; border: 1px solid var(--ew-postcard-edge); background: var(--ew-postcard); }
+.ew-keeper-know-item .rp-eyebrow { color: var(--ew-postmark); }
+.ew-keeper-know-item p { color: var(--ew-postcard-ink); }

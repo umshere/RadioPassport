@@ -44,6 +44,14 @@
     --ew-lift: 0 -16px 48px rgb(0 0 0 / .45);
     --ew-ether-line: rgba(122, 168, 168, 0.55);
     --ew-settle: cubic-bezier(.22, 1, .36, 1);
+    /* The desk: how strongly the station's hour tints its sky (top, horizon),
+       and the keeper's postcards (cream card, fountain-pen ink, red postmark). */
+    --ew-sky-mix: 30%;
+    --ew-sky-mix-low: 9%;
+    --ew-postcard: var(--ew-passport-paper);
+    --ew-postcard-edge: var(--ew-passport-paper-edge);
+    --ew-postcard-ink: var(--ew-passport-ink-0);
+    --ew-postmark: var(--ew-passport-ink-2);
     --player-dock-clearance: 88px;
   }
 
@@ -78,6 +86,10 @@
     --ew-foil-wash-strong: rgba(138, 110, 58, .18);
     --ew-lift: 0 -16px 48px rgb(26 22 18 / .08);
     --ew-ether-line: rgba(63, 122, 118, 0.55);
+    --ew-sky-mix: 20%;
+    --ew-sky-mix-low: 6%;
+    --ew-postcard: #FBF6EC;
+    --ew-postcard-edge: #D8C7A4;
   }
 
   @media (max-width: 960px) {

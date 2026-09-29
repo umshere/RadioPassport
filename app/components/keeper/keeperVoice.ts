@@ -42,6 +42,50 @@ export const VOICE = {
   friendCard: "A friend sent you a ticket",
   listenLive: "Land here",
   notNow: "Not now",
+
+  /* ---- The desk (/listen): the keeper's own page. ---- */
+  deskTitle: "The desk",
+  deskLive: "On air",
+  deskPaused: "Paused. I’ll keep your place.",
+  /** The sky, when the station has not said where it is. */
+  hourUnknown: "They haven’t told me where they are, so I won’t guess the hour.",
+  hourUnknownShort: "Hour unknown",
+  clockSpoken: (spoken: string, place: string) => `It’s ${spoken} in ${place}.`,
+  offset: (hours: number | null) =>
+    hours === null
+      ? null
+      : hours === 0
+        ? "Your hour, by the sun"
+        : `${Math.abs(hours)} hour${Math.abs(hours) === 1 ? "" : "s"} ${hours > 0 ? "ahead of" : "behind"} you`,
+  passLabel: "Boarding pass",
+  passFrom: "From",
+  passTo: "To",
+  passLocal: "Local",
+  passSpoken: "Spoken",
+  passSignal: "Signal",
+  passAboard: "Aboard",
+  passHere: "Here",
+  notInNotebook: "Not in my notebook yet",
+  aboard: (minutes: number) => (minutes < 1 ? "Just landed" : `${minutes} min`),
+  stampedHere: "Stamped",
+  stampPending: "Stay a minute and I’ll stamp it.",
+  stampCount: (count: number) => `Passport · ${String(count).padStart(2, "0")}`,
+  onAirWaiting: "Ears up. Waiting for a name…",
+  onAirIdent: "Their own name, between songs. A station ident.",
+  onAirAd: "An advert. Even here, somebody pays the bills.",
+  onAirTalk: "Words, not songs, for now. Talk or news.",
+  onAirProgramme: "That’s the name of the show, not the song.",
+  onAirSent: "Sent by the station",
+  askTitle: "Ask the desk",
+  askLead: "Where, when, who. I’ll tell you what I know and say when I don’t.",
+  postcardsOff: "The notebook is shut for now. The radio’s still on.",
+  fileTitle: "The station’s file",
+  departures: "Next departures",
+  departuresNone: "No more departures from this gate. Change gate and I’ll find you another.",
+  board: "Board",
+  changeGate: "Change gate",
+  deskEmptyTitle: "Nobody at the desk yet.",
+  deskEmptyLine: "Pick a city, press play, and I’ll stamp you in.",
 } as const;
 
 /** "Dawn" → "morning", for the lines that say where the sun is. */

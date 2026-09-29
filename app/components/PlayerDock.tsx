@@ -12,11 +12,6 @@ import { usePlayerStore } from "~/state/playerStore";
 import { canMutateJourney, useJourneyStore } from "~/state/journeyStore";
 import { useRoom } from "~/hooks/useRoom";
 import { dispatchRequestFor, roomForStation, useRoomStore } from "~/state/roomStore";
-import {
-  sharedSignals,
-  upNextFresh,
-  useUpNextStore,
-} from "~/state/upNextStore";
 import type { DispatchResponse } from "~/types/ai";
 import { stationLocation } from "~/components/radio-passport/StationRow";
 import { cleanTrackLine } from "~/services/keeper/cleanTitle";
@@ -49,23 +44,6 @@ export default function PlayerDock() {
   // letter. One transport, one object — the row stays the compact face.
   const [deckOpen, setDeckOpen] = useState(false);
   const [ink, setInk] = useState<number | null>(null);
-
-  useEffect(() => {
-    if (!mounted || !nowPlaying) return;
-    const next = queue.length
-      ? queue[(index + 1) % queue.length]
-      : null;
-    if (!next || next.uuid === nowPlaying.uuid) return;
-    const id = next.uuid;
-    const store = useUpNextStore.getState();
-    if (upNextFresh(store.entries[id], Date.now())) return;
-    // The up-next row needs only the shared signals; no network call.
-    store.put(id, {
-      dispatch: null,
-      shared: sharedSignals(nowPlaying, next),
-      fetchedAt: Date.now(),
-    });
-  }, [index, mounted, nowPlaying, queue]);
 
   useEffect(() => {
     if (!nowPlaying) return;
@@ -286,7 +264,7 @@ export default function PlayerDock() {
         </div>
       </div>
       <div className="rp-dock-row">
-      <Link to="/listen" prefetch="intent" viewTransition aria-label="Open listening theater">
+      <Link to="/listen" prefetch="intent" viewTransition aria-label="Open the desk">
         <img className="rp-dock-art" src="/elsewhere-mark.jpg" alt="" width={44} height={44} />
       </Link>
       <div className="min-w-0 flex-1">
@@ -378,7 +356,7 @@ export default function PlayerDock() {
         prefetch="intent"
         viewTransition
       >
-        Theater
+        Desk
       </Link>
       </div>
     </aside>

@@ -390,7 +390,6 @@ html, body {
 /* Theater phone = Theater.html / Knowledge.html. Desktop sky stays the wide field. */
 .ew-plate { display: grid; place-items: center; }
 .ew-plate:has(img) .ew-plate-mark { display: none; }
-.ew-theater-queue{ display: none; }
 @media (max-width: 960px) {
 .ew-site-bar.is-theater .ew-theater-rail { display: none; }
 .ew-theater { --ew-theater-sky: 236px; }
@@ -403,8 +402,6 @@ html, body {
 .ew-plate-mark svg { display: block; width: 34px; height: 34px; }
 .ew-plate-copy { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 .ew-plate-caption { display: block; margin: 0; color: var(--ew-dust); font-family: "Newsreader", "Iowan Old Style", "Palatino Linotype", serif; font-style: italic; font-size: 13px; line-height: 1.5; }
-.ew-theater-queue { display: flex; flex-direction: column; margin-top: 16px; }
-.ew-theater-queue > .rp-eyebrow { color: var(--ew-dust); }
 }
 
 /* Home board — split-flap letters. Outside @layer (Tailwind v3 drops layered rules). */
