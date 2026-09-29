@@ -10,6 +10,7 @@ import {
 import { useHydrated } from "~/hooks/useHydrated";
 import { useJourneyStore } from "~/state/journeyStore";
 import { Button, ButtonLink, Chip } from "~/components/ui/Button";
+import { HeaderShare } from "~/components/share/HeaderShare";
 
 export default function SiteBar() {
   const location = useLocation();
@@ -40,6 +41,7 @@ export default function SiteBar() {
           paint on WebKit once the Atlas veil opens. */}
       <BandNav variant="rail" />
       <nav className="ew-site-bar-side" aria-label="Site">
+        <HeaderShare />
         <Link
           to="/about"
           className="rp-eyebrow text-dust ew-site-room"

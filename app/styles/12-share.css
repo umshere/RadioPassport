@@ -5,3 +5,7 @@
 .ew-tune-actions { display: flex; align-items: center; gap: 16px; margin-top: 10px; }
 @keyframes ew-tune-in { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .ew-tune { animation: none; } }
+
+/* Share lives in the header whenever a station is loaded — never hidden. */
+.ew-site-share { display: inline-grid; place-items: center; width: 44px; height: 44px; border: 1px solid var(--ew-foil-line); background: none; color: var(--ew-foil); cursor: pointer; }
+.ew-site-share:hover { border-color: var(--ew-foil); }

@@ -541,7 +541,8 @@ export function KeeperSheet({ view }: { view: KeeperView & { facts: KeeperFacts 
             ) : null}
           </div>
 
-          {/* 4 — Three plain actions, each saying what it does. */}
+        </div>
+        <footer className="ew-keeper-foot">
           <div className="ew-keeper-actions">
             {nowStation ? (
               <button type="button" className="ew-keeper-act" onClick={() => void onShare()}>
@@ -564,7 +565,7 @@ export function KeeperSheet({ view }: { view: KeeperView & { facts: KeeperFacts 
               <span className="ew-keeper-act-sub">{VOICE.actDeskSub}</span>
             </Link>
           </div>
-        </div>
+        </footer>
       </section>
     </div>
   );

@@ -321,3 +321,14 @@
 .ew-keeper-act[aria-pressed="false"] .ew-keeper-act-main { color: var(--ew-dust); }
 .ew-keeper-act-main { font: 500 11px/1.25 "Azeret Mono", ui-monospace, monospace; letter-spacing: .12em; text-transform: uppercase; color: var(--ew-foil); }
 .ew-keeper-act-sub { font: 400 12px/1.3 "Schibsted Grotesk", sans-serif; color: var(--ew-dust); }
+
+/* Sheet v2.1: the body never lets a row collapse (a scrolling child has a zero
+   automatic minimum in a grid, so rows overlapped on iOS); the actions live in
+   a footer that is always in view. */
+.ew-keeper-body { display: flex; flex-direction: column; }
+.ew-keeper-body > * { flex: none; }
+.ew-keeper-foot { flex: none; padding: 10px 16px calc(12px + env(safe-area-inset-bottom, 0px)); border-top: 1px solid var(--ew-rule); background: var(--ew-leather); }
+.ew-keeper-actions { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.ew-keeper-act { min-height: 52px; padding: 6px 8px; gap: 2px; }
+.ew-keeper-act-main { font-size: 10px; letter-spacing: .1em; }
+.ew-keeper-act-sub { font-size: 11px; }

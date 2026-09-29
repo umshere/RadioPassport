@@ -68,6 +68,15 @@ const LIMITS = {
   bytes: 4096,
 } as const;
 
+/** "SomaFM Indie Pop Rocks! (128k AAC)" → the name without its bitrate tag. */
+export function tidyStationName(name: string): string {
+  return name
+    .replace(/\s*[(\[]\s*\d{2,3}\s?k(?:bps)?(?:\s*(?:aac\+?|mp3|ogg|flac))?\s*[)\]]/gi, "")
+    .replace(/\s*[(\[]\s*(?:aac\+?|mp3|ogg|flac)\s*[)\]]/gi, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 function clip(value: unknown, max: number): string | null {
   if (typeof value !== "string") return null;
   const trimmed = value.replace(/\s+/g, " ").trim();
@@ -118,7 +127,7 @@ export function buildKeeperFacts(
       : null;
   return {
     station: {
-      name: clip(station.name, LIMITS.text) ?? "This station",
+      name: clip(tidyStationName(station.name ?? ""), LIMITS.text) ?? "This station",
       country: clip(station.country, LIMITS.text) ?? "",
       language: clip(station.language, LIMITS.text),
       bitrate: station.bitrate > 0 ? station.bitrate : null,
