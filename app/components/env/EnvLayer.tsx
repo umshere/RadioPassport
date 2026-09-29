@@ -13,9 +13,10 @@ import {
   envNudge,
   envPageTilt,
   gustFrames,
-  swingFrames,
   type EnvHour,
 } from "./envModel";
+
+const LANDING_MS = 6000;
 
 type Lite = "on" | undefined;
 
@@ -38,7 +39,8 @@ export function EnvLayer() {
   const rootRef = useRef<HTMLDivElement>(null);
   const prevHour = useRef<EnvHour | null>(null);
   const gusts = useRef<Animation[]>([]);
-  const swings = useRef<Animation[]>([]);
+  const arriving = useRef(false);
+  const [landing, setLanding] = useState(false);
 
   // The listener's own hour, refreshed every few minutes.
   useEffect(() => {
@@ -104,46 +106,38 @@ export function EnvLayer() {
     });
   };
 
-  // Once the sprites are up, let the room move into the real hour.
+  // Once the sprites are up, the light lands: one long, smooth sweep of the
+  // shadow into the real hour (a time-lapse of the day), brightest at the start,
+  // then quiet. No bounce, no second pass.
   useEffect(() => {
     if (!ready || arrived) return;
     let second = 0;
+    let done = 0;
     const first = requestAnimationFrame(() => {
       second = requestAnimationFrame(() => {
+        arriving.current = true;
+        setLanding(true);
         setArrived(true);
-        // The bloom: the first light is bright and settles slowly into the page.
         const root = rootRef.current;
         if (root && typeof root.animate === "function" && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
           root.querySelectorAll<HTMLElement>(".ew-env-bloom").forEach((el) => {
-            el.animate(
-              [{ opacity: 1, offset: 0 }, { opacity: 1, offset: 0.1 }, { opacity: 0.1818 }],
-              { duration: 5200, easing: "cubic-bezier(.25,0,.2,1)", fill: "none" }
-            );
-          });
-          // Swing the light wide and let it settle. Started a frame later so the
-          // hour change's own gust (which resets running ones) has already begun.
-          requestAnimationFrame(() => {
-            root.querySelectorAll<HTMLElement>("[data-gust]").forEach((layer) => {
-              const far = layer.dataset.gust === "far";
-              swings.current.push(
-                layer.animate(
-                  swingFrames({
-                    seconds: lite ? 5.2 : 6.4,
-                    turn: (lite ? 22 : 34) * (far ? 0.6 : 1),
-                    push: (lite ? 26 : 44) * (far ? 0.6 : 1),
-                    direction: GUST_BREEZE[hour].direction,
-                  }),
-                  { duration: (lite ? 5.2 : 6.4) * 1000, delay: far ? 120 : 0, easing: "linear", fill: "none", composite: "add" }
-                )
-              );
+            el.animate([{ opacity: 0.45 }, { opacity: 0.1818 }], {
+              duration: LANDING_MS,
+              easing: "cubic-bezier(.2,.6,.2,1)",
+              fill: "none",
             });
           });
         }
+        done = window.setTimeout(() => {
+          arriving.current = false;
+          setLanding(false);
+        }, LANDING_MS + 200);
       });
     });
     return () => {
       cancelAnimationFrame(first);
       cancelAnimationFrame(second);
+      window.clearTimeout(done);
     };
   }, [ready, arrived]);
 
@@ -152,7 +146,7 @@ export function EnvLayer() {
     const previous = prevHour.current;
     prevHour.current = shown;
     if (!previous || previous === shown) return;
-    fireGust(shown, 1);
+    if (!arriving.current) fireGust(shown, 1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [shown, lite]);
 
@@ -258,6 +252,7 @@ export function EnvLayer() {
       aria-hidden="true"
       data-hour={shown}
       data-arrived={arrived || undefined}
+      data-landing={landing || undefined}
       data-lite={lite}
       style={style}
     >

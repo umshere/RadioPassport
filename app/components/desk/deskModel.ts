@@ -1,4 +1,5 @@
 import { cleanTrack, cleanTrackLine } from "~/services/keeper/cleanTitle";
+import { estimatedLongitude } from "~/utils/countryCentroids";
 import type { Station } from "~/types/radio";
 import {
   formatClock,
@@ -154,7 +155,9 @@ export function deskDepartures(
     if (!next || seen.has(next.uuid)) continue;
     seen.add(next.uuid);
     const longitude =
-      typeof next.longitude === "number" && Number.isFinite(next.longitude) ? next.longitude : null;
+      typeof next.longitude === "number" && Number.isFinite(next.longitude)
+        ? next.longitude
+        : estimatedLongitude(next);
     out.push({
       station: next,
       clock: longitude === null ? null : formatClock(localDateAtLongitude(longitude, now)),

@@ -1,3 +1,4 @@
+import { estimatedLongitude } from "~/utils/countryCentroids";
 import type { Station } from "~/types/radio";
 import { hourWord, VOICE } from "~/components/keeper/keeperVoice";
 import { isDeepNight, type KeeperState } from "~/components/keeper/keeperState";
@@ -70,7 +71,8 @@ function longitudeOf(station: Station): number | null {
 /** Stations as departures: the clock and the hour there, never a guess. */
 export function homeDepartures(stations: Station[], now = new Date()): HomeDeparture[] {
   return stations.map((station) => {
-    const longitude = longitudeOf(station);
+    // No coordinates: use the country's centre, so the row still shows a rough hour.
+    const longitude = longitudeOf(station) ?? estimatedLongitude(station);
     return {
       station,
       clock: longitude === null ? null : formatClock(localDateAtLongitude(longitude, now)),
