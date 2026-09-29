@@ -29,6 +29,7 @@ describe("environment model", () => {
     const css = readFileSync("app/styles/15-env.css", "utf8");
     expect(css).toContain("prefers-reduced-motion: reduce");
     expect(css).toContain("ew-atmosphere-shift");
+    expect(css).toContain("--env-px");
   });
 });
 

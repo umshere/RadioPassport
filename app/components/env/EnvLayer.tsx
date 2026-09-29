@@ -118,6 +118,76 @@ export function EnvLayer() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [moveKey]);
 
+  // Phones: tilt the phone and the room shifts a hair, near leaves more than far.
+  // Reads the gyro through one passive listener; writes two custom properties.
+  // iOS asks permission, so it is requested on the first tap; if refused, nothing happens.
+  useEffect(() => {
+    if (!window.matchMedia("(pointer: coarse)").matches) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    if (typeof DeviceOrientationEvent === "undefined") return;
+    const root = rootRef.current;
+    if (!root) return;
+
+    let base: { g: number; b: number } | null = null;
+    let sx = 0;
+    let sy = 0;
+    let frame = 0;
+    let tx = 0;
+    let ty = 0;
+    const clamp = (v: number) => Math.max(-1, Math.min(1, v));
+    const write = () => {
+      frame = 0;
+      sx += (tx - sx) * 0.18;
+      sy += (ty - sy) * 0.18;
+      root.style.setProperty("--env-px", sx.toFixed(3));
+      root.style.setProperty("--env-py", sy.toFixed(3));
+      if (Math.abs(tx - sx) > 0.002 || Math.abs(ty - sy) > 0.002) frame = requestAnimationFrame(write);
+    };
+    const onTilt = (event: DeviceOrientationEvent) => {
+      if (event.gamma === null || event.beta === null || document.hidden) return;
+      const g = event.gamma;
+      const b = event.beta;
+      if (!base) base = { g, b };
+      // The resting pose follows slowly, so any way of holding the phone is centred.
+      base.g += (g - base.g) * 0.004;
+      base.b += (b - base.b) * 0.004;
+      tx = clamp((g - base.g) / 18);
+      ty = clamp((b - base.b) / 18);
+      if (!frame) frame = requestAnimationFrame(write);
+    };
+
+    let listening = false;
+    const listen = () => {
+      if (listening) return;
+      listening = true;
+      window.addEventListener("deviceorientation", onTilt, { passive: true });
+    };
+
+    type Gated = typeof DeviceOrientationEvent & { requestPermission?: () => Promise<string> };
+    const gated = DeviceOrientationEvent as Gated;
+    let cleanupTap = () => {};
+    if (typeof gated.requestPermission === "function") {
+      const ask = () => {
+        gated
+          .requestPermission?.()
+          .then((state) => {
+            if (state === "granted") listen();
+          })
+          .catch(() => {});
+      };
+      window.addEventListener("pointerup", ask, { once: true });
+      cleanupTap = () => window.removeEventListener("pointerup", ask);
+    } else {
+      listen();
+    }
+
+    return () => {
+      cleanupTap();
+      window.removeEventListener("deviceorientation", onTilt);
+      if (frame) cancelAnimationFrame(frame);
+    };
+  }, []);
+
   // A hidden tab holds still and comes back where it was.
   useEffect(() => {
     const onVisibility = () => rootRef.current?.classList.toggle("is-paused", document.hidden);
