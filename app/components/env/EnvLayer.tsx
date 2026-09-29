@@ -232,6 +232,71 @@ export function EnvLayer() {
     };
   }, []);
 
+  // Desktop: the light lives in the sky panel (the left column), not over the
+  // whole page, so the rest of the room stays pure black. The layer is clipped to
+  // the panel's box and the sun anchors inside it. Off desktop it stays as it is.
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root) return;
+    const wide = window.matchMedia("(min-width: 768px)");
+    let raf = 0;
+    let observed: Element | null = null;
+    const ro = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(() => schedule());
+    function measure() {
+      raf = 0;
+      if (!root) return;
+      if (!wide.matches) {
+        root.removeAttribute("data-clipped");
+        return;
+      }
+      const sky = document.querySelector(".ew-sky");
+      if (sky !== observed) {
+        if (observed) ro?.unobserve(observed);
+        observed = sky;
+        if (sky) ro?.observe(sky);
+      }
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      let top = 64;
+      let left = 0;
+      let right = vw * 0.6;
+      let bottom = 0;
+      let cx = vw * 0.2;
+      let cy = vh * 0.35;
+      if (sky) {
+        const r = sky.getBoundingClientRect();
+        if (r.width > 40 && r.height > 40) {
+          top = Math.max(0, r.top);
+          left = Math.max(0, r.left);
+          right = Math.max(0, vw - r.right);
+          bottom = Math.max(0, vh - r.bottom);
+          cx = r.left + r.width / 2;
+          cy = r.top + r.height * 0.3;
+        }
+      }
+      root.style.setProperty("--env-clip", `inset(${top}px ${right}px ${bottom}px ${left}px)`);
+      root.style.setProperty("--env-cx", `${cx.toFixed(0)}px`);
+      root.style.setProperty("--env-cy", `${cy.toFixed(0)}px`);
+      root.setAttribute("data-clipped", "");
+    }
+    function schedule() {
+      if (!raf) raf = requestAnimationFrame(measure);
+    }
+    schedule();
+    const settle = [window.setTimeout(schedule, 150), window.setTimeout(schedule, 900)];
+    window.addEventListener("resize", schedule);
+    window.addEventListener("scroll", schedule, { passive: true, capture: true });
+    wide.addEventListener("change", schedule);
+    return () => {
+      settle.forEach((id) => window.clearTimeout(id));
+      window.removeEventListener("resize", schedule);
+      window.removeEventListener("scroll", schedule, true);
+      wide.removeEventListener("change", schedule);
+      ro?.disconnect();
+      if (raf) cancelAnimationFrame(raf);
+    };
+  }, [pathname, stationId]);
+
   // A hidden tab holds still and comes back where it was.
   useEffect(() => {
     const onVisibility = () => rootRef.current?.classList.toggle("is-paused", document.hidden);
@@ -262,16 +327,14 @@ export function EnvLayer() {
           <span className="ew-env-layer is-far" data-gust="far">
             <span className="ew-env-bloom">
             <span className="ew-env-breath">
-              <img className="ew-env-img is-fleck" src="/env/fleck-far.webp" alt="" decoding="async" />
-              <img className="ew-env-img is-shade" src="/env/shade-far.webp" alt="" decoding="async" />
+              <span className="ew-env-img" style={{ maskImage: "url(/env/fleck-far.webp)", WebkitMaskImage: "url(/env/fleck-far.webp)" }} />
             </span>
             </span>
           </span>
           <span className="ew-env-layer is-near" data-gust="near">
             <span className="ew-env-bloom">
             <span className="ew-env-breath">
-              <img className="ew-env-img is-fleck" src="/env/fleck-near.webp" alt="" decoding="async" />
-              <img className="ew-env-img is-shade" src="/env/shade-near.webp" alt="" decoding="async" />
+              <span className="ew-env-img" style={{ maskImage: "url(/env/fleck-near.webp)", WebkitMaskImage: "url(/env/fleck-near.webp)" }} />
             </span>
             </span>
           </span>

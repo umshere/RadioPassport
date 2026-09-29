@@ -27,10 +27,10 @@
 }
 
 /* Hour → the physical state. angle/stretch/offset/softness are shared by both rooms. */
-.ew-env[data-hour="dawn"]   { --env-angle: 208deg; --env-stretch: 1.35; --env-tx: -5vmin; --env-ty: 3vmin;  --env-far: .60; --env-amp: 1;   --env-breeze: .7; --env-tint: var(--ew-hour-dawn);   --env-tint-a: .025; --env-peak: .075; }
-.ew-env[data-hour="midday"] { --env-angle: 182deg; --env-stretch: 1.05; --env-tx: 0vmin;  --env-ty: 0vmin;  --env-far: .25; --env-amp: .8;  --env-breeze: .55; --env-tint: var(--ew-hour-midday); --env-tint-a: .015; --env-peak: .09; }
-.ew-env[data-hour="dusk"]   { --env-angle: 152deg; --env-stretch: 1.45; --env-tx: 6vmin;  --env-ty: -2vmin; --env-far: .70; --env-amp: 1.1; --env-breeze: .9; --env-tint: var(--ew-hour-dusk);   --env-tint-a: .03;  --env-peak: .085; }
-.ew-env[data-hour="night"]  { --env-angle: 170deg; --env-stretch: 1.2;  --env-tx: 2vmin;  --env-ty: 1vmin;  --env-far: .6; --env-amp: .35; --env-breeze: .3; --env-tint: var(--ew-hour-night);  --env-tint-a: .02;  --env-peak: .10; }
+.ew-env[data-hour="dawn"]   { --env-hue: var(--ew-hour-dawn); --env-angle: 208deg; --env-stretch: 1.35; --env-tx: -5vmin; --env-ty: 3vmin;  --env-far: .45; --env-amp: 1;   --env-breeze: .7; --env-tint: var(--ew-hour-dawn);   --env-tint-a: .025; --env-peak: .075; }
+.ew-env[data-hour="midday"] { --env-hue: var(--ew-hour-midday); --env-angle: 182deg; --env-stretch: 1.05; --env-tx: 0vmin;  --env-ty: 0vmin;  --env-far: .2; --env-amp: .8;  --env-breeze: .55; --env-tint: var(--ew-hour-midday); --env-tint-a: .015; --env-peak: .09; }
+.ew-env[data-hour="dusk"]   { --env-hue: var(--ew-hour-dusk); --env-angle: 152deg; --env-stretch: 1.45; --env-tx: 6vmin;  --env-ty: -2vmin; --env-far: .5; --env-amp: 1.1; --env-breeze: .9; --env-tint: var(--ew-hour-dusk);   --env-tint-a: .03;  --env-peak: .085; }
+.ew-env[data-hour="night"]  { --env-hue: var(--ew-hour-night); --env-angle: 170deg; --env-stretch: 1.2;  --env-tx: 2vmin;  --env-ty: 1vmin;  --env-far: .55; --env-amp: .35; --env-breeze: .3; --env-tint: var(--ew-hour-night);  --env-tint-a: .02;  --env-peak: .10; }
 /* Day room: shade is a little stronger, tints a little different. */
 :root[data-atmosphere="day"] .ew-env[data-hour="dawn"]   { --env-tint-a: .03;  --env-peak: .085; }
 :root[data-atmosphere="day"] .ew-env[data-hour="midday"] { --env-tint-a: .01;  --env-peak: .10; }
@@ -40,6 +40,7 @@
 .ew-env[data-lite] { --env-mob: .85; }
 
 .ew-env-tint {
+  display: none;
   position: absolute;
   inset: 0;
   background-color: color-mix(in srgb, var(--env-tint) calc(var(--env-tint-a) * 100%), transparent);
@@ -67,15 +68,21 @@
 .ew-env-layer.is-near .ew-env-breath { translate: calc(var(--env-px) * -16px) calc(var(--env-py) * -12px); }
 .ew-env-layer.is-far  .ew-env-breath { translate: calc(var(--env-px) * -7px) calc(var(--env-py) * -5px); }
 .ew-env-breath { transition: translate .16s linear; }
-.ew-env-layer.is-near { opacity: calc(var(--env-peak) * (1 - var(--env-far)) * var(--env-gain) * var(--env-mob) * var(--env-soft) * 5.5); }
-.ew-env-layer.is-far  { opacity: calc(var(--env-peak) * var(--env-far) * var(--env-gain) * var(--env-mob) * var(--env-soft) * 5.5); }
+.ew-env-layer.is-near { opacity: calc(var(--env-peak) * (1 - var(--env-far)) * var(--env-gain) * var(--env-mob) * var(--env-soft) * var(--env-clipboost, 1) * 5.5); }
+.ew-env-layer.is-far  { opacity: calc(var(--env-peak) * var(--env-far) * var(--env-gain) * var(--env-mob) * var(--env-soft) * var(--env-clipboost, 1) * 5.5); }
 .ew-env-layer { transition: opacity var(--env-dur) var(--env-ease); }
 
-.ew-env-img { position: absolute; inset: 0; width: 100%; height: 100%; display: none; max-width: none; }
-/* The unused room's sprite is never painted. */
-.ew-env-img.is-fleck { display: block; }
-:root[data-atmosphere="day"] .ew-env-img.is-fleck { display: none; }
-:root[data-atmosphere="day"] .ew-env-img.is-shade { display: block; }
+/* The leaves are a mask; the colour is the hour's own, so the shadow itself changes
+   colour from dawn to midday to dusk to night. Night room: light through leaves.
+   Day room: the same hue, deepened, as shade on paper. */
+.ew-env-img {
+  position: absolute; inset: 0; width: 100%; height: 100%; display: block; max-width: none;
+  -webkit-mask-size: 100% 100%; mask-size: 100% 100%;
+  -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
+  background-color: var(--env-hue, var(--ew-hour-midday));
+  transition: background-color var(--env-dur) var(--env-ease);
+}
+:root[data-atmosphere="day"] .ew-env-img { background-color: color-mix(in srgb, var(--env-hue, var(--ew-hour-midday)) 55%, var(--ew-bone)); }
 
 /* Idle: incommensurate periods so the sum does not visibly repeat. Amplitude
    is the hour's own (--env-amp), so night barely moves. */
@@ -114,10 +121,10 @@ html.ew-atmosphere-shift .ew-env * { transition: none !important; animation: non
   .ew-env-rig { left: calc(75% - 60vmax); top: calc(10% - 60vmax); }
   .ew-env-layer.is-far { display: none; }
   .ew-env { --env-mob: .85; }
-  .ew-env-layer.is-near { opacity: calc(var(--env-peak) * var(--env-gain) * var(--env-mob) * var(--env-soft) * 5.5); }
+  .ew-env-layer.is-near { opacity: calc(var(--env-peak) * var(--env-gain) * var(--env-mob) * var(--env-soft) * var(--env-clipboost, 1) * 5.5); }
 }
 .ew-env[data-lite] .ew-env-layer.is-far { display: none; }
-.ew-env[data-lite] .ew-env-layer.is-near { opacity: calc(var(--env-peak) * var(--env-gain) * var(--env-mob) * var(--env-soft) * 5.5); }
+.ew-env[data-lite] .ew-env-layer.is-near { opacity: calc(var(--env-peak) * var(--env-gain) * var(--env-mob) * var(--env-soft) * var(--env-clipboost, 1) * 5.5); }
 
 /* Reduced motion keeps the light, drops the drift and the gust. */
 @media (prefers-reduced-motion: reduce) {
@@ -125,6 +132,16 @@ html.ew-atmosphere-shift .ew-env * { transition: none !important; animation: non
   .ew-env, .ew-env-tint, .ew-env-rig, .ew-env-layer { --env-dur: 1200ms; transition-timing-function: ease; }
 }
 
-/* Before the first light lands the sprites stay hidden, so the bloom starts bright, not flickering. */
-.ew-env:not([data-arrived]) .ew-env-rig { visibility: hidden; }
-@media (prefers-reduced-motion: reduce) { .ew-env:not([data-arrived]) .ew-env-rig { visibility: visible; } }
+/* The landing: before it starts the light is a half-turn (190deg) behind and
+   stretched long, like a low sun. It sweeps once, smoothly, into the hour. */
+@media (prefers-reduced-motion: no-preference) {
+  .ew-env:not([data-arrived]) .ew-env-rig { visibility: hidden; rotate: calc(var(--env-angle) + var(--env-nudge, 0deg) + 190deg); scale: 1 calc(var(--env-stretch) * 1.5); transition: none; }
+  .ew-env[data-landing] .ew-env-rig { transition: rotate 6s cubic-bezier(.16, .6, .18, 1), scale 6s cubic-bezier(.16, .6, .18, 1), translate 6s cubic-bezier(.16, .6, .18, 1); }
+  .ew-env[data-landing] .ew-env-tint { transition-duration: 6s; }
+}
+
+/* Desktop: the light lives in the sky panel. The rest of the room stays black. */
+@media (min-width: 768px) {
+  .ew-env[data-clipped] { clip-path: var(--env-clip); --env-clipboost: 1.35; }
+  .ew-env[data-clipped] .ew-env-rig { left: calc(var(--env-cx, 20vw) - 60vmax); top: calc(var(--env-cy, 35vh) - 60vmax); }
+}
