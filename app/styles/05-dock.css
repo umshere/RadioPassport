@@ -35,7 +35,7 @@
   @media (prefers-reduced-motion: reduce) {
   .rp-dock-deck, .rp-dock-more svg { transition: none; }
   }
-  .rp-dock-art { width: 48px; height: 48px; flex: none; border-radius: 2px; object-fit: cover; border: 1px solid rgba(198, 165, 106, .28); }
+  .rp-dock-art { width: 48px; height: 48px; flex: none; object-fit: contain; border: 0; background: none; }
   .rp-dock strong { font-size: 15px; font-weight: 500; }
   .rp-dock-control, .rp-dock-play {
     display: grid;

@@ -228,6 +228,7 @@
 .ew-onair-art { position: relative; flex: none; display: grid; place-items: center; width: 88px; height: 88px; margin: 0; overflow: hidden; border: 1px solid var(--ew-foil-line); background: var(--ew-ink); color: var(--ew-foil); }
 .ew-onair-art img { display: block; width: 100%; height: 100%; object-fit: cover; }
 .ew-onair-art svg { width: 40%; height: auto; }
+.ew-onair-art[data-empty] { border: 0; background: none; overflow: visible; }
 .ew-onair-eq { position: absolute; left: 6px; bottom: 6px; display: flex; align-items: flex-end; gap: 2px; height: 14px; padding: 2px; background: var(--ew-ink); }
 .ew-onair-eq b { display: block; width: 3px; height: 100%; background: var(--ew-ether); transform-origin: bottom; }
 .ew-onair-eq b:nth-child(2) { transform: scaleY(.55); }

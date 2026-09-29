@@ -265,7 +265,7 @@ export default function PlayerDock() {
       </div>
       <div className="rp-dock-row">
       <Link to="/listen" prefetch="intent" viewTransition aria-label="Open the desk">
-        <img className="rp-dock-art" src="/elsewhere-mark.jpg" alt="" width={44} height={44} />
+        <img className="rp-dock-art" src="/elsewhere-mark.png" alt="" width={44} height={44} />
       </Link>
       <div className="min-w-0 flex-1">
         <strong className="block truncate">{nowPlaying.name}</strong>

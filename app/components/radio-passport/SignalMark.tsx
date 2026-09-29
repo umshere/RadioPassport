@@ -10,11 +10,11 @@ type SignalMarkProps = {
 export function SignalMark({ size = 28 }: SignalMarkProps) {
   return (
     <img
-      src="/elsewhere-mark.jpg"
+      src="/elsewhere-mark.png"
       alt=""
       width={size}
       height={size}
-      className="shrink-0 object-cover"
+      className="shrink-0 object-contain"
       style={{ width: size, height: size }}
     />
   );
