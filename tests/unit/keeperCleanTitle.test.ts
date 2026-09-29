@@ -10,6 +10,8 @@ describe("cleanField", () => {
     expect(cleanField("Song 128kbps")).toBe("Song");
     expect(cleanField("07. Song")).toBe("Song");
     expect(cleanField("www.example.com")).toBeNull();
+    expect(cleanField("ToddDulaney [CEENAIJA.COM]")).toBe("ToddDulaney");
+    expect(cleanField("Victory Belongs To Jesus || www.CeeNaija.com")).toBe("Victory Belongs To Jesus");
   });
 });
 

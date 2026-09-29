@@ -1,51 +1,31 @@
-import { Link } from "@remix-run/react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { useHydrated } from "~/hooks/useHydrated";
 import { usePlayerStore } from "~/state/playerStore";
 import { roomForStation, useRoomStore } from "~/state/roomStore";
 import { BRAND } from "~/constants/brand";
 import { stationLocation, stationTelemetry } from "~/components/radio-passport/StationRow";
-import { stationTags } from "~/components/radio-passport/stationInsights";
-import { TheaterField, TheaterWell } from "~/components/radio-passport/TheaterWell";
-import {
-  buildTheaterKnowledge,
-  revealedTideStationIds,
-  seatTheaterKnowledgeTide,
-  toExpandedNeighborhood,
-  wakeTheaterKnowledge,
-} from "~/components/radio-passport/knowledge/theaterKnowledge";
-import type {
-  ExpandedNeighborhood,
-  KnowledgeGraph,
-  KnowledgeNode,
-} from "~/types/knowledge";
-import type { Station } from "~/types/radio";
-import type { NowPlayingTrack } from "~/types/nowPlaying";
+import { BoardSheet, type BoardSheetState } from "~/components/radio-passport/BoardSheet";
+import { DeskDossier } from "~/components/radio-passport/DeskDossier";
 import UpNextRow from "~/components/radio-passport/UpNextRow";
-import {
-  lockSeed,
-  LAST_TRACK_FRESH_MS,
-  splitFieldTokens,
-  theaterBeat,
-  theaterReleases,
-  theaterTrackCopy,
-} from "~/components/radio-passport/theaterLock";
+import { LAST_TRACK_FRESH_MS, theaterTrackCopy } from "~/components/radio-passport/theaterLock";
 import { TheaterQueue } from "~/components/radio-passport/TheaterQueue";
 import { SecretTrail } from "~/components/radio-passport/SecretTrail";
-import { TheaterAmbientLine } from "~/components/radio-passport/TheaterAmbientLine";
 import { TheaterSeek } from "~/components/radio-passport/TheaterSeek";
-import {
-  createSkyTouchDrag,
-  forwardSkyWheel,
-} from "~/components/radio-passport/theaterScroll";
 import { formatClock, formatLocalLabel, localDateAtLongitude } from "~/utils/localTime";
 import {
   theaterIntelligenceFromRoom,
   theaterRoomGate,
   theaterWithoutStation,
 } from "~/components/radio-passport/productFlow";
-import { knowledgeSeatCopy } from "~/components/radio-passport/knowledge/knowledgeCopy";
+import { cleanField } from "~/services/keeper/cleanTitle";
+import { Eyebrow } from "~/components/ui/Eyebrow";
 import { ButtonLink } from "~/components/ui/Button";
+import type { NowPlayingTrack } from "~/types/nowPlaying";
+import {
+  preferSecureArtworkUrl,
+  sanitizeArtworkUrl,
+  markArtworkUrlFailed,
+} from "~/utils/stations";
 
 export const meta = () => [
   { title: `Theater · ${BRAND.name}` },
@@ -61,10 +41,14 @@ export const meta = () => [
   { property: "og:url", content: "https://elsewheremusic.com/listen" },
 ];
 
+/**
+ * The desk: the big-screen view of the station you are inside. The artwork,
+ * the place and the hour on top; the dossier in a drop-up sheet beneath (the
+ * same sheet as the station list). The keeper, floating above, is the guide.
+ */
 export default function ListeningPage() {
   const hydrated = useHydrated();
   const storedNowPlaying = usePlayerStore((state) => state.nowPlaying);
-  const startStation = usePlayerStore((state) => state.startStation);
   const storedIsPlaying = usePlayerStore((state) => state.isPlaying);
   const nowPlaying = hydrated ? storedNowPlaying : null;
   const isPlaying = hydrated ? storedIsPlaying : false;
@@ -72,17 +56,18 @@ export default function ListeningPage() {
   const room = roomForStation(storedRoom, nowPlaying?.uuid);
   const lastTrackStationRef = useRef<string | null>(null);
   const lastTrackRef = useRef<NowPlayingTrack | null>(null);
+  const [sheet, setSheet] = useState<BoardSheetState>("peek");
+  const [plateFailed, setPlateFailed] = useState<string | null>(null);
 
   const city = nowPlaying ? stationLocation(nowPlaying) : "";
   const local =
     nowPlaying && typeof nowPlaying.longitude === "number"
       ? localDateAtLongitude(nowPlaying.longitude)
       : null;
-  // Pause freezes the folio: the hook reports track:null the instant playback
-  // stops, which would collapse the whole folio into its no-track layout and
-  // reflow it again on resume. The last aired title stays on display instead —
-  // seeded from storage so a fresh mount opens on the same frame, never on a
-  // half-second of no-track that collapses away when the live title lands.
+  // Pause freezes the desk: the hook reports track:null the instant playback
+  // stops, which would blank the title and reflow the page on resume. The last
+  // aired title stays on display, seeded from storage so a fresh mount opens
+  // on the same frame.
   const liveTrack = room.signal.track;
   const lastTrackByStation = usePlayerStore((state) => state.lastTrackByStation);
   if (!nowPlaying || lastTrackStationRef.current !== nowPlaying.uuid) {
@@ -93,8 +78,11 @@ export default function ListeningPage() {
   }
   if (liveTrack) lastTrackRef.current = liveTrack;
   const displayTrack = liveTrack ?? lastTrackRef.current;
+  // Streams append their own site names and tags; show the cleaned pair.
   const rawTrackLine = displayTrack
-    ? [displayTrack.artist, displayTrack.title].filter(Boolean).join(" — ")
+    ? [cleanField(displayTrack.artist), cleanField(displayTrack.title)]
+        .filter(Boolean)
+        .join(" — ") || null
     : null;
   const trackLine = theaterTrackCopy({
     isPlaying,
@@ -112,420 +100,16 @@ export default function ListeningPage() {
     graph: room.dossier.graph,
   });
 
-  // ── The merged Theater knowledge graph (owner: this page) ──────────────
-  // Catalog (from the tuned station) + Room dossier (MB + cited web) +
-  // lazily expanded catalog neighbourhoods. The field only draws and clicks.
-  const [expansions, setExpansions] = useState<ExpandedNeighborhood[]>([]);
-  const [expandedFocuses, setExpandedFocuses] = useState<Set<string>>(
-    () => new Set(),
-  );
-  const seatsRef = useRef<Map<string, { x: number; y: number }>>(new Map());
-  const awakeRef = useRef<Set<string>>(new Set());
-  const roomKeyRef = useRef<string | null>(null);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [trail, setTrail] = useState<Array<{ id: string; label: string }>>([]);
-  const folioRef = useRef<HTMLDivElement>(null);
-  const skyRef = useRef<HTMLElement>(null);
-  const [stationByUuid, setStationByUuid] = useState<Record<string, Station>>(
-    () => ({}),
-  );
-  // The theater is water now — one field, no A/B. The tide seats depth
-  // lanes around the well; sibling stations stay under until their hub is
-  // tapped, then fan out of it. Deselecting stills them again.
-
-  useEffect(() => {
-    setSelectedId(null);
-    setTrail([]);
-    setExpansions([]);
-    setExpandedFocuses(new Set());
-    setStationByUuid({});
-  }, [storedNowPlaying?.uuid]);
-
-  useEffect(() => {
-    folioRef.current?.scrollTo({ top: 0 });
-  }, [selectedId]);
-
-  // Verified node art, dressed in two passes: the bare graph names the
-  // track/album ids, then the dossier plate and gated portraits dress
-  // them. Addition-only ids keep every seat pinned across the rebuild.
-  const [nodeArt, setNodeArt] = useState<Record<string, string>>({});
-  const nodeArtSeenRef = useRef(new Set<string>());
-  const bareGraph: KnowledgeGraph = useMemo(
-    () =>
-      buildTheaterKnowledge({
-        station: hydrated ? storedNowPlaying : null,
-        roomGraph: intelligence.graph,
-        expansions,
-        track: room.signal.track,
-      }),
-    [expansions, hydrated, storedNowPlaying, intelligence.graph, room.signal.track],
-  );
-  const nodeArtwork = useMemo(() => {
-    const map: Record<string, string> = {};
-    const plate = intelligence.imageUrl;
-    if (plate) {
-      for (const node of bareGraph.nodes) {
-        if (node.kind === "track" || node.kind === "album") map[node.id] = plate;
-      }
-    }
-    for (const [id, url] of Object.entries(nodeArt)) map[id] = url;
-    return map;
-  }, [bareGraph, intelligence.imageUrl, nodeArt]);
-  const knowledgeGraph: KnowledgeGraph = useMemo(
-    () =>
-      buildTheaterKnowledge({
-        station: hydrated ? storedNowPlaying : null,
-        roomGraph: intelligence.graph,
-        expansions,
-        track: room.signal.track,
-        artwork: nodeArtwork,
-      }),
-    [expansions, hydrated, storedNowPlaying, intelligence.graph, room.signal.track, nodeArtwork],
-  );
-
-  const evidenceArrived = useMemo(
-    () => intelligence.graph.edges.some((edge) => edge.provenance === "web"),
-    [intelligence.graph],
-  );
-  const knowledge = useMemo(() => {
-    const roomKey = storedNowPlaying?.uuid ?? null;
-    if (roomKeyRef.current !== roomKey) {
-      roomKeyRef.current = roomKey;
-      seatsRef.current = new Map();
-      awakeRef.current = new Set();
-    }
-    const cap = typeof window !== "undefined" && window.innerWidth < 720 ? 10 : 18;
-    const seed = lockSeed([storedNowPlaying?.uuid ?? "elsewhere"]);
-    const seats = seatTheaterKnowledgeTide({
-      graph: knowledgeGraph,
-      seats: seatsRef.current,
-      focusId: selectedId,
-      seed,
-      tunedId: storedNowPlaying
-        ? `station:${storedNowPlaying.uuid}`
-        : null,
-    });
-    seatsRef.current = seats;
-    const prevAwake = awakeRef.current;
-    const model = wakeTheaterKnowledge({
-      graph: knowledgeGraph,
-      seats,
-      awake: prevAwake,
-      events: {
-        landed: Boolean(hydrated && storedNowPlaying),
-        icy: Boolean(room.signal.track),
-        enrichment: Boolean(intelligence.summary || intelligence.facts.length),
-        evidence: evidenceArrived,
-      },
-      focusId: selectedId,
-      cap,
-    });
-    const wakingIds = [...model.awake].filter((id) => !prevAwake.has(id));
-    awakeRef.current = model.awake;
-    return { ...model, wakingIds };
-  }, [
-    evidenceArrived,
-    hydrated,
-    intelligence.facts.length,
-    intelligence.summary,
-    knowledgeGraph,
-    room.signal.track,
-    selectedId,
-    storedNowPlaying,
-  ]);
-
-  // Tide disclosure: the tuned station rides the well and hubs hold the
-  // water; sibling stations surface only from the selected hub, plus any
-  // station the tap names directly (follow-this-star lands on open water).
-  const tunedStationId = storedNowPlaying
-    ? `station:${storedNowPlaying.uuid}`
-    : null;
-  const disclosedStationIds = useMemo(
-    () => revealedTideStationIds(expansions, selectedId),
-    [expansions, selectedId],
-  );
-  const visibleRef = useRef<Set<string>>(new Set());
-  const knowledgeNodes = useMemo(() => {
-    const revealed =
-      selectedId && selectedId.startsWith("station:")
-        ? new Set([...disclosedStationIds, selectedId])
-        : disclosedStationIds;
-    const nodes = knowledge.visible
-      .map((id) => {
-        const node = knowledge.graph.nodes.find((entry) => entry.id === id);
-        const seat = knowledge.seats.get(id);
-        if (!node || !seat) return null;
-        if (
-          node.kind === "station" &&
-          node.id !== tunedStationId &&
-          !revealed.has(node.id)
-        )
-          return null;
-        return { ...node, x: seat.x, y: seat.y };
-      })
-      .filter((node): node is KnowledgeNode & { x: number; y: number } =>
-        Boolean(node),
-      );
-    // Freshly surfaced stations glide in; everything already afloat holds.
-    const fresh = nodes
-      .map((node) => node.id)
-      .filter((id) => !visibleRef.current.has(id));
-    visibleRef.current = new Set(nodes.map((node) => node.id));
-    return { nodes, fresh };
-  }, [disclosedStationIds, knowledge, selectedId, tunedStationId]);
-
-  // Gated artist portraits, one honest fetch each: the endpoint serves
-  // Wikipedia PageImages only, capped per room, never retried in-session.
-  // Only artist nodes wear imagery — typographic kinds (event, place)
-  // render label text, so fetching their faces would waste the call. A
-  // miss keeps the monogram disc.
-  useEffect(() => {
-    if (!hydrated) return;
-    const fresh = knowledge.visible
-      .map((id) => knowledge.graph.nodes.find((entry) => entry.id === id))
-      .filter(
-        (entry): entry is KnowledgeNode =>
-          Boolean(entry) &&
-          entry?.kind === "artist" &&
-          !nodeArt[entry?.id ?? ""] &&
-          !nodeArtSeenRef.current.has(entry?.id ?? ""),
-      )
-      .slice(0, 4);
-    if (fresh.length === 0) return;
-    let cancelled = false;
-    for (const node of fresh) nodeArtSeenRef.current.add(node.id);
-    void Promise.all(
-      fresh.map(async (node) => {
-        try {
-          const response = await fetch(
-            `/api/node-artwork?kind=artist&q=${encodeURIComponent(node.label)}`,
-          );
-          const payload = (await response.json()) as {
-            url?: unknown;
-          };
-          return [node.id, typeof payload?.url === "string" ? payload.url : null] as const;
-        } catch {
-          return [node.id, null] as const;
-        }
-      }),
-    ).then((rows) => {
-      if (cancelled) return;
-      setNodeArt((current) => {
-        const next = { ...current };
-        for (const [id, url] of rows) {
-          if (url) next[id] = url;
-        }
-        return next;
-      });
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [hydrated, knowledge, nodeArt]);
-
-  // A tap names the node; on touch screens the folio detail (with Tune
-  // here) is below the fold, so bring it into view instead of stranding
-  // the tap. Desktop keeps its stillness — Tab already reaches the detail.
-  useEffect(() => {
-    if (!selectedId) return;
-    if (!window.matchMedia("(pointer: coarse)").matches) return;
-    const detail = document.querySelector(".ew-knode-detail");
-    if (!detail) return;
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      detail.scrollIntoView({ block: "nearest" });
-      return;
-    }
-    detail.scrollIntoView({ behavior: "smooth", block: "nearest" });
-  }, [selectedId]);
-
-  // The sky holds no scroll container (the app shell locks the page and
-  // only the letter scrolls), so wheel and drag gestures that begin over it
-  // are forwarded to the letter instead of dying on the sky. Taps still
-  // click: the drag only takes over past its movement threshold.
-  useEffect(() => {
-    const sky = skyRef.current;
-    const folio = folioRef.current;
-    if (!sky || !folio) return;
-    const onWheel = (event: WheelEvent) => {
-      if (forwardSkyWheel(folio, event.deltaX, event.deltaY, event.ctrlKey)) {
-        event.preventDefault();
-      }
-    };
-    const drag = createSkyTouchDrag(folio);
-    const onTouchStart = (event: TouchEvent) => {
-      const touch = event.touches[0];
-      if (event.touches.length !== 1 || !touch) {
-        drag.reset();
-        return;
-      }
-      drag.start(touch.clientY);
-    };
-    const onTouchMove = (event: TouchEvent) => {
-      const touch = event.touches[0];
-      if (event.touches.length !== 1 || !touch) {
-        drag.reset();
-        return;
-      }
-      if (drag.move(touch.clientY)) event.preventDefault();
-    };
-    const onTouchEnd = () => drag.reset();
-    sky.addEventListener("wheel", onWheel, { passive: false });
-    sky.addEventListener("touchstart", onTouchStart, { passive: true });
-    sky.addEventListener("touchmove", onTouchMove, { passive: false });
-    sky.addEventListener("touchend", onTouchEnd);
-    sky.addEventListener("touchcancel", onTouchEnd);
-    return () => {
-      sky.removeEventListener("wheel", onWheel);
-      sky.removeEventListener("touchstart", onTouchStart);
-      sky.removeEventListener("touchmove", onTouchMove);
-      sky.removeEventListener("touchend", onTouchEnd);
-      sky.removeEventListener("touchcancel", onTouchEnd);
-    };
-  }, [storedNowPlaying?.uuid]);
-
-  const handleNodeSelect = useCallback(
-    (id: string) => {
-      const node = knowledgeGraph.nodes.find((entry) => entry.id === id);
-      if (!node) return;
-      if (selectedId === id) {
-        setSelectedId(null);
-        return;
-      }
-      setSelectedId(id);
-      setTrail((current) => {
-        const seenAt = current.findIndex((crumb) => crumb.id === id);
-        if (seenAt >= 0) return current.slice(0, seenAt + 1);
-        return [...current, { id, label: node.label }];
-      });
-      const kind = node.kind;
-      const rawId = id.split(":").slice(1).join(":");
-      // Country/language heads lazily reveal connected stations. Station
-      // clicks fetch the full Station so Tune here has a real object — they
-      // never change playback on their own.
-      if (
-        (kind === "country" || kind === "language" || kind === "station") &&
-        !expandedFocuses.has(id)
-      ) {
-        setExpandedFocuses((current) => new Set(current).add(id));
-        const expandKind = kind === "station" ? "station" : kind;
-        void fetch(
-          `/api/atlas/expand?kind=${expandKind}&id=${encodeURIComponent(rawId)}`,
-        )
-          .then((response) => (response.ok ? response.json() : Promise.reject()))
-          .then((payload: {
-            graph: {
-              nodes: Array<{
-                id: string;
-                label: string;
-                kind: string;
-                count?: number;
-                favicon?: string | null;
-                countryCode?: string | null;
-              }>;
-              edges: Array<{ from: string; to: string; relation: string }>;
-            };
-            stationDetail?: Station;
-          }) => {
-            if (payload.stationDetail?.uuid) {
-              setStationByUuid((current) => ({
-                ...current,
-                [payload.stationDetail!.uuid]: payload.stationDetail!,
-              }));
-            }
-            if (kind === "station") return;
-            setExpansions((current) => [
-              ...current,
-              toExpandedNeighborhood(id, payload),
-            ]);
-          })
-          .catch(() => {
-            // An expansion outage keeps the already-lit sky; nothing lies.
-          });
-      }
-    },
-    [expandedFocuses, knowledgeGraph.nodes, selectedId],
-  );
-
-  const selectedKnowledgeNode: KnowledgeNode | null = selectedId
-    ? knowledge.graph.nodes.find((entry) => entry.id === selectedId) ?? null
-    : null;
-  const figureSiblings = selectedId
-    ? knowledgeNodes.nodes.filter((node) => node.id !== selectedId).slice(0, 6)
-    : [];
-  const followId = selectedId
-    ? knowledge.graph.edges
-        .map((edge) =>
-          edge.from === selectedId
-            ? edge.to
-            : edge.to === selectedId
-              ? edge.from
-              : null,
-        )
-        .find((id) => typeof id === "string" && knowledge.awake.has(id)) ??
-      null
-    : null;
-
-  const phase = room.phase;
-  const beat = theaterBeat({
-    phase,
-    hasTrack: Boolean(rawTrackLine),
-    selectedId,
-  });
-  const factKey = intelligence.facts
-    .map((fact) => `${fact.label}:${fact.value}`)
-    .join("|");
-  const graphKey = [
-    ...intelligence.graph.nodes.map((node) => node.id),
-    ...intelligence.graph.edges.map((edge) => `${edge.from}:${edge.to}`),
-  ].join("|");
-  const tagKey = nowPlaying ? stationTags(nowPlaying).join("|") : "";
-  const releases = useMemo(
-    () =>
-      theaterReleases({
-        city,
-        country: nowPlaying?.country,
-        longitude: nowPlaying?.longitude,
-        bitrate: nowPlaying?.bitrate,
-        codec: nowPlaying?.codec,
-        languages: splitFieldTokens(nowPlaying?.language),
-        tags: nowPlaying ? stationTags(nowPlaying) : [],
-        artist: room.signal.track?.artist,
-        title: room.signal.track?.title,
-        dispatchBody: intelligence.dispatchBody,
-        summary: intelligence.summary,
-        facts: intelligence.facts,
-        graph: intelligence.graph,
-      }),
-    [
-      city,
-      factKey,
-      graphKey,
-      intelligence.dispatchBody,
-      intelligence.summary,
-      nowPlaying?.bitrate,
-      nowPlaying?.codec,
-      nowPlaying?.country,
-      nowPlaying?.language,
-      nowPlaying?.longitude,
-      room.signal.track?.artist,
-      room.signal.track?.title,
-      tagKey,
-    ],
-  );
-  const seed = lockSeed([nowPlaying?.uuid, city]);
-
   const roomGate = theaterRoomGate(hydrated, nowPlaying);
   if (roomGate === "wait") {
-    return <main className="ew-theater" aria-busy="true" />;
+    return <main className="ew-desk" aria-busy="true" />;
   }
   if (roomGate === "empty" || !nowPlaying) {
     const empty = theaterWithoutStation();
     return (
-      <main className="ew-theater flex min-h-screen flex-col items-start justify-center">
-        <p className="rp-eyebrow text-foil ew-arrive">{BRAND.eyebrow}</p>
-        <h1 className="ew-coverline mt-4 ew-arrive ew-arrive-2">
-          {empty.headline}
-        </h1>
+      <main className="ew-desk ew-desk-empty">
+        <Eyebrow tone="foil" className="ew-arrive">{BRAND.eyebrow}</Eyebrow>
+        <h1 className="ew-coverline mt-4 ew-arrive ew-arrive-2">{empty.headline}</h1>
         <p className="rp-lede mt-4 ew-arrive ew-arrive-3">{empty.message}</p>
         <ButtonLink
           to={empty.route}
@@ -541,162 +125,79 @@ export default function ListeningPage() {
     );
   }
 
+  const plate =
+    sanitizeArtworkUrl(intelligence.imageUrl) ??
+    sanitizeArtworkUrl(preferSecureArtworkUrl(nowPlaying.favicon ?? null));
+  const showPlate = Boolean(plate && plateFailed !== plate);
+  const caption = intelligence.dispatchBody || intelligence.summary || null;
+
   return (
-    <main className="ew-theater" data-phase={phase} data-beat={beat}>
-      <div className="ew-theater-room" key={nowPlaying.uuid}>
-        <aside className="ew-theater-sky" ref={skyRef}>
-          <TheaterField
-            seed={seed}
-            phase={phase}
-            releases={releases}
-            longitude={nowPlaying.longitude}
-            graph={intelligence.graph}
-            focusId={room.signal.track?.title ?? null}
-            knowledge={{
-              nodes: knowledgeNodes.nodes,
-              edges: knowledge.graph.edges,
-              awakeIds: knowledge.awake,
-              firing: knowledge.firing,
-              wakingIds: knowledgeNodes.fresh,
-              focusId: selectedId,
-              tunedId: storedNowPlaying
-                ? `station:${storedNowPlaying.uuid}`
-                : null,
-              onSelect: handleNodeSelect,
-            }}
-          />
-        </aside>
-        <div
-          ref={folioRef}
-          className={`ew-theater-folio${selectedKnowledgeNode ? " is-star" : ""}`}
-        >
-          {/* Transport lives in the dock deck now — the letter keeps no
-              second set of controls. */}
-          <i className="ew-cover-rule ew-theater-folio-rule" />
-          <p className="rp-eyebrow text-ether ew-arrive ew-theater-desk-live">
+    <main className="ew-desk" data-phase={room.phase}>
+      <div className="ew-desk-top" key={nowPlaying.uuid}>
+        <figure className="ew-desk-plate" data-empty={showPlate ? undefined : ""}>
+          {showPlate ? (
+            <img
+              src={plate!}
+              alt=""
+              onError={() => {
+                markArtworkUrlFailed(plate!);
+                setPlateFailed(plate);
+              }}
+            />
+          ) : (
+            <span className="ew-desk-seal" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.1">
+                <circle cx="12" cy="12" r="8.5" />
+                <circle cx="12" cy="12" r="2.6" fill="var(--ew-lacquer)" stroke="none" />
+              </svg>
+            </span>
+          )}
+        </figure>
+        <div className="ew-desk-folio">
+          <Eyebrow tone="ether" className="ew-arrive">
             <i className="rp-live-dot" />
-            {local ? formatLocalLabel(city, local) : "LIVE"} ·{" "}
-            {stationTelemetry(nowPlaying)}
-          </p>
-          <h1 className="ew-coverline mt-3 ew-arrive ew-arrive-2">{city}</h1>
-          <p className="rp-eyebrow ew-theater-telemetry">
+            {local ? formatLocalLabel(city, local) : "LIVE"} · {stationTelemetry(nowPlaying)}
+          </Eyebrow>
+          <h1 className="ew-coverline ew-arrive ew-arrive-2">{city}</h1>
+          <Eyebrow tone="dust" className="ew-desk-telemetry">
             {nowPlaying.name} · {isPlaying ? "Live" : "Paused"}
             {local ? ` · ${formatClock(local)} local` : ""}
-          </p>
+          </Eyebrow>
           <SecretTrail stationId={nowPlaying.uuid} city={city} longitude={nowPlaying.longitude} />
-          <p className="rp-lede mt-2 ew-arrive ew-arrive-3 ew-theater-lede">
+          <p className="rp-lede ew-desk-lede">
             {nowPlaying.country}
             {nowPlaying.language ? ` · ${nowPlaying.language}` : ""}
           </p>
-          {/* The seek pill stands under the heading block, left-aligned with
-              the type — an instrument of the letter, not chrome of the bar. */}
-          <div className="ew-theater-seek-row ew-arrive ew-arrive-3">
+          {trackLine ? <p className="ew-track ew-arrive ew-arrive-4">{trackLine}</p> : null}
+          <div className="ew-desk-seek">
             <TheaterSeek />
           </div>
-          {trackLine && phase !== "filed" ? (
-            <p className="ew-track ew-arrive ew-arrive-4">
-              {trackLine}
-            </p>
-          ) : null}
           <UpNextRow />
-          <TheaterAmbientLine station={nowPlaying} />
-          <TheaterWell
-            phase={phase}
-            dispatchBody={intelligence.dispatchBody}
+        </div>
+      </div>
+      <BoardSheet state={sheet} onStateChange={setSheet} docked>
+        <div className="rp-intro-board ew-desk-sheet">
+          <div className="ew-desk-sheet-head" id="live-board">
+            <Eyebrow tone="foil">The desk</Eyebrow>
+            <Eyebrow tone="dust">{isPlaying ? "Live now" : "Paused"}</Eyebrow>
+          </div>
+          <DeskDossier
+            phase={room.phase}
+            caption={caption}
             deskSigned={room.captionSource === "ai"}
-            summary={intelligence.summary}
             facts={intelligence.facts}
-            imageUrl={intelligence.imageUrl}
             links={intelligence.links}
-            track={rawTrackLine}
-            artwork={nowPlaying.favicon}
+            hasTitle={Boolean(rawTrackLine)}
             stationName={nowPlaying.name}
             catalog={{
               land: nowPlaying.country,
               city,
               spoken: nowPlaying.language,
-              signal: nowPlaying.name,
             }}
           />
           <TheaterQueue />
-          {selectedKnowledgeNode && trail.length > 0 ? (
-            <nav className="ew-ktrail" aria-label="Knowledge trail">
-              {trail.map((crumb, index) => (
-                <span key={crumb.id}>
-                  {index > 0 ? <span aria-hidden="true"> / </span> : null}
-                  <button
-                    type="button"
-                    aria-current={index === trail.length - 1 || undefined}
-                    onClick={() => {
-                      handleNodeSelect(crumb.id);
-                    }}
-                  >
-                    {crumb.label}
-                  </button>
-                </span>
-              ))}
-            </nav>
-          ) : null}
-          {selectedKnowledgeNode ? (
-            <div className="ew-knode-detail" key={selectedKnowledgeNode.id}>
-              <h2>{selectedKnowledgeNode.label}</h2>
-              <p>{knowledgeSeatCopy(selectedKnowledgeNode)}</p>
-              {selectedKnowledgeNode.kind === "station" ? (
-                (() => {
-                  const uuid = selectedKnowledgeNode.id.split(":").slice(1).join(":");
-                  const detail =
-                    stationByUuid[uuid] ??
-                    (storedNowPlaying?.uuid === uuid ? storedNowPlaying : null);
-                  const tuned = storedNowPlaying?.uuid === uuid;
-                  if (tuned) {
-                    return <p>Now tuning — the Theater holds this room.</p>;
-                  }
-                  return detail ? (
-                    <button
-                      type="button"
-                      className="ew-knode-tune"
-                      onClick={() => startStation(detail, { autoPlay: true })}
-                    >
-                      Tune here
-                    </button>
-                  ) : (
-                    <p>Filing the signal…</p>
-                  );
-                })()
-              ) : (
-                <button
-                  type="button"
-                  className="ew-knode-tune"
-                  onClick={() =>
-                    handleNodeSelect(followId ?? figureSiblings[0]?.id ?? selectedKnowledgeNode.id)
-                  }
-                >
-                  Follow this star →
-                </button>
-              )}
-              {figureSiblings.length > 0 ? (
-                <section className="ew-knode-also">
-                  <p className="rp-eyebrow">Also on this figure</p>
-                  <div className="ew-knode-chips">
-                    {figureSiblings.map((node) => (
-                      <button
-                        type="button"
-                        key={node.id}
-                        className="ew-knode-chip"
-                        data-kind={node.kind}
-                        onClick={() => handleNodeSelect(node.id)}
-                      >
-                        <i aria-hidden="true" />
-                        {node.label}
-                      </button>
-                    ))}
-                  </div>
-                </section>
-              ) : null}
-            </div>
-          ) : null}
         </div>
-      </div>
+      </BoardSheet>
     </main>
   );
 }

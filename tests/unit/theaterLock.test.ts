@@ -733,47 +733,40 @@ describe("theater lock", () => {
     );
     expect(siteSeek).toContain("useSyncExternalStore");
     expect(siteSeek).not.toMatch(/from "react-dom"/);
-    expect(listen).toContain("ew-theater-sky");
-    expect(listen).toContain("ew-theater-folio");
-    expect(listen).toContain("TheaterField");
-    expect(listen).toContain("theaterReleases");
-    const well = readFileSync(
-      new URL(
-        "../../app/components/radio-passport/TheaterWell.tsx",
-        import.meta.url,
-      ),
-      "utf8",
-    );
-    expect(well).toContain("const showCover = icy || showPlate");
-    expect(well).toContain("theaterSkyLive");
-    expect(well).toContain("paintBackdrop(context, width, height, palette,");
-    expect(well).toContain("MERIDIANS");
-    expect(well).toContain("OrbitMotion");
-    expect(well).toContain("animateMotion");
-    expect(well).toContain("ew-journey");
-    expect(well).toContain("ew-tide-lane");
-    expect(well).not.toContain('matchMedia("(max-width: 960px)")');
-    expect(well).toContain("wakingIds");
-    expect(well).toContain("fieldStandingLabel");
-    const nodes = readFileSync(
-      new URL(
-        "../../app/components/radio-passport/knowledge/TheaterNodes.tsx",
-        import.meta.url,
-      ),
-      "utf8",
-    );
-    expect(nodes).toContain("wakingIds");
-    expect(nodes).toContain('data-motion={reducedMotion || !waking ? "still" : "wake"}');
-    expect(well).toContain("fieldSpanEdges");
-    expect(well).toContain("fieldTourSpans");
-    expect(well).toContain("fieldTravelerInTransit");
-    expect(well).toContain("fieldShootingStar");
-    expect(well).toContain("fieldMilkyWay");
-    expect(listen).toContain('from "~/components/radio-passport/TheaterWell"');
+    // The desk is a calm page: artwork, place, hour on top, the dossier in the
+    // same drop-up sheet as the station list. The constellation is gone.
+    expect(listen).toContain("BoardSheet");
+    expect(listen).toContain("DeskDossier");
+    expect(listen).toContain("ew-desk-plate");
+    expect(listen).not.toContain("TheaterField");
+    expect(listen).not.toContain("TheaterAmbientLine");
+    expect(listen).not.toContain("theaterReleases");
+    expect(listen).not.toContain("ew-theater-sky");
+    expect(listen).not.toContain("Follow this star");
     expect(listen).not.toContain("useNowPlayingMetadata(");
     expect(listen).toContain("useRoomStore");
     expect(listen).not.toContain("useTrackTrivia(");
-    expect(listen).toContain("graph:");
+    const dossier = readFileSync(
+      new URL("../../app/components/radio-passport/DeskDossier.tsx", import.meta.url),
+      "utf8",
+    );
+    expect(dossier).toContain("No title on the air yet");
+    expect(dossier).toContain("Reading the live title");
+    expect(dossier).toContain("MusicBrainz · verified relations");
+    expect(dossier).toContain("meridianDomain");
+    expect(dossier).toContain("The desk found");
+    expect(dossier).toContain('"more"');
+    expect(dossier).not.toContain("canvas");
+    expect(dossier).not.toContain("animateMotion");
+    expect(listen).toContain("deskSigned");
+    expect(listen).toContain("displayTrack");
+    expect(listen).toContain("lastTrackRef");
+    expect(listen).toContain("lastTrackByStation");
+    expect(listen).toContain("LAST_TRACK_FRESH_MS");
+    expect(listen).toContain('"Paused"');
+    expect(listen).toContain("TheaterQueue");
+    expect(listen).toContain("UpNextRow");
+    expect(listen).not.toContain("TheaterTransport");
     expect(dock).toContain("useRoom(");
     const roomHook = readFileSync(
       new URL("../../app/hooks/useRoom.ts", import.meta.url),
@@ -786,18 +779,7 @@ describe("theater lock", () => {
     expect(roomHook).toContain('source: "free"');
     expect(roomHook).toContain('source: "ai"');
     expect(roomHook).toContain("links:");
-    expect(well).toContain("fieldKnowledgeEdges");
-    expect(well).toContain("fieldDust");
-    expect(listen).toContain("focusId");
-    expect(listen).toContain("Follow this star");
-    expect(listen).toContain("catalog=");
-    // One transport: the dock deck carries the labeled cells — the letter
-    // keeps no second set of controls.
-    expect(listen).not.toContain("TheaterTransport");
-    expect(listen).toContain("UpNextRow");
-    // The deck ring and the play disc carry the emblem: foil ring, lacquer
-    // heart. The row's separate stamp ring merged into the play disc.
-    expect(dock).toContain("rp-dock-ring-dot");
+    // The play disc carries the stamp; the old ring is gone.
     expect(dock).not.toContain('"EW"');
     expect(dock).not.toContain("ew-stamp-ring");
     expect(dock).toMatch(/className=\{`rp-dock-play ew-stamp-disc/);
@@ -809,20 +791,6 @@ describe("theater lock", () => {
     expect(dock).toContain('aria-label={isPlaying ? "Pause" : "Play"}');
     expect(dock).toContain("rp-dock-deck");
     expect(dock).toContain("theaterTransportCopy");
-    // Pause must freeze the folio on the last aired title, never collapse it.
-    expect(listen).toContain("lastTrackRef");
-    expect(listen).toContain("displayTrack");
-    expect(listen).toContain("lastTrackByStation");
-    expect(listen).toContain("LAST_TRACK_FRESH_MS");
-    expect(listen).toContain('"Paused"');
-    expect(listen).toContain("TheaterQueue");
-    expect(well).toContain("No title on the air yet");
-    expect(well).toContain("Reading the live title");
-    expect(well).toContain("MusicBrainz · verified relations");
-    expect(well).toContain("meridianDomain");
-    expect(well).not.toContain("skeleton");
-    expect(well).not.toContain("spinner");
-    expect(well).toContain("fieldBirthRipple");
     expect(home).not.toContain("useNowPlayingMetadata(");
     expect(home).toContain("useRoomStore");
     expect(home).not.toContain("useTrackTrivia(");
@@ -832,20 +800,13 @@ describe("theater lock", () => {
         "utf8",
       ),
     ).toContain("GalaxyBackdrop");
-    expect(listen).not.toContain("theaterSkyShrink");
-    expect(listen).toContain("data-beat");
-    expect(listen).toContain("theaterBeat");
-    expect(listen).not.toContain("key={trackLine}");
     const stylesheet = readFileSync(
       new URL("../../app/tailwind.css", import.meta.url),
       "utf8",
     );
     expect(stylesheet).toContain(".ew-galaxy");
-    expect(stylesheet).toContain("--ew-theater-sky");
-    expect(stylesheet).toContain("grid-template-rows: var(--ew-theater-sky, 236px) minmax(0, 1fr)");
-    expect(stylesheet).toContain(".ew-plate-caption");
-    expect(stylesheet).toContain(".ew-theater-folio.is-star .ew-letter-phone");
-    expect(stylesheet).toContain(".ew-known.is-collapsed");
+    expect(stylesheet).toContain(".ew-desk-plate");
+    expect(stylesheet).toContain(".ew-desk-dossier");
     expect(stylesheet).not.toContain(".ew-stamp-ring");
     expect(stylesheet).toMatch(
       /\.ew-stamp-disc \.ew-stamp-heart \{[^}]*var\(--stamp-ink, 0\)/,
@@ -855,19 +816,7 @@ describe("theater lock", () => {
       /@media \(prefers-reduced-motion: reduce\) \{\s*\.ew-stamp-disc \.ew-stamp-heart \{ transition: none; \}/,
     );
     expect(stylesheet).toContain(".rp-dock-ring-dot");
-    expect(stylesheet).not.toMatch(/\.ew-known,\s*\.ew-waiting/);
-    expect(listen).toContain("deskSigned");
-    expect(well).toContain("The desk found");
-    expect(stylesheet).not.toContain('.ew-theater[data-beat="filed"]');
-    expect(stylesheet).not.toContain('--ew-theater-sky: 96px');
-    expect(stylesheet).not.toContain("--ew-sky-shrink");
-    expect(stylesheet).not.toContain("--ew-sky-fold");
     expect(stylesheet).toContain(".ew-letter-more");
-    expect(stylesheet).toMatch(
-      /\.ew-letter:not\(\.is-open\) \.ew-caption[\s\S]*?-webkit-line-clamp:\s*4/,
-    );
-    expect(well).toContain("TheaterLetter");
-    expect(well).toContain('"more"');
   });
 });
 

@@ -44,6 +44,7 @@ export function cleanField(raw: string | null | undefined): string | null {
   if (segments.length > 1) text = segments.sort((a, b) => b.length - a.length)[0]!;
   text = text
     .replace(BRACKET_NOISE, " ")
+    .replace(/[(\[]\s*[)\]]/g, " ")
     .replace(BITRATE, " ")
     .replace(CODEC, " ")
     .replace(EDIT_SUFFIX, "")

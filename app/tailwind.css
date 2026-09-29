@@ -2949,3 +2949,43 @@ button:disabled, [aria-disabled="true"] { opacity: .45; cursor: not-allowed; }
 .ew-keeper-onair-row .ew-keeper-onair { min-width: 0; flex: 1 1 auto; }
 .ew-keeper-plate-art { flex: none; width: 56px; height: 56px; object-fit: cover; border: 1px solid var(--ew-foil-line); background: var(--ew-ink); }
 .ew-keeper-desk { margin-top: 14px; }
+
+/* ---- The desk (Theater) — a calm page: artwork, place, hour; the dossier in
+   the same drop-up sheet as the station list. Outside @layer on purpose (the
+   purge gremlin). Every colour is a token, so Day is the same page. */
+.ew-desk { position: relative; min-height: 100%; padding: 16px 16px 300px; background: var(--ew-ink); color: var(--ew-bone); }
+.ew-desk-empty { display: flex; flex-direction: column; align-items: flex-start; justify-content: center; min-height: 70svh; padding-bottom: 16px; }
+.ew-desk-top { display: grid; gap: 16px; }
+.ew-desk-plate { margin: 0; width: 100%; max-height: 40svh; aspect-ratio: 1 / 1; display: grid; place-items: center; overflow: hidden; border: 1px solid var(--ew-foil-line); background: var(--ew-leather); }
+.ew-desk-plate[data-empty] { width: 96px; max-height: none; }
+.ew-desk-plate img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.ew-desk-seal { display: block; width: 34%; color: var(--ew-foil); }
+.ew-desk-seal svg { display: block; width: 100%; height: auto; }
+.ew-desk-folio { display: grid; gap: 8px; min-width: 0; }
+.ew-desk .ew-coverline { margin: 0; font-size: clamp(36px, 12vw, 52px); line-height: .96; letter-spacing: -.02em; }
+.ew-desk-lede { margin: 0; color: var(--ew-dust); }
+.ew-desk-seek { margin-top: 6px; }
+.ew-desk-sheet-head { display: flex; align-items: center; justify-content: space-between; margin: 2px 0 10px; }
+.ew-desk-dossier { display: grid; gap: 20px; padding-bottom: 12px; }
+.ew-desk-known { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 0; }
+.ew-desk-known dt { font: 10px "Azeret Mono", monospace; letter-spacing: .14em; text-transform: uppercase; color: var(--ew-dust); }
+.ew-desk-known dd { margin: 3px 0 0; overflow-wrap: anywhere; font: 500 14px/1.35 "Schibsted Grotesk", sans-serif; color: var(--ew-bone); }
+.ew-desk-found ol { margin: 8px 0 0; padding: 0; list-style: none; }
+.ew-desk-found li { display: flex; align-items: baseline; gap: 11px; min-height: 44px; border-bottom: 1px solid var(--ew-rule); padding: 7px 0; }
+.ew-desk-found-value { font: 500 15px/1.3 "Schibsted Grotesk", sans-serif; color: var(--ew-bone); }
+.ew-desk-found-label { margin-left: auto; font: 10px "Azeret Mono", monospace; letter-spacing: .12em; text-transform: uppercase; color: var(--ew-dust); }
+.ew-desk-source { margin: 8px 0 0; font: 10px "Azeret Mono", monospace; letter-spacing: .1em; text-transform: uppercase; color: var(--ew-dust); }
+.ew-desk-links .ew-meridians { display: flex; flex-direction: column; gap: 8px; margin: 8px 0 0; }
+.ew-desk-links .ew-meridians a { display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 12px; border: 1px solid var(--ew-rule); color: var(--ew-bone); text-decoration: none; }
+.ew-desk-links .ew-meridians a:hover { border-color: var(--ew-foil-line-strong); }
+.ew-desk-links .ew-meridians svg { flex: none; width: 16px; height: 16px; color: var(--ew-foil); }
+.ew-desk-links .ew-meridian-host { margin-left: auto; font: 10px "Azeret Mono", monospace; letter-spacing: .08em; text-transform: uppercase; font-style: normal; color: var(--ew-dust); }
+.ew-desk .ew-letter .ew-caption { margin: 0; max-width: 60ch; font: 15px/1.6 "Schibsted Grotesk", sans-serif; color: var(--ew-bone); display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+.ew-desk .ew-letter.is-open .ew-caption { display: block; -webkit-line-clamp: unset; }
+.ew-desk .ew-letter-more { margin-top: 6px; min-height: 44px; padding: 0; background: none; border: 0; font: 10px "Azeret Mono", monospace; letter-spacing: .16em; text-transform: uppercase; color: var(--ew-foil); }
+.ew-desk .ew-letter-sign { display: block; margin-top: 4px; font: italic 13px "Newsreader", serif; color: var(--ew-dust); }
+@media (min-width: 961px) {
+  .ew-desk { display: grid; grid-template-columns: minmax(0, 28rem) minmax(18rem, 1fr); gap: 40px; align-items: start; padding: 32px 40px; }
+  .ew-desk-empty { display: flex; }
+  .ew-desk .rp-intro-board { padding: 0; }
+}
