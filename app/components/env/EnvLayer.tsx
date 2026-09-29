@@ -8,6 +8,7 @@ import {
   GUST_BREEZE,
   envDurationMs,
   envGain,
+  envBefore,
   envHour,
   envNudge,
   envPageTilt,
@@ -67,8 +68,11 @@ export function EnvLayer() {
   const source = pathname === "/" && homeHour ? homeHour : stationHour;
   const hour: EnvHour = source ? envHour(source) : (clock ?? "midday");
 
-  const from = prevHour.current ?? hour;
-  const duration = envDurationMs(from, hour);
+  // On load the room starts one hour back and takes the real hour-change path
+  // into the current hour: same tint, angle, softness and gust as any change.
+  const shown: EnvHour = arrived ? hour : envBefore(hour);
+  const from = prevHour.current ?? shown;
+  const duration = envDurationMs(from, shown);
 
   const fireGust = (hourNow: EnvHour, power: number) => {
     const root = rootRef.current;
@@ -98,32 +102,27 @@ export function EnvLayer() {
     });
   };
 
-  // The arrival: on every load the light swings in from a wider angle, fades up
-  // and a gust passes through, then it settles into the hour. Any device.
+  // Once the sprites are up, let the room move into the real hour.
   useEffect(() => {
     if (!ready || arrived) return;
     let second = 0;
     const first = requestAnimationFrame(() => {
-      second = requestAnimationFrame(() => {
-        setArrived(true);
-        fireGust(hour, 1);
-      });
+      second = requestAnimationFrame(() => setArrived(true));
     });
     return () => {
       cancelAnimationFrame(first);
       cancelAnimationFrame(second);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready, arrived]);
 
   // A new hour turns the light and sends the full gust through it.
   useLayoutEffect(() => {
     const previous = prevHour.current;
-    prevHour.current = hour;
-    if (!previous || previous === hour) return;
-    fireGust(hour, 1);
+    prevHour.current = shown;
+    if (!previous || previous === shown) return;
+    fireGust(shown, 1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hour, lite]);
+  }, [shown, lite]);
 
   // A new page or a new station shifts the light a little and stirs a softer gust.
   const stationId = nowPlaying?.uuid ?? null;
@@ -133,7 +132,7 @@ export function EnvLayer() {
     const previous = prevMove.current;
     prevMove.current = moveKey;
     if (previous === null || previous === moveKey) return;
-    fireGust(hour, 0.75);
+    fireGust(shown, 0.75);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [moveKey]);
 
@@ -225,9 +224,8 @@ export function EnvLayer() {
       ref={rootRef}
       className="ew-env"
       aria-hidden="true"
-      data-hour={hour}
+      data-hour={shown}
       data-lite={lite}
-      data-arrived={arrived || undefined}
       style={style}
     >
       <div className="ew-env-tint" />

@@ -9,6 +9,11 @@ export function envHour(hour: SolarHour): EnvHour {
   return hour.toLowerCase() as EnvHour;
 }
 
+/** The hour before this one on the line, wrapping. The room arrives from it. */
+export function envBefore(hour: EnvHour): EnvHour {
+  return ENV_HOURS[(ENV_HOURS.indexOf(hour) + ENV_HOURS.length - 1) % ENV_HOURS.length] ?? hour;
+}
+
 export function envIndex(hour: EnvHour): number {
   return ENV_HOURS.indexOf(hour);
 }
