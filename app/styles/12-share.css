@@ -1,0 +1,7 @@
+/* ---- shared links — the card a friend's link opens on. */
+.ew-tune { position: fixed; z-index: 45; top: calc(124px + env(safe-area-inset-top, 0px)); left: 16px; right: 16px; max-width: 420px; margin-inline: auto; display: grid; gap: 4px; padding: 14px 16px 12px; border: 1px solid var(--ew-foil-line); background: var(--ew-ink); animation: ew-tune-in .32s var(--ew-settle) both; }
+.ew-tune-name { font: italic 24px/1.15 "Newsreader", serif; color: var(--ew-bone); }
+.ew-tune-place { font: 11px/1.4 "Azeret Mono", monospace; letter-spacing: .14em; text-transform: uppercase; color: var(--ew-dust); }
+.ew-tune-actions { display: flex; align-items: center; gap: 16px; margin-top: 10px; }
+@keyframes ew-tune-in { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .ew-tune { animation: none; } }

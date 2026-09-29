@@ -48,6 +48,7 @@ import { useAtmosphereStore } from "~/state/atmosphereStore";
 import { ATMOSPHERE_BOOT_SCRIPT, ATMOSPHERE_THEME_COLOR } from "~/utils/atmosphere";
 import { Button, ButtonLink, Chip } from "~/components/ui/Button";
 import { KeeperHost } from "~/components/keeper/KeeperHost";
+import { TuneBridge } from "~/components/share/TuneBridge";
 import { isKeeperAskEnabled } from "~/services/keeper/flag.server";
 
 /** Public flags only. The keeper's ask flag is not a secret; keys stay server-side. */
@@ -229,6 +230,7 @@ export default function App() {
         {/* The keeper floats above the dock (never in its row) and owns the
             one keeper sheet. It reads the Room and never touches playback. */}
         <KeeperHost />
+            <TuneBridge />
         {/* Phone band: fixed at the root beside the dock, outside the sticky
             header and the overflow-hidden frame, so WebKit keeps painting it
             while the Atlas veil stands. */}

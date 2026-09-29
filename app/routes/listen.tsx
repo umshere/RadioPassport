@@ -21,6 +21,7 @@ import {
 import { cleanTrackLine } from "~/services/keeper/cleanTitle";
 import { Eyebrow } from "~/components/ui/Eyebrow";
 import { ButtonLink } from "~/components/ui/Button";
+import { ShareButton } from "~/components/share/ShareButton";
 import type { NowPlayingTrack } from "~/types/nowPlaying";
 import {
   preferSecureArtworkUrl,
@@ -172,6 +173,7 @@ export default function ListeningPage() {
           <div className="ew-desk-seek">
             <TheaterSeek />
           </div>
+          <ShareButton station={nowPlaying} clock={local ? formatClock(local) : null} className="ew-desk-share" />
           <UpNextRow />
         </div>
       </div>

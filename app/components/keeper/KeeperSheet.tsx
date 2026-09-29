@@ -7,6 +7,7 @@ import { Button, ButtonLink, Chip } from "~/components/ui/Button";
 import { markArtworkUrlFailed } from "~/utils/stations";
 import { useKeeperStore } from "~/state/keeperStore";
 import { usePlayerStore } from "~/state/playerStore";
+import { ShareButton } from "~/components/share/ShareButton";
 import type { SolarHour } from "~/utils/localTime";
 import { FlapText } from "./FlapText";
 import { Keeper } from "./Keeper";
@@ -16,6 +17,7 @@ import { planMurmurs } from "./keeperMurmur";
 import {
   answerLocally,
   keeperOpeningLine,
+  spokenHour,
   titleCase,
   keeperTrackLine,
   suggestedQuestions,
@@ -105,7 +107,8 @@ export function KeeperSheet({ view }: { view: KeeperView & { facts: KeeperFacts 
   const reading = useKeeperStore((state) => state.reading);
   const hushed = useKeeperStore((state) => state.hushed);
   const setHushed = useKeeperStore((state) => state.setHushed);
-  const stationId = usePlayerStore((state) => state.nowPlaying?.uuid ?? null);
+  const nowStation = usePlayerStore((state) => state.nowPlaying);
+  const stationId = nowStation?.uuid ?? null;
   const entries = stationId && factLog.stationId === stationId ? factLog.entries : [];
   const topicSteps = planMurmurs(facts).flatMap((step) => (step.type === "fact" ? [step] : [])).slice(0, 3);
   const sheetRef = useRef<HTMLElement>(null);
@@ -485,6 +488,9 @@ export function KeeperSheet({ view }: { view: KeeperView & { facts: KeeperFacts 
               Ask
             </Button>
           </form>
+          {nowStation ? (
+            <ShareButton station={nowStation} clock={facts.hour ? spokenHour(facts.hour.clock, facts.hour.localHour) : null} className="ew-keeper-share" />
+          ) : null}
           <Button variant="text" className="ew-keeper-hush" aria-pressed={hushed} onClick={() => setHushed(!hushed)}>
             {hushed ? "Let the keeper speak up again" : "Keep the keeper quiet"}
           </Button>

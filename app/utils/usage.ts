@@ -6,6 +6,8 @@ export const USAGE_EVENTS = [
   "keeper_open",
   "keeper_ask",
   "desk_view",
+  "station_share",
+  "tune_join",
 ] as const;
 export type UsageEvent = (typeof USAGE_EVENTS)[number];
 
