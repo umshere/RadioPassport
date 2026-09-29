@@ -7,3 +7,5 @@ One fixed layer (`EnvLayer`, `app/styles/15-env.css`) of soft foliage light: war
 - Budget: peak alpha ≤ .10 (tested). Phones use one sprite, sit between the gates and the dock, and feather at the edges.
 - Reduced motion: no drift, no gust; hour changes become a 1.2s ease. Room swaps are a cut. Hidden tab pauses. Save-data shows the tint only.
 - Design spec came from an Opus review; tune `--env-peak` per hour first if it reads as "leaves".
+
+- Sprites are our own drawing (branches and pointed leaves, baked with resvg); Sunlit's leaves.png is Adobe Stock with no licence and is NOT used. Movement is procedural (CSS drift, WAAPI gust).
