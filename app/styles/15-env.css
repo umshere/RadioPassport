@@ -123,3 +123,11 @@ html.ew-atmosphere-shift .ew-env * { transition: none !important; animation: non
   .ew-env, .ew-env * { animation: none !important; }
   .ew-env, .ew-env-tint, .ew-env-rig, .ew-env-layer { --env-dur: 1200ms; transition-timing-function: ease; }
 }
+
+/* The arrival: before it lands the light is turned wide and dark; it swings into
+   the hour, fading up, over the hour's own duration. Reduced motion skips it. */
+@media (prefers-reduced-motion: no-preference) {
+  .ew-env:not([data-arrived]) .ew-env-rig { rotate: calc(var(--env-angle) + var(--env-nudge, 0deg) + 42deg); scale: 1 calc(var(--env-stretch) * 1.3); transition: none; }
+  .ew-env:not([data-arrived]) .ew-env-layer { opacity: 0; transition: none; }
+  .ew-env:not([data-arrived]) .ew-env-tint { background-color: transparent; transition: none; }
+}

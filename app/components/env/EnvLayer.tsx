@@ -32,6 +32,7 @@ export function EnvLayer() {
   const [lite, setLite] = useState<Lite>(undefined);
   const [saver, setSaver] = useState(false);
   const [ready, setReady] = useState(false);
+  const [arrived, setArrived] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const prevHour = useRef<EnvHour | null>(null);
   const gusts = useRef<Animation[]>([]);
@@ -96,6 +97,24 @@ export function EnvLayer() {
       );
     });
   };
+
+  // The arrival: on every load the light swings in from a wider angle, fades up
+  // and a gust passes through, then it settles into the hour. Any device.
+  useEffect(() => {
+    if (!ready || arrived) return;
+    let second = 0;
+    const first = requestAnimationFrame(() => {
+      second = requestAnimationFrame(() => {
+        setArrived(true);
+        fireGust(hour, 1);
+      });
+    });
+    return () => {
+      cancelAnimationFrame(first);
+      cancelAnimationFrame(second);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready, arrived]);
 
   // A new hour turns the light and sends the full gust through it.
   useLayoutEffect(() => {
@@ -208,6 +227,7 @@ export function EnvLayer() {
       aria-hidden="true"
       data-hour={hour}
       data-lite={lite}
+      data-arrived={arrived || undefined}
       style={style}
     >
       <div className="ew-env-tint" />
