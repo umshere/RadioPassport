@@ -587,14 +587,37 @@ function GlobalAudioBridge() {
       retryRef.current.attempts = 0;
     };
 
+    // The system can pause the audio without us asking: a phone call, Siri,
+    // another app taking the session, a Bluetooth disconnect. The element then
+    // stops but the store still says "playing", so the UI lies and the next
+    // re-render calls play() again. Mirror the element back into the store.
+    // Deferred a beat so our own station swaps (pause → new src → play) pass.
+    let pauseCheck: number | undefined;
+    const handlePause = () => {
+      if (audio.ended) return;
+      window.clearTimeout(pauseCheck);
+      pauseCheck = window.setTimeout(() => {
+        if (audio.paused && usePlayerStore.getState().isPlaying) setIsPlaying(false);
+      }, 300);
+    };
+    const handleResumed = () => {
+      window.clearTimeout(pauseCheck);
+      if (!audio.paused && !usePlayerStore.getState().isPlaying) setIsPlaying(true);
+    };
+
     audio.addEventListener("ended", handleEnded);
     audio.addEventListener("error", handleError);
     audio.addEventListener("playing", handlePlaying);
+    audio.addEventListener("playing", handleResumed);
+    audio.addEventListener("pause", handlePause);
 
     return () => {
       audio.removeEventListener("ended", handleEnded);
       audio.removeEventListener("error", handleError);
       audio.removeEventListener("playing", handlePlaying);
+      audio.removeEventListener("playing", handleResumed);
+      audio.removeEventListener("pause", handlePause);
+      window.clearTimeout(pauseCheck);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [

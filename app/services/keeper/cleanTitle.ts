@@ -7,7 +7,7 @@ import { repairMojibake } from "~/utils/repairMojibake";
  * rules alone must already be safe. Isomorphic: the client builds facts with
  * it and the server recomputes from the same input.
  */
-export type TitleKind = "track" | "jingle_or_station_id" | "ad" | "news_or_talk" | "junk";
+export type TitleKind = "track" | "jingle_or_station_id" | "ad" | "news_or_talk" | "programme" | "junk";
 
 export type CleanedTrack = {
   artist: string | null;
@@ -28,6 +28,10 @@ const LEADING = /^\s*(?:\d{1,2}[.)]\s+|\[?\d{1,2}:\d{2}\]?\s*)/;
 const JINGLE_WORDS = /\b(jingle|station id|ident|sweeper|promo|you(?:'re| are) (?:listening|tuned) to)\b/i;
 const AD_WORDS = /\b(advert(?:isement)?|commercial|sponsor(?:ed)?|ad ?break|publicidad|werbung|publicité)\b/i;
 const NEWS_WORDS = /\b(news|bulletin|headlines|weather|traffic|talk|interview|podcast|phone-?in|noticias|nachrichten|journal)\b/i;
+
+/** "UK Top 40", "Non-stop hits", "Best of the 90s": a programme line, not a song. */
+const PROGRAMME_WORDS =
+  /\b(top ?\d{1,3}|top (?:hits|songs|tracks|charts?)|hits|greatest|best of|non-?stop|nonstop|all day|morning show|drive ?time|breakfast|the mix|classics|oldies|throwbacks?|now playing|live radio|music radio|on air|24\/7|playing the best)\b/i;
 
 function letters(text: string) {
   return (text.match(/\p{L}/gu) ?? []).length;
@@ -80,6 +84,9 @@ export function cleanTrack(
     return { artist: null, title: null, kind: "news_or_talk", confidence: 0.75 };
   }
   const words = text.split(/\s+/).length;
+  if (both.length === 1 && PROGRAMME_WORDS.test(text)) {
+    return { artist: null, title: null, kind: "programme", confidence: 0.75 };
+  }
   if (both.length === 1 && words <= 4 && text === text.toUpperCase() && /[A-Z]/.test(text)) {
     return { artist: null, title: null, kind: "jingle_or_station_id", confidence: 0.6 };
   }

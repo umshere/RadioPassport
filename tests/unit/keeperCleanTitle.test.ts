@@ -44,3 +44,16 @@ describe("cleanTrackLine", () => {
     expect(cleanTrackLine({ artist: "", title: "www.example.com" })).toBeNull();
   });
 });
+
+describe("programme lines", () => {
+  it("a generic programme line is not a song", () => {
+    for (const line of ["UK Top 40", "Non-stop hits", "Best of the 90s", "Playing the best music 24/7"]) {
+      const out = cleanTrack(null, line, "Some Radio");
+      expect(out.kind).toBe("programme");
+      expect(out.title).toBeNull();
+    }
+  });
+  it("a real artist and title still is", () => {
+    expect(cleanTrack("Mariza", "Barco Negro", "Radio Alfama").kind).toBe("track");
+  });
+});
