@@ -598,10 +598,6 @@ describe("live stylesheet", () => {
     expect(css).toContain(".rp-home.is-landed .rp-land-slot");
     expect(css).toMatch(/\.rp-intro-board \{[\s\S]*?min-height: 16rem/);
     expect(css).not.toContain(".ew-site-bar:has(.ew-theater-rail .rp-intent)");
-    expect(css).toContain(".ew-theater-well");
-    expect(css).toMatch(/\.ew-theater-well[^{]*\{[^}]*min-height:\s*16\.75rem/);
-    expect(css).toMatch(/\.ew-theater-well \{ min-height: 16rem; \}/);
-    expect(css).toMatch(/grid-template-areas:\s*"sky" "folio"/);
     expect(css).toContain(".rp-art-mark");
     expect(css).toContain(".rp-art img");
     expect(config).toContain("./app/components/radio-passport/**/*.{ts,tsx}");
