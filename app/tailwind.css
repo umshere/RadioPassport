@@ -2943,3 +2943,9 @@ button:disabled, [aria-disabled="true"] { opacity: .45; cursor: not-allowed; }
 /* ---- keeper basis label — knowledge answers say where they come from. */
 .ew-keeper-basis { display: block; margin-bottom: 6px; }
 .ew-keeper-station-line { margin-top: 6px; font: 12px "Azeret Mono", monospace; text-transform: uppercase; letter-spacing: .08em; color: var(--ew-foil); }
+
+/* ---- keeper sheet: artwork beside "On air", and the door to the desk. */
+.ew-keeper-onair-row { display: flex; align-items: center; gap: 12px; }
+.ew-keeper-onair-row .ew-keeper-onair { min-width: 0; flex: 1 1 auto; }
+.ew-keeper-plate-art { flex: none; width: 56px; height: 56px; object-fit: cover; border: 1px solid var(--ew-foil-line); background: var(--ew-ink); }
+.ew-keeper-desk { margin-top: 14px; }

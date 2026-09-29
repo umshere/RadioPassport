@@ -6,6 +6,7 @@ import { useJourneyStore } from "~/state/journeyStore";
 import { useKeeperStore } from "~/state/keeperStore";
 import { usePlayerStore } from "~/state/playerStore";
 import { roomForStation, useRoomStore } from "~/state/roomStore";
+import { preferSecureArtworkUrl, sanitizeArtworkUrl } from "~/utils/stations";
 import { buildKeeperFacts, type KeeperFacts } from "./keeperFacts";
 import {
   deriveKeeperState,
@@ -35,6 +36,8 @@ export type KeeperView = {
   mood: KeeperMood;
   facts: KeeperFacts | null;
   sheetOpen: boolean;
+  /** The Room's artwork for the title on air, else the station's own logo. */
+  plate: string | null;
 };
 
 /** Read-only view of the keeper, for every place it appears. */
@@ -79,6 +82,9 @@ export function useKeeperView(): KeeperView {
     mood: keeperMood(facts?.hour?.solar ?? null),
     facts,
     sheetOpen,
+    plate:
+      sanitizeArtworkUrl(room.plate) ??
+      sanitizeArtworkUrl(preferSecureArtworkUrl(station?.favicon ?? null)),
   };
 }
 

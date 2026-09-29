@@ -3,7 +3,8 @@ import { Eyebrow } from "~/components/ui/Eyebrow";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { snapBoardSheet } from "~/components/radio-passport/BoardSheet";
 import { FlipBoard } from "~/components/radio-passport/FlipBoard";
-import { Button, Chip } from "~/components/ui/Button";
+import { Button, ButtonLink, Chip } from "~/components/ui/Button";
+import { markArtworkUrlFailed } from "~/utils/stations";
 import { useKeeperStore } from "~/state/keeperStore";
 import type { SolarHour } from "~/utils/localTime";
 import { FlapText } from "./FlapText";
@@ -105,6 +106,8 @@ export function KeeperSheet({ view }: { view: KeeperView & { facts: KeeperFacts 
   const [draft, setDraft] = useState("");
   const [floor, setFloor] = useState(0);
   const [dragY, setDragY] = useState<number | null>(null);
+  const [plateFailed, setPlateFailed] = useState(false);
+  useEffect(() => setPlateFailed(false), [view.plate]);
   const drag = useRef<{ startY: number; startT: number; moved: boolean } | null>(null);
   const suppressGripClick = useRef(false);
 
@@ -329,12 +332,27 @@ export function KeeperSheet({ view }: { view: KeeperView & { facts: KeeperFacts 
           </Button>
         </header>
         <div className="ew-keeper-body">
-          <p className="ew-keeper-onair">
-            <span className="ew-keeper-label">On air</span>
-            <span className={facts.track ? "ew-keeper-track" : "ew-keeper-notrack"}>
-              {keeperTrackLine(facts)}
-            </span>
-          </p>
+          <div className="ew-keeper-onair-row">
+            {view.plate && !plateFailed ? (
+              <img
+                className="ew-keeper-plate-art"
+                src={view.plate}
+                alt=""
+                width={56}
+                height={56}
+                onError={() => {
+                  markArtworkUrlFailed(view.plate!);
+                  setPlateFailed(true);
+                }}
+              />
+            ) : null}
+            <p className="ew-keeper-onair">
+              <span className="ew-keeper-label">On air</span>
+              <span className={facts.track ? "ew-keeper-track" : "ew-keeper-notrack"}>
+                {keeperTrackLine(facts)}
+              </span>
+            </p>
+          </div>
           <dl className="ew-keeper-facts">
             {factRows(facts).map((row) => (
               <div key={row.label}>
@@ -407,6 +425,10 @@ export function KeeperSheet({ view }: { view: KeeperView & { facts: KeeperFacts 
               Ask
             </Button>
           </form>
+          {/* SPA link: the audio bridge in root keeps playing. */}
+          <ButtonLink to="/listen" variant="atlas" className="ew-keeper-desk" onClick={close}>
+            Open the desk <span aria-hidden="true">&rarr;</span>
+          </ButtonLink>
         </div>
       </section>
     </div>
