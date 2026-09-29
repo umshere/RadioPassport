@@ -24,15 +24,15 @@
 }
 
 /* Hour → the physical state. angle/stretch/offset/softness are shared by both rooms. */
-.ew-env[data-hour="dawn"]   { --env-angle: 208deg; --env-stretch: 1.35; --env-tx: -5vmin; --env-ty: 3vmin;  --env-far: .60; --env-amp: 1;   --env-breeze: .7; --env-tint: var(--ew-hour-dawn);   --env-tint-a: .025; --env-peak: .045; }
-.ew-env[data-hour="midday"] { --env-angle: 182deg; --env-stretch: 1.05; --env-tx: 0vmin;  --env-ty: 0vmin;  --env-far: .25; --env-amp: .8;  --env-breeze: .55; --env-tint: var(--ew-hour-midday); --env-tint-a: .015; --env-peak: .055; }
-.ew-env[data-hour="dusk"]   { --env-angle: 152deg; --env-stretch: 1.45; --env-tx: 6vmin;  --env-ty: -2vmin; --env-far: .70; --env-amp: 1.1; --env-breeze: .9; --env-tint: var(--ew-hour-dusk);   --env-tint-a: .03;  --env-peak: .05; }
-.ew-env[data-hour="night"]  { --env-angle: 170deg; --env-stretch: 1.2;  --env-tx: 2vmin;  --env-ty: 1vmin;  --env-far: .95; --env-amp: .35; --env-breeze: .3; --env-tint: var(--ew-hour-night);  --env-tint-a: .02;  --env-peak: .018; }
+.ew-env[data-hour="dawn"]   { --env-angle: 208deg; --env-stretch: 1.35; --env-tx: -5vmin; --env-ty: 3vmin;  --env-far: .60; --env-amp: 1;   --env-breeze: .7; --env-tint: var(--ew-hour-dawn);   --env-tint-a: .025; --env-peak: .075; }
+.ew-env[data-hour="midday"] { --env-angle: 182deg; --env-stretch: 1.05; --env-tx: 0vmin;  --env-ty: 0vmin;  --env-far: .25; --env-amp: .8;  --env-breeze: .55; --env-tint: var(--ew-hour-midday); --env-tint-a: .015; --env-peak: .09; }
+.ew-env[data-hour="dusk"]   { --env-angle: 152deg; --env-stretch: 1.45; --env-tx: 6vmin;  --env-ty: -2vmin; --env-far: .70; --env-amp: 1.1; --env-breeze: .9; --env-tint: var(--ew-hour-dusk);   --env-tint-a: .03;  --env-peak: .085; }
+.ew-env[data-hour="night"]  { --env-angle: 170deg; --env-stretch: 1.2;  --env-tx: 2vmin;  --env-ty: 1vmin;  --env-far: .95; --env-amp: .35; --env-breeze: .3; --env-tint: var(--ew-hour-night);  --env-tint-a: .02;  --env-peak: .045; }
 /* Day room: shade is a little stronger, tints a little different. */
-:root[data-atmosphere="day"] .ew-env[data-hour="dawn"]   { --env-tint-a: .03;  --env-peak: .055; }
-:root[data-atmosphere="day"] .ew-env[data-hour="midday"] { --env-tint-a: .01;  --env-peak: .06; }
-:root[data-atmosphere="day"] .ew-env[data-hour="dusk"]   { --env-tint-a: .035; --env-peak: .06; }
-:root[data-atmosphere="day"] .ew-env[data-hour="night"]  { --env-tint-a: .04;  --env-peak: .03; }
+:root[data-atmosphere="day"] .ew-env[data-hour="dawn"]   { --env-tint-a: .03;  --env-peak: .085; }
+:root[data-atmosphere="day"] .ew-env[data-hour="midday"] { --env-tint-a: .01;  --env-peak: .10; }
+:root[data-atmosphere="day"] .ew-env[data-hour="dusk"]   { --env-tint-a: .035; --env-peak: .09; }
+:root[data-atmosphere="day"] .ew-env[data-hour="night"]  { --env-tint-a: .04;  --env-peak: .05; }
 
 .ew-env[data-lite] { --env-mob: .7; }
 

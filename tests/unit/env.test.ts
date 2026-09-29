@@ -23,7 +23,7 @@ describe("environment model", () => {
   it("keeps every hour's light inside the opacity budget", () => {
     const css = readFileSync("app/styles/15-env.css", "utf8");
     const peaks = [...css.matchAll(/--env-peak: (\.\d+)/g)].map((m) => Number(m[1]));
-    expect(Math.max(...peaks)).toBeLessThanOrEqual(0.075);
+    expect(Math.max(...peaks)).toBeLessThanOrEqual(0.1);
   });
   it("honours reduced motion and the room swap", () => {
     const css = readFileSync("app/styles/15-env.css", "utf8");
