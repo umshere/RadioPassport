@@ -30,14 +30,14 @@
 .ew-env[data-hour="dawn"]   { --env-angle: 208deg; --env-stretch: 1.35; --env-tx: -5vmin; --env-ty: 3vmin;  --env-far: .60; --env-amp: 1;   --env-breeze: .7; --env-tint: var(--ew-hour-dawn);   --env-tint-a: .025; --env-peak: .075; }
 .ew-env[data-hour="midday"] { --env-angle: 182deg; --env-stretch: 1.05; --env-tx: 0vmin;  --env-ty: 0vmin;  --env-far: .25; --env-amp: .8;  --env-breeze: .55; --env-tint: var(--ew-hour-midday); --env-tint-a: .015; --env-peak: .09; }
 .ew-env[data-hour="dusk"]   { --env-angle: 152deg; --env-stretch: 1.45; --env-tx: 6vmin;  --env-ty: -2vmin; --env-far: .70; --env-amp: 1.1; --env-breeze: .9; --env-tint: var(--ew-hour-dusk);   --env-tint-a: .03;  --env-peak: .085; }
-.ew-env[data-hour="night"]  { --env-angle: 170deg; --env-stretch: 1.2;  --env-tx: 2vmin;  --env-ty: 1vmin;  --env-far: .95; --env-amp: .35; --env-breeze: .3; --env-tint: var(--ew-hour-night);  --env-tint-a: .02;  --env-peak: .075; }
+.ew-env[data-hour="night"]  { --env-angle: 170deg; --env-stretch: 1.2;  --env-tx: 2vmin;  --env-ty: 1vmin;  --env-far: .6; --env-amp: .35; --env-breeze: .3; --env-tint: var(--ew-hour-night);  --env-tint-a: .02;  --env-peak: .10; }
 /* Day room: shade is a little stronger, tints a little different. */
 :root[data-atmosphere="day"] .ew-env[data-hour="dawn"]   { --env-tint-a: .03;  --env-peak: .085; }
 :root[data-atmosphere="day"] .ew-env[data-hour="midday"] { --env-tint-a: .01;  --env-peak: .10; }
 :root[data-atmosphere="day"] .ew-env[data-hour="dusk"]   { --env-tint-a: .035; --env-peak: .09; }
-:root[data-atmosphere="day"] .ew-env[data-hour="night"]  { --env-tint-a: .04;  --env-peak: .075; }
+:root[data-atmosphere="day"] .ew-env[data-hour="night"]  { --env-tint-a: .04;  --env-peak: .10; }
 
-.ew-env[data-lite] { --env-mob: .7; }
+.ew-env[data-lite] { --env-mob: .85; }
 
 .ew-env-tint {
   position: absolute;
@@ -61,13 +61,14 @@
 }
 
 .ew-env-layer { position: absolute; inset: 0; display: block; }
+.ew-env-bloom { position: absolute; inset: 0; display: block; opacity: .25; }
 .ew-env-breath { position: absolute; inset: 0; display: block; }
 /* Tilt parallax (phones): near leaves shift more than far ones. */
 .ew-env-layer.is-near .ew-env-breath { translate: calc(var(--env-px) * -16px) calc(var(--env-py) * -12px); }
 .ew-env-layer.is-far  .ew-env-breath { translate: calc(var(--env-px) * -7px) calc(var(--env-py) * -5px); }
 .ew-env-breath { transition: translate .16s linear; }
-.ew-env-layer.is-near { opacity: calc(var(--env-peak) * (1 - var(--env-far)) * var(--env-gain) * var(--env-mob) * var(--env-soft)); }
-.ew-env-layer.is-far  { opacity: calc(var(--env-peak) * var(--env-far) * var(--env-gain) * var(--env-mob) * var(--env-soft)); }
+.ew-env-layer.is-near { opacity: calc(var(--env-peak) * (1 - var(--env-far)) * var(--env-gain) * var(--env-mob) * var(--env-soft) * 4); }
+.ew-env-layer.is-far  { opacity: calc(var(--env-peak) * var(--env-far) * var(--env-gain) * var(--env-mob) * var(--env-soft) * 4); }
 .ew-env-layer { transition: opacity var(--env-dur) var(--env-ease); }
 
 .ew-env-img { position: absolute; inset: 0; width: 100%; height: 100%; display: none; max-width: none; }
@@ -112,14 +113,18 @@ html.ew-atmosphere-shift .ew-env * { transition: none !important; animation: non
   .ew-env { top: 150px; bottom: calc(96px + env(safe-area-inset-bottom, 0px)); -webkit-mask-image: linear-gradient(transparent, black 48px, black calc(100% - 48px), transparent); mask-image: linear-gradient(transparent, black 48px, black calc(100% - 48px), transparent); }
   .ew-env-rig { left: calc(75% - 60vmax); top: calc(10% - 60vmax); }
   .ew-env-layer.is-far { display: none; }
-  .ew-env { --env-mob: .62; }
-  .ew-env-layer.is-near { opacity: calc(var(--env-peak) * var(--env-gain) * var(--env-mob) * var(--env-soft)); }
+  .ew-env { --env-mob: .85; }
+  .ew-env-layer.is-near { opacity: calc(var(--env-peak) * var(--env-gain) * var(--env-mob) * var(--env-soft) * 4); }
 }
 .ew-env[data-lite] .ew-env-layer.is-far { display: none; }
-.ew-env[data-lite] .ew-env-layer.is-near { opacity: calc(var(--env-peak) * var(--env-gain) * var(--env-mob) * var(--env-soft)); }
+.ew-env[data-lite] .ew-env-layer.is-near { opacity: calc(var(--env-peak) * var(--env-gain) * var(--env-mob) * var(--env-soft) * 4); }
 
 /* Reduced motion keeps the light, drops the drift and the gust. */
 @media (prefers-reduced-motion: reduce) {
   .ew-env, .ew-env * { animation: none !important; }
   .ew-env, .ew-env-tint, .ew-env-rig, .ew-env-layer { --env-dur: 1200ms; transition-timing-function: ease; }
 }
+
+/* Before the first light lands the sprites stay hidden, so the bloom starts bright, not flickering. */
+.ew-env:not([data-arrived]) .ew-env-rig { visibility: hidden; }
+@media (prefers-reduced-motion: reduce) { .ew-env:not([data-arrived]) .ew-env-rig { visibility: visible; } }
