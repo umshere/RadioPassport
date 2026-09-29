@@ -66,3 +66,19 @@ export const GUST_BREEZE: Record<EnvHour, { strength: number; direction: 1 | -1 
   dusk: { strength: 0.9, direction: -1 },
   night: { strength: 0.15, direction: -1 },
 };
+
+/** A stable small number from an id, so each station leans the light its own way. */
+export function envNudge(id: string | null | undefined, span = 8): number {
+  if (!id) return 0;
+  let h = 2166136261;
+  for (let i = 0; i < id.length; i++) h = Math.imul(h ^ id.charCodeAt(i), 16777619);
+  return (((h >>> 0) % 1000) / 1000 - 0.5) * 2 * span;
+}
+
+/** Each page holds the light at its own small angle. */
+export function envPageTilt(pathname: string): number {
+  if (pathname === "/") return 0;
+  if (pathname === "/listen") return 5;
+  if (pathname === "/about") return -5;
+  return 3;
+}

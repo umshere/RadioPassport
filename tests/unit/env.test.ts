@@ -31,3 +31,18 @@ describe("environment model", () => {
     expect(css).toContain("ew-atmosphere-shift");
   });
 });
+
+import { envNudge, envPageTilt } from "~/components/env/envModel";
+
+describe("environment nudges", () => {
+  it("gives each station its own steady lean", () => {
+    expect(envNudge("abc")).toBe(envNudge("abc"));
+    expect(envNudge("abc")).not.toBe(envNudge("abd"));
+    expect(Math.abs(envNudge("abc"))).toBeLessThanOrEqual(8);
+    expect(envNudge(null)).toBe(0);
+  });
+  it("tilts each page a little", () => {
+    expect(envPageTilt("/")).toBe(0);
+    expect(envPageTilt("/listen")).not.toBe(envPageTilt("/about"));
+  });
+});

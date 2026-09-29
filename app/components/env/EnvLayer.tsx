@@ -9,6 +9,8 @@ import {
   envDurationMs,
   envGain,
   envHour,
+  envNudge,
+  envPageTilt,
   gustFrames,
   type EnvHour,
 } from "./envModel";
@@ -67,25 +69,22 @@ export function EnvLayer() {
   const from = prevHour.current ?? hour;
   const duration = envDurationMs(from, hour);
 
-  useLayoutEffect(() => {
-    const previous = prevHour.current;
-    prevHour.current = hour;
-    if (!previous || previous === hour) return;
+  const fireGust = (hourNow: EnvHour, power: number) => {
     const root = rootRef.current;
     if (!root || typeof root.animate !== "function") return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     if (document.hidden) return;
     const seconds = lite ? 3.4 : 4.2;
-    const breeze = GUST_BREEZE[hour];
+    const breeze = GUST_BREEZE[hourNow];
     gusts.current.forEach((anim) => anim.cancel());
     gusts.current = [];
     root.querySelectorAll<HTMLElement>("[data-gust]").forEach((layer) => {
       const far = layer.dataset.gust === "far";
       const frames = gustFrames({
         seconds,
-        strength: breeze.strength,
+        strength: breeze.strength * power,
         direction: breeze.direction,
-        scale: (far ? 0.6 : 1) * (lite ? 0.6 : 1),
+        scale: (far ? 0.6 : 1) * (lite ? 0.8 : 1),
       });
       gusts.current.push(
         layer.animate(frames, {
@@ -96,7 +95,28 @@ export function EnvLayer() {
         })
       );
     });
+  };
+
+  // A new hour turns the light and sends the full gust through it.
+  useLayoutEffect(() => {
+    const previous = prevHour.current;
+    prevHour.current = hour;
+    if (!previous || previous === hour) return;
+    fireGust(hour, 1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hour, lite]);
+
+  // A new page or a new station shifts the light a little and stirs a softer gust.
+  const stationId = nowPlaying?.uuid ?? null;
+  const moveKey = `${pathname}|${stationId ?? ""}`;
+  const prevMove = useRef<string | null>(null);
+  useLayoutEffect(() => {
+    const previous = prevMove.current;
+    prevMove.current = moveKey;
+    if (previous === null || previous === moveKey) return;
+    fireGust(hour, 0.75);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [moveKey]);
 
   // A hidden tab holds still and comes back where it was.
   useEffect(() => {
@@ -108,6 +128,7 @@ export function EnvLayer() {
   const style = {
     "--env-dur": `${duration}ms`,
     "--env-gain": envGain(pathname),
+    "--env-nudge": `${(envPageTilt(pathname) + envNudge(stationId)).toFixed(2)}deg`,
   } as CSSProperties;
 
   return (
