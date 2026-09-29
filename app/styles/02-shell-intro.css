@@ -1,0 +1,289 @@
+@layer components {
+  .text-paper { color: var(--ew-bone); }
+  .text-muted { color: var(--ew-dust); }
+  .text-coral, .text-lacquer { color: var(--ew-lacquer-text); }
+  .text-foil { color: var(--ew-foil); }
+  .text-ether { color: var(--ew-ether); }
+
+  .rp-home {
+    --player-dock-clearance: 88px;
+    min-height: 100svh;
+    min-height: 100dvh;
+    background: var(--ew-ink);
+    color: var(--ew-bone);
+    font-family: "Schibsted Grotesk", "Sora", sans-serif;
+    padding-bottom: calc(var(--player-dock-clearance) + 1rem);
+    transition: background-color .28s ease, color .28s ease;
+  }
+  .rp-eyebrow, .rp-telemetry {
+    font-family: "Azeret Mono", "IBM Plex Mono", monospace;
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: .18em;
+    line-height: 1.35;
+    text-transform: uppercase;
+  }
+  .rp-home-header {
+    position: relative;
+    z-index: 30;
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    min-height: 56px;
+    padding: 8px max(20px, calc((100vw - 1360px) / 2));
+    border-bottom: 1px solid var(--ew-rule);
+    background: var(--ew-header);
+    backdrop-filter: blur(20px);
+  }
+  .rp-intent {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+    width: min(560px, 52vw);
+    padding: 0 12px 0 14px;
+    border: 1px solid var(--ew-rule);
+    border-radius: 0;
+    background: var(--ew-ink);
+    color: var(--ew-dust);
+  }
+  .rp-intent input, .rp-overlay-head input {
+    min-width: 0;
+    width: 100%;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    color: var(--ew-bone);
+    /* 16px floor: iOS Safari force-zooms any focused input below 16px. The
+       type reads a little larger than the old 13px; tighter padding keeps the
+       row within a couple of px of its old height. */
+    font: 400 16px/1.3 "Schibsted Grotesk", sans-serif;
+    padding: 8px 0;
+  }
+  .rp-intent input::placeholder { color: var(--ew-dust); }
+  .rp-intent-status {
+    flex: none;
+    max-width: 7.5rem;
+    overflow: hidden;
+    color: var(--ew-foil);
+    font: 500 9px/1 "Azeret Mono", monospace;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .rp-intent-status.is-idle { display: none; }
+  .rp-intent-status.is-searching { color: var(--ew-ether); }
+  .rp-intent-status.is-empty { color: var(--ew-dust); }
+  .rp-intent.is-searching { border-color: var(--ew-ether-line); }
+  .rp-station.is-pending {
+    min-height: 56px;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      var(--ew-shimmer) 50%,
+      transparent 100%
+    );
+    background-size: 200% 100%;
+    animation: rp-pulse 1.6s ease-in-out infinite;
+  }
+  .rp-intent-action, .rp-mic {
+    display: grid;
+    width: 36px;
+    height: 36px;
+    flex: none;
+    place-items: center;
+    border: 0;
+    background: transparent;
+    color: var(--ew-dust);
+  }
+  .rp-mic svg {
+    display: block;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.25;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .rp-intent-action.is-live, .rp-mic.is-live { color: var(--ew-lacquer); }
+  .rp-mic.is-live svg { stroke-width: 1.5; }
+  .rp-surprise {
+    flex: none;
+    min-height: 36px;
+    border: 1px solid var(--ew-foil-line);
+    background: transparent;
+    padding: 0 10px;
+    color: var(--ew-foil);
+    font: 500 10px/1 "Azeret Mono", monospace;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+  }
+  .rp-passport-button {
+    margin-left: auto;
+    display: inline-flex;
+    min-height: 44px;
+    align-items: center;
+    gap: 10px;
+    border: 1px solid var(--ew-foil-line-strong);
+    border-radius: 0;
+    background: transparent;
+    padding: 0 14px;
+    color: var(--ew-bone);
+    font: 500 10px/1 "Azeret Mono", monospace;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+  }
+  .rp-passport-button b { color: var(--ew-foil); }
+
+  .rp-stage {
+    display: grid;
+    grid-template-columns: minmax(340px, 400px) 1fr;
+    grid-template-rows: minmax(0, 1fr);
+    min-height: calc(100svh - 56px);
+    min-height: calc(100dvh - 56px);
+    max-width: 1440px;
+    width: 100%;
+    margin: 0 auto;
+    min-width: 0;
+    overflow: hidden;
+  }
+  .rp-intro {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+    padding: 28px 32px 24px;
+    border-right: 1px solid var(--ew-rule);
+  }
+  .rp-intro > :not(.rp-intro-board) {
+    flex-shrink: 0;
+  }
+  .rp-intro-board {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-height: 0;
+    overflow: auto;
+    overscroll-behavior: contain;
+  }
+  .rp-land-slot {
+    min-height: 92px;
+  }
+  /* While a signal plays the land CTA is gone; the empty slot must not keep
+     its reservation or the board drops a dead band below the fold. */
+  .rp-land-slot:empty {
+    min-height: 0;
+  }
+  .rp-intro-copy {
+    flex-shrink: 0;
+  }
+  .rp-intel-slot {
+    min-height: 0;
+    max-height: 5.8em;
+    overflow: hidden;
+  }
+  .rp-intel-slot .ew-caption {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .rp-intro .ew-track,
+  .rp-intro .rp-lede {
+    min-height: 1.55em;
+  }
+  .rp-intro h1 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  /* Horizon row: the local-time readout on the left, the room-hour pin on the
+     right — one instrument line answering "what hour is it here?" */
+  .rp-horizon-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 4px 16px;
+  }
+  .rp-intro h1, .ew-coverline {
+    margin: 10px 0 12px;
+    font-family: "Newsreader", "Iowan Old Style", serif;
+    font-size: clamp(40px, 5vw, 64px);
+    font-style: italic;
+    font-weight: 400;
+    letter-spacing: -.02em;
+    line-height: .96;
+    color: var(--ew-bone);
+  }
+  .rp-lede {
+    max-width: 32ch;
+    margin: 0;
+    color: var(--ew-dust);
+    font-size: 15px;
+    line-height: 1.55;
+  }
+  /* The customs stamp, inked in lacquer: landing is what inks the passport,
+     so the control is the stamp — and lacquer is the land color. */
+  .ew-land {
+    position: relative;
+    margin-top: 22px;
+    display: inline-flex;
+    min-height: 48px;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 6px;
+    border: 0;
+    background: var(--ew-lacquer);
+    padding: 13px 20px;
+    text-align: left;
+    color: var(--ew-on-lacquer);
+    font: italic 400 16px/1.2 "Newsreader", serif;
+    transition: transform .18s var(--ew-settle);
+  }
+  .ew-land::after {
+    content: "";
+    position: absolute;
+    inset: 4px;
+    border: 1px solid rgba(232, 223, 208, .35);
+    pointer-events: none;
+    transition: border-color .18s ease;
+  }
+  .ew-land-kicker {
+    font: 500 10px/1 "Azeret Mono", monospace;
+    letter-spacing: .22em;
+    text-transform: uppercase;
+    color: rgba(232, 223, 208, .8);
+  }
+  .ew-land-city {
+    font: italic 400 17px/1.2 "Newsreader", serif;
+    color: var(--ew-on-lacquer);
+  }
+  .ew-land:hover::after { border-color: rgba(232, 223, 208, .6); }
+  .ew-land:active { transform: translateY(2px); }
+  .ew-land:disabled { opacity: .45; }
+  .rp-chip-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 22px;
+  }
+  .rp-chip {
+    min-height: 44px;
+    border: 1px solid var(--ew-rule);
+    border-radius: 2px;
+    background: transparent;
+    padding: 0 14px;
+    color: var(--ew-dust);
+    font: 500 12px/1 "Schibsted Grotesk", sans-serif;
+    transition: border-color .15s, color .15s;
+  }
+  .rp-chip:hover, .rp-chip.active {
+    border-color: var(--ew-foil);
+    color: var(--ew-foil);
+  }
+}

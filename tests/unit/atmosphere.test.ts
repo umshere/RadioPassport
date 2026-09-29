@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import { readAppCss } from "./appCss";
 import { describe, expect, it } from "vitest";
 import {
   applyAtmosphere,
@@ -165,10 +166,7 @@ describe("AtmospherePin placement", () => {
     new URL("../../app/components/radio-passport/AtmospherePin.tsx", import.meta.url),
     "utf8"
   );
-  const stylesheet = readFileSync(
-    new URL("../../app/tailwind.css", import.meta.url),
-    "utf8"
-  );
+  const stylesheet = readAppCss();
 
   it("stands on the intro horizon row instead of tacked onto the header", () => {
     expect(home).toContain("SiteSeekPortal");

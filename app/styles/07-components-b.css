@@ -1,0 +1,134 @@
+@layer components {
+  .not-found-easter-egg {
+    isolation: isolate;
+    --ew-ink: #0C0B09;
+    --ew-leather: #1A1410;
+    --ew-hide: #241C16;
+    --ew-bone: #E8DFD0;
+    --ew-dust: #9A8F80;
+    --ew-foil: #C6A56A;
+    --ew-ether: #7EB8B4;
+    --ew-rule: rgba(232, 223, 208, 0.10);
+    --ew-on-lacquer: #E8DFD0;
+    color: #E8DFD0;
+  }
+
+  .not-found-easter-egg::before,
+  .not-found-easter-egg::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+
+  .not-found-easter-egg::before {
+    z-index: 0;
+    background: #4f8fbe;
+  }
+
+  .not-found-easter-egg::after {
+    z-index: 2;
+    background: linear-gradient(
+      180deg,
+      rgba(7, 11, 16, 0.28),
+      rgba(7, 11, 16, 0.62)
+    );
+  }
+
+  .not-found-easter-egg__pattern {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    background-image: url("/FTS.jpeg");
+    background-repeat: repeat;
+    background-size: 128px auto;
+    opacity: 0.92;
+    pointer-events: none;
+    user-select: none;
+  }
+}
+
+/* Theater and home are app shells: site bar + dock stay. Theater only
+   the letter scrolls; home keeps the intro board and globe as two panes.
+   Kept outside @layer with the site bar (same drop gremlin). */
+.ew-frame.is-theater-frame,
+.ew-frame.is-home-frame {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  overflow: hidden;
+}
+.ew-frame.is-theater-frame .ew-page.is-theater,
+.ew-frame.is-home-frame .ew-page.is-home {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+.ew-page.is-theater .ew-theater,
+.ew-page.is-home .rp-home {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  padding-bottom: 0;
+}
+.ew-page.is-home .rp-stage {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+.ew-theater-rail {
+  display: flex;
+  flex: 1 1 0%;
+  align-items: center;
+  min-width: 0;
+  min-height: 36px;
+  margin: 0;
+}
+.ew-theater-rail .rp-intent {
+  width: 100%;
+  max-width: 36rem;
+  min-width: 0;
+}
+/* Seek pill — one object whose width is the state (Bencho seek DNA, Phase 0,
+   theater only). Closed it is a 64px hide circle with the lens at its fixed
+   inset; open it springs wider and the intent field rises inside — the field
+   stays mounted (inert while closed), nothing unmount-swaps. Press is a
+   settle-in via the `scale` property so it composes with the magnet lean on
+   `transform`. Lens stroke is dust, bone on hover, brightest while busy. */
+.ew-seek {
+  position: relative;
+  display: flex;
+  flex: none;
+  align-items: center;
+  width: 64px;
+  height: 64px;
+  border: 1px solid var(--ew-rule);
+  border-radius: 999px;
+  background: var(--ew-hide);
+  color: var(--ew-dust);
+  overflow: hidden;
+  transform: translate(var(--ew-seek-x, 0px), var(--ew-seek-y, 0px));
+  transition: width .45s var(--ew-settle), border-color .3s var(--ew-settle), background-color .3s var(--ew-settle), color .3s var(--ew-settle), scale .09s ease-out;
+}
+.ew-seek:hover { border-color: var(--ew-foil-line); color: var(--ew-bone); }
+.ew-seek:not(.is-open):active { scale: .93; }
+.ew-seek.is-open { width: min(348px, 58vw); height: auto; min-height: 64px; background: var(--ew-leather); }
+.ew-seek.is-busy .ew-seek-lens { color: var(--ew-bone); }
+.ew-seek-lens { position: absolute; inset: 0; display: flex; align-items: center; border: 0; border-radius: 999px; background: transparent; padding: 0 0 0 18px; color: inherit; cursor: pointer; }
+.ew-seek-lens svg { display: block; flex: none; }
+.ew-seek-lens:focus-visible { outline: 1px solid var(--ew-foil); outline-offset: 2px; }
+.ew-seek.is-open .ew-seek-lens { inset: auto; left: 18px; top: 10px; align-items: flex-start; width: 28px; height: 44px; padding: 8px 0; }
+.ew-seek-say { flex: 1 1 auto; min-width: 0; width: 0; padding: 10px 14px 10px 56px; opacity: 0; translate: -8px 0; visibility: hidden; transition: opacity .22s ease .18s, translate .3s var(--ew-settle) .16s, visibility 0s .45s; }
+.ew-seek.is-open .ew-seek-say { width: auto; opacity: 1; translate: none; visibility: visible; transition: opacity .25s ease .2s, translate .32s var(--ew-settle) .18s, visibility 0s 0s; }
+.ew-seek .rp-intent { width: 100%; max-width: none; min-height: 0; border: 0; background: transparent; padding: 0; flex-wrap: wrap; gap: 4px 8px; }
+/* One input row: field, clear, mic, surprise — in that order. Status drops
+   to a caption line under the row instead of crowding it. */
+.ew-seek .rp-intent input { order: 1; flex: 1 1 80px; padding: 6px 0; }
+.ew-seek .rp-intent-clear { order: 2; }
+.ew-seek .rp-mic { order: 3; }
+.ew-seek .rp-surprise { order: 4; }
+.ew-seek .rp-intent-status { order: 5; flex: 1 1 100%; max-width: none; white-space: normal; margin: 2px 0 0; }

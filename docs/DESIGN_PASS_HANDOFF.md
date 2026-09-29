@@ -16,7 +16,7 @@ Live: https://elsewheremusic.com · last shipped: dock shows cleaned track title
 
 ## Gotchas
 - Node 22: `export PATH="$HOME/.nvm/versions/node/v22.23.0/bin:$PATH"`.
-- Tailwind purges `@layer components` classes not in `content`; new late CSS blocks (desk, keeper sprites, basis label) are appended OUTSIDE layers at the end of `app/tailwind.css`. Keeper CSS test slices to EOF: no hex, no box-shadow in the last block... (check `tests/unit/keeper.test.ts` before adding).
+- Tailwind purges `@layer components` classes not in `content`; new late CSS blocks (desk, keeper sprites, basis label) are appended OUTSIDE layers in `app/styles/08/10/11-*.css`. Keeper CSS test slices to EOF: no hex, no box-shadow in the last block... (check `tests/unit/keeper.test.ts` before adding).
 - Many tests read source by path; when moving code, update tests to the new file.
 - Ship: `npm run ship`; verify with curl + `vercel ls`. Never `vercel --prod` after push.
 - Secrets: never ask for/paste keys in chat; user sets Vercel env vars themselves (`vercel env add … production`, non-interactive: `printf 'true' | vercel env add …`).
@@ -26,8 +26,8 @@ Live: https://elsewheremusic.com · last shipped: dock shows cleaned track title
 
 ## Next (in order)
 1. **Update the design-system artifact** (working copy: `/private/tmp/claude-501/-Users-umeshmc-Code-RadioPassport/d674d16d-5d86-47c1-bf25-3a575c4b6b6c/scratchpad/ds/project`, script pattern in `/tmp/ds_update.py`; publish with `Artifact` url + `root` + `file_path` design-system.json + `files` list). Needed: Keeper page → sprites (upload 6 webps as assets with `asset:true`, use their urls in preview.html) + knowledge label; BoardGrip README → edge-only treatment (NOT lighter surface); new "Desk" page (Theater); Sheet/Row/Eyebrow already added in v11.
-2. Prune dead Theater CSS (~300 lines: `.ew-theater-*`, `.ew-knode*`, `.ew-orbit`, `.ew-journey`, tide/lane) and unused helpers (`theaterKnowledge`, `theaterFragments`, `knowledgeCopy`, `theaterLock` field functions) + their tests.
-3. Split `tailwind.css` (tokens / base / components). Migrate remaining raw `<button>`s. Move `UpNextRow`/`TheaterQueue` rows to `Row`.
+2. ~~Prune dead Theater CSS~~ done (also dead helpers + Åland guard). Old note: prune dead Theater CSS (~300 lines: `.ew-theater-*`, `.ew-knode*`, `.ew-orbit`, `.ew-journey`, tide/lane) and unused helpers (`theaterKnowledge`, `theaterFragments`, `knowledgeCopy`, `theaterLock` field functions) + their tests.
+3. ~~Split `tailwind.css`~~ done: `app/tailwind.css` is an ordered `@import` list of `app/styles/01…11-*.css` (built CSS byte-identical; order = cascade; tests read it via `tests/unit/appCss.ts`). Migrate remaining raw `<button>`s. Move `UpNextRow`/`TheaterQueue` rows to `Row`.
 4. Åland-flag guard: directory data lists "EXA FM…" as country AX with state "Veracruz, México"; optional rule: state ending ", <other country>" wins.
 5. Speed: dock "up next" fetch; parallel probe batches.
 6. Optional: keeper scenes (passport on stamp, next stop on hour hop); Theater/keeper usage counters; hour rail highlighting local hour (needs decision); type scale 20→9, radii 8→4.

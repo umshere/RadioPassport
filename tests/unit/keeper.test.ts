@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import { readAppCss } from "./appCss";
 import { describe, expect, it } from "vitest";
 import {
   answerLocally,
@@ -373,7 +374,7 @@ describe("keeper wiring", () => {
   });
 
   it("respects reduced motion and the square system in the stylesheet", () => {
-    const css = read("app/tailwind.css");
+    const css = readAppCss();
     const keeper = css.slice(css.indexOf("/* ---- The keeper"));
     expect(keeper).toContain("@media (prefers-reduced-motion: no-preference)");
     expect(keeper).toMatch(/prefers-reduced-motion: reduce\)[\s\S]*\.ew-keeper-sheet, \.ew-flaptext-char \{ animation: none; \}/);

@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import { readAppCss } from "./appCss";
 import { beforeEach, describe, expect, it } from "vitest";
 import {
   formatLocalLabel,
@@ -556,10 +557,7 @@ describe("Heuristics provider wiring", () => {
 
 describe("live stylesheet", () => {
   it("does not ship Mantine or leftover travel CSS on the product face", () => {
-    const css = readFileSync(
-      new URL("../../app/tailwind.css", import.meta.url),
-      "utf8"
-    );
+    const css = readAppCss();
     const config = readFileSync(
       new URL("../../tailwind.config.ts", import.meta.url),
       "utf8"
@@ -717,7 +715,7 @@ describe("mobile cover strip", () => {
       new URL("../../app/components/CoverStrip.tsx", import.meta.url),
       "utf8",
     );
-    const css = readFileSync(new URL("../../app/tailwind.css", import.meta.url), "utf8");
+    const css = readAppCss();
     const home = readFileSync(
       new URL("../../app/routes/_index.tsx", import.meta.url),
       "utf8",

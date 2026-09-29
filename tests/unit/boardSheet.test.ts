@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import { readAppCss } from "./appCss";
 import { describe, expect, it } from "vitest";
 import {
   BOARD_SHEET_PEEK_PX,
@@ -39,10 +40,7 @@ describe("board sheet contracts", () => {
     new URL("../../app/routes/_index.tsx", import.meta.url),
     "utf8"
   );
-  const css = readFileSync(
-    new URL("../../app/tailwind.css", import.meta.url),
-    "utf8"
-  );
+  const css = readAppCss();
 
   it("keeps the drag on the grip, the state in aria, and the phone gate", () => {
     expect(sheet).toContain("rp-board-grip");

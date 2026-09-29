@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import { readAppCss } from "./appCss";
 import { describe, expect, it } from "vitest";
 import {
   boardDeal,
@@ -108,10 +109,7 @@ describe("flip board", () => {
       new URL("../../app/components/radio-passport/StationRow.tsx", import.meta.url),
       "utf8",
     );
-    const css = readFileSync(
-      new URL("../../app/tailwind.css", import.meta.url),
-      "utf8",
-    );
+    const css = readAppCss();
     expect(FLIP_MS).toBe(80);
     expect(COL_STAGGER_MS).toBe(40);
     expect(home).toContain("boardDeal");

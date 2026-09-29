@@ -1,0 +1,109 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: dark;
+    --ew-ink: #0C0B09;
+    --ew-leather: #1A1410;
+    --ew-hide: #241C16;
+    --ew-bone: #E8DFD0;
+    --ew-dust: #9A8F80;
+    --ew-lacquer: #C73A3A;
+    --ew-foil: #C6A56A;
+    --ew-ether: #7EB8B4;
+    --ew-rule: rgba(232, 223, 208, 0.10);
+    /* Ember hues for the horizon rail. Re-declared per atmosphere: the night
+       embers wash out to nothing on paper (midday hit 1.07:1), so day gets
+       ink-side equivalents that keep the family and clear 4.5:1. */
+    --ew-hour-dawn: #E3B76B;
+    --ew-hour-midday: #EFE3CE;
+    --ew-hour-dusk: #E07840;
+    --ew-hour-night: #A79BEC;
+    --ew-on-lacquer: #E8DFD0;
+    --ew-on-ink: #E8DFD0;
+    /* Lacquer as small text: the seal red is 3.84:1 on ink, so text uses this lift (5.1:1). */
+    --ew-lacquer-text: #E5615C;
+    --ew-passport-paper: #E6D8B9;
+    --ew-passport-paper-edge: #C0AB82;
+    --ew-passport-ink-0: #294959;
+    --ew-passport-ink-1: #375345;
+    --ew-passport-ink-2: #783F38;
+    --ew-header: rgba(26, 20, 16, .88);
+    --ew-dock: rgba(26, 20, 16, .94);
+    --ew-veil: rgba(12, 11, 9, .97);
+    --ew-tip: rgba(26, 20, 16, .96);
+    --ew-row-hover: rgba(36, 28, 22, .55);
+    --ew-shimmer: rgba(232, 223, 208, 0.05);
+    --ew-ghost: rgba(232, 223, 208, .18);
+    --ew-foil-line: rgba(198, 165, 106, .45);
+    --ew-foil-line-strong: rgba(198, 165, 106, .55);
+    --ew-foil-wash: rgba(198, 165, 106, .06);
+    --ew-foil-wash-strong: rgba(198, 165, 106, .25);
+    --ew-lift: 0 -16px 48px rgb(0 0 0 / .45);
+    --ew-ether-line: rgba(122, 168, 168, 0.55);
+    --ew-settle: cubic-bezier(.22, 1, .36, 1);
+    --player-dock-clearance: 88px;
+  }
+
+  :root[data-atmosphere="day"] {
+    color-scheme: light;
+    --ew-ink: #F2EBE1;
+    --ew-leather: #E8DFD2;
+    --ew-hide: #DDD4C6;
+    --ew-bone: #1A1612;
+    --ew-dust: #6F675C;
+    --ew-lacquer: #C73A3A;
+    --ew-foil: #8A6E3A;
+    --ew-ether: #3F7A76;
+    --ew-rule: rgba(26, 22, 18, 0.12);
+    --ew-hour-dawn: #8A5A12;
+    --ew-hour-midday: #5F5030;
+    --ew-hour-dusk: #A8461A;
+    --ew-hour-night: #4B3FA0;
+    --ew-on-lacquer: #E8DFD0;
+    --ew-on-ink: #E8DFD0;
+    --ew-lacquer-text: #B5302F;
+    --ew-header: rgba(242, 235, 225, .90);
+    --ew-dock: rgba(232, 223, 210, .94);
+    --ew-veil: rgba(242, 235, 225, .97);
+    --ew-tip: rgba(248, 243, 236, .96);
+    --ew-row-hover: rgba(26, 22, 18, .06);
+    --ew-shimmer: rgba(26, 22, 18, 0.05);
+    --ew-ghost: rgba(26, 22, 18, .18);
+    --ew-foil-line: rgba(138, 110, 58, .45);
+    --ew-foil-line-strong: rgba(138, 110, 58, .55);
+    --ew-foil-wash: rgba(138, 110, 58, .08);
+    --ew-foil-wash-strong: rgba(138, 110, 58, .18);
+    --ew-lift: 0 -16px 48px rgb(26 22 18 / .08);
+    --ew-ether-line: rgba(63, 122, 118, 0.55);
+  }
+
+  @media (max-width: 960px) {
+    :root {
+      --player-dock-clearance: 44px;
+    }
+  }
+
+  body {
+    @apply antialiased font-sans;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    background: var(--ew-ink);
+    color: var(--ew-bone);
+    transition: background-color .28s ease, color .28s ease;
+  }
+
+  :focus-visible {
+    outline: 1px solid var(--ew-foil);
+    outline-offset: 2px;
+  }
+
+  .safe-pb {
+    padding-bottom: calc(9.5rem + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+/* Elsewhere editorial surface. Legacy --rp aliases remain for /about and error UI. */
