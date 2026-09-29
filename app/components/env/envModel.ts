@@ -1,0 +1,68 @@
+import type { SolarHour } from "~/utils/localTime";
+
+/** Environment hours on one line: dawn 0, midday 1, dusk 2, night 3. */
+export type EnvHour = "dawn" | "midday" | "dusk" | "night";
+
+export const ENV_HOURS: EnvHour[] = ["dawn", "midday", "dusk", "night"];
+
+export function envHour(hour: SolarHour): EnvHour {
+  return hour.toLowerCase() as EnvHour;
+}
+
+export function envIndex(hour: EnvHour): number {
+  return ENV_HOURS.indexOf(hour);
+}
+
+/** 2.6s + 0.7s per step crossed: dawn to night takes 4.7s. */
+export function envDurationMs(from: EnvHour, to: EnvHour): number {
+  return Math.round(2600 + 700 * Math.abs(envIndex(from) - envIndex(to)));
+}
+
+/** How strongly each page lets the light in. The map and the rest stay quiet. */
+export function envGain(pathname: string): number {
+  if (pathname === "/") return 1;
+  if (pathname === "/listen") return 0.8;
+  return 0.7;
+}
+
+/**
+ * The gust: a damped sway. Attack ~0.35s, decay tau ~1.1s, underdamped at
+ * ~2.2s per swing, so it lifts, answers, decays and settles. No bounce.
+ */
+export function gustEnvelope(t: number): number {
+  return (1 - Math.exp(-t / 0.35)) * Math.exp(-t / 1.1);
+}
+
+export function gustSway(t: number): number {
+  return gustEnvelope(t) * Math.sin((2 * Math.PI * t) / 2.2);
+}
+
+export type GustFrame = { translate: string; rotate: string };
+
+export function gustFrames(options: {
+  seconds: number;
+  strength: number;
+  direction: 1 | -1;
+  scale?: number;
+  steps?: number;
+}): GustFrame[] {
+  const { seconds, strength, direction, scale = 1, steps = 24 } = options;
+  const distance = 18 * strength * scale * direction;
+  const turn = 1.4 * strength * scale;
+  const frames: GustFrame[] = [];
+  for (let i = 0; i <= steps; i++) {
+    const t = (i / steps) * seconds;
+    frames.push({
+      translate: `${(distance * gustSway(t)).toFixed(2)}px ${(distance * 0.35 * gustSway(t - 0.3)).toFixed(2)}px`,
+      rotate: `${(turn * gustSway(t - 0.12)).toFixed(3)}deg`,
+    });
+  }
+  return frames;
+}
+
+export const GUST_BREEZE: Record<EnvHour, { strength: number; direction: 1 | -1 }> = {
+  dawn: { strength: 0.7, direction: 1 },
+  midday: { strength: 0.55, direction: 1 },
+  dusk: { strength: 0.9, direction: -1 },
+  night: { strength: 0.15, direction: -1 },
+};

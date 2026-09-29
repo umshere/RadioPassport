@@ -50,6 +50,7 @@ import { ATMOSPHERE_BOOT_SCRIPT, ATMOSPHERE_THEME_COLOR } from "~/utils/atmosphe
 import { Button, ButtonLink, Chip } from "~/components/ui/Button";
 import { KeeperHost } from "~/components/keeper/KeeperHost";
 import { TuneBridge } from "~/components/share/TuneBridge";
+import { EnvLayer } from "~/components/env/EnvLayer";
 import { isKeeperAskEnabled } from "~/services/keeper/flag.server";
 
 /** Public flags only. The keeper's ask flag is not a secret; keys stay server-side. */
@@ -235,6 +236,7 @@ export default function App() {
         >
           <Outlet />
         </div>
+        <EnvLayer />
         </div>
         </CoverSlotProvider>
         </SiteSeekProvider>

@@ -21,7 +21,7 @@ function rulesFor(css: string, selector: string): string[] {
 describe("home: the departures hall stylesheet", () => {
   it("is appended last in the cascade", () => {
     const entry = read("app/tailwind.css").trim().split("\n");
-    expect(entry[entry.length - 1]).toBe('@import "./styles/14-home.css";');
+    expect(entry[entry.length - 1]).toBe('@import "./styles/15-env.css";');
   });
 
   it("never lays a grid on the home's scroll containers (iOS WebKit collapses it)", () => {

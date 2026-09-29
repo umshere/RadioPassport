@@ -1,0 +1,119 @@
+/* ---- the room's light. One fixed layer, quiet by design (docs/ENVIRONMENT_LIGHT.md).
+   Night room: warm flecks through a canopy. Day room: soft leaf shade on paper.
+   Hour state lives on .ew-env[data-hour]; everything below reads it, so angle,
+   stretch, softness, tint and breeze move as one. Plain alpha, no blend modes. */
+
+@property --env-amp { syntax: "<number>"; inherits: true; initial-value: 1; }
+@property --env-breeze { syntax: "<number>"; inherits: true; initial-value: 0.5; }
+
+.ew-env {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  pointer-events: none;
+  contain: strict;
+  overflow: hidden;
+  --env-dur: 3300ms;
+  --env-gain: 1;
+  --env-mob: 1;
+  --env-ease: cubic-bezier(.33, 0, .15, 1);
+  --env-tint: var(--ew-hour-midday);
+  --env-tint-a: .015;
+  --env-peak: .055;
+  transition: --env-amp var(--env-dur) var(--env-ease), --env-breeze var(--env-dur) var(--env-ease);
+}
+
+/* Hour → the physical state. angle/stretch/offset/softness are shared by both rooms. */
+.ew-env[data-hour="dawn"]   { --env-angle: 208deg; --env-stretch: 1.35; --env-tx: -5vmin; --env-ty: 3vmin;  --env-far: .60; --env-amp: 1;   --env-breeze: .7; --env-tint: var(--ew-hour-dawn);   --env-tint-a: .025; --env-peak: .045; }
+.ew-env[data-hour="midday"] { --env-angle: 182deg; --env-stretch: 1.05; --env-tx: 0vmin;  --env-ty: 0vmin;  --env-far: .25; --env-amp: .8;  --env-breeze: .55; --env-tint: var(--ew-hour-midday); --env-tint-a: .015; --env-peak: .055; }
+.ew-env[data-hour="dusk"]   { --env-angle: 152deg; --env-stretch: 1.45; --env-tx: 6vmin;  --env-ty: -2vmin; --env-far: .70; --env-amp: 1.1; --env-breeze: .9; --env-tint: var(--ew-hour-dusk);   --env-tint-a: .03;  --env-peak: .05; }
+.ew-env[data-hour="night"]  { --env-angle: 170deg; --env-stretch: 1.2;  --env-tx: 2vmin;  --env-ty: 1vmin;  --env-far: .95; --env-amp: .35; --env-breeze: .3; --env-tint: var(--ew-hour-night);  --env-tint-a: .02;  --env-peak: .018; }
+/* Day room: shade is a little stronger, tints a little different. */
+:root[data-atmosphere="day"] .ew-env[data-hour="dawn"]   { --env-tint-a: .03;  --env-peak: .055; }
+:root[data-atmosphere="day"] .ew-env[data-hour="midday"] { --env-tint-a: .01;  --env-peak: .06; }
+:root[data-atmosphere="day"] .ew-env[data-hour="dusk"]   { --env-tint-a: .035; --env-peak: .06; }
+:root[data-atmosphere="day"] .ew-env[data-hour="night"]  { --env-tint-a: .04;  --env-peak: .03; }
+
+.ew-env[data-lite] { --env-mob: .7; }
+
+.ew-env-tint {
+  position: absolute;
+  inset: 0;
+  background-color: color-mix(in srgb, var(--env-tint) calc(var(--env-tint-a) * 100%), transparent);
+  transition: background-color var(--env-dur) var(--env-ease);
+}
+
+/* The rig is the sun's direction: it turns, stretches and shifts. Anchored
+   upper right so the light falls away from the reading column. */
+.ew-env-rig {
+  position: absolute;
+  left: calc(70% - 80vmax);
+  top: calc(20% - 80vmax);
+  width: 160vmax;
+  height: 160vmax;
+  rotate: var(--env-angle);
+  scale: 1 var(--env-stretch);
+  translate: var(--env-tx) var(--env-ty);
+  transition: rotate var(--env-dur) var(--env-ease), scale var(--env-dur) var(--env-ease), translate var(--env-dur) var(--env-ease);
+}
+
+.ew-env-layer { position: absolute; inset: 0; display: block; }
+.ew-env-breath { position: absolute; inset: 0; display: block; }
+.ew-env-layer.is-near { opacity: calc(var(--env-peak) * (1 - var(--env-far)) * var(--env-gain) * var(--env-mob)); }
+.ew-env-layer.is-far  { opacity: calc(var(--env-peak) * var(--env-far) * var(--env-gain) * var(--env-mob)); }
+.ew-env-layer { transition: opacity var(--env-dur) var(--env-ease); }
+
+.ew-env-img { position: absolute; inset: 0; width: 100%; height: 100%; display: none; max-width: none; will-change: transform; }
+/* The unused room's sprite is never painted. */
+.ew-env-img.is-fleck { display: block; }
+:root[data-atmosphere="day"] .ew-env-img.is-fleck { display: none; }
+:root[data-atmosphere="day"] .ew-env-img.is-shade { display: block; }
+
+/* Idle: incommensurate periods so the sum does not visibly repeat. Amplitude
+   is the hour's own (--env-amp), so night barely moves. */
+.ew-env-layer.is-near .ew-env-img { animation: ew-env-drift-a 29s linear infinite, ew-env-turn-a 43s ease-in-out infinite alternate, ew-env-swell 53s ease-in-out infinite alternate; }
+.ew-env-layer.is-far  .ew-env-img { animation: ew-env-drift-b 41s linear infinite, ew-env-turn-b 59s ease-in-out infinite alternate; }
+.ew-env-layer.is-near .ew-env-breath { animation: ew-env-breathe-a 37s ease-in-out infinite alternate; }
+.ew-env-layer.is-far  .ew-env-breath { animation: ew-env-breathe-b 47s ease-in-out infinite alternate; }
+.ew-env.is-paused * { animation-play-state: paused; }
+
+@keyframes ew-env-drift-a {
+  0%, 100% { translate: 0 0; }
+  20% { translate: calc(var(--env-amp) * 9px) calc(var(--env-amp) * -4px); }
+  47% { translate: calc(var(--env-amp) * -3px) calc(var(--env-amp) * 7px); }
+  71% { translate: calc(var(--env-amp) * -9px) calc(var(--env-amp) * -2px); }
+  88% { translate: calc(var(--env-amp) * 4px) calc(var(--env-amp) * 5px); }
+}
+@keyframes ew-env-drift-b {
+  0%, 100% { translate: 0 0; }
+  26% { translate: calc(var(--env-amp) * -6px) calc(var(--env-amp) * 5px); }
+  52% { translate: calc(var(--env-amp) * 5px) calc(var(--env-amp) * 3px); }
+  79% { translate: calc(var(--env-amp) * 2px) calc(var(--env-amp) * -6px); }
+}
+@keyframes ew-env-turn-a { from { rotate: calc(var(--env-amp) * -.6deg); } to { rotate: calc(var(--env-amp) * .6deg); } }
+@keyframes ew-env-turn-b { from { rotate: calc(var(--env-amp) * .4deg); } to { rotate: calc(var(--env-amp) * -.4deg); } }
+@keyframes ew-env-swell { from { scale: 1; } to { scale: 1.012; } }
+@keyframes ew-env-breathe-a { from { opacity: 1; } to { opacity: .88; } }
+@keyframes ew-env-breathe-b { from { opacity: .92; } to { opacity: 1; } }
+
+/* A room swap is a cut, here as everywhere. */
+html.ew-atmosphere-shift .ew-env,
+html.ew-atmosphere-shift .ew-env * { transition: none !important; animation: none !important; }
+
+/* Phones: one sprite, off the header, gates, dock and band; feathered edges. */
+@media (max-width: 767px) {
+  .ew-env { top: 150px; bottom: calc(96px + env(safe-area-inset-bottom, 0px)); -webkit-mask-image: linear-gradient(transparent, black 48px, black calc(100% - 48px), transparent); mask-image: linear-gradient(transparent, black 48px, black calc(100% - 48px), transparent); }
+  .ew-env-rig { left: calc(75% - 80vmax); top: calc(10% - 80vmax); }
+  .ew-env-layer.is-near { display: none; }
+  .ew-env { --env-mob: .7; }
+  .ew-env-layer.is-far { opacity: calc(var(--env-peak) * var(--env-gain) * var(--env-mob)); }
+  .ew-env-layer.is-far .ew-env-img { animation-duration: 41s, 59s; }
+}
+.ew-env[data-lite] .ew-env-layer.is-near { display: none; }
+.ew-env[data-lite] .ew-env-layer.is-far { opacity: calc(var(--env-peak) * var(--env-gain) * var(--env-mob)); }
+
+/* Reduced motion keeps the light, drops the drift and the gust. */
+@media (prefers-reduced-motion: reduce) {
+  .ew-env, .ew-env * { animation: none !important; }
+  .ew-env, .ew-env-tint, .ew-env-rig, .ew-env-layer { --env-dur: 1200ms; transition-timing-function: ease; }
+}

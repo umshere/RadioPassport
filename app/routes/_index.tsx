@@ -2,6 +2,7 @@ import { json, type LoaderFunctionArgs } from "@remix-run/node";
 import { Link, useLoaderData, useSearchParams } from "@remix-run/react";
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { usePlayerStore } from "~/state/playerStore";
+import { useEnvStore } from "~/state/envStore";
 import { useJourneyStore } from "~/state/journeyStore";
 import { resolveKeptSignals } from "~/state/favoriteSnapshot";
 import { useListeningMode } from "~/hooks/useListeningMode";
@@ -128,6 +129,7 @@ export default function Index() {
   const storedRoom = useRoomStore((state) => state.room);
   const room = roomForStation(storedRoom, nowPlaying?.uuid);
   const now = useMinuteClock();
+  const setEnvHour = useEnvStore((state) => state.setHomeHour);
   const pageRef = useRef<HTMLElement>(null);
   const pageBox = useFloorClearance(pageRef);
   const { hour, setHour, place, setPlace, query, setQuery } = useHomeIntent(
@@ -273,6 +275,12 @@ export default function Index() {
     unreachable: catalogError,
   });
   const sky = arrivalSky(arrivalStation, now);
+  // The room takes the hour the home is showing: the gate, else the sky's city.
+  const envSolar = hour ?? sky.solar;
+  useEffect(() => {
+    setEnvHour(envSolar);
+    return () => setEnvHour(null);
+  }, [envSolar, setEnvHour]);
   const offsetHours = hydrated ? hoursFromListener(sky.localHour, now.getHours()) : null;
   const trackLine = room.signal.track
     ? [room.signal.track.artist, room.signal.track.title].filter(Boolean).join(" — ")
