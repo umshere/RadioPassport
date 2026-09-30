@@ -18,7 +18,6 @@ import {
   stationTags,
   trackKey,
 } from "~/components/radio-passport/stationInsights";
-import { useStationInsightsStore } from "~/state/stationInsightsStore";
 import { usePlayerStore } from "~/state/playerStore";
 import { shouldCacheAiTriviaStatus } from "~/hooks/useTrackTrivia";
 
@@ -118,12 +117,6 @@ describe("station insights contracts", () => {
     usePlayerStore.getState().clearQueue();
     usePlayerStore.getState().setNowPlaying(null);
     const before = usePlayerStore.getState();
-    useStationInsightsStore.getState().open(selected);
-    expect(useStationInsightsStore.getState().station).toBe(selected);
-    expect(usePlayerStore.getState().nowPlaying).toBe(before.nowPlaying);
-    expect(usePlayerStore.getState().queue).toEqual(before.queue);
-    useStationInsightsStore.getState().close();
-    expect(useStationInsightsStore.getState().station).toBeNull();
     const descriptor = {
       visual: "card_stack",
       mood: "Late Night",

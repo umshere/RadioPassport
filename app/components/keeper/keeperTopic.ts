@@ -60,6 +60,7 @@ export function extractTopic(
   const after = q.match(AFTER);
   if (after) candidates.push(after[1]!);
   // Non-Latin runs (Tamil, Malayalam, Devanagari, Arabic…) name people directly.
+  // eslint-disable-next-line no-misleading-character-class
   const script = q.match(/[؀-ۿऀ-ॿ஀-௿ഀ-ൿ]+(?:\s+[؀-ۿऀ-ॿ஀-௿ഀ-ൿ]+)*/);
   if (script) candidates.push(script[0]!);
   for (const word of q.toLowerCase().split(/[^a-z-]+/)) {
@@ -85,6 +86,7 @@ export function extractTopic(
     const bare = text.toLowerCase().replace(/^(a|an|the)\s+/, "");
     if (GENRES.has(bare)) return { text: bare, canonical: bare, kind: "genre" };
     // A capitalised run is a name (person or place); lowercase leftovers are not topics.
+    // eslint-disable-next-line no-misleading-character-class
     if (/^[A-ZÀ-Ý؀-ۿऀ-ॿ஀-௿ഀ-ൿ]/.test(text)) {
       return { text, canonical: text, kind: "other" };
     }

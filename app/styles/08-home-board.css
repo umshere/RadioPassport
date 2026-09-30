@@ -232,7 +232,7 @@ html, body {
 :root[data-atmosphere="day"] { --ew-rule-2: rgba(26, 22, 18, 0.18); }
 .ew-band-nav { display: none; }
 .ew-horizon-kicker { display: none; }
-.ew-cover-strip { display: none; }
+
 @media (max-width: 960px) {
 .ew-band-nav.is-band { position: fixed; z-index: 41; right: 0; bottom: 0; left: 0; display: grid; grid-template-columns: repeat(3, 1fr); height: calc(44px + env(safe-area-inset-bottom, 0px)); padding-bottom: env(safe-area-inset-bottom, 0px); border-top: 1px solid var(--ew-rule); background: var(--ew-dock); transform: translateZ(0); }
 /* Own compositing layer: mobile Safari has dropped this fixed band's paint
@@ -249,16 +249,12 @@ html, body {
 .ew-band-nav-slot.is-current { color: var(--ew-foil); box-shadow: inset 0 -1px 0 var(--ew-foil); }
 .ew-band-nav-slot.is-disabled { color: rgba(154,143,128,.4); cursor: default; pointer-events: none; }
 :root[data-atmosphere="day"] .ew-band-nav-slot.is-disabled { color: rgba(111,103,92,.4); }
-.ew-cover-strip { position: absolute; z-index: 1; top: 100%; right: 0; left: 0; display: flex; align-items: center; gap: 9px; height: 44px; padding: 0 16px; border-bottom: 1px solid var(--ew-rule); background: var(--ew-ink); opacity: 0; visibility: hidden; pointer-events: none; transition: opacity .18s ease, visibility 0s linear .18s; }
+
 /* The strip is a real child of the sticky site bar, so top: 100% docks it to
    the header's true bottom edge — no hardcoded 52px, no safe-area math, and
    no fixed-position layer for mobile Safari to drop. The shadow lands only
    with the strip, so it reads as chrome instead of a floating glitch. */
-.ew-cover-strip.is-on { opacity: 1; visibility: visible; pointer-events: auto; box-shadow: 0 10px 28px rgba(0, 0, 0, .5); transition: opacity .18s ease, visibility 0s linear 0s; }
-.ew-cover-strip-dot { display: block; flex: none; width: 7px; height: 7px; border-radius: 50%; background: var(--ew-ether); }
-.ew-cover-strip-land { margin: 0; overflow: hidden; color: var(--ew-foil); font: 500 10px/1.35 "Azeret Mono", monospace; letter-spacing: .18em; text-transform: uppercase; text-overflow: ellipsis; white-space: nowrap; }
-.ew-cover-strip-meta { margin: 0; flex: none; color: var(--ew-dust); font: 500 10px/1.35 "Azeret Mono", monospace; letter-spacing: .18em; text-transform: uppercase; white-space: nowrap; }
-.ew-cover-strip-seek { display: grid; flex: none; width: 44px; height: 44px; margin-left: auto; place-items: center; border: 0; background: transparent; padding: 0; color: var(--ew-dust); }
+
 .rp-dock { bottom: calc(44px + env(safe-area-inset-bottom, 0px)); }
 .rp-dock-row { gap: 8px; min-height: 64px; height: 64px; padding: 8px 10px; }
 .rp-dock-deck-row { padding: 8px 10px; }
@@ -313,11 +309,7 @@ html, body {
 @media (max-width: 960px) {
 :root[data-atmosphere="day"] .ew-band-nav-slot { color: #665F55; }
 :root[data-atmosphere="day"] .ew-band-nav-slot.is-current { color: #6F582D; }
-:root[data-atmosphere="day"] .ew-cover-strip-land { color: #6F582D; }
-:root[data-atmosphere="day"] .ew-cover-strip-dot { background: #35635F; }
-}
-@media (max-width: 960px) and (prefers-reduced-motion: reduce) {
-.ew-cover-strip, .ew-cover-strip.is-on { transition: none; }
+
 }
 
 /* Under 360px the dock cannot seat both arrows and a readable title. Prev yields
@@ -329,13 +321,7 @@ html, body {
 /* Theater knowledge layer — DOM buttons over the sky; keep one-line rules. */
 /* Living layer: declarative SVG motion over the static sky. Dotted flows
    crawl via dashoffset, travelers ride SMIL paths, stars twinkle. */
-.ew-tuned-ring { fill: none; stroke: var(--ew-lacquer); stroke-width: 1.1; opacity: 0.75; }
-.ew-tuned-halo { fill: var(--ew-lacquer); opacity: 0.08; }
-.ew-thread { stroke-width: 0.8; opacity: 0.34; }
-.ew-thread-pulse { fill: var(--ew-bone); opacity: 0.75; }
-.ew-star-glow { opacity: 0.3; }
-.ew-star-twinkle { opacity: 0.3; animation: ew-star-twinkle 4s ease-in-out infinite; }
-.ew-star-core { opacity: 0.9; }
+
 @keyframes ew-star-twinkle { 0%, 100% { opacity: 0.18; } 50% { opacity: 0.42; } }
 @keyframes ew-knode-wake { from { opacity: 0; } to { opacity: 1; } }
 /* Tide water — roomier taps; seat changes glide like a body in water. */
@@ -345,44 +331,23 @@ html, body {
 /* Hubs and stars wear different clothes: a country is a flag medallion —
    no kind dot, the flag large — while a station keeps the favicon pill
    with its dot. Land first, then the stations it opens onto. */
-.ew-letter-phone { display: none; }
-.ew-plate-caption { display: none; }
+
 /* Theater folio — selected node details + trail. */
-.ew-ktrail { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 10px 0 2px; }
-.ew-ktrail button { border: 0; background: none; padding: 2px 0; cursor: pointer; color: var(--ew-dust); font: 500 11px/1.4 "Azeret Mono", monospace; letter-spacing: 0.1em; text-transform: uppercase; }
-.ew-ktrail button:hover { color: var(--ew-foil); }
-.ew-ktrail [aria-current="true"] { color: var(--ew-foil); }
-.ew-known { margin-top: 16px; border-top: 1px solid var(--ew-rule); padding-top: 12px; }
-.ew-known-lab { color: var(--ew-dust); }
-.ew-krow { display: flex; align-items: baseline; gap: 12px; min-height: 44px; border-bottom: 1px solid var(--ew-rule); padding: 7px 0; }
-.ew-krow-key { flex: none; width: 62px; color: var(--ew-dust); font: 500 10px/1.35 "Azeret Mono", monospace; letter-spacing: .16em; text-transform: uppercase; }
-.ew-krow-value { min-width: 0; font-size: 15px; font-weight: 500; color: var(--ew-bone); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
-.ew-krow-prov { display: inline-flex; align-items: center; margin: 0 0 0 auto; color: var(--ew-dust); font: 500 10px/1.35 "Azeret Mono", monospace; letter-spacing: .14em; text-transform: uppercase; }
-.ew-known-line { margin: 14px 0 0; color: var(--ew-dust); font: 500 10px/1.35 "Azeret Mono", monospace; letter-spacing: .16em; text-transform: uppercase; }
-.ew-waiting { display: flex; align-items: center; gap: 9px; margin: 14px 0 0; color: var(--ew-dust); font: 500 10px/1.35 "Azeret Mono", monospace; letter-spacing: .16em; text-transform: uppercase; }
-.ew-waiting-dot { display: block; flex: none; width: 7px; height: 7px; border-radius: 50%; background: var(--ew-ether); }
-.ew-desk-verified { margin: 12px 0 0; color: var(--ew-foil); font: 500 10px/1.35 "Azeret Mono", monospace; letter-spacing: .14em; text-transform: uppercase; }
+
 .ew-meridian-host { margin-left: 8px; color: var(--ew-dust); font-style: normal; letter-spacing: .06em; text-transform: none; }
 @media (max-width: 960px) {
 :root[data-atmosphere="day"] .ew-meridian-host { color: #665F55; }
-:root[data-atmosphere="day"] .ew-krow-key, :root[data-atmosphere="day"] .ew-krow-prov, :root[data-atmosphere="day"] .ew-waiting, :root[data-atmosphere="day"] .ew-known-line { color: #665F55; }
+
 }
 
 /* Theater phone = Theater.html / Knowledge.html. Desktop sky stays the wide field. */
-.ew-plate { display: grid; place-items: center; }
-.ew-plate:has(img) .ew-plate-mark { display: none; }
+
 @media (max-width: 960px) {
 .ew-site-bar.is-theater .ew-theater-rail { display: none; }
 .ew-theater { --ew-theater-sky: 236px; }
 .ew-theater .ew-coverline { margin-top: 0; font-size: 42px; line-height: .96; letter-spacing: -.02em; }
 /* Phone theater keeps no seek — the letter row stands down with the lede. */
- .ew-letter-desk { display: none; }
-.ew-known.is-collapsed { display: none; }
-.ew-krow-prov::before { content: ""; display: inline-block; width: 5px; height: 5px; margin-right: 6px; border-radius: 50%; background: currentColor; opacity: .8; vertical-align: middle; }
-.ew-meridian-lab { margin: 16px 0 8px; }
-.ew-plate-mark svg { display: block; width: 34px; height: 34px; }
-.ew-plate-copy { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
-.ew-plate-caption { display: block; margin: 0; color: var(--ew-dust); font-family: "Newsreader", "Iowan Old Style", "Palatino Linotype", serif; font-style: italic; font-size: 13px; line-height: 1.5; }
+
 }
 
 /* Home board — split-flap letters. Outside @layer (Tailwind v3 drops layered rules). */
@@ -402,7 +367,7 @@ html, body {
    gentle at display sizes. */
 .ew-cover .ew-coverline .ew-flap-line { display: inline-flex; max-width: 100%; font-style: normal; vertical-align: -.14em; }
 .ew-cover .ew-coverline .ew-flap { width: .68em; height: 1.04em; margin-left: .03em; font-size: 1em; perspective: 5em; border-radius: .045em; }
-.ew-coverline-flag { margin-right: .18em; vertical-align: -.08em; }
+
 /* Overlay headers are boards too: Atlas and the country name flip at the h2
    scale, upright against the serif italic around them. */
 .rp-overlay h2 .ew-flap-line { display: inline-flex; max-width: 100%; font-style: normal; vertical-align: -.12em; }
@@ -437,7 +402,6 @@ html, body {
 .ew-secret-choice { display: flex; flex-wrap: wrap; gap: 16px; }.ew-secret-choice button + button { color: var(--ew-dust); border-bottom-color: var(--ew-rule); }.ew-secret-answer { max-width: 52ch; margin: 0 0 12px; color: var(--ew-dust); font: italic 15px/1.4 "Newsreader",serif; }.ew-secret-home { display: inline-block; margin-top: 25px; color: var(--ew-dust); font: 500 10px/1.3 "Azeret Mono",monospace; letter-spacing: .14em; text-transform: uppercase; }.ew-secret-room-empty { display: flex; flex-direction: column; align-items: flex-start; justify-content: center; max-width: 850px; margin: 0 auto; }
 .ew-secret-coffee { display: grid; grid-template-columns: minmax(130px,210px) minmax(0,1fr); align-items: center; gap: 18px; max-width: 610px; margin: 20px 0 4px; padding-top: 18px; border-top: 1px solid color-mix(in srgb,var(--ew-foil) 46%,transparent); }.ew-secret-coffee img { width: 100%; height: auto; max-height: 180px; object-fit: contain; }.ew-secret-coffee p:not(.rp-eyebrow) { max-width: 31rem; margin: 6px 0 12px; color: color-mix(in srgb,var(--ew-bone) 74%,transparent); font: 400 .9rem/1.5 var(--ew-serif); }.ew-secret-coming { display: block; margin-bottom: 10px; color: var(--ew-dust); font: 500 10px/1.4 "Azeret Mono",monospace; letter-spacing: .12em; text-transform: uppercase; }
 @media (max-width:700px) { .ew-trail-whisper { top: calc(56px + env(safe-area-inset-top,0px)); gap: 9px; padding: 9px 12px; }.ew-trail-whisper button,.ew-trail-whisper a { max-width:100px; white-space:normal; }.ew-secret-room { padding:22px 20px calc(132px + env(safe-area-inset-bottom,0px)); }.ew-secret-room-inner { display:flex; flex-direction:column; min-height:0; }.ew-secret-story { margin-top:26px; }.ew-secret-story h1 { margin-top:17px; font-size:clamp(40px,12vw,56px); }.ew-secret-traveler { align-self:center; width:min(46vw,180px); max-height:240px; margin:8px 0 -8px; }.ew-secret-coffee { grid-template-columns:110px minmax(0,1fr); gap:12px; margin-top:16px; padding-top:14px; }.ew-secret-coffee img { max-height:120px; }.ew-secret-ask { width:100%; padding-top:17px; } }
-
 
 /* Theater storytelling v1. Kept outside @layer (Tailwind v3 nondeterministic
    layer-drop gremlin — see docs/SESSION_HANDOFF.md). */
@@ -497,14 +461,13 @@ html, body {
   .ew-passport-book .rp-stamp-ticket:hover { transform: none; }
 }
 
-
 /* Phone tap targets — every control reaches 44px. Kept outside @layer with the
    other late overrides. Visual size is unchanged where a halo carries the reach. */
 @media (max-width: 960px) {
   .ew-site-bar .rp-passport-button,
   .ew-site-bar > a,
   .ew-site-bar-left a { min-height: 44px; display: inline-flex; align-items: center; }
-  .rp-mic, .rp-intent-action { min-width: 44px; min-height: 44px; }
+  .rp-mic { min-width: 44px; min-height: 44px; }
   .ew-atmosphere button, .ew-atmosphere--split button { min-height: 44px; }
   /* Back lives in the opened deck; Next stays (it closes the loop). Freeing 52px gives the station name room to be read. */
   .rp-dock-row .rp-dock-prev { display: none; }

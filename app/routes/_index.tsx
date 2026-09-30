@@ -180,8 +180,6 @@ export default function Index() {
     continueStation,
     filtered,
     liveFiltered,
-    globeStations,
-    places,
     selectedPool,
   } = useHomeStations({
     initialStations,
@@ -192,8 +190,6 @@ export default function Index() {
     countryCache,
     listeningMode: listening.listeningMode,
     exploreStations: listening.exploreStations,
-    nowPlaying,
-    stamps,
     played,
     journeyReady,
   });
@@ -215,8 +211,6 @@ export default function Index() {
     setPlace,
     selectedPool,
     listening,
-    globeStations,
-    places,
     onLanded: noop,
   });
 

@@ -16,11 +16,6 @@ import {
   toSlimStation,
   upsertFavoriteSnapshot,
 } from "~/state/favoriteSnapshot";
-import {
-  nextGlobePlaceIndex,
-  shouldAnimateGlobe,
-  shouldSpinGlobe,
-} from "~/components/radio-passport/ParticleGlobe";
 import type { Station } from "~/types/radio";
 import { rbFetchJson } from "~/utils/radioBrowser";
 import {
@@ -152,14 +147,6 @@ describe("Signal & Stamp journey contracts", () => {
     expect(values.get("radio-passport-journey")).toContain("legacy-favorite");
     if (previous) Object.defineProperty(globalThis, "window", previous);
     else Reflect.deleteProperty(globalThis, "window");
-  });
-  it("pauses canvas animation for hidden documents and reduced motion", () => {
-    expect(shouldAnimateGlobe(false, false)).toBe(true);
-    expect(shouldAnimateGlobe(true, false)).toBe(false);
-    expect(shouldAnimateGlobe(false, true)).toBe(false);
-    expect(shouldSpinGlobe(false, false, true)).toBe(false);
-    expect(nextGlobePlaceIndex(0, 3, -1)).toBe(2);
-    expect(nextGlobePlaceIndex(2, 3, 1)).toBe(0);
   });
   it("loads and caches a bounded real country drill-down pool", async () => {
     vi.mocked(rbFetchJson).mockResolvedValueOnce([

@@ -14,27 +14,16 @@
         "ship": "node scripts/ship.mjs"
     },
     "dependencies": {
-        "@chenglou/pretext": "^0.0.3",
-        "@emotion/react": "^11.14.0",
-        "@google/genai": "^1.0.0",
-        "@mantine/carousel": "^8.3.5",
-        "@mantine/core": "^8.3.5",
-        "@mantine/hooks": "^8.3.5",
-        "@react-three/fiber": "^8.17.10",
         "@remix-run/node": "2.16.7",
         "@remix-run/react": "2.16.7",
         "@remix-run/serve": "2.16.7",
         "@resvg/resvg-js": "^2.6.2",
-        "@tabler/icons-react": "^2.47.0",
         "@vercel/remix": "2.16.7",
-        "framer-motion": "^12.23.24",
         "isbot": "^3.6.8",
         "react": "^18.2.0",
         "react-country-flag": "^3.0.6",
         "react-dom": "^18.2.0",
-        "react-swipeable": "^7.0.2",
-        "satori": "^0.18.4",
-        "three": "^0.169.0"
+        "satori": "^0.18.4"
     },
     "devDependencies": {
         "@playwright/test": "^1.56.1",
@@ -42,7 +31,6 @@
         "@types/node": "^24.9.1",
         "@types/react": "^18.2.20",
         "@types/react-dom": "^18.2.7",
-        "@types/three": "^0.183.1",
         "@typescript-eslint/eslint-plugin": "^7.18.0",
         "@typescript-eslint/parser": "^7.18.0",
         "autoprefixer": "^10.4.19",

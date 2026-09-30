@@ -78,10 +78,7 @@
   overflow: hidden;
   padding-bottom: 0;
 }
-.ew-page.is-home .rp-stage {
-  flex: 1 1 auto;
-  min-height: 0;
-}
+
 .ew-theater-rail {
   display: flex;
   flex: 1 1 0%;

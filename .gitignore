@@ -54,3 +54,11 @@ graphify-out/2026-*
 
 # Local admin counters
 .data/
+
+# generated / machine-local output
+graphify-out/cache/
+/playwright-report/
+/test-results/
+/output/
+.playwright-mcp/
+.codex-worktrees/

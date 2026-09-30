@@ -39,7 +39,6 @@ import PlayerDock from "~/components/PlayerDock";
 import SiteBar from "~/components/SiteBar";
 import BandNav from "~/components/BandNav";
 import { SiteSeekProvider } from "~/components/radio-passport/SiteSeek";
-import { CoverSlotProvider } from "~/components/radio-passport/CoverSlot";
 import { usePlayerNoticeStore } from "~/state/playerNoticeStore";
 import type { Station } from "~/types/radio";
 import { JourneyBridge } from "~/components/radio-passport/JourneyBridge";
@@ -247,7 +246,6 @@ function Shell({ children, title }: { children: ReactNode; title?: string }) {
     <Document title={title}>
       <>
         <SiteSeekProvider>
-        <CoverSlotProvider>
         <div
           className={
             onShell
@@ -282,7 +280,6 @@ function Shell({ children, title }: { children: ReactNode; title?: string }) {
         </div>
         <EnvLayer />
         </div>
-        </CoverSlotProvider>
         </SiteSeekProvider>
 
         <PlayerDock />
