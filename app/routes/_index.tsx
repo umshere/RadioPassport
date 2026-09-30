@@ -37,6 +37,7 @@ import { useKeeperHourHop } from "~/hooks/home/useKeeperHourHop";
 import { HomeOverlays } from "~/components/radio-passport/HomeOverlays";
 import { HomeSky } from "~/components/home/HomeSky";
 import { HomeHow } from "~/components/home/HomeHow";
+import { useFriendStore } from "~/state/friendStore";
 import { HomeGates } from "~/components/home/HomeGates";
 import { HomeDepartures } from "~/components/home/HomeDepartures";
 import {
@@ -280,6 +281,7 @@ export default function Index() {
   const trackLine = room.signal.track
     ? [room.signal.track.artist, room.signal.track.title].filter(Boolean).join(" — ")
     : null;
+  const friendPending = useFriendStore((state) => state.pending);
   const firstVisit = journeyReady && stamps.length === 0;
   const keeperState = homeKeeperState({
     phase,
@@ -397,7 +399,7 @@ export default function Index() {
           />
         </div>
         <div className="ew-home-main">
-          <HomeHow show={firstVisit} />
+          <HomeHow show={firstVisit && !friendPending} />
           <HomeGates
             hour={hour}
             onHourTap={(item) => {

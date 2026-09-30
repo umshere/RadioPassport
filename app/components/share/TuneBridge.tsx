@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useLocation } from "@remix-run/react";
 import { Button } from "~/components/ui/Button";
 import { Eyebrow } from "~/components/ui/Eyebrow";
+import { useFriendStore } from "~/state/friendStore";
 import { usePlayerStore } from "~/state/playerStore";
 import type { Station } from "~/types/radio";
 import { stationLocation } from "~/components/radio-passport/StationRow";
@@ -23,6 +24,7 @@ export function TuneBridge() {
   const startStation = usePlayerStore((state) => state.startStation);
   const { search } = useLocation();
   const [station, setStation] = useState<Station | null>(null);
+  const setFriendPending = useFriendStore((state) => state.setPending);
 
   useEffect(() => {
     // Read and strip the parameter. It is re-read whenever the search changes,
@@ -36,6 +38,7 @@ export function TuneBridge() {
       url.searchParams.delete(TUNE_PARAM);
       url.searchParams.delete(TUNE_FROM_PARAM);
       window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}${url.hash}`);
+      setFriendPending(true);
       lookup = {
         uuid,
         from,
@@ -50,11 +53,12 @@ export function TuneBridge() {
     let alive = true;
     void current.station.then((found) => {
       if (alive && found && lookup === current && !current.done) setStation(found);
+      else if (!found && lookup === current) setFriendPending(false);
     });
     return () => {
       alive = false;
     };
-  }, [search]);
+  }, [search, setFriendPending]);
 
   if (!station) return null;
   const place = stationLocation(station);
@@ -71,6 +75,7 @@ export function TuneBridge() {
             if (lookup) lookup.done = true;
             startStation(station, { autoPlay: true });
             setStation(null);
+            setFriendPending(false);
           }}
         >
           {VOICE.listenLive}
@@ -80,6 +85,7 @@ export function TuneBridge() {
           onClick={() => {
             if (lookup) lookup.done = true;
             setStation(null);
+            setFriendPending(false);
           }}
         >
           {VOICE.notNow}

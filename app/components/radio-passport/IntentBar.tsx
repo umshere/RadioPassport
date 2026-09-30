@@ -34,7 +34,7 @@ export function IntentBar({
       <input
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        placeholder="Lisbon at dusk, Malayalam night…"
+        placeholder="Lisbon at dusk…"
         aria-label="Ask for a place, language, mood, or station"
         aria-describedby="intent-status"
       />
