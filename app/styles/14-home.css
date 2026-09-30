@@ -111,6 +111,14 @@
 .ew-home-dep { display: flex; align-items: stretch; min-width: 0; border-bottom: 1px solid var(--ew-rule); }
 .ew-home-dep .ew-board-row { flex: 1 1 auto; min-width: 0; min-height: 60px; padding: 8px 8px 8px 0; border-bottom: 0; }
 .ew-home-dep .ew-board-go { display: none; }
+/* Time first, with its hour named under it (the flaps are tinted, the word says why);
+   then the station's mark; then the station's name over its place. */
+.ew-home-dep .ew-board-time { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
+.ew-board-hour { font: 500 9px/1 "Azeret Mono", ui-monospace, monospace; font-style: normal; letter-spacing: .16em; text-transform: uppercase; color: var(--sky-tint, var(--ew-dust)); }
+.ew-board-mark { display: grid; flex: none; place-items: center; width: 40px; height: 40px; overflow: hidden; background: color-mix(in srgb, var(--sky-tint, var(--ew-foil)) 22%, var(--ew-ink)); border: 1px solid var(--ew-rule); }
+.ew-board-mark b { font: italic 400 20px/1 "Newsreader", serif; color: var(--ew-bone); }
+.ew-board-mark[data-logo] { background: color-mix(in srgb, var(--ew-bone) 84%, var(--ew-ink)); }
+.ew-board-mark img { display: block; width: 100%; height: 100%; padding: 3px; object-fit: contain; }
 .ew-home-dep[data-live] { background: color-mix(in srgb, var(--ew-ether) 8%, transparent); }
 .ew-home-dep[data-live] .ew-board-dest b, .ew-home-dep[data-live] .ew-board-go { color: var(--ew-ether); }
 .ew-home-dep .ew-board-row.is-pending, .ew-home-dep .ew-board-row.is-empty { cursor: default; }

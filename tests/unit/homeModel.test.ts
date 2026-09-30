@@ -130,3 +130,14 @@ describe("the sky and the keeper", () => {
     }
   });
 });
+
+import { shortCountry } from "~/components/radio-passport/StationRow";
+
+describe("shortCountry", () => {
+  it("keeps long country names to a row", () => {
+    expect(shortCountry("The United States Of America")).toBe("USA");
+    expect(shortCountry("Islamic Republic Of Iran")).toBe("Iran");
+    expect(shortCountry("India")).toBe("India");
+    expect(shortCountry("The Gambia")).toBe("Gambia");
+  });
+});

@@ -1,5 +1,6 @@
+import { useState } from "react";
 import { FlipBoard } from "~/components/radio-passport/FlipBoard";
-import { stationLocation } from "~/components/radio-passport/StationRow";
+import { shortCountry, stationLocation } from "~/components/radio-passport/StationRow";
 import type {
   CoverEmptyAction,
   CoverEmptyState,
@@ -12,6 +13,25 @@ import type { Station } from "~/types/radio";
 import { flapLine, type HomeDeparture, type HomePhase } from "./homeModel";
 
 const SKELETON_ROWS = 6;
+
+/**
+ * The station's own logo when it has one that loads; otherwise its first
+ * letter on the hour's tint, so every row keeps the same square.
+ */
+function StationMark({ station, name }: { station: Station; name: string }) {
+  const [failed, setFailed] = useState(false);
+  const src = station.favicon?.trim().replace(/^http:\/\//i, "https://");
+  const letter = (name.match(/[\p{L}\p{N}]/u)?.[0] ?? "·").toUpperCase();
+  return (
+    <span className="ew-board-mark" data-logo={src && !failed ? "" : undefined} aria-hidden="true">
+      {src && !failed ? (
+        <img src={src} alt="" loading="lazy" decoding="async" referrerPolicy="no-referrer" onError={() => setFailed(true)} />
+      ) : (
+        <b>{letter}</b>
+      )}
+    </span>
+  );
+}
 
 function Heart({ on }: { on: boolean }) {
   return (
@@ -168,6 +188,9 @@ export function HomeDepartures({
             {rows.map(({ station, clock, solar }) => {
               const where = stationLocation(station);
               const name = tidyStationName(station.name);
+              const country = shortCountry(station.country || "");
+              // City and country once each; never the country twice.
+              const place = country && country !== shortCountry(where) ? `${where} · ${country}` : where;
               const live = playingUuid === station.uuid;
               const kept = favoriteIds.includes(station.uuid);
               return (
@@ -182,10 +205,12 @@ export function HomeDepartures({
                   >
                     <span className="ew-board-time" aria-hidden="true">
                       <FlipBoard text={clock ?? "--:--"} className="is-board" />
+                      {solar ? <i className="ew-board-hour">{solar}</i> : null}
                     </span>
+                    <StationMark station={station} name={name} />
                     <span className="ew-board-dest">
-                      <b>{where}</b>
-                      <small>{name}</small>
+                      <b>{name}</b>
+                      <small>{place}</small>
                     </span>
                     <span className="ew-board-go" aria-hidden="true">
                       {live ? VOICE.deskLive : `${VOICE.board} →`}

@@ -28,6 +28,28 @@ export function stationLocation(station: Station) {
   return tidyPlace(state) || country || "Unknown location";
 }
 
+const SHORT_COUNTRY: Record<string, string> = {
+  "the united states of america": "USA",
+  "united states of america": "USA",
+  "the united states": "USA",
+  "united states": "USA",
+  "the united kingdom": "UK",
+  "united kingdom": "UK",
+  "islamic republic of iran": "Iran",
+  "russian federation": "Russia",
+  "republic of korea": "South Korea",
+  "korea, republic of": "South Korea",
+  "the netherlands": "Netherlands",
+  "united arab emirates": "UAE",
+  "the philippines": "Philippines",
+};
+
+/** A country short enough for a row: "USA", not "The United States Of America". */
+export function shortCountry(country: string) {
+  const name = country.trim();
+  return SHORT_COUNTRY[name.toLowerCase()] ?? name.replace(/^the\s+/i, "");
+}
+
 /** Row subtitle: skip "India, India" when the location fallback is the country. */
 export function stationPlaceLine(station: Station) {
   const location = stationLocation(station);
