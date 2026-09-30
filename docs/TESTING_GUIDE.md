@@ -1,53 +1,72 @@
-# Testing Guide
-
-Elsewhere is one loop: **land → intent → tune → inhabit → stamp → next**.  
-A control that does not take the listener to the next step is a dead icon.
-
-Contract: `app/components/radio-passport/productFlow.ts`  
-Tests: `tests/unit/elsewhereFlow.test.ts` plus the existing Elsewhere / journey suites.
+# Testing guide
 
 ```bash
-npm test
-npm run typecheck
+npm test            # vitest run: tests/unit/**/*.test.ts, environment node
+npm run typecheck   # tsc
+npm run lint        # eslint over app and tests
 ```
 
-## Product loop
+Verified on Node 22 (`export PATH="$HOME/.nvm/versions/node/v22.23.0/bin:$PATH"` on Ums's machine; `package.json` only demands Node 18 or later). If `npm` hits `EPERM` on `~/.npm`, use a writable cache: `npm install --cache "${TMPDIR:-/tmp}/elsewhere-npm-cache"`.
 
-| Step | What must happen |
+There are about 50 files and 450 assertions in `tests/unit`. There is no browser test suite: `playwright.config.ts` exists but `tests/` has only `unit/`. Visual checks are done by hand or with `scripts/verify-desktop.mjs` and `scripts/verify-board-sheet.mjs` (Playwright screenshots against a running dev server: `node scripts/verify-desktop.mjs <baseUrl> <outDir>`).
+
+## The product loop
+
+Elsewhere is one loop: land, intent, tune, inhabit, stamp, next (see [UI_FLOW.md](./UI_FLOW.md)). The contract is `SURFACE_CONNECTIONS` in `app/components/radio-passport/productFlow.ts`; `tests/unit/elsewhereFlow.test.ts` checks it. A control without a next step is a dead icon.
+
+## What the tests cover, by file
+
+| Area | Files |
 |---|---|
-| Land | Globe is live. **Land here** / **Continue** starts audio. Hover freezes spin; click plays, then eases to face. |
-| Intent | Type, speak, or Surprise. Short query = catalog. Sentence = interpret, maybe a mix. Playback does not stop. A language search must still light the globe with the same stations as the list (country center, spread, if the row has no geo). |
-| Tune | Solar hour, same-hour cities, Atlas → country, station row. Filters never call `stop()`. |
-| Inhabit | Dock appears. Artwork / **Theater** opens `/listen`. Local clock + honest ICY. |
-| Stamp | 60 continuous seconds inks the city. Heart keeps a signal. Stamp ring / Passport / INKED toast open the book. |
-| Next | Prev/next, stamp replay (id → city → that country), empty states offer a button. |
+| Loop and product rules | `elsewhereFlow`, `elsewhereProduct`, `passportPresentation`, `radioPassportRedesign`, `radioPassportInsights` |
+| Home (Departures Hall) | `home`, `homeModel`, `flipBoard` |
+| Desk | `desk` |
+| Keeper | `keeper`, `keeperApi`, `keeperKnowledge`, `keeperMurmur`, `keeperCleanTitle` |
+| Tickets and sharing | `ticket`, `shareStation` |
+| Room's light | `env` |
+| Rooms | `atmosphere` |
+| UI primitives and controls | `uiButton`, `uiRow`, `buttonType` |
+| Player, streams, probes | `playerStore`, `playbackRecovery`, `probeAhead`, `nowPlayingMetadataLifecycle`, `playerNoticeChannel`, `persistRehydrate`, `upNext`, `stationCountryGuard`, `discoveryFiltersAndAvailability`, `catalogOutage` |
+| Journey and stamps | `stampRing`, `roomStore` |
+| Catalog, names, languages | `countryData`, `placeNames`, `languages`, `ranking`, `repairMojibake`, `artwork` |
+| AI | `providers`, `providerUtils`, `geminiProvider`, `openRouterModels`, `intentExtractor`, `apiRecommendRoute`, `fallbackLogic`, `triviaEvidence`, `atlasExpand` |
+| Repo hygiene | `skillTwins` (skills identical across trees) |
 
-## Empty / error (must have a step)
+## Rules that will bite
+
+- **CSS is read by path.** Many tests assert on stylesheet text. Use `readAppCss()` from `tests/unit/appCss.ts`: it reads `app/tailwind.css` and concatenates every `@import`ed file in order, so a rule can move between `app/styles/*.css` files without breaking the test. Do not read one CSS file by name unless the test is about that file (`env.test.ts` reads `15-env.css`).
+- **Source is read by path.** Several tests read component files as text (wiring guards, "no hex in the last CSS block", "the sheet is gone"). When you move code, update the path in the test in the same change.
+- **Every `<button>` has a `type`.** `buttonType.test.ts` scans all `.tsx` under `app/`.
+- **The Keeper's CSS test slices to the end of the file.** Read `tests/unit/keeper.test.ts` before adding rules at the end of `10-keeper.css` (no hex, no box-shadow in the last block).
+- **`ship.mjs` and `DEPLOY.md` are tested.** `elsewhereProduct.test.ts` reads both. Keep the strings it checks (`npm run ship`, `gh auth token -u umshere`, `vercel ls -m githubCommitSha`, "never `vercel --prod` after a push").
+- **Skills stay identical.** `skillTwins.test.ts` compares `.claude/skills` and `.grok/skills`. Change the `.claude` copy, then run `npm run sync:skills`. `.agents/skills` is kept identical by hand (the script does not cover it).
+- **MusicBrainz pacing.** Set `MUSICBRAINZ_MIN_INTERVAL_MS=0` in tests that call the trivia route.
+
+## Empty and error states (each must name a next step)
 
 | State | Next step |
 |---|---|
 | Empty search | Surprise, Atlas, Clear search |
-| Quiet solar hour | Clear hour, Atlas, Surprise |
-| Filtered city with no rows | Show every city, Atlas |
-| Empty atlas search | Clear search |
-| Empty passport | Ghost slots + **Find a city** |
-| Dead stamp replay | Open that country, or Atlas |
-| Failed mix | **Try the mix again** |
-| Failed country catalog | **Retry live catalog** |
-| `/listen` with no station | Back to Elsewhere |
-| 404 / error | Back |
+| Catalog unreachable | Try again, Atlas |
+| Hour with no city | Clear the hour, Atlas, Surprise |
+| Filtered place with no rows | Show every city, Atlas |
+| Empty Atlas search | Clear search |
+| Empty passport | Ghost slots and Find a city |
+| Dead stamp replay | Open that country, or the Atlas |
+| Failed mix | Try the mix again |
+| Failed country catalog | Retry |
+| `/listen` with no station | Land button |
+| 404 or error | Back to Elsewhere |
 
-## Connections to click
+## Manual checklist before calling a UI change done
 
-- Header: wordmark → `/`, Room → `/about`, Passport → book, intent, mic (hidden if unsupported), Surprise
-- Cover: Land here, hour chips, Atlas, same-hour cities, station play + heart
-- Globe: hover tip, click lands
-- Dock: art → theater, stamp ring → book, heart, prev / play / next, Theater
-- Overlays: Escape / × close, country ← Atlas, stamp tap retunes
-- Theater: ← Elsewhere, prev / play / next
+- Home on a phone width (375) and desktop (800+): gates stick under the header, the board scrolls beneath, nothing hides under the dock or band.
+- Desk with a station playing and with none.
+- Land, wait 60 seconds, see the stamp and the toast.
+- Share: the ticket sheet opens, `/ticket/<uuid>.png` renders, `/t/<uuid>` carries the meta.
+- Night and Day both, and `prefers-reduced-motion`.
+- iOS Safari: keyboard open and close on the home does not leave the header scrolled away; a grid item that scrolls has not collapsed (see AGENTS.md).
 
-Search, chips, and overlays never call `stop()`.
+## Playback locks (never break)
 
-## What not to treat as a feature
-
-Unmounted leftovers (`AppHeader`, `Premium*`, `RetroTuner`, Tuning overlay) are not in this loop. Do not add tests that require them.
+Search, hours, overlays and the Keeper never call `stop()`. Never invent an ICY title. Never put AI on the audio path.

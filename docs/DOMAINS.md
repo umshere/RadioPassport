@@ -79,5 +79,5 @@ async () => {
 
 - Do not commit `.env`
 - Do not drop `public/FTS.jpeg` (404 wallpaper)
-- Do not paywall streams, globe, atlas, or Land here
+- Do not paywall streams, the Atlas, or Land here
 - Do not change nameservers off Cloudflare for `elsewheremusic.com`

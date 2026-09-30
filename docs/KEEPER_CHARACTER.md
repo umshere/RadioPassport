@@ -17,8 +17,11 @@ Elsewhere's own character. Not an assistant, not a bot: the dry, kind border cle
 ## What he does (unasked)
 Lands you ("Landed in Lagos. Papers in order."), reads up and tells one thing every half-minute or so, stamps ("Stamped. Lagos is in your passport now."), sees you off ("Off we go: somewhere it's morning."), dozes at deep night, hushes when asked ("Quiet, please").
 
+## Where he appears
+The home sky (one line per phase), the desk sky (with his murmur bubble), a floating draggable figure on every page that opens his sheet, the About page, and the ticket. States: `idle`, `listening`, `thinking`, `speaking`, `sleeping`, `delight` (`keeperState.ts`). Local hour tints his mood; he sleeps in the deep local night with nothing playing. Full feature behaviour, routes and limits are in `docs/FEATURES.md` section 2.
+
 ## Where the words live
-`app/components/keeper/keeperVoice.ts` (fixed strings), `keeperFacts.ts` (answers, chips, opening line), `keeperMurmur.ts` (unasked lines), and the three system prompts in `app/services/keeper/`. Change the character there, in one voice.
+`app/components/keeper/keeperVoice.ts` (fixed strings, including the home, desk and How-it-works copy), `keeperFacts.ts` (answers, chips, opening line), `keeperMurmur.ts` (unasked lines), and the system prompts in `app/services/keeper/` (`keeper.server.ts`, `knowledge.server.ts`, `keeperFact.server.ts`). Change the character there, in one voice. `app/routes/about.tsx` holds the About copy in his voice.
 
 Tickets (what a listener sends a friend) have their own lines in `app/components/share/ticketVoice.ts`; see `docs/TICKETS.md`.
 

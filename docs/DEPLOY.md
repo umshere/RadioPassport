@@ -4,6 +4,8 @@ Ship Elsewhere to production. Domain facts live in [DOMAINS.md](./DOMAINS.md).
 
 Trigger: user says **make it live**, **deploy**, **ship**, **push prod**.
 
+The only deploy command is `npm run ship`. Never run it twice in a row and never chain it (`ship && ship`, or a ship inside a loop). Each push already starts one build, and a second build of the same commit races the first.
+
 ## Identity
 
 | | |
@@ -42,11 +44,12 @@ Trigger: user says **make it live**, **deploy**, **ship**, **push prod**.
 
 ```bash
 curl -sSI --max-time 20 --tlsv1.2 https://elsewheremusic.com/ | rg -i 'HTTP/|location:|server:'
-curl -sS --max-time 20 --tlsv1.2 https://elsewheremusic.com/ | rg -o '_index-[A-Za-z0-9_-]+\.js|Room|Elsewhere' | sort -u
+curl -sS --max-time 20 --tlsv1.2 https://elsewheremusic.com/ | rg -o '_index-[A-Za-z0-9_-]+\.js|Elsewhere' | sort -u
+curl -sSI --max-time 20 --tlsv1.2 https://elsewheremusic.com/ticket/does-not-exist.png | rg -i 'HTTP/|location:'
 curl -sSI --max-time 20 --tlsv1.2 https://www.radiopassport.art/ | rg -i 'HTTP/|location:'
 ```
 
-Expect: apex **200** and the current `_index-*.js`. Radio Passport **308** to `https://elsewheremusic.com/`.
+Expect: apex **200** and the current `_index-*.js`. Radio Passport **308** to `https://elsewheremusic.com/`. A bad ticket id answers **302** to `/elsewhere-og.jpg`: that is the designed fallback, not a failure.
 
 If getaddrinfo cannot resolve `elsewheremusic.com` but `dig` can, Tailscale DNS is in the way. See [TROUBLESHOOTING.md](./TROUBLESHOOTING.md). Verify with `--resolve elsewheremusic.com:443:216.198.79.1`.
 
@@ -70,7 +73,7 @@ npx --yes --cache "$NPM_CACHE" vercel ls -m githubCommitSha="$(git rev-parse HEA
 
 ## After env changes
 
-Vercel env (`AI_PROVIDER=gemini`, `GEMINI_MODEL=gemini-2.5-flash`) needs a **redeploy** to take effect. Changing the dashboard and not shipping a build leaves prod on the old process. `npm run ship -- --skip-push` redeploys the current `main`.
+Vercel env (`AI_PROVIDER`, `GEMINI_MODEL`, `KEEPER_ASK_ENABLED`, `TYPESAFE_API_KEY`; see [ENVIRONMENT.md](./ENVIRONMENT.md)) needs a **redeploy** to take effect. Changing the dashboard and not shipping a build leaves prod on the old process. Keys are set by the owner in Vercel; never paste them into chat or commit them. `npm run ship -- --skip-push` redeploys the current `main`.
 
 ## Product locks that survive a ship
 
