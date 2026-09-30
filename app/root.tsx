@@ -49,7 +49,7 @@ import { Button, ButtonLink, Chip } from "~/components/ui/Button";
 import { KeeperHost } from "~/components/keeper/KeeperHost";
 import { TuneBridge } from "~/components/share/TuneBridge";
 import { EnvLayer } from "~/components/env/EnvLayer";
-import { Analytics } from "@vercel/analytics/remix";
+import { VercelInsights } from "~/components/usage/VercelInsights";
 import { PageViewBridge } from "~/components/usage/PageViewBridge";
 import { isKeeperAskEnabled } from "~/services/keeper/flag.server";
 
@@ -295,8 +295,8 @@ function Shell({ children, title }: { children: ReactNode; title?: string }) {
         <JourneyBridge />
         <PageViewBridge />
         {/* Vercel Web Analytics: cookieless visitors, page views, countries, devices.
-            Only sends on a Vercel deploy; needs Analytics switched on in the project. */}
-        <Analytics />
+            Loaded directly (components/usage/VercelInsights.tsx); needs Analytics on in the project. */}
+        <VercelInsights />
         <ToastChannel />
         <AtmosphereBridge />
         <GlobalAudioBridge />
