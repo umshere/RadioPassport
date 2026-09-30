@@ -764,11 +764,12 @@ function GlobalAudioBridge() {
       return;
     }
 
-    // Our round mark, always: station favicons arrive as square boxes with their
-    // own backgrounds, which read as a black rectangle on a lock screen.
+    // Our mark on our black, always. iOS fills transparent artwork with white, so
+    // the lock screen and control centre get the opaque ink version. Station
+    // favicons are not used: they arrive as square boxes with their own colours.
     const artwork = [
-      { src: "/icons/artwork-512.png", sizes: "512x512", type: "image/png" },
-      { src: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+      { src: "/icons/maskable-512.png", sizes: "512x512", type: "image/png" },
+      { src: "/icons/maskable-192.png", sizes: "192x192", type: "image/png" },
     ];
 
     mediaSession.metadata = new MediaMetadata({
