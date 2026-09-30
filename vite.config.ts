@@ -24,8 +24,6 @@ export default defineConfig({
     alias: [
       { find: "~/server", replacement: path.resolve(__dirname, "server") },
       { find: "~", replacement: path.resolve(__dirname, "app") },
-      { find: "three/webgpu", replacement: "three" },
-      { find: "three/tsl", replacement: "three" },
     ],
     dedupe: ["react", "react-dom"],
   },

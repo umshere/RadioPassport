@@ -51,3 +51,11 @@ graphify-out/.graphify_root
 
 # machine-local graph backups (dated snapshots)
 graphify-out/2026-*
+
+# generated / machine-local output
+graphify-out/cache/
+/playwright-report/
+/test-results/
+/output/
+.playwright-mcp/
+.codex-worktrees/
