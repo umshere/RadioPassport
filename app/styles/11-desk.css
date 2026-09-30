@@ -77,16 +77,24 @@
   mix-blend-mode: overlay;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
+/* The lane is the sky above the horizon; the horizon is a dotted pixel rule. */
+.ew-sky-lane {
+  position: absolute;
+  inset: 0 0 30% 0;
+  overflow: hidden;
+  border-bottom: 1px dotted var(--ew-rule);
+}
 /* The sun or the moon: a pixel disc on a quarter-hour step along its arc. */
 .ew-sky-body {
   --pixel-disc: polygon(30% 0, 70% 0, 70% 10%, 85% 10%, 85% 20%, 92% 20%, 92% 30%, 100% 30%, 100% 70%, 92% 70%, 92% 80%, 85% 80%, 85% 90%, 70% 90%, 70% 100%, 30% 100%, 30% 90%, 15% 90%, 15% 80%, 8% 80%, 8% 70%, 0 70%, 0 30%, 8% 30%, 8% 20%, 15% 20%, 15% 10%, 30% 10%);
   position: absolute;
-  /* Rises and sets on the horizon (the sky's bottom edge) and keeps left of
-     the keeper, who stands on the right of it. */
-  left: calc(8% + var(--sky-x, .5) * 58%);
-  bottom: calc(10px + var(--sky-y, .5) * 62%);
-  width: 30px;
-  height: 30px;
+  /* East to west across the whole sky: it comes up out of the horizon line on
+     the left, tops out in the middle, goes down behind it on the right. The
+     lane clips what is below the horizon, so a rising sun is half there. */
+  left: calc(6% + var(--sky-x, .5) * 88%);
+  bottom: calc(var(--sky-y, .5) * (100% - 20px));
+  width: 34px;
+  height: 34px;
   transform: translate(-50%, 50%);
   clip-path: var(--pixel-disc);
   background: var(--ew-hour-dawn);

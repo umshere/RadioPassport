@@ -75,11 +75,13 @@ export function HomeSky({
       <div className="ew-sky-field" aria-hidden="true">
         <i className="ew-sky-stars" />
         {body ? (
-          <i
-            className="ew-sky-body"
-            data-kind={body.kind}
-            style={{ "--sky-x": body.x, "--sky-y": body.y } as CSSProperties}
-          />
+          <i className="ew-sky-lane">
+            <i
+              className="ew-sky-body"
+              data-kind={body.kind}
+              style={{ "--sky-x": body.x, "--sky-y": body.y } as CSSProperties}
+            />
+          </i>
         ) : null}
         <i className="ew-sky-grain" />
       </div>
