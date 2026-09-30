@@ -13,7 +13,7 @@ Not to be confused with [ENVIRONMENT.md](./ENVIRONMENT.md), which lists environm
 | `app/state/envStore.ts` | `homeHour`: the hour the home is showing (gate, else the sky's station). Null off the home |
 | `app/styles/15-env.css` | All look and motion. Last file in the cascade |
 | `scripts/gen-foliage.mjs` | Bakes the four sprites with resvg. Run once; output is committed |
-| `public/env/{fleck,shade}-{near,far}.webp` | The sprites, used as CSS masks so the hour colour fills them |
+| `public/env/{fleck,shade}-{near,far}.webp` | The sprites, used as CSS masks so the hour colour fills them. Only the `fleck` pair is loaded, in both rooms; the `shade` files are unused |
 | `tests/unit/env.test.ts` | Model, opacity budget, reduced-motion guards |
 
 ## How it behaves
