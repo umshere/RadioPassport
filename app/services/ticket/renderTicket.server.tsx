@@ -217,7 +217,6 @@ function Station({ fields, size }: { fields: TicketFields; size: number }) {
 
 function Keeper({ src, size }: { src?: string | null; size: number }) {
   if (!src) return null;
-  // eslint-disable-next-line jsx-a11y/alt-text
   return <img src={src} width={size} height={size} style={{ width: size, height: size }} />;
 }
 
