@@ -310,6 +310,8 @@ export function EnvLayer() {
     "--env-nudge": `${(envPageTilt(pathname) + envNudge(stationId)).toFixed(2)}deg`,
   } as CSSProperties;
 
+  if (pathname.startsWith("/admin")) return null;
+
   return (
     <div
       ref={rootRef}

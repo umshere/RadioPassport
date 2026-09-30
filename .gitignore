@@ -51,3 +51,6 @@ graphify-out/.graphify_root
 
 # machine-local graph backups (dated snapshots)
 graphify-out/2026-*
+
+# Local admin counters
+.data/

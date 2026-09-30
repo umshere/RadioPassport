@@ -13,6 +13,8 @@ export const USAGE_EVENTS = [
   "ticket_share",
   "ticket_copy",
   "ticket_save",
+  "visit",
+  "pageview",
 ] as const;
 export type UsageEvent = (typeof USAGE_EVENTS)[number];
 
@@ -20,10 +22,25 @@ export type UsageEvent = (typeof USAGE_EVENTS)[number];
 export const USAGE_SOURCES = ["ticket", "link"] as const;
 export type UsageSource = (typeof USAGE_SOURCES)[number];
 
-export function logUsage(event: UsageEvent, source?: UsageSource) {
+/** Which page a pageview was: a bucket, never the URL (no station, no text). */
+export const USAGE_PAGES = ["home", "desk", "about", "ticket", "other"] as const;
+export type UsagePage = (typeof USAGE_PAGES)[number];
+
+export function usagePage(pathname: string): UsagePage {
+  if (pathname === "/") return "home";
+  if (pathname === "/listen") return "desk";
+  if (pathname === "/about") return "about";
+  if (pathname.startsWith("/t/")) return "ticket";
+  return "other";
+}
+
+export function logUsage(event: UsageEvent, source?: UsageSource, page?: UsagePage) {
   try {
     if (typeof navigator === "undefined") return;
-    const body = JSON.stringify(source ? { event, source } : { event });
+    const payload: Record<string, string> = { event };
+    if (source) payload.source = source;
+    if (page) payload.page = page;
+    const body = JSON.stringify(payload);
     if (navigator.sendBeacon) {
       navigator.sendBeacon("/api/usage", new Blob([body], { type: "application/json" }));
     }

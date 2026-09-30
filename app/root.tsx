@@ -50,6 +50,7 @@ import { Button, ButtonLink, Chip } from "~/components/ui/Button";
 import { KeeperHost } from "~/components/keeper/KeeperHost";
 import { TuneBridge } from "~/components/share/TuneBridge";
 import { EnvLayer } from "~/components/env/EnvLayer";
+import { PageViewBridge } from "~/components/usage/PageViewBridge";
 import { isKeeperAskEnabled } from "~/services/keeper/flag.server";
 
 /** Public flags only. The keeper's ask flag is not a secret; keys stay server-side. */
@@ -294,6 +295,7 @@ function Shell({ children, title }: { children: ReactNode; title?: string }) {
             while the Atlas veil stands. */}
         <BandNav variant="band" />
         <JourneyBridge />
+        <PageViewBridge />
         <ToastChannel />
         <AtmosphereBridge />
         <GlobalAudioBridge />
