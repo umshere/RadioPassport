@@ -52,3 +52,7 @@ Not to be confused with [ENVIRONMENT_LIGHT.md](./ENVIRONMENT_LIGHT.md), the foli
 Vercel project `radio-passport`: `AI_PROVIDER=gemini`, `GEMINI_MODEL=gemini-2.5-flash`, `GEMINI_API_KEY`, `KEEPER_ASK_ENABLED=true`, `TYPESAFE_API_KEY` (set by the owner in Vercel; never paste keys into chat or commit them). There is no Heuristics gateway in production. **An env change needs a redeploy**: `npm run ship -- --skip-push`. See [DEPLOY.md](./DEPLOY.md).
 
 Audio recognition (to name a song when a station sends no title) is not built. It would need a recognition service key added in Vercel by the owner. See [ROADMAP.md](./ROADMAP.md).
+
+## Visitor analytics
+
+Vercel Web Analytics is wired in `app/root.tsx` (`@vercel/analytics/remix`). It is cookieless and free on the Hobby plan. It only sends on a Vercel deploy. **Switch it on once:** Vercel dashboard → the `radio-passport` project → Analytics → Enable. Visitors, page views, countries and devices then appear there (a day or so to fill in). The app's own anonymous counters (`/admin`, see FEATURES.md 10.1) cover the product events Vercel cannot see: tickets sent, joins from a share, Keeper opens and questions.
