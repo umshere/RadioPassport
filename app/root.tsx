@@ -42,7 +42,6 @@ import { SiteSeekProvider } from "~/components/radio-passport/SiteSeek";
 import { CoverSlotProvider } from "~/components/radio-passport/CoverSlot";
 import { usePlayerNoticeStore } from "~/state/playerNoticeStore";
 import type { Station } from "~/types/radio";
-import { sanitizeArtworkUrl } from "~/utils/stations";
 import { JourneyBridge } from "~/components/radio-passport/JourneyBridge";
 import { ToastChannel } from "~/components/radio-passport/ToastChannel";
 import { useAtmosphereStore } from "~/state/atmosphereStore";
@@ -72,8 +71,9 @@ export const links: LinksFunction = () => [
     href: "https://fonts.googleapis.com/css2?family=Azeret+Mono:wght@400;500&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400;1,6..72,500&family=Schibsted+Grotesk:wght@400;500;600&display=swap",
   },
   { rel: "icon", type: "image/svg+xml", href: "/elsewhere-favicon.svg" },
-  { rel: "icon", type: "image/jpeg", sizes: "512x512", href: "/elsewhere-mark.jpg" },
-  { rel: "apple-touch-icon", href: "/elsewhere-mark.jpg" },
+  { rel: "icon", type: "image/png", sizes: "48x48", href: "/icons/favicon-48.png" },
+  { rel: "icon", type: "image/png", sizes: "32x32", href: "/icons/favicon-32.png" },
+  { rel: "apple-touch-icon", sizes: "180x180", href: "/icons/apple-touch-icon.png" },
   { rel: "manifest", href: "/manifest.json" },
 ];
 
@@ -103,7 +103,7 @@ function Document({
           dangerouslySetInnerHTML={{ __html: ATMOSPHERE_BOOT_SCRIPT }}
         />
         <link rel="icon" href="/elsewhere-favicon.svg" type="image/svg+xml" />
-        <link rel="apple-touch-icon" href="/elsewhere-mark.jpg" />
+        <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
         <meta
           name="description"
           content="Elsewhere: live radio from someone else's now. Land in a city, stay long enough to be stamped."
@@ -761,10 +761,12 @@ function GlobalAudioBridge() {
       return;
     }
 
-    const artworkUrl = sanitizeArtworkUrl(nowPlaying.favicon);
-    const artwork = artworkUrl
-      ? [{ src: artworkUrl, sizes: "512x512", type: "image/png" }]
-      : [];
+    // Our round mark, always: station favicons arrive as square boxes with their
+    // own backgrounds, which read as a black rectangle on a lock screen.
+    const artwork = [
+      { src: "/icons/artwork-512.png", sizes: "512x512", type: "image/png" },
+      { src: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+    ];
 
     mediaSession.metadata = new MediaMetadata({
       title: nowPlaying.name ?? "Elsewhere",
