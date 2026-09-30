@@ -163,6 +163,11 @@ The Night/Day toggle (`AtmospherePin.tsx`, `atmosphereStore.ts`, `app/utils/atmo
 - Primitives: `Button`, `ButtonLink`, `Chip`, `Eyebrow`, `Row`, `Sheet` in `app/components/ui/`.
 - **Claude Design System artifact** (private): https://claude.ai/artifact/KKCEZDJp8YyEuvQhSjaJEg, currently v21. It does **not** yet cover the home Departures Hall, tickets, the environment light or the How-it-works card. Refreshing it is on the roadmap.
 
+### 10.1 Admin console and visitor counters (local only)
+
+- `/admin` (`app/routes/admin.tsx`) is a local console. It answers 404 on any Vercel deploy and for any host that is not localhost, so it is never reachable in production. It shows 14-day traffic (visits and page views by page), event counts (keeper opens and asks, tickets, joins from a share), the Keeper/Jev router tester (Jev pick vs keyword rules vs what is used, with timing), which switches and keys are set (yes/no only), and a ticket preview box.
+- Counters (`app/services/admin/counters.server.ts`, `app/components/usage/PageViewBridge.tsx`, `app/utils/usage.ts`): anonymous, cookie-free. One `pageview` per route change (bucket: home, desk, about, ticket, other; never the URL) and one `visit` per browser per day (a date flag in localStorage, no id, no IP). Honours Do Not Track. Stored in Upstash Redis / Vercel KV when `KV_REST_API_URL` + `KV_REST_API_TOKEN` (or `UPSTASH_REDIS_REST_URL` + `_TOKEN`) are set, else a local file `.data/counters.json` on a dev machine, else nothing. To see the live site's visitors in the local admin, connect a store to the Vercel project and put the same REST URL and token in the local `.env`.
+
 ## 12. API routes
 
 | Route | Method | What it does |

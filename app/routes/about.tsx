@@ -116,7 +116,7 @@ export default function About() {
         <p className="ew-about-go">
           {/* SURFACE_CONNECTIONS: about-land — the room must lead back to the
               cover. SPA link, so the audio bridge in root keeps playing. */}
-          <ButtonLink to="/">Land somewhere &rarr;</ButtonLink>
+          <ButtonLink to="/">Land somewhere →</ButtonLink>
         </p>
         <p className="ew-about-foot rp-telemetry text-dust">
           {BRAND.name} &middot; the Keeper

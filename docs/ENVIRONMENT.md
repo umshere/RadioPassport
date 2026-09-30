@@ -29,6 +29,7 @@ Not to be confused with [ENVIRONMENT_LIGHT.md](./ENVIRONMENT_LIGHT.md), the foli
 |---|---|
 | `KEEPER_ASK_ENABLED` | `1`, `true`, `on` or `yes` turns on `/api/keeper/route`, `/api/keeper/ask`, `/api/keeper/fact`, and the desk's question box and murmur facts. Default off (routes return 404 `keeper_off`; the sheet answers from local facts only). Public, not a secret. Read once per visit in the root loader |
 | `TYPESAFE_API_KEY` | TypeSafe System One (Jev) key for routing questions to an intent. Server only, never sent to the client or logged. Empty means the keyword rules route instead |
+| `KV_REST_API_URL` / `KV_REST_API_TOKEN` | Optional. Upstash Redis or Vercel KV REST endpoint for the anonymous visitor counters (`UPSTASH_REDIS_REST_URL` / `_TOKEN` also work). Without it, production only logs; a dev machine falls back to `.data/counters.json`. Set the same values in the local `.env` to read live numbers in `/admin` |
 
 ## Track facts
 
