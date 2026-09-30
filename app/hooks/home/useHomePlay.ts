@@ -27,8 +27,6 @@ type Args = {
   setPlace: (value: string | null) => void;
   selectedPool: Station[];
   listening: ReturnType<typeof useListeningMode>;
-  globeStations: Station[];
-  places: { id: string; stationName: string }[];
   /** A station landed (the home may answer it; the board stays where it is). */
   onLanded: () => void;
 };
@@ -47,8 +45,6 @@ export function useHomePlay({
   setPlace,
   selectedPool,
   listening,
-  globeStations,
-  places,
   onLanded,
 }: Args) {
   const nowPlaying = usePlayerStore((state) => state.nowPlaying);
@@ -216,21 +212,10 @@ export function useHomePlay({
     [nowPlaying, requestAiWorld]
   );
 
-  const playPlace = useCallback(
-    (id: string) => {
-      const found = places.find((item) => item.id === id);
-      if (!found) return;
-      const next = globeStations.find((station) => station.uuid === id);
-      if (next) play(next, selectedPool, found.stationName);
-    },
-    [globeStations, places, play, selectedPool]
-  );
-
   return {
     play,
     requestAiWorld,
     submitIntent,
-    playPlace,
     aiStatus,
     mixLabel,
     setMixLabel,

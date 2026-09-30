@@ -1,48 +1,7 @@
 @layer components {
   /* The cover caption carries the dispatch once the plate block stands —
      the desk letter above it would read the same words twice. */
-  .ew-cover-title {
-    margin: 0;
-    color: var(--ew-bone);
-    font-family: "Newsreader", serif;
-    font-size: 22px;
-    font-style: italic;
-    line-height: 1.25;
-  }
-  .ew-cover-title + .ew-caption { margin-top: 8px; }
-  .ew-dossier {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 14px 18px;
-    margin: 22px 0 0;
-    max-width: 36ch;
-  }
-  .ew-dossier dl { margin: 0; }
-  .ew-dossier dt {
-    color: var(--ew-foil);
-    font: 500 10px/1 "Azeret Mono", monospace;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-  }
-  .ew-dossier dd {
-    margin: 5px 0 0;
-    color: var(--ew-dust);
-    font-size: 15px;
-    line-height: 1.4;
-  }
-  .ew-plate {
-    margin: 0;
-    width: 88px;
-    height: 88px;
-    border: 1px solid var(--ew-foil);
-    background: var(--ew-hide);
-  }
-  .ew-plate img {
-    display: block;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
+
   .ew-meridians {
     display: flex;
     flex-wrap: wrap;
@@ -74,94 +33,13 @@
     color: var(--ew-bone);
     border-bottom-color: var(--ew-foil);
   }
-  .ew-same-hour {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-top: 16px;
-  }
-  .ew-same-hour button {
-    min-height: 36px;
-    border: 0;
-    border-bottom: 1px solid var(--ew-foil-line);
-    background: transparent;
-    padding: 0 2px;
-    color: var(--ew-foil);
-    font: 500 13px/1 "Schibsted Grotesk", sans-serif;
-  }
 
-  .rp-globe-side {
-    position: relative;
-    align-self: stretch;
-    min-width: 0;
-    min-height: 0;
-    height: auto;
-    overflow: hidden;
-    contain: layout paint;
-    background: var(--ew-ink);
-    transition: background-color .28s ease;
-  }
-  .ew-galaxy {
-    position: absolute;
-    inset: 0;
-    z-index: 0;
-    display: block;
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
-  }
   /* Dotted spirograph field: same bed as the galaxy, same silence. */
-  .ew-tusi {
-    position: absolute;
-    inset: 0;
-    z-index: 0;
-    display: block;
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
-  }
-  .rp-globe-wrap { position: absolute; inset: 0; z-index: 1; }
+
   /* Vertical page scroll stays with the browser and pinch-zoom stays with the
      user (WCAG 1.4.4); every other gesture belongs to the globe, so the aim
      never fights the page. */
-  .rp-globe-hit { position: absolute; inset: 0; touch-action: pan-y pinch-zoom; }
-  .rp-globe { width: 100%; height: 100%; cursor: crosshair; }
-  .rp-globe.is-aimed { cursor: pointer; }
-  .ew-globe-tip {
-    position: absolute;
-    z-index: 3;
-    min-width: 168px;
-    max-width: 220px;
-    pointer-events: none;
-    border: 1px solid var(--ew-foil-line-strong);
-    background: var(--ew-tip);
-    padding: 10px 12px;
-  }
-  .ew-globe-tip strong {
-    display: block;
-    font-family: "Newsreader", serif;
-    font-size: 18px;
-    font-style: italic;
-    font-weight: 400;
-    letter-spacing: -.02em;
-    color: var(--ew-bone);
-  }
-  .ew-globe-tip span,
-  .ew-globe-tip small {
-    display: block;
-    margin-top: 4px;
-    color: var(--ew-dust);
-    font: 500 10px/1.4 "Azeret Mono", monospace;
-    letter-spacing: .12em;
-    text-transform: uppercase;
-  }
-  .ew-globe-tip em {
-    display: block;
-    margin-top: 6px;
-    color: var(--ew-bone);
-    font: 500 13px/1.35 "Schibsted Grotesk", sans-serif;
-    font-style: normal;
-  }
+
   .ew-cover {
     position: absolute;
     left: 28px;
@@ -171,15 +49,6 @@
     z-index: 2;
   }
   .ew-cover .ew-coverline { margin: 0 0 8px; font-size: clamp(48px, 7vw, 84px); }
-  .ew-cover-rule {
-    display: block;
-    width: 24px;
-    height: 1px;
-    margin-bottom: 10px;
-    background: var(--ew-foil);
-    transform-origin: left;
-    animation: ew-rule .56s var(--ew-settle) both;
-  }
 
   .rp-overlay {
     position: fixed;

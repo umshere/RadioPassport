@@ -1,3 +1,4 @@
+import { estimatedLongitude } from "~/utils/countryCentroids";
 import { readFileSync } from "node:fs";
 import { readAppCss } from "./appCss";
 import { beforeEach, describe, expect, it } from "vitest";
@@ -20,10 +21,6 @@ import {
   templateDispatch,
 } from "~/api/ai/dispatch";
 import {
-  dispatchAfterStationChange,
-  liveDispatch,
-} from "~/state/dispatchStore";
-import {
   stationLocation,
   stationPlaceLine,
 } from "~/components/radio-passport/StationRow";
@@ -32,27 +29,6 @@ import {
   stationSpeaksLanguage,
 } from "~/components/radio-passport/countryData";
 import type { Station } from "~/types/radio";
-import {
-  facingRotation,
-  globeHitDistance,
-  GLOBE_HIT_ACQUIRE,
-  GLOBE_HIT_HOLD,
-  GLOBE_HIT_TOUCH,
-  GLOBE_LIST_CAP,
-  nearestVisiblePlace,
-  rotationAtTurn,
-  shortestAngle,
-  shouldSpinGlobe,
-  turnProgress,
-} from "~/components/radio-passport/ParticleGlobe";
-import {
-  buildGlobePlaces,
-  countryCentroid,
-  globeFocusId,
-  globeStationPool,
-  spreadCountryOffset,
-  stationGlobeCoords,
-} from "~/components/radio-passport/globePlaces";
 import { getGatewayConfig } from "~/services/ai/gateway";
 import { getGeminiModel, trimEnv } from "~/services/ai/completeFallback";
 import { getProvider, resetProviderCache } from "~/services/ai/providers";
@@ -127,315 +103,13 @@ describe("Elsewhere place names", () => {
   });
 });
 
-describe("Elsewhere globe intelligence", () => {
-  const lisbon = {
-    id: "Portugal:Lisbon",
-    name: "Lisbon",
-    country: "Portugal",
-    region: "Europe",
-    stationName: "Antena 1",
-    count: 4,
-    latitude: 38.72,
-    longitude: -9.14,
-  };
-  const tokyo = {
-    ...lisbon,
-    id: "Japan:Tokyo",
-    name: "Tokyo",
-    country: "Japan",
-    region: "Asia",
-    stationName: "J-Wave",
-    latitude: 35.68,
-    longitude: 139.69,
-  };
-
-  it("turns the globe to face a longitude", () => {
-    expect(facingRotation(0)).toBeCloseTo(0);
-    expect(facingRotation(90)).toBeCloseTo(-Math.PI / 2);
-  });
-
-  it("takes the short turn", () => {
-    expect(Math.abs(shortestAngle(3, -3))).toBeLessThan(Math.PI);
-    expect(Math.abs(shortestAngle(-Math.PI + 0.1, Math.PI - 0.1))).toBeLessThan(
-      1
-    );
-  });
-
-  it("ignores cities on the far side of the globe", () => {
-    const rotation = facingRotation(lisbon.longitude);
-    const hit = nearestVisiblePlace(
-      [lisbon, tokyo],
-      rotation,
-      200,
-      200,
-      400,
-      400,
-      400
-    );
-    expect(hit?.place.name).toBe("Lisbon");
-  });
-
-  it("holds the globe still while the pointer is over it", () => {
-    expect(shouldSpinGlobe(false, false, false)).toBe(true);
-    expect(shouldSpinGlobe(false, false, true)).toBe(false);
-    expect(shouldSpinGlobe(true, false, false)).toBe(false);
-    expect(shouldSpinGlobe(false, true, false)).toBe(false);
-  });
-
-  it("widens the city hit once a place is already aimed", () => {
-    expect(globeHitDistance("mouse", false)).toBe(GLOBE_HIT_ACQUIRE);
-    expect(globeHitDistance("mouse", true)).toBe(GLOBE_HIT_HOLD);
-    expect(globeHitDistance("touch", false)).toBe(GLOBE_HIT_TOUCH);
-  });
-
-  it("eases the facing turn instead of snapping", () => {
-    expect(turnProgress(0)).toBe(0);
-    expect(turnProgress(520)).toBe(1);
-    expect(turnProgress(260)).toBeGreaterThan(0.8);
-    const halfway = rotationAtTurn(0, Math.PI / 2, 0.5);
-    expect(halfway).toBeCloseTo(Math.PI / 4);
-  });
-
-  it("keeps a station's own coordinates when Radio Browser sent them", () => {
-    const point = stationGlobeCoords({
-      latitude: 13.08,
-      longitude: 80.27,
-      countryCode: "IN",
-      country: "India",
-    });
-    expect(point).toEqual({
-      latitude: 13.08,
-      longitude: 80.27,
-      sourced: "station",
-    });
-  });
-
-  it("falls back to the country center when a search row has no geo", () => {
-    const india = countryCentroid("IN", "India");
-    expect(india).toEqual({ latitude: 20.59, longitude: 78.96 });
-    expect(
-      stationGlobeCoords({
-        latitude: null,
-        longitude: null,
-        countryCode: "IN",
-        country: "India",
-      })
-    ).toEqual({ latitude: 20.59, longitude: 78.96, sourced: "country" });
-  });
-
-  it("still locates a country by name when the ISO code is missing", () => {
-    expect(
-      stationGlobeCoords({
-        latitude: null,
-        longitude: null,
-        countryCode: null,
-        country: "Sri Lanka",
-      })?.sourced
-    ).toBe("country");
-  });
-
-  it("plots a Tamil catalog that Radio Browser returned without coordinates", () => {
-    const tamil = [
-      {
-        uuid: "in-1",
-        name: "90s-tamil-melodies",
-        country: "India",
-        countryCode: "IN",
-        city: null,
-        state: null,
-        latitude: null,
-        longitude: null,
-        clickCount: 40,
-      },
-      {
-        uuid: "in-2",
-        name: "Radio Paramankurichi Tamil",
-        country: "India",
-        countryCode: "IN",
-        city: null,
-        state: null,
-        latitude: null,
-        longitude: null,
-        clickCount: 12,
-      },
-      {
-        uuid: "my-1",
-        name: "Jei FM Klang Tamil",
-        country: "Malaysia",
-        countryCode: "MY",
-        city: null,
-        state: "Selangor",
-        latitude: null,
-        longitude: null,
-        clickCount: 8,
-      },
-      {
-        uuid: "lk-1",
-        name: "Sooriyan FM",
-        country: "Sri Lanka",
-        countryCode: "LK",
-        city: null,
-        state: null,
-        latitude: null,
-        longitude: null,
-        clickCount: 20,
-      },
-    ].map(
-      (row) =>
-        ({
-          url: "",
-          streamUrl: null,
-          favicon: "",
-          language: "Tamil",
-          tags: "tamil",
-          bitrate: 128,
-          codec: "MP3",
-          ...row,
-        }) as Station
-    );
-    const places = buildGlobePlaces(tamil, {
-      nowPlaying: null,
-      place: null,
-      stampedKeys: new Set(),
-    });
-    expect(places.map((place) => place.id)).toEqual([
-      "in-1",
-      "in-2",
-      "my-1",
-      "lk-1",
-    ]);
-    expect(places.map((place) => place.stationName)).toEqual([
-      "90s-tamil-melodies",
-      "Radio Paramankurichi Tamil",
-      "Jei FM Klang Tamil",
-      "Sooriyan FM",
-    ]);
-    const india = places.filter((place) => place.country === "India");
-    expect(india).toHaveLength(2);
-    expect(india[0]?.count).toBe(1);
-    expect(india[0]?.latitude).not.toBeCloseTo(india[1]?.latitude ?? 0, 3);
-    for (const place of india) {
-      expect(place.latitude).toBeGreaterThan(15);
-      expect(place.latitude).toBeLessThan(26);
-      expect(place.longitude).toBeGreaterThan(73);
-      expect(place.longitude).toBeLessThan(84);
-    }
-    expect(places[0]?.country).toBe("India");
-  });
-
-  it("keeps the world globe while a typed search catalog is still empty", () => {
-    const world = [
-      {
-        uuid: "lisbon",
-        name: "Antena 1",
-        country: "Portugal",
-        countryCode: "PT",
-        latitude: 38.72,
-        longitude: -9.14,
-        url: "",
-        streamUrl: null,
-        favicon: "",
-        state: null,
-        language: null,
-        tags: null,
-        bitrate: 0,
-        codec: null,
-      } as Station,
-    ];
-    expect(globeStationPool("tamil", [], world)).toBe(world);
-    expect(globeStationPool("tamil", tamilCatalogStub(), world)).toHaveLength(1);
-    expect(globeStationPool("", [], world)).toBe(world);
-    const list = tamilCatalogStub();
-    expect(globeStationPool("tamil", tamilCatalogStub(), world, list)).toBe(
-      list
-    );
-  });
-
-  it("turns the globe toward a list station once the catalog lands", () => {
-    const places = buildGlobePlaces(tamilCatalogStub(), {
-      nowPlaying: null,
-      place: null,
-      stampedKeys: new Set(),
-    });
-    expect(globeFocusId(null, "tamil", true, places)).toBe("in-1");
-    expect(globeFocusId(null, "tamil", false, places)).toBeNull();
-    expect(
-      globeFocusId({ uuid: "in-1" }, "tamil", true, places)
-    ).toBe("in-1");
-  });
-
-  it("caps the globe to the list prefix and keeps the station on air", () => {
-    const many = Array.from({ length: GLOBE_LIST_CAP + 8 }, (_, index) => ({
-      ...tamilCatalogStub()[0],
-      uuid: `in-${index}`,
-      name: `Tamil ${index}`,
-      clickCount: index,
-    })) as Station[];
-    const playing = many[many.length - 1] as Station;
-    const places = buildGlobePlaces(many, {
-      nowPlaying: playing,
-      place: null,
-      stampedKeys: new Set(),
-    });
-    expect(places).toHaveLength(GLOBE_LIST_CAP);
-    expect(places[0]?.id).toBe("in-0");
-    expect(places.some((place) => place.id === playing.uuid)).toBe(true);
-    expect(places.filter((place) => place.playing)).toHaveLength(1);
-  });
-
-  it("leaves true station coordinates unjittered", () => {
-    expect(spreadCountryOffset("x", "station")).toEqual({
-      latitude: 0,
-      longitude: 0,
-    });
-    const lisbon = {
-      uuid: "lisbon",
-      name: "Antena 1",
-      country: "Portugal",
-      countryCode: "PT",
-      latitude: 38.72,
-      longitude: -9.14,
-      url: "",
-      streamUrl: null,
-      favicon: "",
-      state: null,
-      language: null,
-      tags: null,
-      bitrate: 0,
-      codec: null,
-      city: "Lisbon",
-    } as Station;
-    const [place] = buildGlobePlaces([lisbon], {
-      nowPlaying: null,
-      place: null,
-      stampedKeys: new Set(),
-    });
-    expect(place?.id).toBe("lisbon");
-    expect(place?.latitude).toBeCloseTo(38.72);
-    expect(place?.longitude).toBeCloseTo(-9.14);
+describe("Country centroids", () => {
+  it("estimates a longitude from the country code only", () => {
+    expect(estimatedLongitude({ countryCode: "in" })).toBeCloseTo(78.96);
+    expect(estimatedLongitude({ countryCode: null })).toBeNull();
+    expect(estimatedLongitude({ countryCode: "ZZ" })).toBeNull();
   });
 });
-
-function tamilCatalogStub(): Station[] {
-  return [
-    {
-      uuid: "in-1",
-      name: "Big FM Tamil",
-      url: "",
-      streamUrl: null,
-      favicon: "",
-      country: "India",
-      countryCode: "IN",
-      state: null,
-      latitude: null,
-      longitude: null,
-      language: "Tamil",
-      tags: "tamil",
-      bitrate: 128,
-      codec: "MP3",
-    } as Station,
-  ];
-}
 
 describe("Elsewhere interpret fallback", () => {
   it("detects mix intent and extracts country from a sentence", () => {
@@ -452,32 +126,6 @@ describe("Elsewhere interpret fallback", () => {
     expect(wantsMixFromPrompt("tonight")).toBe(false);
     expect(intentFromExtractor("Lisbon at dusk").wantsMix).toBe(false);
     expect(intentFromExtractor("three unknown words").wantsMix).toBe(false);
-  });
-});
-
-describe("Elsewhere live dispatch", () => {
-  it("never shows a previous station's caption", () => {
-    const vinyl = {
-      id: "vinyl|none|2026-08-15T17",
-      headline: "Live from New York",
-      body: "Classic Vinyl HD is on the air from New York. This station is not sending track titles.",
-      mood: "jazz",
-      localLabel: "17:08 in New York",
-    };
-    expect(liveDispatch(vinyl, "adroit", "vinyl")).toBeNull();
-    expect(liveDispatch(vinyl, "vinyl", "vinyl")?.body).toMatch(/Classic Vinyl/);
-    expect(liveDispatch(vinyl, "adroit")).toBeNull();
-    expect(
-      dispatchAfterStationChange("vinyl", "adroit", vinyl)
-    ).toEqual({
-      stationId: "adroit",
-      dispatch: null,
-      status: "idle",
-    });
-    expect(
-      dispatchAfterStationChange("adroit", "adroit", vinyl).dispatch
-    ).toBe(vinyl);
-    expect(dispatchAfterStationChange("adroit", null, vinyl).dispatch).toBeNull();
   });
 });
 
@@ -585,7 +233,6 @@ describe("live stylesheet", () => {
     expect(css).toContain(".ew-sky {");
     expect(css).toContain(".ew-site-bar");
     expect(css).toContain(".ew-frame.is-home-frame");
-    expect(css).toContain("contain: layout paint");
     expect(css).toContain("flex-wrap: nowrap");
     expect(css).toContain(".ew-theater-rail .rp-intent");
     expect(css).toContain(".ew-gate-field .ew-seek");

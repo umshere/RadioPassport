@@ -37,10 +37,7 @@
   /* Passage: every room arrives the same way — the page rises out of dusk,
      the foil rule draws itself, the name lands last. Same ease as the disc. */
   .ew-page { animation: ew-passage .56s var(--ew-settle) both; }
-  .ew-arrive { animation: ew-arrive .6s var(--ew-settle) both; }
-  .ew-arrive-2 { animation-delay: .07s; }
-  .ew-arrive-3 { animation-delay: .14s; }
-  .ew-arrive-4 { animation-delay: .21s; }
+
   .ew-passage-bar {
     position: fixed;
     top: 0;
@@ -82,11 +79,8 @@
   /* Seam: home and theater hand one world to the next. The globe dissolves
      into the night sky, the city name carries across. Browsers without the
      View Transitions API keep the Passage rise above. */
-  .rp-globe-wrap{
-    view-transition-name: vt-globe-sky;
-  }
-  .ew-theater .ew-coverline,
-  .ew-seam-city {
+
+  .ew-theater .ew-coverline {
     view-transition-name: vt-city;
   }
   ::view-transition-old(root),
@@ -110,7 +104,6 @@
   ::view-transition-new(vt-globe-sky) {
     animation: ew-seam-in 0.6s var(--ew-settle) both;
   }
-
 
   /* Night desk: the letters sign themselves, the found facts get a byline. */
   .ew-letter-sign {
@@ -141,33 +134,7 @@
     }
     .rp-passport-button { margin-left: auto; padding: 0 10px; }
     .rp-surprise { padding: 0 8px; letter-spacing: .1em; }
-    .rp-stage {
-      position: relative;
-      display: flex;
-      flex: 1 1 auto;
-      flex-direction: column;
-      min-height: 0;
-      overflow: auto;
-      overscroll-behavior: contain;
-    }
-    .rp-globe-side {
-      order: -1;
-      position: sticky;
-      top: 0;
-      z-index: 2;
-      flex: none;
-      align-self: stretch;
-      height: auto;
-      min-height: 0;
-      background: var(--ew-ink);
-    }
-    .rp-globe-wrap {
-      position: relative;
-      width: 100%;
-      /* Night/Day left the phone home, freeing ~55px: the globe takes it. */
-      height: clamp(220px, 33svh, 330px);
-      min-height: 220px;
-    }
+
     /* The globe keeps one height while seeking: resizing the canvas on a
        keystroke mid-gesture is an app-feel killer. Seeking intent shows in
        the coverline, not in globe height. The station rows moved into the
@@ -188,17 +155,7 @@
       padding: 0;
     }
     /* Readability scrim between the particle field and the coverline. */
-    .rp-globe-side::after {
-      content: "";
-      position: absolute;
-      z-index: 1;
-      right: 0;
-      bottom: 0;
-      left: 0;
-      height: 46%;
-      background: linear-gradient(180deg, transparent, var(--ew-ink));
-      pointer-events: none;
-    }
+
     .ew-cover .ew-coverline {
       overflow: hidden;
       font-size: clamp(28px, 9vw, 36px);
@@ -207,52 +164,13 @@
     }
     /* The globe tip rides taps on the phone too: the tapped land names
        itself before the cover does. Smaller card, same ink. */
-    .ew-globe-tip { min-width: 148px; max-width: 190px; padding: 8px 10px; }
-    .rp-intro {
-      display: flex;
-      flex: 1 1 auto;
-      min-height: 0;
-      overflow: visible;
-      border-right: 0;
-      padding: 8px 16px 16px;
-    }
-    .rp-horizon-row {
-      position: absolute;
-      top: 8px;
-      right: 16px;
-      left: auto;
-      z-index: 4;
-      height: auto;
-      margin: 0;
-      min-height: 0;
-    }
-    .rp-horizon-row .rp-eyebrow.text-ether {
-      display: none;
-    }
-    .rp-intro-copy {
-      display: none;
-    }
-    .rp-home.is-landed .rp-land-slot {
-      display: none;
-    }
-    .rp-land-slot { min-height: 0; }
-    .rp-intro .ew-land { width: 100%; margin-top: 0; }
-    .rp-chip-list {
-      flex-wrap: wrap;
-      width: calc(100% + 32px);
-      margin-left: -16px;
-      padding: 0 16px 4px;
-    }
-    .rp-chip, .ew-atlas, .ew-same-hour button { flex: none; min-height: 44px; }
+
+    .rp-chip,
+.ew-atlas { flex: none; min-height: 44px; }
     .ew-horizon { gap: 12px; }
     .ew-hours { max-width: none; }
     .ew-atlas { margin-left: 0; padding-left: 10px; }
-    .rp-intro-board {
-      flex: 1 1 auto;
-      min-height: 16rem;
-      overflow: visible;
-    }
-    .rp-station-list { max-height: none; overflow: visible; }
+
     .rp-station { min-height: 64px; }
     .rp-overlay {
       padding: calc(56px + env(safe-area-inset-top, 0px)) 16px calc(132px + env(safe-area-inset-bottom, 0px));
@@ -279,20 +197,24 @@
       padding: 0;
     }
     .ew-theater .ew-coverline { font-size: clamp(36px, 12vw, 52px); }
-  .ew-cover-row { grid-template-columns: 72px minmax(0, 1fr); gap: 12px; }
-    .ew-plate { width: 72px; height: 72px; }
-    .ew-cover-title { font-size: 18px; }
+
   }
 
   @media (prefers-reduced-motion: reduce) {
     .rp-live-dot, .rp-eq i, .rp-toast{ animation: none; }
-    .ew-page, .ew-arrive, .ew-cover-rule, .rp-overlay, .rp-overlay-inner, .ew-passage-bar i { animation: none; }
-    .ew-star-twinkle { animation: none; }
+    .ew-page,
+.rp-overlay,
+.rp-overlay-inner,
+.ew-passage-bar i { animation: none; }
+
     .rp-chip, .rp-station, .rp-dock-play { transition: none; }
     .rp-dock-play::before { animation: none; }
     .ew-land, .ew-atlas::after{ transition: none; }
     .ew-hour, .ew-hour-icon, .ew-hour-dot, .ew-hours-cursor { transition: none; }
-    body, .rp-home, .rp-globe-side, .rp-dock, .ew-theater { transition: none; }
+    body,
+.rp-home,
+.rp-dock,
+.ew-theater { transition: none; }
     ::view-transition-group(*),
     ::view-transition-old(*),
     ::view-transition-new(*) {

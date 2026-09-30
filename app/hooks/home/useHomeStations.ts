@@ -1,8 +1,4 @@
 import { useMemo } from "react";
-import {
-  buildGlobePlaces,
-  globeStationPool,
-} from "~/components/radio-passport/globePlaces";
 import { stationLocation } from "~/components/radio-passport/StationRow";
 import {
   countryCacheKey,
@@ -19,15 +15,12 @@ import { stationMatches } from "~/utils/stationSearch";
 const MAX_BOARD = 120;
 const MAX_POOL = 60;
 
-type Stamp = { country: string; city: string };
-
 /**
  * Every station list the home derives, in one place and in order:
  *
  *   base       what we are searching in (typed query > world mix > top 240)
  *   filtered   base narrowed by query, hour and place
  *   live       filtered, with the leading shelf probed for a live signal
- *   globe      what the globe draws
  *   pool       what a tap plays through (live, else the base)
  *
  * Pure derivation — no fetching, no writes — so it is safe to call every render.
@@ -41,8 +34,6 @@ export function useHomeStations({
   countryCache,
   listeningMode,
   exploreStations,
-  nowPlaying,
-  stamps,
   played,
   journeyReady,
 }: {
@@ -54,8 +45,6 @@ export function useHomeStations({
   countryCache: Record<string, CountryDrilldownState>;
   listeningMode: string;
   exploreStations: Station[];
-  nowPlaying: Station | null;
-  stamps: Stamp[];
   played: string[];
   journeyReady: boolean;
 }) {
@@ -121,16 +110,6 @@ export function useHomeStations({
     `${query}|${hour ?? ""}|${place ?? ""}|${listeningMode}`,
   );
 
-  const globeStations = globeStationPool(query, catalog, initialStations, liveFiltered);
-  const stampedKeys = useMemo(
-    () => new Set(stamps.map((stamp) => `${stamp.country}:${stamp.city}`)),
-    [stamps],
-  );
-  const places = useMemo(
-    () => buildGlobePlaces(globeStations, { nowPlaying, place, stampedKeys }),
-    [globeStations, nowPlaying, place, stampedKeys],
-  );
-
   const selectedPool = liveFiltered.length
     ? liveFiltered
     : applyLiveCatalog(baseStations).slice(0, MAX_POOL);
@@ -141,9 +120,6 @@ export function useHomeStations({
     baseStations,
     filtered,
     liveFiltered,
-    globeStations,
-    stampedKeys,
-    places,
     selectedPool,
   };
 }

@@ -124,30 +124,7 @@
   :root[data-atmosphere="day"] .ew-hours-cursor,
   :root[data-atmosphere="day"] .ew-hours-cursor::before { box-shadow: none; }
   /* Atlas is not a fifth hour: the globe glyph denotes the doorway. */
-  .ew-atlas-globe {
-    position: relative;
-    width: 14px;
-    height: 14px;
-    flex: none;
-    border: 1px solid currentColor;
-    border-radius: 50%;
-  }
-  .ew-atlas-globe::before {
-    content: "";
-    position: absolute;
-    inset: -1px 3px;
-    border: 1px solid currentColor;
-    border-radius: 50%;
-  }
-  .ew-atlas-globe::after {
-    content: "";
-    position: absolute;
-    left: -1px;
-    right: -1px;
-    top: 50%;
-    height: 1px;
-    background: currentColor;
-  }
+
   .ew-atlas {
     position: relative;
     display: inline-flex;
@@ -230,13 +207,7 @@
     animation: rp-pulse 2.4s ease-in-out infinite;
   }
   #live-board { scroll-margin-top: 72px; }
-  .rp-station-list {
-    flex: 1 1 auto;
-    margin-top: 14px;
-    min-height: 0;
-    overflow: visible;
-    padding-right: 4px;
-  }
+
   .rp-station {
     display: flex;
     min-width: 0;
@@ -312,18 +283,5 @@
     font-style: italic;
     line-height: 1.45;
   }
-  .ew-track {
-    margin: 0;
-    color: var(--ew-bone);
-    font-size: 15px;
-    font-weight: 500;
-  }
-  .ew-cover-row {
-    display: grid;
-    grid-template-columns: 88px minmax(0, 1fr);
-    gap: 14px;
-    align-items: start;
-    margin-top: 18px;
-  }
-  .ew-cover-row.is-bare { grid-template-columns: minmax(0, 1fr); }
+
 }
