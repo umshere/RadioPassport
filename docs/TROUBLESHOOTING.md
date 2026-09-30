@@ -38,21 +38,57 @@ If openssl shows `CN=elsewheremusic.com` and `Verification: OK`, the cert is liv
 
 Move **X** off this host first, then PATCH.
 
-## Globe tooltip shows a city but click misses
+## Search board fills, hour gates do nothing
 
-Pointer must freeze spin **in the same frame** (`pointerOverRef` in `ParticleGlobe.tsx`). Do not pause only after React state commits. Click plays immediately, then eases to face. Tests: `shouldSpinGlobe`, `globeHitDistance`, `turnProgress`.
+Hour is a destination: it must leave the typed query. Contract: `hourTapNextState` in `app/components/radio-passport/searchState.ts`. Do not treat hour as a silent filter on leftover search.
 
-## Search list fills, hour chips do nothing
+## iOS: a scrolling column collapses to nothing, or rows overlap
 
-Hour is a destination: it must leave the typed query. Contract: `hourTapNextState` in `searchState.ts`. Do not treat hour as a silent filter on leftover search.
+WebKit collapses a grid item that is also a scroll container. Use a flex column, give the scrolling child `min-height: 0`, and give the fixed children `flex: none`. This was the cause of the overlapping keeper-sheet rows and of the collapsed board. Check on a real iPhone; desktop Chrome does not show it.
 
-## 404 is a blank theater, no wallpaper
+## iOS: the site bar is scrolled out of view after typing
 
-`public/FTS.jpeg` must be committed. CSS: `.not-found-easter-egg__pattern`. Markup in `NotFoundEasterEgg` (`app/root.tsx`).
+The home and desk are fixed-height shells. The keyboard or a focus jump can slide the whole shell up. The Shell scroll guard in `app/root.tsx` resets `window.scrollY` and the `.ew-frame` `scrollTop` to 0 once nothing is being typed into. If it recurs, check that the page is inside `.ew-frame` and that the guard's `onShell` condition still matches the route.
+
+## A new CSS rule has no effect, or a test that reads CSS fails
+
+- Rules inside `@layer components` can be dropped by Tailwind 3. Put new rules outside a layer, in the `app/styles/*.css` file that owns the surface (see [DESIGN_SPECS.md](./DESIGN_SPECS.md)).
+- Order is the cascade: a later file wins. Check `app/tailwind.css` for the import order.
+- A Tailwind utility class in `app/components/home`, `share` or `env` is never generated: `tailwind.config.ts` does not scan those directories. Use an `ew-*` class in a CSS file.
+- Tests read CSS through `readAppCss()`. A test that names one file by path breaks when the rule moves.
+- In dev, `/app/tailwind.css` (processed) and `/app/tailwind.css?direct` (raw) differ. Verify against the plain URL.
+
+## JSX shows a literal `&rarr;` or a broken arrow
+
+Always write the literal characters (`↗`, `→`) in JSX, never HTML entities (`&rarr;`). Entities show up verbatim inside strings and props (`aria-label`, `title`, template literals) and in copy that goes through a function.
+
+## The Keeper says the desk is closed, or the ask routes return 404
+
+`KEEPER_ASK_ENABLED` is off in that environment (`404 keeper_off`). Set it to `true` in Vercel and redeploy. Routing without `TYPESAFE_API_KEY` is fine: the keyword rules take over. Rate limit is 20 questions an hour per client, per server instance.
+
+## A shared ticket shows the house still, not the ticket
+
+`/ticket/<uuid>.png` answers 302 to `/elsewhere-og.jpg` for a bad or unknown id, for a station the directory no longer has, and for any render error. Check the uuid with `/api/station?uuid=<uuid>`. Crawlers cache previews; a new share URL forces a fresh read. Font fetches (`public/fonts/ticket/`) come from our own origin; a missing font file breaks the render.
+
+## The room's light is not visible
+
+- It is quiet by design (`--env-peak` at most 0.10).
+- It is hidden with save-data or reduced-data on.
+- On desktop it is clipped to the sky panel (`.ew-sky`); on pages without a sky (About, 404) it has no panel and sits at the default box.
+- Sprites are `public/env/*.webp`. If they are missing, re-bake with `node scripts/gen-foliage.mjs`.
+- Reduced motion removes the landing sweep and the gust but keeps the light.
+
+## A route or the home shows an empty board on a phone
+
+The catalog is Radio Browser. An outage serves the last good board from the server cache; after a cold start with an outage the board is empty and says "Signal lost". Try again, or open the Atlas. The client tries several mirrors (`de1`, `nl1`, `at1`, `de2` under `api.radio-browser.info`, see `app/utils/radioBrowser.ts`). Check one with `curl -s https://de1.api.radio-browser.info/json/stats`.
+
+## 404 has no wallpaper
+
+`public/FTS.jpeg` must be committed. CSS: `.not-found-easter-egg__pattern` in `07-components-b.css`. Markup in `NotFoundEasterEgg` (`app/root.tsx`). The 404 renders inside the standard Shell, so the site bar and dock should show; if they do not, the error boundary is not wrapping `Shell`.
 
 ## Prod writes worse than local / no captions
 
-Prod is `AI_PROVIDER=gemini`, `GEMINI_MODEL=gemini-2.5-flash`. Env edits need a redeploy. Never put AI on the audio path.
+Prod is `AI_PROVIDER=gemini`, `GEMINI_MODEL=gemini-2.5-flash` (no Heuristics gateway there). Env edits need a redeploy. Never put AI on the audio path. See [ENVIRONMENT.md](./ENVIRONMENT.md).
 
 ## `git push` 403 / `Permission denied (publickey)`
 

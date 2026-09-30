@@ -1,49 +1,68 @@
-# UI Flow
+# UI flow
 
-Elsewhere is one loop: **land → intent → tune → inhabit → stamp → next**.
+Elsewhere is one loop: **land, intent, tune, inhabit, stamp, next**. The contract is `ELSEWHERE_LOOP` and `SURFACE_CONNECTIONS` in `app/components/radio-passport/productFlow.ts`. A control that does not lead to the next step is a dead icon. Feature detail is in [FEATURES.md](./FEATURES.md).
 
-## First 20 seconds
+## First 20 seconds (home, `/`)
 
-1. Globe is already live. Coverline is a city (from the catalog, with geo).
-2. **Land here** (or **Continue** if this browser has a last city) starts audio. Browsers block silent autoplay — the tap is the gesture.
-3. Place identity fills: city, country, local clock from longitude, solar hour.
-4. ICY title if the station sends one. Otherwise: *This station sends no track titles.*
-5. Intent bar is in the site bar: type, speak, or Surprise. On a phone the field sits on its own row so it stays tappable; the list is the page, not the dispatch.
+1. The Departures Hall opens on the sky of a city that is on the air (from the catalog, with coordinates), with its clock, the Keeper's line ("You are not here. Pick a gate, or land where I point.") and the first-visit card "How Elsewhere works" (Land, Listen, Send).
+2. **Land here** (or **Continue** when this browser has a last city) starts audio. Browsers block silent autoplay, so the tap is the gesture.
+3. The sky becomes the city you landed in: clock, place, hours ahead or behind you. The Keeper says "Landed in Lagos." The CTA disappears while playing.
+4. If the stream sends a title, it appears under the city. Otherwise nothing is shown in its place. The dock shows the same cleaned title.
+5. After 60 seconds of continuous play the city is stamped: the play disc slams, an INKED toast appears, the Keeper says so. The first-visit card is gone for good once there is a stamp or it is dismissed.
 
 ## Primary actions
 
 | Action | Result |
 |---|---|
-| Land here | Plays the featured (or last) station. Globe turns to face it. |
-| Hover / tap a globe dot | Card: city, region, country code, that list station. |
-| Click a globe dot | Plays that same list row. Globe rotates to face it. Does not filter the list. |
-| Intent (short query) | Catalog search. The bar says Searching, then N live. The list below is titled with the query. The globe is that list, drawn (capped). It stays the world globe while the catalog arrives. Stations without Radio Browser coordinates still land near that country, spread so they do not stack as one blob. |
-| Intent (sentence) | `POST /api/ai/interpret`. May fire a mix. |
-| Surprise | AI mix, then autotune the first station. |
-| Solar hour chip | Filters by the city's local hour. Does not stop audio. |
-| Night / Day | Header pin. Changes the room (night earth vs morning edition). Does not stop audio. Does not follow the OS clock. Distinct from the Night hour chip. |
-| Atlas | Overlay. Country → city groups. Play replaces the queue. |
-| Passport | Stamps + favorites. Stamp tap retunes that city. |
-| Dock art / Theater | `/listen` |
+| Land here / Continue | Plays the featured (or last) station. The sky becomes that city |
+| Tap a departures row | Plays that station. The row shows its local time and hour tint |
+| Heart on a row | Keeps the station in the passport |
+| More departures | Board grows 8, 16, 32 rows |
+| Fresh board | Deals a new window from the same catalog |
+| Dawn, Midday, Dusk, Night | Board shows live stations where it is that hour now. Does not stop audio. The sky follows the hour |
+| Search field (2+ letters) | Catalog search. Sky folds to one flap line with the query. Board is the answer (up to 32) |
+| A sentence in the field | `POST /api/ai/interpret`. May fire a world mix |
+| Surprise | AI world mix, then plays the first station |
+| Atlas door | Overlay: countries, then a country's stations. Play replaces the queue |
+| Passport button | Overlay: stamps and kept signals. A stamp replays that city |
+| Recent stamps (under the board) | Open the passport |
+| Share square (site bar) | Opens the ticket sheet for the station on the air |
+| Night / Day | Switches the room. Does not stop audio. Does not follow the OS clock |
+| "How it works" / "?" | `/about` |
+| Keeper figure | Opens his sheet (ask, postcards, on air, station; Ticket, Chatter, The desk) |
+| Dock art or Desk tab | `/listen` |
 
-Search, chips, and overlays never call `stop()`.
+Search, hours and overlays never call `stop()`.
 
-## `/listen`
+## The desk (`/listen`)
 
-Sky + letter. One night: desktop sky bleeds under the letter and fades into ink; phone puts the traveler first as a fixed strip. Same galaxy river as the home globe. Seek is in the site bar. City, station, and the Room sit as type: caption, then plate + cover title, then a colophon of facts. When ICY sent a title, free trivia files the plate and facts first; AI cover may upgrade them and return a knowledge graph. A later deepening pass may add a few stars. Filing keeps the sky inhabited — the disc keeps walking knowledge edges and names stay on place and track stars. The mesh stays a figure (14 faces, 3 threads per star). No track → no dossier. On a phone the transport is the dock only. The letter sits at four lines; `more` opens the rest. Only the letter scrolls.
+Sky at the station's hour with the Keeper on the horizon and his murmur bubble. Then, in reading order: boarding pass, on air (only what the stream sent), ask the desk, postcards, the station's file (only when a title filed), next departures with a "Change gate" seek row. On a phone it is one column; on wide screens the sky sits beside the cards. Only the page column scrolls; the site bar and dock stay put.
 
-## Empty / error
+With no station: the Keeper sleeps ("Nobody at the desk yet.") and a Land button goes home.
 
-Every empty or failed surface names the next move. Copy without a button is a dead end.
+## Sending a station
+
+Any share control opens the ticket sheet (Card or Story), then Send this ticket, Copy link or Save image. The friend opens `/t/<uuid>`, is handed to `/?tune=<uuid>&from=ticket`, sees "A friend sent you a ticket" and taps **Land here**. Audio never starts without a tap.
+
+## Empty and error states
+
+Every empty or failed surface names the next move.
 
 | State | UI |
 |---|---|
-| No ICY | Place identity stays. Honest live line. |
-| Empty search | “No signal for that.” Buttons: Surprise, Atlas, Clear search. |
-| Quiet solar hour / city | Clear the filter, or open Atlas. |
-| Empty atlas search | Clear search. |
-| Dead stream | Notice + retry + skip. Globe follows the next station. Lists hide confirmed-down and HTTP-only streams. |
-| Empty passport | Ghost slots open **Find a city**. Stay-60s line stays. |
-| Stamp with no live station | Open that country, or Atlas. |
-| Failed mix / country catalog | Retry. |
-| `/listen` with no station | Bounce home. |
+| No ICY title | Nothing is invented. Desk says "Ears up. Waiting for a name..." or that the station sends no titles |
+| Search finds nothing | "No live signal for ...". Buttons: Surprise, Atlas, Clear search |
+| Catalog unreachable | "Signal lost for ...". Buttons: Try again, Atlas |
+| Hour with no city | "No city at Dusk in this catalog." Buttons: Clear hour, Atlas, Surprise |
+| Filtered place with no rows | Show every city, Atlas |
+| Atlas search finds nothing | Clear search |
+| Empty passport | Ghost slots open **Find a city** |
+| Stamp with no live station | Opens that country, or the Atlas |
+| Failed mix or country catalog | Retry |
+| Dead stream | Notice, retry, then skip to the next. Lists hide confirmed-down and HTTP-only streams |
+| Station with no coordinates | No clock, no sky (board rows show a rough estimate from the country's centre) |
+| Keeper asks off | "The desk is closed to questions for now." Chips still answer from local facts |
+| Keeper rate limit | "That's enough questions for one hour." The radio stays on |
+| `/listen` with no station | Empty desk with a Land button |
+| 404 or route error | Standard shell stays; message and Back to Elsewhere |
+| Ticket cannot be printed | Link preview falls back to the house still |

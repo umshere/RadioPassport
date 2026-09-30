@@ -1,5 +1,45 @@
 # Changelog
 
+Newest first. Sections from 2026-08-16 to 2026-09-27 were written afterwards from the commit log; earlier ones were written at the time. The current feature list is [FEATURES.md](./FEATURES.md).
+
+## 2026-09-29 — Departures Hall, tickets, the room's light, the round mark
+
+- **Home is the Departures Hall.** Sky (city flip-clock, Keeper line, Land here), sticky gates (search, Dawn/Midday/Dusk/Night, Atlas door), a departures board, recent stamps. The globe and the phone sheet are gone. Board rows with no coordinates show a rough clock from the country's centre.
+- **The desk redesigned** (`/listen`): sky, boarding pass, postcards ("out of my notebook, not the station's word"), Ask the desk, next departures. The change-gate field is square, full width, always on. Nav reads Elsewhere, Atlas, Desk.
+- **How it works.** First-visit card on the home, a plain About page with a generated desk scene and numbered cards, a quiet "How it works" link in the site bar and a square "?" on phones. Error and 404 pages now render inside the standard shell.
+- **Tickets.** Every share sends a printed boarding pass: `/ticket/<uuid>.png` (1200x630, story 1080x1350), `/t/<uuid>` with per-station link preview tags, a ticket sheet, an arrival card for the friend. Before that, a plain `/?tune=<uuid>` link and `/api/station` (same day).
+- **The room's light.** One fixed foliage-light layer that follows the hour: real branch-and-leaf sprites (our own drawing), colours by hour, clipped to the sky panel on desktop, gust on hour, page and station change, gyro parallax on phones, and a landing sweep of about 190 degrees on every load that settles. Tuned several times the same day (visibility at night, phone strength, arrival timing).
+- **Round app icon everywhere.** Transparent favicon, Android maskable and any icons, iOS touch icon, lock-screen artwork. No more black square around the mark.
+- **Keeper.** The Keeper became a character with one voice file (`keeperVoice.ts`): landed, stamped, off we go; unasked murmurs with grounded facts, a "Worth knowing" feed, topic chips, hush; sheet v2 (ask first, one panel at a time); pixel sprites cut to transparent. A system pause (call, Siri, Bluetooth) now stops the player state; generic programme lines (UK Top 40) are not treated as songs. iOS sheet rows no longer overlap.
+- Shell scroll guard so the iOS keyboard cannot leave the header out of view.
+
+## 2026-09-28 — The Keeper arrives, Theater becomes the desk, CSS split
+
+- The floating night clerk and its sheet; dark-launched `/api/keeper/route` and `/api/keeper/ask`, then live behind `KEEPER_ASK_ENABLED`. Questions route through Jev (TypeSafe System One, 1.2s race, keyword fallback). Knowledge mode answers a named artist, genre or place from a Wikipedia snippet, labelled as the Keeper's notebook.
+- Theater became the desk; the animated constellation and about 285 lines of dead Theater CSS and their helpers were deleted.
+- `tailwind.css` split into ordered files under `app/styles`; tests read the cascade through `readAppCss()`.
+- UI primitives (`Button`, `ButtonLink`, `Chip`, `Eyebrow`, `Row`, `Sheet`), one button-state grammar, `--rp-*` tokens retired, 44px phone targets, global focus ring, Mantine dropped from the first-load bundle, `Index()` shrunk from 1,247 to 488 lines by extracting hooks and components.
+- Phone: search is a 48px square bar; skeleton rows while loading; probe gives up on a silent host after 2.2s; first-visit hook line; readable station rows. Hour rail marks the listener's own hour.
+- Anonymous usage beacon (`/api/usage`); dock shows the cleaned track title; Åland-flag guard (state naming another country wins).
+
+## 2026-09-15 to 2026-09-18 — Secret trail, ring, reliability
+
+- Elsewhere secret room trail (misplaced hour mark, then the room between hours).
+- Stamp ring clocks the minute, then rests as the mark; passport book keeps six slots and names each replay; probe-ahead skip lands on a live HTTPS signal; availability honesty pinned to wall-clock.
+- Board rides as a sheet on the phone; theater companion tells place, hour and evidence.
+
+## 2026-09-04 to 2026-09-11 — One band, split-flap board, water
+
+- One mobile band on every page (Elsewhere, Atlas, Theater tabs; later renamed Desk). App-shell continuity and intent URLs.
+- Split-flap live board with a rotating idle window, drums that churn the charset, capped so it settles in under a second. Hour taps are time travel; Atlas rows wear flags; country land deals the instant board.
+- One toast channel for stamps and stream notices; dock owns the transport; one shared seek shell.
+- 60-second cache for repeat catalog queries, 5-minute server cache for the home catalog; outages never cached.
+- Theater sky moved through dots-and-damping and a "water" phase (both later removed).
+
+## 2026-08-16 to 2026-09-02 — Ship script, Theater knowledge graph, phone home
+
+- `npm run ship` (single Git-triggered build). Seek moved into the sticky bar. Theater as a navigable knowledge graph (later removed). Share card still. A catalog outage says "Signal lost", not a false "No signal". 15s deadline on `/api/ai/recommend` so Surprise always lands. Unmounted legacy files deleted. Graphify knowledge graph wired into agent briefs.
+
 ## 2026-08-15 — The letter runs; the sky recedes
 
 The cover sits at four lines. A foil `more` opens the rest; `less` folds it back. Facts still stop at six. As you go, the constellation scales down into a ribbon so the folio has room; scroll back and the night opens again. A shallow page still refuses to fold, so the sky cannot claw the scroll.

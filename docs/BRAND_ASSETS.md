@@ -8,7 +8,7 @@ repo root.
 
 ### `public/FTS.jpeg` — KEEP, always
 
-The 404 wallpaper. Wired at `app/tailwind.css` (`background-image: url("/FTS.jpeg")`)
+The 404 wallpaper. Wired at `app/styles/07-components-b.css` (`background-image: url("/FTS.jpeg")`)
 and named as a hard rule in `AGENTS.md`: **never delete `public/FTS.jpeg`,
 regardless of reference counts or audits.** This file restating the rule
 changes nothing about it — the rule outranks any audit output.
