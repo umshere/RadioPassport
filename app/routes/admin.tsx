@@ -5,7 +5,7 @@ import { json, redirect } from "@remix-run/node";
 import { Form, useActionData, useLoaderData } from "@remix-run/react";
 import { ruleClassify } from "~/components/keeper/keeperIntent";
 import { trimEnv } from "~/services/ai/completeFallback";
-import { counterStoreKind, readCounters } from "~/services/admin/counters.server";
+import { adminAttempts, counterStoreKind, readCounters } from "~/services/admin/counters.server";
 import { classifyKeeperQuestion, jevDecide } from "~/services/keeper/jev.server";
 import { isKeeperAskEnabled } from "~/services/keeper/flag.server";
 
@@ -43,11 +43,23 @@ function cookieValue(request: Request) {
   return match?.[1] ?? "";
 }
 
-function assertAccess(request: Request) {
-  if (isLocal(request)) return;
+function hasAccess(request: Request) {
+  if (isLocal(request)) return true;
   const key = adminKey();
-  if (key && sameSecret(cookieValue(request), digest(key).toString("hex"))) return;
-  throw new Response("Not Found", { status: 404 });
+  return Boolean(key && sameSecret(cookieValue(request), digest(key).toString("hex")));
+}
+
+function assertAccess(request: Request) {
+  if (!hasAccess(request)) throw new Response("Not Found", { status: 404 });
+}
+
+function unlockCookie(key: string) {
+  return `${COOKIE}=${digest(key).toString("hex")}; Path=/admin; Max-Age=${60 * 60 * 24 * 30}; HttpOnly; Secure; SameSite=Strict`;
+}
+
+function callerId(request: Request) {
+  const ip = (request.headers.get("x-forwarded-for") ?? "").split(",")[0]?.trim() || "unknown";
+  return digest(`caller:${ip}`).toString("hex").slice(0, 24);
 }
 
 type Test = {
@@ -72,15 +84,13 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const given = new URL(request.url).searchParams.get("key");
   const key = adminKey();
   if (given !== null && key && sameSecret(given, key)) {
-    const maxAge = 60 * 60 * 24 * 30;
-    return redirect("/admin", {
-      headers: {
-        "Set-Cookie": `${COOKIE}=${digest(key).toString("hex")}; Path=/admin; Max-Age=${maxAge}; HttpOnly; Secure; SameSite=Strict`,
-        "Cache-Control": "no-store",
-      },
-    });
+    return redirect("/admin", { headers: { "Set-Cookie": unlockCookie(key), "Cache-Control": "no-store" } });
   }
-  assertAccess(request);
+  // No access yet: ask for the code. The server has no code set → still a 404.
+  if (!hasAccess(request)) {
+    if (!key) throw new Response("Not Found", { status: 404 });
+    return json({ locked: true as const }, { headers: { "Cache-Control": "no-store" } });
+  }
   const counters = await readCounters(14);
   const flag = (name: string) => Boolean(trimEnv(process.env[name]));
   return json({
@@ -106,8 +116,19 @@ export async function loader({ request }: LoaderFunctionArgs) {
 }
 
 export async function action({ request }: ActionFunctionArgs) {
-  assertAccess(request);
   const form = await request.formData();
+  if (form.get("intent") === "unlock") {
+    const key = adminKey();
+    if (!key) throw new Response("Not Found", { status: 404 });
+    const attempts = await adminAttempts(callerId(request));
+    if (attempts.blocked) return json({ gateError: "Too many tries. Wait an hour." }, { status: 429 });
+    if (!sameSecret(String(form.get("code") ?? "").trim(), key)) {
+      await attempts.fail();
+      return json({ gateError: "Not that one." }, { status: 401 });
+    }
+    return redirect("/admin", { headers: { "Set-Cookie": unlockCookie(key), "Cache-Control": "no-store" } });
+  }
+  assertAccess(request);
   const question = String(form.get("question") ?? "").trim().slice(0, 200);
   if (!question) return json({ error: "Type a question first." });
   const started = performance.now();
@@ -148,6 +169,7 @@ const sum = (days: Array<{ counts: Record<string, number> }>, field: string) =>
 export default function Admin() {
   const data = useLoaderData<typeof loader>();
   const result = useActionData<typeof action>();
+  if ("locked" in data) return <Gate error={result && "gateError" in result ? result.gateError : null} />;
   const days = data.counters;
   const s = data.system;
   const shortDay = (d: string) => d.slice(5);
@@ -265,7 +287,30 @@ export default function Admin() {
   );
 }
 
+function Gate({ error }: { error: string | null }) {
+  return (
+    <main className="adm adm-gate">
+      <style>{CSS}</style>
+      <Form method="post" className="adm-form">
+        <input type="hidden" name="intent" value="unlock" />
+        <input
+          name="code"
+          type="password"
+          inputMode="numeric"
+          autoComplete="off"
+          autoFocus
+          placeholder="Code"
+          aria-label="Admin code"
+        />
+        <button type="submit">Enter</button>
+      </Form>
+      {error ? <p className="note" role="alert">{error}</p> : null}
+    </main>
+  );
+}
+
 const CSS = `
+.adm-gate{max-width:360px;padding-top:30vh}
 .adm{max-width:960px;margin:0 auto;padding:24px 16px 96px;color:var(--ew-bone);font:400 14px/1.5 "Schibsted Grotesk",sans-serif}
 .adm h1{margin:0;font:italic 400 32px/1.1 "Newsreader",serif}
 .adm h1 small,.adm h2 small{font:500 10px/1.3 "Azeret Mono",monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--ew-dust);margin-left:10px}

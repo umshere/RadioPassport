@@ -99,3 +99,38 @@ export async function readCounters(days = 14): Promise<Array<{ day: string; coun
   const all = await readFile();
   return list.map((day) => ({ day, counts: all[`ew:counts:${day}`] ?? {} }));
 }
+
+const MAX_WRONG_CODES = 6;
+const memoryFails = new Map<string, { n: number; until: number }>();
+
+/**
+ * Throttle for the admin code: six wrong tries per hour per caller (a salted
+ * hash of the address, kept an hour, never the address). Redis when connected,
+ * else this process's memory.
+ */
+export async function adminAttempts(who: string): Promise<{ blocked: boolean; fail: () => Promise<void> }> {
+  const id = `ew:adminfail:${who}`;
+  if (store()) {
+    try {
+      const res = await pipeline([["GET", id]]);
+      const n = Number(res?.[0]?.result) || 0;
+      return {
+        blocked: n >= MAX_WRONG_CODES,
+        fail: async () => {
+          await pipeline([["INCR", id], ["EXPIRE", id, 3600]]).catch(() => {});
+        },
+      };
+    } catch {
+      // Fall through to memory.
+    }
+  }
+  const now = Date.now();
+  const entry = memoryFails.get(id);
+  const live = entry && entry.until > now ? entry : null;
+  return {
+    blocked: (live?.n ?? 0) >= MAX_WRONG_CODES,
+    fail: async () => {
+      memoryFails.set(id, { n: (live?.n ?? 0) + 1, until: live?.until ?? now + 3_600_000 });
+    },
+  };
+}
