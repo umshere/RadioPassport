@@ -2,7 +2,7 @@ import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useTicketStore } from "~/state/ticketStore";
 import { logUsage } from "~/utils/usage";
-import { copyTicketLink, sendTicket, shareCopy, tuneLink, type ShareableStation } from "./shareStation";
+import { copyTicketAndLink, copyTicketLink, sendTicket, shareCopy, tuneLink, type ShareableStation } from "./shareStation";
 import { ticketImagePath, ticketPlace, type TicketFormat } from "./ticketModel";
 import { TICKET_VOICE } from "./ticketVoice";
 
@@ -126,6 +126,11 @@ function TicketDialog({
     setStatus(result === "copied" ? TICKET_VOICE.copied : TICKET_VOICE.copyFailed);
   };
 
+  const onCopyBoth = async () => {
+    const result = await copyTicketAndLink(station, clock, file);
+    setStatus(result === "copied" ? TICKET_VOICE.copiedBoth : TICKET_VOICE.copyFailed);
+  };
+
   const onSave = async () => {
     const saved = file ?? (await printTicket(station, format));
     if (!saved) {
@@ -206,6 +211,9 @@ function TicketDialog({
             {TICKET_VOICE.send}
           </button>
           <div className="ew-ticket-row">
+            <button type="button" className="ew-ticket-act" onClick={() => void onCopyBoth()}>
+              {TICKET_VOICE.copyBoth}
+            </button>
             <button type="button" className="ew-ticket-act" onClick={() => void onCopy()}>
               {TICKET_VOICE.copy}
             </button>

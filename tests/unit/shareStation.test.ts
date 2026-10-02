@@ -103,3 +103,28 @@ describe("/api/station", () => {
     expect(res.status).toBe(400);
   });
 });
+
+describe("copy the ticket and its link", () => {
+  const png = { name: "t.png", type: "image/png" } as unknown as File;
+  it("puts picture, text and a rich link in one clipboard item", async () => {
+    const write = vi.fn().mockResolvedValue(undefined);
+    class FakeItem {
+      constructor(public parts: Record<string, unknown>) {}
+    }
+    vi.stubGlobal("ClipboardItem", FakeItem);
+    vi.stubGlobal("navigator", { clipboard: { write, writeText: vi.fn() } });
+    vi.stubGlobal("window", { location: { origin: "https://elsewheremusic.com" } });
+    const { copyTicketAndLink } = await import("~/components/share/shareStation");
+    expect(await copyTicketAndLink(station, null, png)).toBe("copied");
+    const item = write.mock.calls[0]![0][0] as FakeItem;
+    expect(Object.keys(item.parts).sort()).toEqual(["image/png", "text/html", "text/plain"]);
+  });
+  it("falls back to the link and the line when the picture is not ready", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    vi.stubGlobal("navigator", { clipboard: { writeText } });
+    vi.stubGlobal("window", { location: { origin: "https://elsewheremusic.com" } });
+    const { copyTicketAndLink } = await import("~/components/share/shareStation");
+    expect(await copyTicketAndLink(station, null, null)).toBe("copied");
+    expect(writeText.mock.calls[0]![0]).toContain("/t/8a1b2c3d-1111-2222-3333-444455556666");
+  });
+});

@@ -128,3 +128,46 @@ export async function copyTicketLink(
     return "failed";
   }
 }
+
+function escapeHtml(value: string) {
+  return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
+/**
+ * One copy, one paste: the ticket picture and the link ride the clipboard
+ * together (picture, plain text, and a rich link). Which part shows is up to
+ * the app you paste into; a chat box that takes pictures shows the picture and
+ * usually the text with it. Without picture support, or without the picture
+ * yet, it falls back to the link and the line, never to nothing.
+ */
+export async function copyTicketAndLink(
+  station: ShareableStation,
+  clock?: string | null,
+  file?: File | null,
+): Promise<ShareResult> {
+  const url = tuneLink(station, currentOrigin());
+  const { text } = shareCopy(station, clock);
+  const plain = `${text} ${url}`;
+  const canRich =
+    file?.type === "image/png" &&
+    typeof navigator !== "undefined" &&
+    typeof ClipboardItem !== "undefined" &&
+    typeof navigator.clipboard?.write === "function";
+  if (canRich) {
+    try {
+      const html = `<p>${escapeHtml(text)} <a href="${escapeHtml(url)}">${escapeHtml(url)}</a></p>`;
+      await navigator.clipboard.write([
+        new ClipboardItem({
+          "image/png": file!,
+          "text/plain": new Blob([plain], { type: "text/plain" }),
+          "text/html": new Blob([html], { type: "text/html" }),
+        }),
+      ]);
+      logUsage("ticket_copy");
+      return "copied";
+    } catch {
+      // Fall through to the link alone.
+    }
+  }
+  return copyTicketLink(station, clock, { withText: true });
+}
