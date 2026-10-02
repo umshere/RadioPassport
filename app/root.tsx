@@ -61,16 +61,20 @@ export const shouldRevalidate: ShouldRevalidateFunction = () => false;
 
 export const links: LinksFunction = () => [
   { rel: "stylesheet", href: stylesheet },
-  { rel: "preconnect", href: "https://fonts.googleapis.com" },
-  {
-    rel: "preconnect",
-    href: "https://fonts.gstatic.com",
-    crossOrigin: "anonymous",
-  },
-  {
-    rel: "stylesheet",
-    href: "https://fonts.googleapis.com/css2?family=Azeret+Mono:wght@400;500&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400;1,6..72,500&family=Schibsted+Grotesk:wght@400;500;600&display=swap",
-  },
+  // Our own copies of the three typefaces: no request ever leaves for Google.
+  { rel: "stylesheet", href: "/fonts/site/fonts.css" },
+  ...[
+    "Newsreader-italic-400-latin",
+    "Newsreader-normal-400-latin",
+    "SchibstedGrotesk-normal-400-latin",
+    "AzeretMono-normal-400-latin",
+  ].map((name) => ({
+    rel: "preload",
+    as: "font" as const,
+    type: "font/woff2",
+    href: `/fonts/site/${name}.woff2`,
+    crossOrigin: "anonymous" as const,
+  })),
   { rel: "icon", type: "image/svg+xml", href: "/elsewhere-favicon.svg" },
   { rel: "icon", type: "image/png", sizes: "48x48", href: "/icons/favicon-48.png" },
   { rel: "icon", type: "image/png", sizes: "32x32", href: "/icons/favicon-32.png" },
@@ -128,16 +132,6 @@ function Document({
             <meta name="twitter:card" content="summary_large_image" />
           </>
         )}
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link
-          rel="preconnect"
-          href="https://fonts.gstatic.com"
-          crossOrigin="anonymous"
-        />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Azeret+Mono:wght@400;500&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400;1,6..72,500&family=Schibsted+Grotesk:wght@400;500;600&display=swap"
-          rel="stylesheet"
-        />
         {title ? <title>{title}</title> : null}
         <Meta />
         <Links />

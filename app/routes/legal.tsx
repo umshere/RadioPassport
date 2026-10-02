@@ -139,9 +139,6 @@ export default function Legal() {
               It stays on the device.
             </li>
             <li>
-              <b>Fonts.</b> The site’s typefaces load from Google Fonts, so Google sees your IP address when a page loads.
-            </li>
-            <li>
               <b>Hosting.</b> Our host (Vercel) keeps ordinary request logs (IP address, time, page) for security and to run
               the site. A short-lived counter by IP address limits how many questions the Keeper answers per hour.
             </li>
@@ -192,7 +189,7 @@ export default function Legal() {
               the facts we give them, never on the audio.
             </li>
             <li>
-              <b>Typefaces:</b> Newsreader, Schibsted Grotesk and Azeret Mono, open fonts under the SIL Open Font License.
+              <b>Typefaces:</b> Newsreader, Schibsted Grotesk and Azeret Mono, open fonts under the SIL Open Font License, served from this site.
             </li>
             <li>
               <b>The Keeper</b>, the pixel-art figure, and the illustrations were made for Elsewhere.
