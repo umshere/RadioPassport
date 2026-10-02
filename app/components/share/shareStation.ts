@@ -58,6 +58,19 @@ export function canShareFile(file: File | null | undefined) {
 }
 
 /**
+ * A phone or tablet (touch first). A Mac's share menu has "Copy" in it, and
+ * with a picture attached Copy takes the picture alone and drops the link, so
+ * on a computer the ticket goes as a link and the picture stays on Save image.
+ */
+function touchFirst() {
+  try {
+    return typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches;
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Every share control's entry point: open the ticket sheet, where the listener
  * sees the ticket before it goes anywhere. Nothing is sent from here.
  */
@@ -83,7 +96,7 @@ export async function sendTicket(
   const { title, text } = shareCopy(station, clock);
   if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
     try {
-      if (canShareFile(file)) {
+      if (touchFirst() && canShareFile(file)) {
         // Some share targets drop `url` when files ride along, so the link travels in the text.
         await navigator.share({ files: [file!], title, text: `${text} ${url}` });
       } else {

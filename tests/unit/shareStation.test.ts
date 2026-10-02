@@ -47,11 +47,26 @@ describe("send the ticket", () => {
   it("attaches the ticket picture where the phone can share files, link in the text", async () => {
     const share = vi.fn().mockResolvedValue(undefined);
     vi.stubGlobal("navigator", { share, canShare: () => true });
-    vi.stubGlobal("window", { location: { origin: "https://elsewheremusic.com" } });
+    vi.stubGlobal("window", {
+      location: { origin: "https://elsewheremusic.com" },
+      matchMedia: () => ({ matches: true }),
+    });
     expect(await sendTicket(station, null, file)).toBe("shared");
     const payload = share.mock.calls[0]![0];
     expect(payload.files).toEqual([file]);
     expect(payload.text).toContain("/t/8a1b2c3d-1111-2222-3333-444455556666");
+  });
+  it("on a computer the share menu gets the link, not the picture", async () => {
+    const share = vi.fn().mockResolvedValue(undefined);
+    vi.stubGlobal("navigator", { share, canShare: () => true });
+    vi.stubGlobal("window", {
+      location: { origin: "https://elsewheremusic.com" },
+      matchMedia: () => ({ matches: false }),
+    });
+    expect(await sendTicket(station, null, file)).toBe("shared");
+    const payload = share.mock.calls[0]![0];
+    expect(payload.files).toBeUndefined();
+    expect(payload.url).toContain("/t/8a1b2c3d-1111-2222-3333-444455556666");
   });
   it("shares the link when files are not welcome", async () => {
     const share = vi.fn().mockResolvedValue(undefined);
