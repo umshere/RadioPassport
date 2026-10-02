@@ -330,27 +330,54 @@ async function withTimeout<T>(work: Promise<T>, ms: number): Promise<T | null> {
   return Promise.race([work, new Promise<null>((resolve) => setTimeout(() => resolve(null), ms))]);
 }
 
-/** Fetch just the glyphs a non-Latin station name needs. Failure leaves them blank, never breaks the ticket. */
-async function loadScriptFont(code: string, text: string) {
-  if (code === "emoji") return BLANK;
-  // satori may hand over several candidates ("ja-JP|zh-CN|…") for shared scripts like Han.
-  const family = code.split("|").map((part) => NOTO[part]).find(Boolean) ?? NOTO.unknown!;
-  const load = async () => {
-    const css = await fetch(
-      `https://fonts.googleapis.com/css2?family=${encodeURIComponent(family)}&text=${encodeURIComponent(text)}`,
-    ).then((res) => (res.ok ? res.text() : ""));
-    const url = css.match(/src: url\((.+?)\) format\('(?:opentype|truetype)'\)/)?.[1];
-    if (!url) return [];
-    const res = await fetch(url);
-    if (!res.ok || (res.headers.get("content-type") ?? "").includes("text/")) return [];
-    const data = await res.arrayBuffer();
-    return [{ name: family, data, weight: 400 as const, style: "normal" as const }];
-  };
-  try {
-    return (await withTimeout(load(), 2500)) ?? [];
-  } catch {
-    return [];
+/**
+ * Which Noto family draws this text. satori hands over every script that could
+ * own a Han character ("ja-JP|zh-CN|…"); taking the first one drew Japanese
+ * forms and left Simplified Chinese characters as empty boxes. Decide from the
+ * text itself, then from the country on the ticket, and default Han to
+ * Simplified Chinese.
+ */
+export function pickScriptFamily(code: string, text: string, country = "") {
+  const parts = code.split("|").filter((part) => NOTO[part]);
+  const has = (part: string) => parts.includes(part);
+  if (parts.length > 1) {
+    if (has("ja-JP") && /[\u3040-\u30ff]/.test(text)) return NOTO["ja-JP"]!;
+    if (has("ko-KR") && /[\uac00-\ud7af\u1100-\u11ff]/.test(text)) return NOTO["ko-KR"]!;
+    const place = country.toLowerCase();
+    const byCountry: Array<[RegExp, string]> = [
+      [/taiwan/, "zh-TW"],
+      [/hong kong|macao|macau/, "zh-HK"],
+      [/japan/, "ja-JP"],
+      [/korea/, "ko-KR"],
+    ];
+    for (const [pattern, part] of byCountry) if (pattern.test(place) && has(part)) return NOTO[part]!;
+    if (has("zh-CN")) return NOTO["zh-CN"]!;
   }
+  return NOTO[parts[0] ?? "unknown"] ?? NOTO.unknown!;
+}
+
+/** Fetch just the glyphs a non-Latin station name needs. Failure leaves them blank, never breaks the ticket. */
+function scriptFontLoader(country: string) {
+  return async (code: string, text: string) => {
+    if (code === "emoji") return BLANK;
+    const family = pickScriptFamily(code, text, country);
+    const load = async () => {
+      const css = await fetch(
+        `https://fonts.googleapis.com/css2?family=${encodeURIComponent(family)}&text=${encodeURIComponent(text)}`,
+      ).then((res) => (res.ok ? res.text() : ""));
+      const url = css.match(/src: url\((.+?)\) format\('(?:opentype|truetype)'\)/)?.[1];
+      if (!url) return [];
+      const res = await fetch(url);
+      if (!res.ok || (res.headers.get("content-type") ?? "").includes("text/")) return [];
+      const data = await res.arrayBuffer();
+      return [{ name: family, data, weight: 400 as const, style: "normal" as const }];
+    };
+    try {
+      return (await withTimeout(load(), 4000)) ?? [];
+    } catch {
+      return [];
+    }
+  };
 }
 
 export async function renderTicketSvg(fields: TicketFields, format: TicketFormat, assets: TicketAssets) {
@@ -361,7 +388,7 @@ export async function renderTicketSvg(fields: TicketFields, format: TicketFormat
     width,
     height,
     fonts: assets.fonts,
-    loadAdditionalAsset: loadScriptFont,
+    loadAdditionalAsset: scriptFontLoader(`${fields.place} ${fields.country ?? ""}`),
   });
 }
 
