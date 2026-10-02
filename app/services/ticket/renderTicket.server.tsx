@@ -516,6 +516,7 @@ function fontRuns(text: string, complex: string[]) {
  */
 export async function shapedNameImage(name: string, size: number, maxWidth: number): Promise<ShapedName | null> {
   if (!NEEDS_SHAPING.test(name)) return null;
+  name = name.replace(/^[\s.,:;!|·•\-–—_]+|[\s.,:;!|·•\-–—_]+$/g, "");
   try {
     const wanted = SHAPING_FAMILY.filter(([range]) => range.test(name)).map(([, family]) => family);
     const families = [...new Set([...wanted, "Noto Sans"])];
@@ -575,8 +576,9 @@ export async function shapedNameImage(name: string, size: number, maxWidth: numb
 
 export async function renderTicketSvg(fields: TicketFields, format: TicketFormat, assets: TicketAssets) {
   const { width, height } = TICKET_SIZE[format];
-  fields = { ...fields, name: arabicVisualOrder(fields.name), place: arabicVisualOrder(fields.place) };
+  // HarfBuzz takes the name as written. Only the plain-text fallback needs the Arabic words put in visual order.
   const shaped = await shapedNameImage(fields.name, format === "story" ? 40 : 34, format === "story" ? 860 : 740);
+  fields = { ...fields, name: arabicVisualOrder(fields.name), place: arabicVisualOrder(fields.place) };
   const node =
     format === "story" ? (
       <StoryTicket fields={fields} keeper={assets.keeper} shaped={shaped} />
