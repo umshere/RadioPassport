@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { arabicVisualOrder, pickScriptFamily } from "~/services/ticket/renderTicket.server";
+import { arabicVisualOrder, pickScriptFamily, shapedNameImage } from "~/services/ticket/renderTicket.server";
 
 const HAN = "ja-JP|ko-KR|zh-CN|zh-TW|zh-HK";
 
@@ -50,5 +50,13 @@ describe("arabicVisualOrder", () => {
   });
   it("keeps a Latin run in its own order inside Arabic", () => {
     expect(arabicVisualOrder("راديو FM 101")).toBe("FM 101 راديو");
+  });
+});
+
+describe("shapedNameImage", () => {
+  it("leaves Latin, CJK and Thai to the ordinary text path (no network, no work)", async () => {
+    for (const name of ["Radio FM", "广东新闻台", "วิทยุไทย", "Радио Россия"]) {
+      expect(await shapedNameImage(name, 34, 740)).toBeNull();
+    }
   });
 });

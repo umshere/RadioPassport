@@ -201,11 +201,17 @@ function Head({ fields }: { fields: TicketFields }) {
   );
 }
 
-function Station({ fields, size }: { fields: TicketFields; size: number }) {
+function Station({ fields, size, shaped }: { fields: TicketFields; size: number; shaped?: ShapedName | null }) {
   return (
     <Box style={{ flexDirection: "column", gap: 6 }}>
       <Label color={C.inkSoft}>Station</Label>
-      <Box style={{ fontFamily: SERIF, fontSize: size, lineHeight: 1.1, color: C.ink }}>{fields.name}</Box>
+      {shaped ? (
+        <Box style={{ height: Math.round(size * 1.25), alignItems: "center" }}>
+          <img src={shaped.src} width={shaped.width} height={shaped.height} style={{ width: shaped.width, height: shaped.height }} />
+        </Box>
+      ) : (
+        <Box style={{ fontFamily: SERIF, fontSize: size, lineHeight: 1.1, color: C.ink }}>{fields.name}</Box>
+      )}
       {fields.country ? (
         <Box style={{ fontFamily: MONO, fontSize: 16, letterSpacing: 3, textTransform: "uppercase", color: C.inkSoft }}>
           {fields.country}
@@ -233,7 +239,7 @@ function Tagline({ color }: { color: string }) {
   );
 }
 
-function CardTicket({ fields, keeper }: { fields: TicketFields; keeper?: string | null }) {
+function CardTicket({ fields, keeper, shaped }: { fields: TicketFields; keeper?: string | null; shaped?: ShapedName | null }) {
   const { width, height } = TICKET_SIZE.card;
   const pad = 34;
   const paperH = height - pad * 2;
@@ -244,7 +250,7 @@ function CardTicket({ fields, keeper }: { fields: TicketFields; keeper?: string 
         <Box style={{ width: width - pad * 2 - stubW - 2, flexShrink: 0, flexDirection: "column", justifyContent: "space-between", padding: "38px 44px 34px" }}>
           <Head fields={fields} />
           <Route fields={fields} big={104} />
-          <Station fields={fields} size={34} />
+          <Station fields={fields} size={34} shaped={shaped} />
           <Fields fields={fields} gap={48} />
           <Tagline color={C.inkSoft} />
         </Box>
@@ -263,7 +269,7 @@ function CardTicket({ fields, keeper }: { fields: TicketFields; keeper?: string 
   );
 }
 
-function StoryTicket({ fields, keeper }: { fields: TicketFields; keeper?: string | null }) {
+function StoryTicket({ fields, keeper, shaped }: { fields: TicketFields; keeper?: string | null; shaped?: ShapedName | null }) {
   const { width, height } = TICKET_SIZE.story;
   const padX = 64;
   const paperW = width - padX * 2;
@@ -279,7 +285,7 @@ function StoryTicket({ fields, keeper }: { fields: TicketFields; keeper?: string
         <Box style={{ flexDirection: "column", gap: 40, padding: "44px 48px 40px" }}>
           <Head fields={fields} />
           <Route fields={fields} big={112} />
-          <Station fields={fields} size={40} />
+          <Station fields={fields} size={40} shaped={shaped} />
           <Fields fields={fields} gap={44} />
         </Box>
         <Box style={{ position: "relative", justifyContent: "center" }}>
@@ -427,11 +433,156 @@ export function arabicVisualOrder(text: string) {
     .join(" ");
 }
 
+type ShapedName = { src: string; width: number; height: number };
+
+/** Scripts whose letters change shape or move around their neighbours; satori cannot do that. */
+const NEEDS_SHAPING = /[\u0900-\u0dff\u1000-\u109f\u1780-\u17ff\u0600-\u06ff\u0750-\u077f\u08a0-\u08ff\ufb50-\ufdff\ufe70-\ufeff]/;
+
+const SHAPING_FAMILY: Array<[RegExp, string]> = [
+  [/[\u0d00-\u0d7f]/, "Noto Sans Malayalam"],
+  [/[\u0b80-\u0bff]/, "Noto Sans Tamil"],
+  [/[\u0c00-\u0c7f]/, "Noto Sans Telugu"],
+  [/[\u0c80-\u0cff]/, "Noto Sans Kannada"],
+  [/[\u0980-\u09ff]/, "Noto Sans Bengali"],
+  [/[\u0900-\u097f]/, "Noto Sans Devanagari"],
+  [/[\u0a80-\u0aff]/, "Noto Sans Gujarati"],
+  [/[\u0a00-\u0a7f]/, "Noto Sans Gurmukhi"],
+  [/[\u0b00-\u0b7f]/, "Noto Sans Oriya"],
+  [/[\u0d80-\u0dff]/, "Noto Sans Sinhala"],
+  [/[\u1780-\u17ff]/, "Noto Sans Khmer"],
+  [/[\u1000-\u109f]/, "Noto Sans Myanmar"],
+  [/[\u0600-\u06ff\u0750-\u077f\u08a0-\u08ff\ufb50-\ufdff\ufe70-\ufeff]/, "Noto Sans Arabic"],
+];
+
+const fullFonts = new Map<string, Promise<Buffer | null>>();
+
+/** The whole regular-weight file: Google's text= subsets drop the tables that shaping needs. */
+function fetchTtf(family: string) {
+  const known = fullFonts.get(family);
+  if (known) return known;
+  const work = (async () => {
+    const css = await fetch(`https://fonts.googleapis.com/css2?family=${encodeURIComponent(family)}:wght@400`).then((res) =>
+      res.ok ? res.text() : "",
+    );
+    const url = css.match(/src: url\((.+?)\) format\('(?:opentype|truetype)'\)/)?.[1];
+    if (!url) return null;
+    const res = await fetch(url);
+    if (!res.ok || (res.headers.get("content-type") ?? "").includes("text/")) return null;
+    return Buffer.from(await res.arrayBuffer());
+  })().catch(() => null);
+  fullFonts.set(family, work);
+  // A miss is not remembered: the next ticket tries again.
+  work.then((buffer) => {
+    if (!buffer) fullFonts.delete(family);
+  });
+  return work;
+}
+
+const xmlEscape = (text: string) => text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+const ARABIC_RANGE = /[\u0600-\u06ff\u0750-\u077f\u08a0-\u08ff\ufb50-\ufdff\ufe70-\ufeff]/;
+
+type HarfBuzz = typeof import("harfbuzzjs");
+type ShapingFont = { font: InstanceType<HarfBuzz["Font"]>; upem: number };
+const shapingFonts = new Map<string, ShapingFont>();
+
+function shapingFont(hb: HarfBuzz, family: string, bytes: Buffer): ShapingFont {
+  const known = shapingFonts.get(family);
+  if (known) return known;
+  const face = new hb.Face(new hb.Blob(new Uint8Array(bytes)));
+  const made = { font: new hb.Font(face), upem: face.upem };
+  shapingFonts.set(family, made);
+  return made;
+}
+
+/** Split into runs that each belong to one font; spaces, digits and punctuation ride with their neighbour. */
+function fontRuns(text: string, complex: string[]) {
+  const runs: Array<{ family: string; text: string }> = [];
+  for (const char of text) {
+    const own = SHAPING_FAMILY.find(([range]) => range.test(char))?.[1];
+    const family = own && complex.includes(own) ? own : /[\p{L}\p{M}]/u.test(char) ? "Noto Sans" : (runs[runs.length - 1]?.family ?? "Noto Sans");
+    const last = runs[runs.length - 1];
+    if (last && last.family === family) last.text += char;
+    else runs.push({ family, text: char });
+  }
+  return runs;
+}
+
+/**
+ * Draws a station name in a script that needs real shaping (Malayalam, Tamil,
+ * Hindi, Arabic and the like): HarfBuzz lays the letters out, each glyph is
+ * drawn as a path, and the result goes onto the ticket as a picture. Null on
+ * any trouble: the plain text path remains.
+ */
+export async function shapedNameImage(name: string, size: number, maxWidth: number): Promise<ShapedName | null> {
+  if (!NEEDS_SHAPING.test(name)) return null;
+  try {
+    const wanted = SHAPING_FAMILY.filter(([range]) => range.test(name)).map(([, family]) => family);
+    const families = [...new Set([...wanted, "Noto Sans"])];
+    const loaded = await withTimeout(Promise.all(families.map((family) => fetchTtf(family))), 5000);
+    if (!loaded) return null;
+    const bytes = new Map(families.map((family, i) => [family, loaded[i]] as const));
+    if (wanted.some((family) => !bytes.get(family))) return null;
+    const hb = await import("harfbuzzjs");
+    const rtl = ARABIC_RANGE.test(name);
+    let runs = fontRuns(name, wanted);
+    if (rtl) runs = [...runs].reverse();
+    const scaleOf = (upem: number) => size / upem;
+    let x = 8;
+    const baseline = Math.round(size * 1.5);
+    const paths: string[] = [];
+    for (const run of runs) {
+      const data = bytes.get(run.family) ?? bytes.get("Noto Sans");
+      if (!data) continue;
+      const { font, upem } = shapingFont(hb, run.family, data);
+      const buffer = new hb.Buffer();
+      buffer.addText(run.text);
+      buffer.guessSegmentProperties();
+      hb.shape(font, buffer);
+      const infos = buffer.getGlyphInfos();
+      const positions = buffer.getGlyphPositions();
+      const k = scaleOf(upem);
+      infos.forEach((info, i) => {
+        const pos = positions[i]!;
+        const d = font.glyphToPath(info.codepoint);
+        if (d) {
+          paths.push(
+            `<path transform="translate(${(x + pos.xOffset * k).toFixed(2)} ${(baseline - pos.yOffset * k).toFixed(2)}) scale(${k.toFixed(5)} ${(-k).toFixed(5)})" d="${d}"/>`,
+          );
+        }
+        x += pos.xAdvance * k;
+      });
+    }
+    if (paths.length === 0) return null;
+    const { Resvg } = await import("@resvg/resvg-js");
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${Math.ceil(x) + 16}" height="${Math.round(size * 2.4)}" fill="${C.ink}">${paths.join("")}</svg>`;
+    const resvg = new Resvg(svg, { fitTo: { mode: "zoom", value: 2 }, font: { loadSystemFonts: false } });
+    const box = resvg.getBBox();
+    if (!box) return null;
+    resvg.cropByBBox(box);
+    const image = resvg.render();
+    const natural = image.width / 2;
+    const scale = natural > maxWidth ? maxWidth / natural : 1;
+    return {
+      src: `data:image/png;base64,${Buffer.from(image.asPng()).toString("base64")}`,
+      width: Math.round(natural * scale),
+      height: Math.round((image.height / 2) * scale),
+    };
+  } catch {
+    return null;
+  }
+}
+
 export async function renderTicketSvg(fields: TicketFields, format: TicketFormat, assets: TicketAssets) {
   const { width, height } = TICKET_SIZE[format];
   fields = { ...fields, name: arabicVisualOrder(fields.name), place: arabicVisualOrder(fields.place) };
+  const shaped = await shapedNameImage(fields.name, format === "story" ? 40 : 34, format === "story" ? 860 : 740);
   const node =
-    format === "story" ? <StoryTicket fields={fields} keeper={assets.keeper} /> : <CardTicket fields={fields} keeper={assets.keeper} />;
+    format === "story" ? (
+      <StoryTicket fields={fields} keeper={assets.keeper} shaped={shaped} />
+    ) : (
+      <CardTicket fields={fields} keeper={assets.keeper} shaped={shaped} />
+    );
   return satori(node, {
     width,
     height,
