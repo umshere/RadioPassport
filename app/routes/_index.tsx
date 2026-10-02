@@ -47,6 +47,8 @@ import {
   homeDepartures,
   homeGuide,
   routeHomeAsk,
+  homeAskFromChoice,
+  type HomeAsk,
   homeKeeperLine,
   homeKeeperState,
   homePhase,
@@ -55,6 +57,8 @@ import {
 } from "~/components/home/homeModel";
 import { useFloorClearance, useMinuteClock } from "~/components/desk/deskHooks";
 import { VOICE } from "~/components/keeper/keeperVoice";
+import { askHomeKeeper } from "~/components/keeper/keeperClient";
+import { useKeeperAskEnabled } from "~/components/keeper/KeeperSheet";
 import { useKeeperStore } from "~/state/keeperStore";
 import { useHydrated } from "~/hooks/useHydrated";
 import { HOME_NO_STORE, loadHomeBoard } from "~/services/home/homeBoard.server";
@@ -307,6 +311,7 @@ export default function Index() {
     asleep: keeperState === "sleeping",
   });
   // A returning listener gets a line that fits their own hour, not the welcome.
+  const askEnabled = useKeeperAskEnabled();
   const [askLine, setAskLine] = useState<string | null>(null);
   useEffect(() => {
     if (!askLine) return;
@@ -416,22 +421,31 @@ export default function Index() {
               )
             }
             onAsk={(question) => {
-              const route = routeHomeAsk(question);
-              if (!route) return;
-              if (route.kind === "search") {
-                setAskLine(null);
-                setQuery(route.query);
-                submitIntent(route.query);
-                return;
-              }
-              setAskLine(route.line);
-              if (route.kind === "surprise") void requestAiWorld();
-              else if (route.kind === "hour") {
-                setHour(route.hour);
-                setPlace(null);
-                setQuery("");
-                scrollToBoard();
-              }
+              const act = (route: HomeAsk) => {
+                if (route.kind === "search") {
+                  setAskLine(null);
+                  setQuery(route.query);
+                  submitIntent(route.query);
+                  return;
+                }
+                setAskLine(route.line);
+                if (route.kind === "surprise") void requestAiWorld();
+                else if (route.kind === "hour") {
+                  setHour(route.hour);
+                  setPlace(null);
+                  setQuery("");
+                  scrollToBoard();
+                }
+              };
+              const rules = routeHomeAsk(question);
+              if (!rules) return;
+              // The keeper's rules answer at once; with the desk open to
+              // questions, Jev reads the sentence first and the rules back it up.
+              if (!askEnabled) return act(rules);
+              setAskLine(VOICE.askThinking);
+              void askHomeKeeper(question).then((jev) => {
+                act((jev && homeAskFromChoice(jev.choice, jev.hour, question)) || rules);
+              });
             }}
             guide={guide.chips}
             onGuide={(chip) => {

@@ -16,7 +16,7 @@ import { getOpenRouterModelRotation } from "~/services/ai/providers/openRouterMo
 import { parseJsonObjectFromText } from "~/services/ai/providers/providerUtils";
 import type { SolarHour } from "~/utils/localTime";
 import { isKeeperAskEnabled } from "./flag.server";
-import { classifyKeeperQuestion } from "./jev.server";
+import { classifyKeeperQuestion, decideHomeAsk } from "./jev.server";
 import { extractTopic, isNowPlayingQuestion, looksLikeInjection } from "~/components/keeper/keeperTopic";
 import { resolveAlias } from "~/components/keeper/keeperAliases";
 import { KNOWLEDGE_SYSTEM_PROMPT, fetchKnowledgeSnippet, leadSentences } from "./knowledge.server";
@@ -58,6 +58,9 @@ type KeeperJson = {
   topic?: string;
   stationLine?: string;
   action?: { kind: "hour_hop"; hour: SolarHour };
+  choice?: string;
+  hour?: string | null;
+  confidence?: number | null;
   error?: string;
 };
 
@@ -131,6 +134,18 @@ export async function handleKeeperRoute(request: Request, deps: KeeperDeps = {})
     fetchImpl: deps.fetchImpl,
   });
   return reply({ intent: routing.intent, source: routing.source, state: "thinking" });
+}
+
+/** POST /api/keeper/home — the arrival field: what does a new listener want? Jev, or null so the client's rules answer. */
+export async function handleKeeperHome(request: Request, deps: KeeperDeps = {}) {
+  const env = deps.env ?? process.env;
+  const parsed = await parseQuestion(request, env);
+  if (!parsed.ok) return parsed.response;
+  const blocked = limited(request, deps);
+  if (blocked) return blocked;
+  const decision = await decideHomeAsk(parsed.question, { env, fetchImpl: deps.fetchImpl });
+  if (!decision) return reply({ source: "rules" });
+  return reply({ source: "jev", choice: decision.choice, hour: decision.hour, confidence: decision.confidence });
 }
 
 /** Intents the facts answer outright; no model is asked. */

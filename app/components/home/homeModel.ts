@@ -263,3 +263,29 @@ export function routeHomeAsk(question: string): HomeAsk | null {
   }
   return { kind: "search", query: question.trim() };
 }
+
+/** Jev's pick for the arrival field, turned into the same shape the rules give. */
+export function homeAskFromChoice(
+  choice: string,
+  hour: string | null,
+  question: string,
+): HomeAsk | null {
+  switch (choice) {
+    case "how_it_works":
+      return { kind: "help", line: VOICE.askHelp };
+    case "passport":
+      return { kind: "help", line: VOICE.askPassport };
+    case "free":
+      return { kind: "help", line: VOICE.askFree };
+    case "surprise":
+      return { kind: "surprise", line: VOICE.askSurprise };
+    case "hour_hop": {
+      const found = ASK_HOURS.find((item) => item.hour === hour);
+      return found ? { kind: "hour", hour: found.hour, line: VOICE.hop(hourWord(found.hour)) } : null;
+    }
+    case "search":
+      return { kind: "search", query: question.trim() };
+    default:
+      return null;
+  }
+}

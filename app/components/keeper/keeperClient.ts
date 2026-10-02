@@ -66,3 +66,40 @@ export async function askKeeper(
     if (timer) clearTimeout(timer);
   }
 }
+
+export type HomeAskReply = { choice: string; hour: string | null };
+
+/**
+ * The arrival field's question to Jev, via the server. Null on any failure,
+ * a missing key or a slow reply (raced, never aborted): the home's own rules
+ * answer instead, so the field never waits long and never breaks.
+ */
+export async function askHomeKeeper(
+  question: string,
+  fetchImpl: typeof fetch = fetch,
+  timeoutMs = 2500,
+): Promise<HomeAskReply | null> {
+  logUsage("keeper_ask");
+  const request = fetchImpl("/api/keeper/home", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ question }),
+  })
+    .then(async (response) => {
+      const payload = (await response.json().catch(() => null)) as
+        | { source?: string; choice?: unknown; hour?: unknown }
+        | null;
+      if (!payload || payload.source !== "jev" || typeof payload.choice !== "string") return null;
+      return { choice: payload.choice, hour: typeof payload.hour === "string" ? payload.hour : null };
+    })
+    .catch(() => null);
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<null>((resolve) => {
+    timer = setTimeout(() => resolve(null), timeoutMs);
+  });
+  try {
+    return await Promise.race([request, timeout]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}

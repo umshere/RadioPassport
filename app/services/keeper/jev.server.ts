@@ -133,3 +133,91 @@ export async function classifyKeeperQuestion(
     if (timer) clearTimeout(timer);
   }
 }
+
+/* ---- The home's "Ask me anything": what does a new arrival want? ---- */
+
+export const HOME_ASK_CRITERIA = {
+  how_it_works: "Asks what Elsewhere is or how it works or where to start",
+  passport: "Asks about the passport, stamps or what they are for",
+  free: "Asks about price, cost, subscription or whether it is free",
+  hour_hop: "Wants to hear somewhere at a time of day (morning, evening, night) with no named place, language or genre",
+  surprise: "Wants the keeper to choose for them, a random or surprise pick",
+  search: "Names a place, language, genre, mood or station to look for",
+} as const;
+export type HomeAskChoice = keyof typeof HOME_ASK_CRITERIA;
+export const HOME_ASK_HOURS = ["Dawn", "Midday", "Dusk", "Night", "none"] as const;
+
+export type HomeAskDecision = {
+  choice: HomeAskChoice;
+  hour: "Dawn" | "Midday" | "Dusk" | "Night" | null;
+  confidence: number | null;
+};
+
+export function jevHomeRequestBody(question: string) {
+  return {
+    model: JEV_MODEL,
+    state: {
+      setting:
+        "A new listener has just arrived at a live radio site and asks the keeper, a clerk at the desk, one thing before anything is playing.",
+      question,
+    },
+    questions: {
+      choice: {
+        type: "choice",
+        instructions: "What does the listener want? Pick the closest option.",
+        criteria: HOME_ASK_CRITERIA,
+      },
+      hour: {
+        type: "choice",
+        instructions:
+          "If they want a time of day, which one (Dawn is morning, Midday is daytime, Dusk is evening)? Otherwise none.",
+        criteria: {
+          Dawn: "Morning, sunrise, early",
+          Midday: "Afternoon, noon, daytime",
+          Dusk: "Evening, sunset",
+          Night: "Night, late, midnight",
+          none: "No time of day asked",
+        },
+      },
+    },
+  };
+}
+
+/** Jev for the home ask; null on a missing key, a timeout or any failure (the rules answer then). */
+export async function decideHomeAsk(
+  question: string,
+  options: { env?: NodeJS.ProcessEnv; fetchImpl?: typeof fetch; timeoutMs?: number } = {},
+): Promise<HomeAskDecision | null> {
+  const apiKey = trimEnv((options.env ?? process.env).TYPESAFE_API_KEY);
+  if (!apiKey) return null;
+  const fetchImpl = options.fetchImpl ?? fetch;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<null>((resolve) => {
+    timer = setTimeout(() => resolve(null), options.timeoutMs ?? JEV_TIMEOUT_MS);
+  });
+  const call = (async () => {
+    const response = await fetchImpl(JEV_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+      body: JSON.stringify(jevHomeRequestBody(question)),
+    });
+    if (!response.ok) throw new Error(`jev ${response.status}`);
+    const payload = (await response.json()) as {
+      answers?: Record<string, { choice?: unknown; confidence?: unknown } | undefined>;
+    };
+    const choice = payload.answers?.choice?.choice;
+    if (typeof choice !== "string" || !(choice in HOME_ASK_CRITERIA)) throw new Error("no choice");
+    const hour = payload.answers?.hour?.choice;
+    const confidence = payload.answers?.choice?.confidence;
+    return {
+      choice: choice as HomeAskChoice,
+      hour: hour === "Dawn" || hour === "Midday" || hour === "Dusk" || hour === "Night" ? hour : null,
+      confidence: typeof confidence === "number" && Number.isFinite(confidence) ? confidence : null,
+    } satisfies HomeAskDecision;
+  })().catch(() => null);
+  try {
+    return await Promise.race([call, timeout]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}

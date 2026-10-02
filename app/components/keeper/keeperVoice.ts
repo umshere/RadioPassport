@@ -74,6 +74,7 @@ export const VOICE = {
   guideHow: "How it works",
   askSteps:
     "Three steps. Land: tap Land here. Listen: stay a minute and I’ll stamp the city. Send: pass a friend a ticket.",
+  askThinking: "Let me check the board…",
   guideAskChip: "Ask me anything",
   guideAskPlaceholder: "Ask me: where, when, how…",
   guideAskSend: "Ask",
