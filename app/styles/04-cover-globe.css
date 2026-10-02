@@ -209,3 +209,8 @@
        painting while still hit-testing: an invisible band you can still tap. */
   }
 }
+  .ew-atlas-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin: -24px 0 22px; }
+  @media (max-width: 760px) { .ew-atlas-tabs { margin-top: 0; } }
+  .ew-atlas-more { margin-top: 16px; }
+  .ew-atlas-hint { margin-top: 16px; color: var(--ew-dust); font-size: 13px; }
+  .ew-atlas-tabs .ew-btn, .ew-atlas-tabs button { padding-inline: 12px; min-height: 40px; }

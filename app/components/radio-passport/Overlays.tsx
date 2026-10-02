@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Eyebrow } from "~/components/ui/Eyebrow";
 import type { Country, Station } from "~/types/radio";
-import { getContinent } from "~/utils/geography";
+import { ATLAS_PAGE, atlasSearch, atlasTabCountries, atlasTabs, POPULAR } from "./atlasModel";
 import type { PassportStamp } from "~/state/journeyStore";
 import type { CountryDrilldownState } from "./countryData";
 import {
@@ -37,7 +37,9 @@ export function AtlasOverlay({
   openCountry: (country: string) => void;
   trailFootnote?: React.ReactNode;
 }) {
-  const normalized = query.toLowerCase().trim();
+  const normalized = query.trim();
+  const [tab, setTab] = useState(POPULAR);
+  const [showAll, setShowAll] = useState(false);
   const languagesByCountry = new Map<string, string>();
   stations.forEach((station) => {
     if (
@@ -47,19 +49,16 @@ export function AtlasOverlay({
     )
       languagesByCountry.set(station.country, station.language);
   });
-  const visible = countries.filter(
-    (country) =>
-      !normalized ||
-      `${country.name} ${country.iso_3166_1} ${languagesByCountry.get(country.name) ?? ""
-        }`
-        .toLowerCase()
-        .includes(normalized)
-  );
-  const regions = Array.from(
-    new Set(
-      visible.map((country) => getContinent(country.iso_3166_1) || "Other")
-    )
-  );
+  const tabs = atlasTabs(countries);
+  const inTab = normalized
+    ? atlasSearch(countries, (country) => languagesByCountry.get(country.name) ?? "", normalized)
+    : atlasTabCountries(countries, tab);
+  const capped = !normalized && tab !== POPULAR && !showAll && inTab.length > ATLAS_PAGE;
+  const visible = capped ? inTab.slice(0, ATLAS_PAGE) : inTab;
+  const pick = (id: string) => {
+    setTab(id);
+    setShowAll(false);
+  };
   return (
     <Sheet close={close} label="Atlas" hideClose>
       <header className="rp-overlay-head">
@@ -80,7 +79,17 @@ export function AtlasOverlay({
           aria-label="Search countries or languages"
         />
       </header>
-      <div className="space-y-9">
+      {normalized ? null : (
+        <div className="ew-atlas-tabs" role="group" aria-label="Browse by region">
+          {tabs.map((item) => (
+            <Chip key={item.id} selected={item.id === tab} onClick={() => pick(item.id)}>
+              {item.label}
+              {item.id === POPULAR ? "" : ` ${item.count}`}
+            </Chip>
+          ))}
+        </div>
+      )}
+      <div>
         {visible.length === 0 ? (
           <div className="mt-8" role="status">
             <p className="text-sm text-dust">{describeAtlasEmpty(query).message}</p>
@@ -94,52 +103,51 @@ export function AtlasOverlay({
               </Button>
             ))}
           </div>
+        ) : (
+          <div className="rp-country-grid">
+            {visible.map((country) => (
+              <Row
+                as="button"
+                variant="tile"
+                key={country.name}
+                onClick={() => openCountry(country.name)}
+                unavailable={!country.stationcount}
+                disabled={!country.stationcount}
+              >
+                {/^[A-Za-z]{2}$/.test(country.iso_3166_1 || "") ? (
+                  <CountryFlag
+                    iso={country.iso_3166_1}
+                    size={30}
+                    title={country.name}
+                    className="shrink-0"
+                  />
+                ) : null}
+                <span className="rp-telemetry">
+                  {country.iso_3166_1 || "--"}
+                </span>
+                <RowText
+                  variant="tile"
+                  title={country.name}
+                  sub={
+                    languagesByCountry.get(country.name) ||
+                    "Language unavailable"
+                  }
+                />
+                <span className="rp-telemetry">
+                  {country.stationcount.toLocaleString()}
+                </span>
+              </Row>
+            ))}
+          </div>
+        )}
+        {capped ? (
+          <Button className="ew-atlas-more" onClick={() => setShowAll(true)}>
+            Show all {inTab.length} in {tab} →
+          </Button>
         ) : null}
-        {regions.map((region) => (
-          <section key={region}>
-            <Eyebrow tone="foil">{region}</Eyebrow>
-            <div className="rp-country-grid">
-              {visible
-                .filter(
-                  (country) =>
-                    (getContinent(country.iso_3166_1) || "Other") === region
-                )
-                .map((country) => (
-                  <Row
-                    as="button"
-                    variant="tile"
-                    key={country.name}
-                    onClick={() => openCountry(country.name)}
-                    unavailable={!country.stationcount}
-                    disabled={!country.stationcount}
-                  >
-                    {/^[A-Za-z]{2}$/.test(country.iso_3166_1 || "") ? (
-                      <CountryFlag
-                        iso={country.iso_3166_1}
-                        size={30}
-                        title={country.name}
-                        className="shrink-0"
-                      />
-                    ) : null}
-                    <span className="rp-telemetry">
-                      {country.iso_3166_1 || "--"}
-                    </span>
-                    <RowText
-                      variant="tile"
-                      title={country.name}
-                      sub={
-                        languagesByCountry.get(country.name) ||
-                        "Language unavailable"
-                      }
-                    />
-                    <span className="rp-telemetry">
-                      {country.stationcount.toLocaleString()}
-                    </span>
-                  </Row>
-                ))}
-            </div>
-          </section>
-        ))}
+        {!normalized && tab === POPULAR ? (
+          <p className="ew-atlas-hint">The busiest first. Pick a region, or search, for the rest.</p>
+        ) : null}
       </div>
       {trailFootnote}
     </Sheet>
