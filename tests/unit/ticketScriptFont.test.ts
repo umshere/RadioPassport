@@ -45,6 +45,9 @@ describe("arabicVisualOrder", () => {
     expect(arabicVisualOrder("שלום עולם")).toBe("שלום עולם");
     expect(arabicVisualOrder("إذاعة القرآن الكريم")).toBe("الكريم القرآن إذاعة");
   });
+  it("drops stray punctuation at the ends, which unjoins the letters", () => {
+    expect(arabicVisualOrder(".إذاعة القرآن الكريم ")).toBe("الكريم القرآن إذاعة");
+  });
   it("keeps a Latin run in its own order inside Arabic", () => {
     expect(arabicVisualOrder("راديو FM 101")).toBe("FM 101 راديو");
   });

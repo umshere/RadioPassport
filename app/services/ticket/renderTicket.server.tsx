@@ -411,6 +411,8 @@ const ARABIC_SCRIPT = /[\u0600-\u06ff\u0750-\u077f\u08a0-\u08ff\ufb50-\ufdff\ufe
  */
 export function arabicVisualOrder(text: string) {
   if (!ARABIC_SCRIPT.test(text)) return text;
+  // A stray "." or "-" at either end flips the line's direction and unjoins the letters.
+  text = text.replace(/^[\s.,:;!|·•\-–—_]+|[\s.,:;!|·•\-–—_]+$/g, "");
   const runs: Array<{ rtl: boolean; words: string[] }> = [];
   for (const word of text.split(/\s+/).filter(Boolean)) {
     const rtl = ARABIC_SCRIPT.test(word);
