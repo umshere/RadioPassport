@@ -56,15 +56,15 @@ any edit.
 ### 2. Footer casing/domain drift
 
 - `scripts/og-still.html` footer (the second `<span>` in `.foot`) currently
-  reads **`ELSEWHERE.MUSIC.COM`**.
+  reads **`ELSEWHEREMUSIC.COM`**.
 - The documented canonical host is **`elsewheremusic.com`**
   (`docs/DOMAINS.md`: "Apex is the share URL. Prefer it over `www` in copy,
   redirects, and OG."). The rendered string inserts a dot that the real
   domain does not have.
 
-**Proposal-only:** a fix would change that one span to the true domain in the
-same mono caps treatment — e.g. `ELSEWHEREMUSIC.COM` — and then re-render the
-OG images with `scripts/render-og.mjs`. Neither step was taken on this pass.
+**Applied 2026-10-01:** changed that one span to the true domain in the
+same mono caps treatment (`ELSEWHEREMUSIC.COM`) and re-rendered the OG image
+with `scripts/render-og.mjs`.
 
 ## Related observation (out of scope here, noted for a future pass)
 
