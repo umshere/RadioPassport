@@ -2,6 +2,8 @@ import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useTicketStore } from "~/state/ticketStore";
 import { logUsage } from "~/utils/usage";
+import { INSTAGRAM_HANDLE, INSTAGRAM_URL } from "~/utils/social";
+import { VOICE } from "~/components/keeper/keeperVoice";
 import { copyTicketAndLink, copyTicketLink, sendTicket, shareCopy, tuneLink, type ShareableStation } from "./shareStation";
 import { ticketImagePath, ticketPlace, type TicketFormat } from "./ticketModel";
 import { TICKET_VOICE } from "./ticketVoice";
@@ -222,6 +224,12 @@ function TicketDialog({
             </button>
           </div>
         </div>
+        <p className="ew-ticket-pass">
+          {VOICE.spreadSheet}{" "}
+          <a href={INSTAGRAM_URL} target="_blank" rel="noopener noreferrer">
+            {INSTAGRAM_HANDLE}
+          </a>
+        </p>
         <p className="ew-ticket-status" role="status" aria-live="polite">
           {status || (printed?.failed && printed.format === format ? TICKET_VOICE.unprinted : "")}
         </p>

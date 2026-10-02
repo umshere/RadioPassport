@@ -23,6 +23,10 @@ export const VOICE = {
   tabPostcards: "Postcards",
   tabOnAir: "On air",
   tabStation: "Station",
+  /** Said once, on the second stamp: the one ask to carry the radio further. */
+  spread: "Music is for everyone, and there’s more of it than one life can hear. If this moved you, send a friend a ticket.",
+  spreadSheet: "More music than one life can hear, and all of it free. Send one to somebody.",
+  followLabel: "Follow on Instagram",
   tabMore: "More",
   similarLanguage: (language: string) => `More in ${language}`,
   similarTag: (tag: string) => `More ${tag}`,

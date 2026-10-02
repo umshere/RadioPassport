@@ -20,6 +20,18 @@ import {
   type KeeperState,
 } from "./keeperState";
 
+const SPREAD_KEY = "elsewhere.keeper.spread";
+/** True the first time only; a blocked store means he asks again next visit, not every stamp. */
+function askToSpread(): boolean {
+  try {
+    if (window.localStorage.getItem(SPREAD_KEY)) return false;
+    window.localStorage.setItem(SPREAD_KEY, "1");
+  } catch {
+    // Private mode: fine.
+  }
+  return true;
+}
+
 /** Re-read the clock once a minute so the hour and the mood keep time. */
 function useMinute() {
   const [now, setNow] = useState(() => new Date());
@@ -143,6 +155,19 @@ export function useKeeperDelight() {
         window.setTimeout(() => {
           if (useKeeperStore.getState().murmur?.id === id) useKeeperStore.getState().setMurmur(null);
         }, 7000);
+        // The second stamp earns the one ask to pass the radio on, once per browser.
+        if (stamps.length === 2 && askToSpread()) {
+          window.setTimeout(() => {
+            const now = useKeeperStore.getState();
+            if (now.hushed || now.sheetOpen || now.murmur) return;
+            const askId = Date.now();
+            now.setMurmur({ id: askId, topic: "Pass it on", text: VOICE.spread });
+            window.setTimeout(() => {
+              if (useKeeperStore.getState().murmur?.id === askId) useKeeperStore.getState().setMurmur(null);
+            }, 11000);
+          }, 7600);
+          return;
+        }
         // A beat later, one offer to keep the thread, once, unless he is hushed.
         const queue = usePlayerStore.getState().queue;
         void findSimilar(here, queue).then((found) => {

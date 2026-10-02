@@ -2,6 +2,7 @@ import { Eyebrow } from "~/components/ui/Eyebrow";
 import { BRAND } from "~/constants/brand";
 import { AtmospherePin } from "~/components/radio-passport/AtmospherePin";
 import { ButtonLink } from "~/components/ui/Button";
+import { INSTAGRAM_HANDLE, INSTAGRAM_URL } from "~/utils/social";
 
 const DESCRIPTION =
   "Elsewhere is live radio from someone else's now. The Keeper of the Passport will stamp you in.";
@@ -109,6 +110,21 @@ export default function About() {
             </li>
           ))}
         </ol>
+
+        <section className="ew-about-pass" aria-labelledby="ew-about-pass-title">
+          <Eyebrow tone="foil">
+            <span id="ew-about-pass-title">Pass it on</span>
+          </Eyebrow>
+          <p>
+            Music is for everyone, and there are more kinds of it than one life can get through. If something here
+            moved you, send a friend a ticket or share the picture. It only travels if you carry it.
+          </p>
+          <p>
+            <a href={INSTAGRAM_URL} target="_blank" rel="noopener noreferrer">
+              {INSTAGRAM_HANDLE} on Instagram →
+            </a>
+          </p>
+        </section>
 
         <div className="ew-appearance ew-about-appearance">
           <AtmospherePin />
