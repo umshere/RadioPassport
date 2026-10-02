@@ -143,6 +143,10 @@ export const VOICE = {
   homeRecent: "Recent stamps",
   homeRecentOpen: "Open the passport",
   homeLeaving: "Ready",
+  photoCredit: "Photo via Wikipedia ↗",
+  factsSource: "From Wikipedia ↗",
+  moreFacts: (topic: string) => `A few facts about ${topic}`,
+  askFacts: (topic: string) => `Tell me a few facts about ${topic}`,
 } as const;
 
 /** "Dawn" → "morning", for the lines that say where the sun is. */

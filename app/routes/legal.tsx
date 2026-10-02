@@ -128,7 +128,8 @@ export default function Legal() {
               <b>Looking things up.</b> To write the Keeper’s notes our server asks public sources (Wikipedia,
               MusicBrainz, Cover Art Archive, iTunes) about a place, language, genre or the artist on air. Those requests
               come from our server and name the topic, not you. Our server also reads the station’s title feed for the
-              song on air.
+              song on air. When a station is named for a person or group, your browser may load their small photo straight
+              from Wikimedia’s servers, which then see your address as they would for any web image.
             </li>
             <li>
               <b>Voice search.</b> Only if you press the microphone: your browser’s own speech recognition listens, and
@@ -173,7 +174,7 @@ export default function Legal() {
               <b>
                 <Source href="https://www.wikipedia.org/">Wikipedia</Source>
               </b>
-              : short passages about places, languages and artists in the Keeper’s notebook, used under{" "}
+              : short passages, a few facts and small photos about places, languages and artists in the Keeper’s notebook (photos are credited by a link to the article, where each image’s own licence is shown), used under{" "}
               <Source href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</Source>. Each is labelled as
               his notebook.
             </li>

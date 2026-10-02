@@ -19,7 +19,15 @@ import { isKeeperAskEnabled } from "./flag.server";
 import { classifyKeeperQuestion, decideHomeAsk } from "./jev.server";
 import { extractTopic, isNowPlayingQuestion, looksLikeInjection } from "~/components/keeper/keeperTopic";
 import { resolveAlias } from "~/components/keeper/keeperAliases";
-import { KNOWLEDGE_SYSTEM_PROMPT, fetchKnowledgeSnippet, leadSentences } from "./knowledge.server";
+import { subjectCandidate } from "~/components/keeper/keeperSubject";
+import { foldName } from "~/components/keeper/keeperAliases";
+import {
+  KNOWLEDGE_SYSTEM_PROMPT,
+  fetchKnowledgeFacts,
+  fetchKnowledgeSnippet,
+  fetchSubject,
+  leadSentences,
+} from "./knowledge.server";
 import { validateKeeperAnswer } from "./validateKeeperAnswer";
 import { clientKey, keeperBucket, type TokenBucket } from "./rateLimit.server";
 
@@ -58,6 +66,10 @@ type KeeperJson = {
   topic?: string;
   stationLine?: string;
   action?: { kind: "hour_hop"; hour: SolarHour };
+  image?: string;
+  pageUrl?: string;
+  facts?: string[];
+  subject?: { title: string; description: string; image: string | null; pageUrl: string | null } | null;
   choice?: string;
   hour?: string | null;
   confidence?: number | null;
@@ -146,6 +158,40 @@ export async function handleKeeperHome(request: Request, deps: KeeperDeps = {}) 
   const decision = await decideHomeAsk(parsed.question, { env, fetchImpl: deps.fetchImpl });
   if (!decision) return reply({ source: "rules" });
   return reply({ source: "jev", choice: decision.choice, hour: decision.hour, confidence: decision.confidence });
+}
+
+/** POST /api/keeper/subject — is the station named for a person or a group? Wikipedia must say so. */
+export async function handleKeeperSubject(request: Request, deps: KeeperDeps = {}) {
+  const env = deps.env ?? process.env;
+  if (request.method !== "POST") return reply({ error: "method_not_allowed" }, 405);
+  if (!isKeeperAskEnabled(env)) return reply({ error: "keeper_off" }, 404);
+  const text = await request.text();
+  if (text.length > 1024) return reply({ error: "too_large" }, 413);
+  let body: { name?: unknown; country?: unknown; city?: unknown } = {};
+  try {
+    body = JSON.parse(text) as typeof body;
+  } catch {
+    return reply({ error: "bad_json" }, 400);
+  }
+  const name = typeof body.name === "string" ? body.name.slice(0, 120) : "";
+  const candidate = subjectCandidate(name, [
+    typeof body.country === "string" ? body.country : null,
+    typeof body.city === "string" ? body.city : null,
+  ]);
+  if (!candidate) return reply({ subject: null });
+  const blocked = limited(request, deps);
+  if (blocked) return blocked;
+  const found = await fetchSubject(candidate, { fetchImpl: deps.fetchImpl });
+  return reply({
+    subject: found
+      ? {
+          title: candidate,
+          description: found.description ?? "",
+          image: found.image ?? null,
+          pageUrl: found.pageUrl ?? null,
+        }
+      : null,
+  });
 }
 
 /** Intents the facts answer outright; no model is asked. */
@@ -291,11 +337,14 @@ export async function handleKeeperAsk(request: Request, deps: KeeperDeps = {}) {
   if (topic) {
     const snippet = await fetchKnowledgeSnippet(topic.canonical, topic.kind, { fetchImpl });
     const onAirArtist = facts.track?.artist ?? null;
+    const named = subjectCandidate(facts.station.name, [facts.station.country, facts.city]);
     const stationLine =
       onAirArtist && resolveAlias(onAirArtist) === resolveAlias(topic.canonical)
         ? `The station’s title names ${topic.canonical}.`
-        : undefined;
-    const knowledge = (answer: string, source: string) =>
+        : named && foldName(named) === foldName(topic.canonical)
+          ? `The station’s name points to ${topic.canonical}. I can’t say what’s on air.`
+          : undefined;
+    const knowledge = (answer: string, source: string, extra: Partial<KeeperJson> = {}) =>
       reply({
         answer,
         state: "speaking",
@@ -304,11 +353,28 @@ export async function handleKeeperAsk(request: Request, deps: KeeperDeps = {}) {
         topic: topic.canonical,
         ...(stationLine ? { stationLine } : {}),
         source,
+        ...extra,
       });
+    // "A few facts about X": sentences lifted from the article, no model between.
+    if (snippet && /\b(facts?|trivia)\b/i.test(parsed.question)) {
+      const lines = await fetchKnowledgeFacts(snippet.title, snippet.text, { fetchImpl });
+      if (lines) {
+        return knowledge(`A few things from my notebook about ${topic.canonical}.`, "knowledge+facts", {
+          facts: lines,
+          ...(snippet.image ? { image: snippet.image } : {}),
+          ...(snippet.pageUrl ? { pageUrl: snippet.pageUrl } : {}),
+        });
+      }
+    }
     const fallback = `I haven’t got ${topic.canonical} in my notebook. Not from this desk, anyway.`;
     // Wikipedia has it: its opening lines are a grounded answer, returned at
     // once. The model (3–5s) is only for topics Wikipedia doesn't know.
-    if (snippet) return knowledge(leadSentences(snippet.text), "knowledge+snippet");
+    if (snippet) {
+      return knowledge(leadSentences(snippet.text), "knowledge+snippet", {
+        ...(snippet.image ? { image: snippet.image } : {}),
+        ...(snippet.pageUrl ? { pageUrl: snippet.pageUrl } : {}),
+      });
+    }
     try {
       const complete = deps.complete ?? defaultKeeperComplete(env, fetchImpl);
       const raw = await withTimeout(

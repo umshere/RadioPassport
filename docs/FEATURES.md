@@ -222,3 +222,7 @@ Small Zustand-like stores from `app/utils/zustand-lite.ts`.
 ## 15. Tooling
 
 `scripts/`: `ship.mjs` (deploy), `gen-foliage.mjs`, `render-og.mjs` and `og-still.html`, `sync-skills.mjs`, `verify-desktop.mjs` and `verify-board-sheet.mjs` (Playwright screenshots), `build_intent_vocabulary.py` and `generate_rag_catalogue.py` (intent vocabulary and RAG catalogue). Unit tests: `tests/unit` (Vitest). See `docs/TESTING_GUIDE.md`.
+
+### Station named for someone (the desk and the sheet)
+- `keeperSubject.ts` strips the usual radio words from a station name ("Mohanlal hits" → "Mohanlal"). `POST /api/keeper/subject` asks Wikipedia: the article title must match and its one-line description must say person or group (actor, singer, composer, band…). Only then the desk shows a "Tell me about X" chip (`useStationSubject`).
+- The answer is the article's opening lines, labelled as the Keeper's notebook, with "The station's name points to X. I can't say what's on air." (never claims it is playing), a small Wikimedia portrait that links to the article, and a "A few facts about X" follow-up: up to three sentences lifted verbatim from the article (numbers, awards, firsts); no model between.

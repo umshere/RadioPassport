@@ -25,6 +25,8 @@ import {
 } from "./keeperFacts";
 import { KEEPER_QUESTION_MAX } from "./keeperIntent";
 import { useKeeperTalk } from "./useKeeperTalk";
+import { KeeperTalkExtras } from "./KeeperTalkExtras";
+import { useStationSubject } from "./useStationSubject";
 import { findSimilar } from "./keeperSimilarClient";
 import { similarWhere, type Similar } from "./keeperSimilar";
 import { tidyStationName as tidyName } from "./keeperFacts";
@@ -131,6 +133,7 @@ export function KeeperSheet({ view }: { view: KeeperView & { facts: KeeperFacts 
   const drag = useRef<{ startY: number; startT: number; moved: boolean } | null>(null);
   const suppressGripClick = useRef(false);
 
+  const subject = useStationSubject(facts, askEnabled);
   const { talk, ask, onChip, hopTo, interrupt } = useKeeperTalk({
     facts,
     askEnabled,
@@ -342,6 +345,9 @@ export function KeeperSheet({ view }: { view: KeeperView & { facts: KeeperFacts 
                 {chip.label}
               </Chip>
             ))}
+            {askEnabled && subject ? (
+              <Chip onClick={() => void ask(VOICE.askAbout(subject.title))}>{VOICE.askAbout(subject.title)}</Chip>
+            ) : null}
             {askEnabled
               ? topicSteps.map((step) => (
                   <Chip key={`${step.kind}:${step.name}`} onClick={() => void ask(VOICE.askAbout(step.name))}>
@@ -372,6 +378,7 @@ export function KeeperSheet({ view }: { view: KeeperView & { facts: KeeperFacts 
                 {talk.answer && talk.stationLine ? (
                   <p className="ew-keeper-station-line">{talk.stationLine}</p>
                 ) : null}
+                <KeeperTalkExtras talk={talk} className="ew-keeper" onFacts={(topic) => void ask(VOICE.askFacts(topic))} />
                 {talk.answer && talk.hop ? (
                   <Chip className="ew-keeper-hop" onClick={() => hopTo(talk.hop!)}>
                     Off we go →

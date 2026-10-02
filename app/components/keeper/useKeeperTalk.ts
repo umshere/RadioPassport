@@ -18,6 +18,11 @@ export type KeeperTalk = {
   /** Knowledge answers wear a label: they are not about the station. */
   basis?: "station" | "knowledge";
   stationLine?: string;
+  image?: string;
+  pageUrl?: string;
+  facts?: string[];
+  /** The topic a knowledge answer was about: the "a few facts" follow-up asks about it. */
+  topic?: string;
 };
 
 /**
@@ -69,7 +74,7 @@ export function useKeeperTalk({
       question: string,
       answer: string,
       hop?: SolarHour,
-      extra?: { basis?: "station" | "knowledge"; stationLine?: string },
+      extra?: Omit<KeeperTalk, "question" | "answer" | "hop">,
     ) => {
       setTalk({ question, answer, hop, ...extra });
       setExchange("speaking");
@@ -133,6 +138,10 @@ export function useKeeperTalk({
       speak(question, reply.answer, reply.action?.hour, {
         basis: reply.basis,
         stationLine: reply.stationLine,
+        image: reply.image,
+        pageUrl: reply.pageUrl,
+        facts: reply.facts,
+        topic: reply.topic,
       });
       return;
     }

@@ -15,7 +15,15 @@ Rules, all of them hard:
 - At most 70 words. Warm, plain, one to three sentences. No emoji, lists, links or hashtags. Never use the words discover, seamless, playlist, unlock, explore, widget, AI-powered.
 Return ONLY JSON: {"answer": "..."}`;
 
-export type KnowledgeSnippet = { text: string; title: string; source: "wikipedia" };
+export type KnowledgeSnippet = {
+  text: string;
+  title: string;
+  source: "wikipedia";
+  description?: string;
+  /** A small thumbnail from Wikimedia; shown with a link back to the article. */
+  image?: string;
+  pageUrl?: string;
+};
 
 type Fetch = typeof fetch;
 
@@ -47,9 +55,23 @@ async function wikipediaSummary(topic: string, fetchImpl: Fetch): Promise<Knowle
     { headers: WIKI_HEADERS },
   );
   if (!summary.ok) return null;
-  const data = (await summary.json()) as { type?: string; extract?: string };
+  const data = (await summary.json()) as {
+    type?: string;
+    extract?: string;
+    description?: string;
+    thumbnail?: { source?: string };
+    content_urls?: { desktop?: { page?: string } };
+  };
   if (data.type === "disambiguation" || !data.extract?.trim()) return null;
-  return { text: data.extract.trim().slice(0, SNIPPET_MAX), title, source: "wikipedia" };
+  const image = data.thumbnail?.source?.split("?")[0];
+  return {
+    text: data.extract.trim().slice(0, SNIPPET_MAX),
+    title,
+    source: "wikipedia",
+    ...(data.description ? { description: data.description } : {}),
+    ...(image && /^https:\/\/(?:upload|thumb)\.wikimedia\.org\//.test(image) ? { image } : {}),
+    ...(data.content_urls?.desktop?.page ? { pageUrl: data.content_urls.desktop.page } : {}),
+  };
 }
 
 /**
@@ -96,4 +118,69 @@ export function leadSentences(text: string, maxWords = 55): string {
 export function firstSentence(text: string): string {
   const match = text.match(/^.+?[.!?](?=\s|$)/);
   return (match ? match[0] : text).trim();
+}
+
+const PERSON_OR_GROUP =
+  /\b(actor|actress|singer|musician|composer|vocalist|playback|band|rapper|songwriter|lyricist|poet|conductor|producer|dj|duo|group|violinist|pianist|guitarist|drummer|artist|performer|director|comedian|filmmaker|saxophonist)\b/i;
+
+/**
+ * Is this name a person or a group worth a card? Wikipedia must have an
+ * article whose title matches and whose one-line description says so.
+ */
+export async function fetchSubject(
+  name: string,
+  deps: { fetchImpl?: Fetch; timeoutMs?: number } = {},
+): Promise<KnowledgeSnippet | null> {
+  const snippet = await fetchKnowledgeSnippet(name, "other", deps);
+  if (!snippet?.description || !PERSON_OR_GROUP.test(snippet.description)) return null;
+  return snippet;
+}
+
+const FACT_WORDS = /\b(award|awards|won|honou?r|honou?red|first|known|born|record|national|breakthrough|debut|hit|decade|career|films?|albums?|songs?|appeared|received|established|nominated)\b/i;
+
+/** Sentences from an article's opening that read like trivia; no model, every word Wikipedia's. */
+export function pickFacts(extract: string, lead: string, max = 3): string[] {
+  const text = extract.replace(/\s*\([^)]*\)/g, "").replace(/\s+/g, " ");
+  const sentences = text.match(/[^.!?]+[.!?](?=\s|$)/g) ?? [];
+  const leadKey = lead.slice(0, 40).toLowerCase();
+  const scored = sentences
+    .map((sentence, index) => ({ sentence: sentence.trim(), index }))
+    .filter(({ sentence }) => {
+      const words = sentence.split(/\s+/).length;
+      return words >= 8 && words <= 38 && !sentence.toLowerCase().startsWith(leadKey);
+    })
+    .map(({ sentence, index }) => ({
+      sentence,
+      index,
+      score: (/\b(1[89]|20)\d{2}\b|\b\d+\b/.test(sentence) ? 2 : 0) + (FACT_WORDS.test(sentence) ? 1 : 0),
+    }))
+    .filter((item) => item.score > 0);
+  return scored
+    .sort((a, b) => b.score - a.score || a.index - b.index)
+    .slice(0, max)
+    .sort((a, b) => a.index - b.index)
+    .map((item) => item.sentence);
+}
+
+/** A few facts straight from the article's opening sections. Null when the lookup fails. */
+export async function fetchKnowledgeFacts(
+  title: string,
+  lead: string,
+  deps: { fetchImpl?: Fetch } = {},
+): Promise<string[] | null> {
+  const fetchImpl = deps.fetchImpl ?? fetch;
+  try {
+    const response = await fetchImpl(
+      `https://en.wikipedia.org/w/api.php?action=query&prop=extracts&explaintext=1&exchars=4500&redirects=1&titles=${encodeURIComponent(title)}&format=json&origin=*`,
+      { headers: WIKI_HEADERS },
+    );
+    if (!response.ok) return null;
+    const data = (await response.json()) as { query?: { pages?: Record<string, { extract?: string }> } };
+    const extract = Object.values(data.query?.pages ?? {})[0]?.extract;
+    if (!extract) return null;
+    const facts = pickFacts(extract, lead);
+    return facts.length ? facts : null;
+  } catch {
+    return null;
+  }
 }

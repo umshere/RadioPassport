@@ -11,6 +11,8 @@ import { KEEPER_QUESTION_MAX } from "~/components/keeper/keeperIntent";
 import { planMurmurs } from "~/components/keeper/keeperMurmur";
 import { VOICE } from "~/components/keeper/keeperVoice";
 import { useKeeperTalk } from "~/components/keeper/useKeeperTalk";
+import { KeeperTalkExtras } from "~/components/keeper/KeeperTalkExtras";
+import { useStationSubject } from "~/components/keeper/useStationSubject";
 import { useKeeperStore, type KeeperFactEntry } from "~/state/keeperStore";
 
 /**
@@ -34,6 +36,7 @@ export function DeskAsk({
   const setHushed = useKeeperStore((state) => state.setHushed);
   const { talk, ask, onChip, hopTo, interrupt } = useKeeperTalk({ facts, askEnabled, entries });
   const [draft, setDraft] = useState("");
+  const subject = useStationSubject(facts, askEnabled);
   // "What's playing?" is already answered by the On air card beside this one.
   const chips = suggestedQuestions(facts).filter((chip) => chip.intent !== "track");
   const topics = askEnabled
@@ -82,6 +85,7 @@ export function DeskAsk({
               </p>
             )}
             {talk.answer && talk.stationLine ? <p className="ew-ask-station">{talk.stationLine}</p> : null}
+            <KeeperTalkExtras talk={talk} className="ew-ask" onFacts={(topic) => void ask(VOICE.askFacts(topic))} />
             {talk.answer && talk.hop ? (
               <Chip className="ew-ask-hop" onClick={() => hopTo(talk.hop!)}>
                 Off we go →
@@ -130,6 +134,11 @@ export function DeskAsk({
             {chip.label}
           </Chip>
         ))}
+        {subject ? (
+          <Chip className="is-topic is-subject" onClick={() => void ask(VOICE.askAbout(subject.title))}>
+            {VOICE.askAbout(subject.title)}
+          </Chip>
+        ) : null}
         {topics.map((step) => (
           <Chip key={`${step.kind}:${step.name}`} className="is-topic" onClick={() => void ask(VOICE.askAbout(step.name))}>
             {VOICE.askAbout(step.name)}
