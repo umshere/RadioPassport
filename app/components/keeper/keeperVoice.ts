@@ -57,6 +57,31 @@ export const VOICE = {
       : hours === 0
         ? "Your hour, by the sun"
         : `${Math.abs(hours)} hour${Math.abs(hours) === 1 ? "" : "s"} ${hours > 0 ? "ahead of" : "behind"} you`,
+  /** Short form for the home sky: "5h ahead". */
+  offsetShort: (hours: number | null) =>
+    hours === null
+      ? null
+      : hours === 0
+        ? "Same hour as you"
+        : `${Math.abs(hours)}h ${hours > 0 ? "ahead" : "behind"}`,
+  homeThere: (word: string) => `${word[0]!.toUpperCase()}${word.slice(1)} there`,
+  guideHow: "How it works",
+  askSteps:
+    "Three steps. Land: tap Land here. Listen: stay a minute and I’ll stamp the city. Send: pass a friend a ticket.",
+  guideAskChip: "Ask me anything",
+  guideAskPlaceholder: "Ask me: where, when, how…",
+  guideAskSend: "Ask",
+  askHelp:
+    "Pick a city and press play: it’s a real station, live there right now. Stay a minute and I’ll stamp it in your passport.",
+  askPassport:
+    "Listen to a station for a minute and I stamp its city in your passport. No scores. Just a record of where you’ve been.",
+  askFree: "Hearing radio is always free. Always.",
+  askSurprise: "Leave it with me. Dealing you somewhere.",
+  guideSurprise: "Surprise me",
+  guideAsk: (place: string) => `Ask me about ${place}`,
+  guideElsewhere: (word: string) => `Where it’s ${word}`,
+  guideLate: "It’s late for you. Somewhere the day is just starting.",
+  guideDay: "Daylight where you are. Somewhere it’s evening.",
   passLabel: "Boarding pass",
   passFrom: "From",
   passTo: "To",
@@ -88,7 +113,7 @@ export const VOICE = {
   deskEmptyLine: "Pick a city, press play, and I’ll stamp you in.",
 
   /* ---- The departures hall (home): one line per state, no chatter. ---- */
-  homeWelcome: "You are not here. Pick a gate, or land where I point.",
+  homeWelcome: "New here? Tap Land here. It’s a real station, live in another city. Stay a minute and I’ll stamp it in your passport.",
   homeSomewhere: (word: string) => `Somewhere it’s ${word}.`,
   homeSeeking: (query: string) => `Looking for ${query}.`,
   homeHourGate: (word: string) => `This gate: everywhere it’s ${word}.`,
@@ -96,16 +121,8 @@ export const VOICE = {
   homeLanded: (place: string) => `Landed in ${place}.`,
   homeAsleep: "Quiet hours here. Land anywhere and I’ll wake up.",
   homeAtDesk: "At the desk",
-  howTitle: "How Elsewhere works",
-  howDismiss: "Hide how it works",
-  howLandTitle: "Land",
-  howLandBody: "Tap Land here, or pick Dawn, Midday, Dusk or Night to hear a live station where it is that hour right now.",
-  howListenTitle: "Listen",
-  howListenBody: "It is a real station on the air in another city. Stay a minute and I will stamp that city in your passport.",
-  howSendTitle: "Send",
-  howSendBody: "Found a good one? Send a friend a ticket and they land on the same station.",
-  howMore: "The full guide",
   homeGates: "Gates",
+  homeHourHint: "Hear a place by its hour",
   homeBoard: "Departures",
   homeBoardAboard: "Other departures",
   homeBoardHour: (hour: string) => `Live where it is ${hour.toLowerCase()}`,
@@ -114,7 +131,7 @@ export const VOICE = {
   homeFresh: "Fresh board",
   homeRecent: "Recent stamps",
   homeRecentOpen: "Open the passport",
-  homeLeaving: "Now leaving",
+  homeLeaving: "Ready",
 } as const;
 
 /** "Dawn" → "morning", for the lines that say where the sun is. */

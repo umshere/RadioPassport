@@ -1,16 +1,16 @@
-import type { CSSProperties } from "react";
+import { useState, type CSSProperties } from "react";
 import { CountryFlag } from "~/components/CountryFlag";
 import { FlipBoard } from "~/components/radio-passport/FlipBoard";
 import { AtmospherePin } from "~/components/radio-passport/AtmospherePin";
 import { Eyebrow } from "~/components/ui/Eyebrow";
-import { Button, ButtonLink } from "~/components/ui/Button";
+import { Button, ButtonLink, Chip } from "~/components/ui/Button";
 import { Keeper } from "~/components/keeper/Keeper";
 import { hourWord, VOICE } from "~/components/keeper/keeperVoice";
 import { keeperMood, type KeeperState } from "~/components/keeper/keeperState";
 import { spokenHour } from "~/components/keeper/keeperFacts";
 import { skyBody, skyHour } from "~/components/desk/deskModel";
 import type { Station } from "~/types/radio";
-import { flapLine, isSeekQuery, type ArrivalSky, type HomePhase } from "./homeModel";
+import { flapLine, isSeekQuery, type ArrivalSky, type GuideChip, type HomePhase } from "./homeModel";
 
 /**
  * The top band of the departures hall: the arrival city's sky at its own
@@ -31,6 +31,9 @@ export function HomeSky({
   keeperLine,
   keeperState,
   cta,
+  guide,
+  onGuide,
+  onAsk,
   onLand,
   onOpenKeeper,
 }: {
@@ -47,9 +50,15 @@ export function HomeSky({
   keeperLine: string;
   keeperState: KeeperState;
   cta: { label: string; kind: "land" | "continue" | "none" };
+  guide: GuideChip[];
+  onGuide: (chip: GuideChip) => void;
+  /** A question typed to the keeper; the home decides what it means. */
+  onAsk: (question: string) => void;
   onLand: () => void;
   onOpenKeeper?: () => void;
 }) {
+  const [asking, setAsking] = useState(false);
+  const [draft, setDraft] = useState("");
   const tint = skyHour(sky.solar);
   const body = sky.localHour === null ? null : skyBody(sky.localHour, sky.minute);
   // A typed question folds the sky, and it stays folded if the answer is
@@ -58,7 +67,7 @@ export function HomeSky({
   const country = station?.country?.trim() || "";
   const sub = [
     country && country !== place ? country : null,
-    sky.solar ? hourWord(sky.solar) : null,
+    sky.solar ? VOICE.homeThere(hourWord(sky.solar)) : null,
     offset,
   ].filter(Boolean);
   const cityFlap = flapLine(place, 22);
@@ -146,13 +155,47 @@ export function HomeSky({
             ) : station && cta.kind !== "none" ? (
               <Button
                 variant="land"
-                kicker={cta.kind === "continue" ? "EW · Re-entry" : "EW · Arrival"}
                 onClick={onLand}
               >
                 {cta.label}
               </Button>
             ) : null}
           </div>
+          <div className="ew-home-guide" role="group" aria-label="The keeper suggests">
+            {guide.map((chip) => (
+              <Chip key={chip.id + chip.label} onClick={() => onGuide(chip)}>
+                {chip.label}
+              </Chip>
+            ))}
+            {asking ? null : (
+              <Chip onClick={() => setAsking(true)}>{VOICE.guideAskChip}</Chip>
+            )}
+          </div>
+          {asking ? (
+            <form
+              className="ew-home-ask"
+              onSubmit={(event) => {
+                event.preventDefault();
+                const text = draft.trim();
+                if (!text) return;
+                onAsk(text);
+                setDraft("");
+                setAsking(false);
+              }}
+            >
+              <input
+                autoFocus
+                value={draft}
+                maxLength={200}
+                onChange={(event) => setDraft(event.target.value)}
+                placeholder={VOICE.guideAskPlaceholder}
+                aria-label="Ask the keeper"
+              />
+              <Button type="submit" variant="mono">
+                {VOICE.guideAskSend}
+              </Button>
+            </form>
+          ) : null}
         </div>
       )}
 

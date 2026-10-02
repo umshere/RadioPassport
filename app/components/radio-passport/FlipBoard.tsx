@@ -12,6 +12,8 @@ export const FLIP_MS = 80;
     but keep the board unreadable for seconds on long names. */
 export const MAX_SPIN = 10;
 export const COL_STAGGER_MS = 40;
+/** The opening churn is shorter: a first look should read, not scramble. */
+export const OPENING_SPIN = 4;
 
 export function drumIndex(value: string): number {
   const found = DRUM.indexOf(value.toUpperCase());
@@ -80,12 +82,13 @@ export function flipPlan(
   from: string,
   to: string,
   delayMs = 0,
+  maxSpin = MAX_SPIN,
 ): { cells: FlipCell[]; totalMs: number } {
   const cells = flapSlots(from, to).map((slot, index) => {
     if (slot.from === slot.to)
       return { ...slot, steps: 0, startIdx: drumIndex(slot.from), startMs: 0 };
     const dist = drumSteps(slot.from, slot.to);
-    const steps = Math.max(Math.min(dist, MAX_SPIN), 1);
+    const steps = Math.max(Math.min(dist, maxSpin), 1);
     return {
       ...slot,
       steps,
@@ -136,6 +139,7 @@ export function FlipBoard({
   delayMs?: number;
 }) {
   const shown = useRef(text);
+  const opening = useRef(false);
   const booted = useRef(false);
   const [from, setFrom] = useState(text);
   const [to, setTo] = useState(text);
@@ -149,7 +153,8 @@ export function FlipBoard({
       booted.current = true;
       shown.current = text;
       if (reduce) return;
-      // Opening churn: every drum spins up from blank.
+      // Opening churn: every drum spins up from blank, briefly.
+      opening.current = true;
       setFrom(" ".repeat(Math.max(text.length, 1)));
       setTo(text);
       setNowMs(0);
@@ -158,6 +163,7 @@ export function FlipBoard({
     if (text === shown.current) return;
     const previous = shown.current;
     shown.current = text;
+    opening.current = false;
     if (reduce) {
       setFrom(text);
       setTo(text);
@@ -168,7 +174,8 @@ export function FlipBoard({
     setNowMs(0);
   }, [text]);
 
-  const plan = useMemo(() => flipPlan(from, to, delayMs), [from, to, delayMs]);
+  const plan = useMemo(() => flipPlan(from, to, delayMs, opening.current ? OPENING_SPIN : MAX_SPIN),
+    [from, to, delayMs],);
 
   // One global clock drives every cell; each cell reads its own progress
   // (start offset + steps) so the row ripples while cells churn.

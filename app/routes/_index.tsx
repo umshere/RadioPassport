@@ -26,7 +26,7 @@ import {
   seekingBoardLabel,
   seekingStatus,
 } from "~/components/radio-passport/productFlow";
-import type { SolarHour } from "~/utils/localTime";
+import { solarHourFromDate, type SolarHour } from "~/utils/localTime";
 import { Button } from "~/components/ui/Button";
 import { useHomeStations } from "~/hooks/home/useHomeStations";
 import { useCatalogSearch } from "~/hooks/home/useCatalogSearch";
@@ -36,7 +36,6 @@ import { useHomeOverlays } from "~/hooks/home/useHomeOverlays";
 import { useKeeperHourHop } from "~/hooks/home/useKeeperHourHop";
 import { HomeOverlays } from "~/components/radio-passport/HomeOverlays";
 import { HomeSky } from "~/components/home/HomeSky";
-import { HomeHow } from "~/components/home/HomeHow";
 import { useFriendStore } from "~/state/friendStore";
 import { HomeGates } from "~/components/home/HomeGates";
 import { HomeDepartures } from "~/components/home/HomeDepartures";
@@ -46,6 +45,8 @@ import {
   homeBoardCap,
   homeBoardHeading,
   homeDepartures,
+  homeGuide,
+  routeHomeAsk,
   homeKeeperLine,
   homeKeeperState,
   homePhase,
@@ -289,7 +290,14 @@ export default function Index() {
     isPlaying,
     localHour: sky.localHour,
   });
-  const keeperLine = homeKeeperLine({
+  const guide = homeGuide({
+    phase,
+    isPlaying,
+    city: arrivalCity,
+    firstVisit: firstVisit && !friendPending,
+    listenerHour: hydrated ? solarHourFromDate(now) : null,
+  });
+  const welcomeLine = homeKeeperLine({
     phase,
     city: arrivalCity,
     query,
@@ -298,6 +306,18 @@ export default function Index() {
     firstVisit,
     asleep: keeperState === "sleeping",
   });
+  // A returning listener gets a line that fits their own hour, not the welcome.
+  const [askLine, setAskLine] = useState<string | null>(null);
+  useEffect(() => {
+    if (!askLine) return;
+    const id = window.setTimeout(() => setAskLine(null), 14000);
+    return () => window.clearTimeout(id);
+  }, [askLine]);
+  const baseLine =
+    phase === "arrive" && !firstVisit && guide.line && keeperState !== "sleeping"
+      ? guide.line
+      : welcomeLine;
+  const keeperLine = askLine ?? baseLine;
 
   const favoriteStations = useMemo(() => {
     const pool = [...initialStations, ...catalog, ...countryStations];
@@ -378,7 +398,7 @@ export default function Index() {
             place={arrivalCity}
             station={arrivalStation}
             sky={sky}
-            offset={VOICE.offset(offsetHours)}
+            offset={VOICE.offsetShort(offsetHours)}
             playing={isPlaying}
             trackLine={trackLine}
             query={query}
@@ -395,11 +415,40 @@ export default function Index() {
                 arrival.ctaKind === "continue" ? "Continue" : "Land here"
               )
             }
+            onAsk={(question) => {
+              const route = routeHomeAsk(question);
+              if (!route) return;
+              if (route.kind === "search") {
+                setAskLine(null);
+                setQuery(route.query);
+                submitIntent(route.query);
+                return;
+              }
+              setAskLine(route.line);
+              if (route.kind === "surprise") void requestAiWorld();
+              else if (route.kind === "hour") {
+                setHour(route.hour);
+                setPlace(null);
+                setQuery("");
+                scrollToBoard();
+              }
+            }}
+            guide={guide.chips}
+            onGuide={(chip) => {
+              if (chip.id === "how") setAskLine(VOICE.askSteps);
+              else if (chip.id === "surprise") void requestAiWorld();
+              else if (chip.id === "ask") openKeeperSheet();
+              else if (chip.id === "hour") {
+                setHour(chip.hour);
+                setPlace(null);
+                setQuery("");
+                scrollToBoard();
+              }
+            }}
             onOpenKeeper={nowPlaying ? openKeeperSheet : undefined}
           />
         </div>
         <div className="ew-home-main">
-          <HomeHow show={firstVisit && !friendPending} />
           <HomeGates
             hour={hour}
             onHourTap={(item) => {

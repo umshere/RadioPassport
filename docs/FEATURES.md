@@ -47,7 +47,7 @@ The field takes a short query (catalog search), a sentence (`/api/ai/interpret`,
 
 **Recent stamps.** Under the board, the last three stamps as postcards, only once there are stamps. They open the passport.
 
-**First-visit card** (`HomeHow.tsx`). "How Elsewhere works": Land, Listen, Send, plus a link to the full guide. Shown while the passport has no stamp; dismissible; the dismissal is `localStorage["elsewhere-how-dismissed"]`.
+**The Keeper's guide** (`homeGuide`, `routeHomeAsk` in `homeModel.ts`; wording in `keeperVoice.ts`). The sky's bubble is the only first-visit help: a plain welcome line, and under the Land button two or three suggestion chips that fit the moment (How it works on a first visit, "Where it's {hour}" opposite the listener's own hour, Surprise me; while a station plays, Ask me about {city}). "Ask me anything" opens a small field: how-it-works, passport and free questions get his own answer, a bare hour hops the board, "surprise" deals a mix, anything else becomes a search. Local rules only, no model, nothing on the audio path.
 
 ### 1.2 The desk (`/listen`)
 

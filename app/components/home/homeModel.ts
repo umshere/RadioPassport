@@ -181,3 +181,85 @@ export function flapLine(text: string, max = 28): string {
   // No ellipsis: the drum has no such flap. The full text rides the sr-only copy.
   return flat.length > max ? flat.slice(0, max).trimEnd() : flat;
 }
+
+export type GuideChip =
+  | { id: "hour"; label: string; hour: SolarHour }
+  | { id: "surprise" | "ask" | "how"; label: string };
+
+/** The hour that is not the listener's own: somewhere else, on purpose. */
+function otherHour(own: SolarHour): SolarHour {
+  return own === "Night" ? "Dawn" : own === "Dawn" ? "Dusk" : own === "Dusk" ? "Dawn" : "Night";
+}
+
+/**
+ * What the keeper offers on the home besides the one big button: two or three
+ * taps that fit the moment (the listener's own hour, whether a station is on).
+ * Plain rules, nothing guessed, nothing on the audio path.
+ */
+export function homeGuide(input: {
+  phase: HomePhase;
+  isPlaying: boolean;
+  city: string;
+  firstVisit?: boolean;
+  listenerHour: SolarHour | null;
+}): { line: string | null; chips: GuideChip[] } {
+  if (input.phase === "aboard" && input.isPlaying) {
+    return {
+      line: null,
+      chips: [
+        { id: "ask", label: VOICE.guideAsk(input.city) },
+        { id: "surprise", label: VOICE.guideSurprise },
+      ],
+    };
+  }
+  if (input.phase !== "arrive") return { line: null, chips: [] };
+  const own = input.listenerHour;
+  const chips: GuideChip[] = [];
+  let line: string | null = null;
+  if (own) {
+    const target = otherHour(own);
+    chips.push({ id: "hour", hour: target, label: VOICE.guideElsewhere(hourWord(target)) });
+    if (own === "Night") line = VOICE.guideLate;
+    else if (own === "Midday") line = VOICE.guideDay;
+  }
+  if (input.firstVisit) chips.unshift({ id: "how", label: VOICE.guideHow });
+  // First-timers already have Surprise in the search field; one is enough.
+  if (!input.firstVisit) chips.push({ id: "surprise", label: VOICE.guideSurprise });
+  return { line, chips };
+}
+
+export type HomeAsk =
+  | { kind: "hour"; hour: SolarHour; line: string }
+  | { kind: "surprise"; line: string }
+  | { kind: "help"; line: string }
+  | { kind: "search"; query: string };
+
+const ASK_HOURS: Array<{ hour: SolarHour; test: RegExp }> = [
+  { hour: "Dawn", test: /\b(morning|sunrise|dawn|early)\b/ },
+  { hour: "Midday", test: /\b(afternoon|midday|noon|daytime|daylight)\b/ },
+  { hour: "Dusk", test: /\b(evening|sunset|dusk|twilight)\b/ },
+  { hour: "Night", test: /\b(night|midnight|late|sleep|sleepy)\b/ },
+];
+
+/**
+ * The keeper's ear on arrival, before any station is on. Plain rules, instant,
+ * no network: how-it-works questions get his own answer, a bare hour or a
+ * "surprise me" does it, and anything else is a search (the field already
+ * reads sentences). Null when there is nothing to ask.
+ */
+export function routeHomeAsk(question: string): HomeAsk | null {
+  const text = question.toLowerCase().replace(/[’`]/g, "'").trim();
+  if (text.replace(/[^a-z\p{L}]/gu, "").length < 2) return null;
+  if (/\b(free|cost|price|pay|paid|subscription)\b/.test(text)) return { kind: "help", line: VOICE.askFree };
+  if (/\b(passport|stamps?|stamped)\b/.test(text)) return { kind: "help", line: VOICE.askPassport };
+  if (/\b(how (?:does|do|is|it)|what is (?:this|elsewhere)|what's (?:this|elsewhere)|how.*work|help|confused|lost)\b/.test(text))
+    return { kind: "help", line: VOICE.askHelp };
+  if (/\b(surprise|random|anything|you choose|pick for me|whatever|dealer)\b/.test(text))
+    return { kind: "surprise", line: VOICE.askSurprise };
+  const short = text.split(/\s+/).length <= 5 && !/\b(in|at|from|near)\s+\w+/.test(text.replace(/\bat (?:night|dawn|dusk|noon|midday)\b/, ""));
+  if (short) {
+    const hit = ASK_HOURS.find((item) => item.test.test(text));
+    if (hit) return { kind: "hour", hour: hit.hour, line: VOICE.hop(hourWord(hit.hour)) };
+  }
+  return { kind: "search", query: question.trim() };
+}

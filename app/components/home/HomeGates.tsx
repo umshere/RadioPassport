@@ -25,7 +25,10 @@ export function HomeGates({
         <SiteSeekRail />
       </div>
       <div className="ew-gates-row">
-        <HourRail hour={hour} onTap={onHourTap} />
+        <div className="ew-gates-hours">
+          <p className="ew-gates-hint">{VOICE.homeHourHint}</p>
+          <HourRail hour={hour} onTap={onHourTap} />
+        </div>
         <Button variant="atlas" className="ew-gates-atlas" onClick={onAtlas}>
           Atlas
           <span aria-hidden="true">→</span>

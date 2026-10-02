@@ -141,3 +141,18 @@ describe("shortCountry", () => {
     expect(shortCountry("The Gambia")).toBe("Gambia");
   });
 });
+
+import { routeHomeAsk } from "~/components/home/homeModel";
+
+describe("routeHomeAsk", () => {
+  it("answers how-it-works itself, hops on a bare hour, searches the rest", () => {
+    expect(routeHomeAsk("is it free?")).toMatchObject({ kind: "help" });
+    expect(routeHomeAsk("what is a passport")).toMatchObject({ kind: "help" });
+    expect(routeHomeAsk("how does this work")).toMatchObject({ kind: "help" });
+    expect(routeHomeAsk("surprise me")).toMatchObject({ kind: "surprise" });
+    expect(routeHomeAsk("somewhere it's morning")).toMatchObject({ kind: "hour", hour: "Dawn" });
+    expect(routeHomeAsk("jazz in Lisbon at night")).toEqual({ kind: "search", query: "jazz in Lisbon at night" });
+    expect(routeHomeAsk("calm music in Spanish")).toMatchObject({ kind: "search" });
+    expect(routeHomeAsk(" ")).toBeNull();
+  });
+});
