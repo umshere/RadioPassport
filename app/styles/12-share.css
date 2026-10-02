@@ -42,7 +42,7 @@
 .ew-ticket-act { flex: 1 1 0; min-width: 0; min-height: 44px; padding: 0 12px; border: 1px solid var(--ew-foil-line); border-radius: 0; background: none; color: var(--ew-bone); font: 500 11px/1.2 "Azeret Mono", ui-monospace, monospace; letter-spacing: .14em; text-transform: uppercase; cursor: pointer; }
 .ew-ticket-act:hover { border-color: var(--ew-foil); }
 .ew-ticket-pass { margin: 0; font: italic 400 14px/1.4 "Newsreader", serif; color: var(--ew-dust); }
-.ew-ticket-pass a { color: var(--ew-foil); text-decoration: none; font-style: normal; font: 500 11px/1.4 "Azeret Mono", ui-monospace, monospace; letter-spacing: .08em; }
+.ew-ticket-pass a { display: inline-flex; align-items: center; gap: 5px; vertical-align: middle; color: var(--ew-foil); text-decoration: none; font-style: normal; font: 500 11px/1.4 "Azeret Mono", ui-monospace, monospace; letter-spacing: .08em; }
 .ew-ticket-pass a:hover, .ew-ticket-pass a:focus-visible { color: var(--ew-bone); }
 .ew-ticket-status { min-height: 1.4em; margin: 0; font: italic 400 15px/1.4 "Newsreader", serif; color: var(--ew-foil); }
 .ew-ticket :is(button, a):focus-visible { outline: 2px solid var(--ew-foil); outline-offset: 2px; }

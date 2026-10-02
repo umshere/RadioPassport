@@ -2,6 +2,7 @@ import { Eyebrow } from "~/components/ui/Eyebrow";
 import { BRAND } from "~/constants/brand";
 import { AtmospherePin } from "~/components/radio-passport/AtmospherePin";
 import { ButtonLink } from "~/components/ui/Button";
+import { InstagramGlyph } from "~/components/ui/InstagramGlyph";
 import { INSTAGRAM_HANDLE, INSTAGRAM_URL } from "~/utils/social";
 
 const DESCRIPTION =
@@ -121,7 +122,7 @@ export default function About() {
           </p>
           <p>
             <a href={INSTAGRAM_URL} target="_blank" rel="noopener noreferrer">
-              {INSTAGRAM_HANDLE} on Instagram →
+              <InstagramGlyph size={18} /> {INSTAGRAM_HANDLE}
             </a>
           </p>
         </section>

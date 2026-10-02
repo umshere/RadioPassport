@@ -56,6 +56,7 @@ import {
   isSeekQuery,
 } from "~/components/home/homeModel";
 import { useFloorClearance, useMinuteClock } from "~/components/desk/deskHooks";
+import { InstagramGlyph } from "~/components/ui/InstagramGlyph";
 import { INSTAGRAM_HANDLE, INSTAGRAM_URL } from "~/utils/social";
 import { VOICE } from "~/components/keeper/keeperVoice";
 import { askHomeKeeper } from "~/components/keeper/keeperClient";
@@ -516,8 +517,8 @@ export default function Index() {
             <Link to="/about" prefetch="intent">
               How Elsewhere works
             </Link>
-            <a href={INSTAGRAM_URL} target="_blank" rel="noopener noreferrer">
-              Instagram {INSTAGRAM_HANDLE}
+            <a href={INSTAGRAM_URL} target="_blank" rel="noopener noreferrer" aria-label={`Instagram ${INSTAGRAM_HANDLE}`}>
+              <InstagramGlyph size={16} /> {INSTAGRAM_HANDLE}
             </a>
           </footer>
         </div>

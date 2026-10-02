@@ -2,6 +2,7 @@ import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useTicketStore } from "~/state/ticketStore";
 import { logUsage } from "~/utils/usage";
+import { InstagramGlyph } from "~/components/ui/InstagramGlyph";
 import { INSTAGRAM_HANDLE, INSTAGRAM_URL } from "~/utils/social";
 import { VOICE } from "~/components/keeper/keeperVoice";
 import { copyTicketAndLink, copyTicketLink, sendTicket, shareCopy, tuneLink, type ShareableStation } from "./shareStation";
@@ -227,7 +228,7 @@ function TicketDialog({
         <p className="ew-ticket-pass">
           {VOICE.spreadSheet}{" "}
           <a href={INSTAGRAM_URL} target="_blank" rel="noopener noreferrer">
-            {INSTAGRAM_HANDLE}
+            <InstagramGlyph size={14} /> {INSTAGRAM_HANDLE}
           </a>
         </p>
         <p className="ew-ticket-status" role="status" aria-live="polite">

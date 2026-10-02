@@ -40,5 +40,5 @@
 
 .ew-about-pass { display: grid; gap: 10px; margin: 32px 0 0; max-width: 46ch; }
 .ew-about-pass p { margin: 0; font: italic 400 18px/1.45 "Newsreader", serif; color: var(--ew-bone); }
-.ew-about-pass a { display: inline-flex; align-items: center; min-height: 44px; font: 500 12px/1.2 "Azeret Mono", ui-monospace, monospace; letter-spacing: .14em; text-transform: uppercase; color: var(--ew-foil); text-decoration: none; }
+.ew-about-pass a { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; font: 500 12px/1.2 "Azeret Mono", ui-monospace, monospace; letter-spacing: .14em; text-transform: uppercase; color: var(--ew-foil); text-decoration: none; }
 .ew-about-pass a:hover, .ew-about-pass a:focus-visible { color: var(--ew-bone); }
