@@ -303,6 +303,8 @@ function StoryTicket({ fields, keeper }: { fields: TicketFields; keeper?: string
   );
 }
 
+const ARABIC = "Cairo";
+
 /** Noto families for scripts the bundled Latin fonts cannot draw (station names travel). */
 const NOTO: Record<string, string> = {
   "ja-JP": "Noto Sans JP",
@@ -312,7 +314,7 @@ const NOTO: Record<string, string> = {
   "zh-HK": "Noto Sans HK",
   "th-TH": "Noto Sans Thai",
   "bn-IN": "Noto Sans Bengali",
-  "ar-AR": "Noto Sans Arabic",
+  "ar-AR": ARABIC,
   "ta-IN": "Noto Sans Tamil",
   "ml-IN": "Noto Sans Malayalam",
   "he-IL": "Noto Sans Hebrew",
@@ -323,6 +325,23 @@ const NOTO: Record<string, string> = {
   math: "Noto Sans Math",
   unknown: "Noto Sans",
 };
+
+/**
+ * satori files every script it has no code for under "unknown", which is
+ * Latin/Cyrillic/Greek only, so these drew as blobs. Spot them from the text.
+ */
+const BY_RANGE: Array<[RegExp, string]> = [
+  [/[\u0a80-\u0aff]/, "Noto Sans Gujarati"],
+  [/[\u0a00-\u0a7f]/, "Noto Sans Gurmukhi"],
+  [/[\u0b00-\u0b7f]/, "Noto Sans Oriya"],
+  [/[\u0d80-\u0dff]/, "Noto Sans Sinhala"],
+  [/[\u1780-\u17ff]/, "Noto Sans Khmer"],
+  [/[\u0e80-\u0eff]/, "Noto Sans Lao"],
+  [/[\u1000-\u109f]/, "Noto Sans Myanmar"],
+  [/[\u10a0-\u10ff\u2d00-\u2d2f]/, "Noto Sans Georgian"],
+  [/[\u0530-\u058f]/, "Noto Sans Armenian"],
+  [/[\u1200-\u139f]/, "Noto Sans Ethiopic"],
+];
 
 const BLANK = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciLz4=";
 
@@ -338,6 +357,7 @@ async function withTimeout<T>(work: Promise<T>, ms: number): Promise<T | null> {
  * Simplified Chinese.
  */
 export function pickScriptFamily(code: string, text: string, country = "") {
+  for (const [range, family] of BY_RANGE) if (range.test(text)) return family;
   const parts = code.split("|").filter((part) => NOTO[part]);
   const has = (part: string) => parts.includes(part);
   if (parts.length > 1) {
@@ -380,8 +400,34 @@ function scriptFontLoader(country: string) {
   };
 }
 
+const ARABIC_SCRIPT = /[\u0600-\u06ff\u0750-\u077f\u08a0-\u08ff\ufb50-\ufdff\ufe70-\ufeff]/;
+
+/**
+ * satori shapes Arabic letters correctly but lays the words out left to right,
+ * so a name like "Radio Quran Kareem" came out as "Kareem Quran Radio". Put
+ * the words in visual order: each run of Arabic-script words is reversed, and
+ * runs of other words (digits, Latin) keep their own order. Hebrew is laid
+ * out correctly already and is left alone.
+ */
+export function arabicVisualOrder(text: string) {
+  if (!ARABIC_SCRIPT.test(text)) return text;
+  const runs: Array<{ rtl: boolean; words: string[] }> = [];
+  for (const word of text.split(/\s+/).filter(Boolean)) {
+    const rtl = ARABIC_SCRIPT.test(word);
+    const last = runs[runs.length - 1];
+    if (last && last.rtl === rtl) last.words.push(word);
+    else runs.push({ rtl, words: [word] });
+  }
+  return runs
+    .map((run) => (run.rtl ? [...run.words].reverse() : run.words))
+    .reverse()
+    .map((words) => words.join(" "))
+    .join(" ");
+}
+
 export async function renderTicketSvg(fields: TicketFields, format: TicketFormat, assets: TicketAssets) {
   const { width, height } = TICKET_SIZE[format];
+  fields = { ...fields, name: arabicVisualOrder(fields.name), place: arabicVisualOrder(fields.place) };
   const node =
     format === "story" ? <StoryTicket fields={fields} keeper={assets.keeper} /> : <CardTicket fields={fields} keeper={assets.keeper} />;
   return satori(node, {
