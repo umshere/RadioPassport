@@ -517,6 +517,9 @@ export default function Index() {
             <Link to="/about" prefetch="intent">
               How Elsewhere works
             </Link>
+            <Link to="/legal" prefetch="intent">
+              Terms · Privacy · Credits
+            </Link>
             <a href={INSTAGRAM_URL} target="_blank" rel="noopener noreferrer" aria-label={`Instagram ${INSTAGRAM_HANDLE}`}>
               <InstagramGlyph size={16} /> {INSTAGRAM_HANDLE}
             </a>

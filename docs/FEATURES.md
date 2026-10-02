@@ -20,6 +20,7 @@ Elsewhere is live radio from someone else's now. The listener picks a place or a
 | `/` | The Departures Hall (home) | `app/routes/_index.tsx` |
 | `/listen` | The desk | `app/routes/listen.tsx` |
 | `/about` | How it works | `app/routes/about.tsx` |
+| `/legal` | Terms, privacy, credits (quiet footer link; no banner, no gate). Keep it true to what the code does | `app/routes/legal.tsx` |
 | `/t/<uuid>` | Ticket link (share page) | `app/routes/t.$uuid.tsx` |
 | `/secret-room` | The room between hours (easter egg) | `app/routes/secret-room.tsx` |
 | any other | 404 inside the standard Shell | `ErrorBoundary` in `app/root.tsx` |

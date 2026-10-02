@@ -1,3 +1,4 @@
+import { Link } from "@remix-run/react";
 import { Eyebrow } from "~/components/ui/Eyebrow";
 import { BRAND } from "~/constants/brand";
 import { AtmospherePin } from "~/components/radio-passport/AtmospherePin";
@@ -136,7 +137,8 @@ export default function About() {
           <ButtonLink to="/">Land somewhere →</ButtonLink>
         </p>
         <p className="ew-about-foot rp-telemetry text-dust">
-          {BRAND.name} &middot; the Keeper
+          {BRAND.name} &middot; the Keeper &middot;{" "}
+          <Link to="/legal" prefetch="intent">Terms, privacy, credits</Link>
         </p>
       </article>
     </main>
