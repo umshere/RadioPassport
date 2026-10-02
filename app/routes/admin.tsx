@@ -1,6 +1,7 @@
 import { execSync } from "node:child_process";
+import { createHash, timingSafeEqual } from "node:crypto";
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
-import { json } from "@remix-run/node";
+import { json, redirect } from "@remix-run/node";
 import { Form, useActionData, useLoaderData } from "@remix-run/react";
 import { ruleClassify } from "~/components/keeper/keeperIntent";
 import { trimEnv } from "~/services/ai/completeFallback";
@@ -9,18 +10,44 @@ import { classifyKeeperQuestion, jevDecide } from "~/services/keeper/jev.server"
 import { isKeeperAskEnabled } from "~/services/keeper/flag.server";
 
 /**
- * /admin — a LOCAL-ONLY console. It answers 404 on the live site (any Vercel
- * deploy) and for any host that is not localhost, so it can never be reached
- * in production. It shows traffic, what is switched on, and lets you test the
- * Keeper's question routing (Jev vs the keyword rules) with a real key.
+ * /admin: a private console. It answers 404 to everyone except
+ *  - a developer machine (localhost, not a Vercel deploy), and
+ *  - a browser that opened /admin?key=<ADMIN_KEY> once; that sets a 30-day
+ *    httpOnly cookie scoped to /admin and redirects to a clean URL.
+ * With no ADMIN_KEY set on the server, the live site answers 404 always.
+ * It shows traffic, what is switched on, and lets you test the Keeper's
+ * question routing (Jev vs the keyword rules) with a real key.
  */
 export const handle = { admin: true };
-export const meta = () => [{ title: "Admin (local) · Elsewhere" }, { name: "robots", content: "noindex" }];
+export const meta = () => [{ title: "Admin · Elsewhere" }, { name: "robots", content: "noindex, nofollow" }];
 
-function assertLocal(request: Request) {
+const COOKIE = "ew_admin";
+const digest = (value: string) => createHash("sha256").update(`ew-admin:${value}`).digest();
+
+function sameSecret(a: string, b: string) {
+  return timingSafeEqual(digest(a), digest(b));
+}
+
+function adminKey() {
+  return trimEnv(process.env.ADMIN_KEY);
+}
+
+function isLocal(request: Request) {
   const host = new URL(request.url).hostname;
   const local = host === "localhost" || host === "127.0.0.1" || host === "[::1]" || host === "::1";
-  if (process.env.VERCEL || !local) throw new Response("Not Found", { status: 404 });
+  return local && !process.env.VERCEL;
+}
+
+function cookieValue(request: Request) {
+  const match = (request.headers.get("cookie") ?? "").match(new RegExp(`(?:^|;\\s*)${COOKIE}=([^;]+)`));
+  return match?.[1] ?? "";
+}
+
+function assertAccess(request: Request) {
+  if (isLocal(request)) return;
+  const key = adminKey();
+  if (key && sameSecret(cookieValue(request), digest(key).toString("hex"))) return;
+  throw new Response("Not Found", { status: 404 });
 }
 
 type Test = {
@@ -42,7 +69,18 @@ function git(cmd: string) {
 }
 
 export async function loader({ request }: LoaderFunctionArgs) {
-  assertLocal(request);
+  const given = new URL(request.url).searchParams.get("key");
+  const key = adminKey();
+  if (given !== null && key && sameSecret(given, key)) {
+    const maxAge = 60 * 60 * 24 * 30;
+    return redirect("/admin", {
+      headers: {
+        "Set-Cookie": `${COOKIE}=${digest(key).toString("hex")}; Path=/admin; Max-Age=${maxAge}; HttpOnly; Secure; SameSite=Strict`,
+        "Cache-Control": "no-store",
+      },
+    });
+  }
+  assertAccess(request);
   const counters = await readCounters(14);
   const flag = (name: string) => Boolean(trimEnv(process.env[name]));
   return json({
@@ -68,7 +106,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 }
 
 export async function action({ request }: ActionFunctionArgs) {
-  assertLocal(request);
+  assertAccess(request);
   const form = await request.formData();
   const question = String(form.get("question") ?? "").trim().slice(0, 200);
   if (!question) return json({ error: "Type a question first." });
@@ -119,7 +157,7 @@ export default function Admin() {
     <main className="adm">
       <style>{CSS}</style>
       <header className="adm-head">
-        <h1>Admin <small>local only · never served on the live site</small></h1>
+        <h1>Admin <small>private · 404 without the key</small></h1>
         <nav>
           <a href="/" target="_blank" rel="noreferrer">Local site ↗</a>
           <a href="https://elsewheremusic.com" target="_blank" rel="noreferrer">Live site ↗</a>
