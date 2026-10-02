@@ -4,7 +4,8 @@ import type { Station } from "~/types/radio";
 import {
   formatClock,
   localDateAtLongitude,
-  solarHourAtLongitude,
+  solarHourFromLocal,
+  stationLocalDate,
   type SolarHour,
 } from "~/utils/localTime";
 
@@ -154,14 +155,12 @@ export function deskDepartures(
     const next = queue[(((index + step) % queue.length) + queue.length) % queue.length];
     if (!next || seen.has(next.uuid)) continue;
     seen.add(next.uuid);
-    const longitude =
-      typeof next.longitude === "number" && Number.isFinite(next.longitude)
-        ? next.longitude
-        : estimatedLongitude(next);
+    const estimated = estimatedLongitude(next);
+    const local = stationLocalDate(next, now) ?? (estimated === null ? null : localDateAtLongitude(estimated, now));
     out.push({
       station: next,
-      clock: longitude === null ? null : formatClock(localDateAtLongitude(longitude, now)),
-      solar: longitude === null ? null : solarHourAtLongitude(longitude, now),
+      clock: local ? formatClock(local) : null,
+      solar: local ? solarHourFromLocal(local) : null,
       shared: sharedSignals(current, next),
     });
   }

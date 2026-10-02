@@ -5,8 +5,8 @@ import type { Room } from "~/state/roomStore";
 import type { Station } from "~/types/radio";
 import {
   formatClock,
-  localDateAtLongitude,
-  solarHourAtLongitude,
+  solarHourFromLocal,
+  stationLocalDate,
   type SolarHour,
 } from "~/utils/localTime";
 import type { KeeperIntent } from "./keeperIntent";
@@ -91,11 +91,7 @@ export function buildKeeperFacts(
    *  none, or failed): a later re-poll is not "waiting" again. */
   titlesSettled = false,
 ): KeeperFacts {
-  const longitude =
-    typeof station.longitude === "number" && Number.isFinite(station.longitude)
-      ? station.longitude
-      : null;
-  const local = longitude === null ? null : localDateAtLongitude(longitude, now);
+  const local = stationLocalDate(station, now);
   const rawTrack = room?.signal.track ?? null;
   // What the feed sent, cleaned; only a line that is really a track counts
   // as a title (a jingle, an ad or a URL is not a song).
@@ -138,11 +134,11 @@ export function buildKeeperFacts(
     },
     city: clip(stationLocation(station), LIMITS.text) ?? "",
     hour:
-      local && longitude !== null
+      local
         ? {
             clock: formatClock(local),
             localHour: local.getUTCHours(),
-            solar: solarHourAtLongitude(longitude, now),
+            solar: solarHourFromLocal(local),
           }
         : null,
     titles: sent ? "sent" : waiting ? "waiting" : "none",

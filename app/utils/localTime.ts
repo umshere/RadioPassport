@@ -1,3 +1,5 @@
+import { countryLocalDate } from "./countryClock";
+
 export type SolarHour = "Dawn" | "Midday" | "Dusk" | "Night";
 
 export function offsetHoursFromLongitude(longitude: number) {
@@ -24,6 +26,28 @@ export function solarHourFromDate(date: Date): SolarHour {
 
 export function solarHourAtLongitude(longitude: number, now = new Date()) {
   return hourBucket(localDateAtLongitude(longitude, now).getUTCHours());
+}
+
+/** The hour word for a local Date (UTC fields read the local time). */
+export function solarHourFromLocal(local: Date): SolarHour {
+  return hourBucket(local.getUTCHours());
+}
+
+/**
+ * The wall clock at a station, as a Date whose UTC fields read the local time.
+ * A country with one clock (India, Germany, Japan…) gives its real time, half
+ * hours and daylight saving included; otherwise the sun at the station's
+ * longitude; with neither, null: no guess.
+ */
+export function stationLocalDate(
+  station: { longitude?: number | null; countryCode?: string | null },
+  now = new Date(),
+): Date | null {
+  const official = countryLocalDate(station.countryCode, now);
+  if (official) return official;
+  return typeof station.longitude === "number" && Number.isFinite(station.longitude)
+    ? localDateAtLongitude(station.longitude, now)
+    : null;
 }
 
 export function formatClock(date: Date) {

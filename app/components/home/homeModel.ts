@@ -6,6 +6,8 @@ import {
   formatClock,
   localDateAtLongitude,
   solarHourAtLongitude,
+  solarHourFromLocal,
+  stationLocalDate,
   type SolarHour,
 } from "~/utils/localTime";
 import type { Departure } from "~/components/desk/deskModel";
@@ -72,11 +74,12 @@ function longitudeOf(station: Station): number | null {
 export function homeDepartures(stations: Station[], now = new Date()): HomeDeparture[] {
   return stations.map((station) => {
     // No coordinates: use the country's centre, so the row still shows a rough hour.
-    const longitude = longitudeOf(station) ?? estimatedLongitude(station);
+    const estimated = estimatedLongitude(station);
+    const local = stationLocalDate(station, now) ?? (estimated === null ? null : localDateAtLongitude(estimated, now));
     return {
       station,
-      clock: longitude === null ? null : formatClock(localDateAtLongitude(longitude, now)),
-      solar: longitude === null ? null : solarHourAtLongitude(longitude, now),
+      clock: local ? formatClock(local) : null,
+      solar: local ? solarHourFromLocal(local) : null,
     };
   });
 }
@@ -90,12 +93,11 @@ export type ArrivalSky = {
 };
 
 export function arrivalSky(station: Station | null | undefined, now = new Date()): ArrivalSky {
-  const longitude = station ? longitudeOf(station) : null;
-  if (longitude === null) return { clock: null, solar: null, localHour: null, minute: 0 };
-  const local = localDateAtLongitude(longitude, now);
+  const local = station ? stationLocalDate(station, now) : null;
+  if (!local) return { clock: null, solar: null, localHour: null, minute: 0 };
   return {
     clock: formatClock(local),
-    solar: solarHourAtLongitude(longitude, now),
+    solar: solarHourFromLocal(local),
     localHour: local.getUTCHours(),
     minute: local.getUTCMinutes(),
   };

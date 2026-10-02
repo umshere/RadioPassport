@@ -1,7 +1,7 @@
 import type { Station } from "~/types/radio";
 import { stationLocation } from "~/components/radio-passport/StationRow";
 import { hourWord } from "~/components/keeper/keeperVoice";
-import { formatClock, localDateAtLongitude, solarHourAtLongitude } from "~/utils/localTime";
+import { formatClock, solarHourFromLocal, stationLocalDate } from "~/utils/localTime";
 
 /**
  * The ticket a listener sends: a boarding pass printed from the station's own
@@ -47,13 +47,18 @@ export function ticketPlace(station: Pick<Station, "city" | "country"> & Partial
 
 export type TicketHour = { clock: string; word: string };
 
-/** The hour at the station, by the sun at its longitude. Null when it has not said where it is. */
-export function ticketLocalHour(longitude: number | null | undefined, now = new Date()): TicketHour | null {
-  if (typeof longitude !== "number" || !Number.isFinite(longitude)) return null;
-  return {
-    clock: formatClock(localDateAtLongitude(longitude, now)),
-    word: hourWord(solarHourAtLongitude(longitude, now)),
-  };
+/**
+ * The hour at the station: the country's own clock when it keeps one, else the
+ * sun at its longitude (a bare longitude works too). Null when neither is known.
+ */
+export function ticketLocalHour(
+  where: number | null | undefined | { longitude?: number | null; countryCode?: string | null },
+  now = new Date(),
+): TicketHour | null {
+  const place = typeof where === "object" && where !== null ? where : { longitude: where ?? null };
+  const local = stationLocalDate(place, now);
+  if (!local) return null;
+  return { clock: formatClock(local), word: hourWord(solarHourFromLocal(local)) };
 }
 
 const MONTHS = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
@@ -83,12 +88,13 @@ export function ticketFields(
   station: Pick<
     Station,
     "uuid" | "name" | "city" | "state" | "country" | "longitude" | "language" | "bitrate" | "codec"
-  >,
+  > &
+    Partial<Pick<Station, "countryCode">>,
   now = new Date(),
 ): TicketFields {
   const place = ticketPlace(station);
   const country = (station.country || "").trim();
-  const there = typeof station.longitude === "number" ? localDateAtLongitude(station.longitude, now) : now;
+  const there = stationLocalDate(station, now) ?? now;
   const languages = (station.language || "")
     .split(/\s*,\s*/)
     .map((part) => part.trim())
@@ -104,7 +110,7 @@ export function ticketFields(
     name: clip(station.name || "A station", 54),
     place: clip(place, 28),
     country: country && country.toLowerCase() !== place.toLowerCase() ? clip(country, 34) : null,
-    local: ticketLocalHour(station.longitude, now),
+    local: ticketLocalHour(station, now),
     spoken: languages.length ? clip(languages.join(", "), 24) : null,
     signal: signal || null,
     postmarkDay: `${String(there.getUTCDate()).padStart(2, "0")} ${MONTHS[there.getUTCMonth()]}`,

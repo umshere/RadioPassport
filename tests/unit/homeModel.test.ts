@@ -67,19 +67,22 @@ describe("the board", () => {
   });
   it("gives each departure its own clock and hour; a missing longitude borrows the country's centre", () => {
     const now = new Date(Date.UTC(2026, 8, 29, 20, 5));
-    const [lisbon, borrowed, nowhere] = homeDepartures(
+    const [lisbon, india, nowhere, borrowed] = homeDepartures(
       [
         station(),
         station({ uuid: "s2", longitude: undefined, countryCode: "IN" }),
         station({ uuid: "s3", longitude: undefined, countryCode: null }),
+        station({ uuid: "s4", longitude: undefined, countryCode: "BR" }),
       ],
       now,
     );
     expect(lisbon!.clock).toBe("20:05");
     expect(lisbon!.solar).toBe("Dusk");
-    // India's centre sits near 78E: five hours ahead of UTC on the solar clock.
-    expect(borrowed!.clock).toBe("01:05");
-    expect(borrowed!.solar).toBe("Night");
+    // India keeps one clock, UTC+5:30, coordinates or not.
+    expect(india!.clock).toBe("01:35");
+    expect(india!.solar).toBe("Night");
+    // Brazil spans zones: its centre (near 52W) stands in, a rough three hours behind UTC.
+    expect(borrowed!.clock).toBe("17:05");
     // No coordinates and no country: still no clock.
     expect(nowhere!.clock).toBeNull();
     expect(nowhere!.solar).toBeNull();
