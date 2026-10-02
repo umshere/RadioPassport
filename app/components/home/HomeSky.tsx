@@ -5,6 +5,7 @@ import { AtmospherePin } from "~/components/radio-passport/AtmospherePin";
 import { Eyebrow } from "~/components/ui/Eyebrow";
 import { Button, ButtonLink, Chip } from "~/components/ui/Button";
 import { Keeper } from "~/components/keeper/Keeper";
+import { KeeperAskField, KeeperMoves } from "~/components/keeper/KeeperCounter";
 import { hourWord, VOICE } from "~/components/keeper/keeperVoice";
 import { keeperMood, type KeeperState } from "~/components/keeper/keeperState";
 import { spokenHour } from "~/components/keeper/keeperFacts";
@@ -161,40 +162,32 @@ export function HomeSky({
               </Button>
             ) : null}
           </div>
-          <div className="ew-home-guide" role="group" aria-label="The keeper suggests">
-            {guide.map((chip) => (
-              <Chip key={chip.id + chip.label} onClick={() => onGuide(chip)}>
-                {chip.label}
-              </Chip>
-            ))}
-            {asking ? null : (
-              <Chip onClick={() => setAsking(true)}>{VOICE.guideAskChip}</Chip>
-            )}
-          </div>
+          <KeeperMoves
+            className="ew-home-guide"
+            moves={[...guide.map((chip) => ({ id: chip.id + chip.label, label: chip.label })), ...(asking ? [] : [{ id: "__ask", label: VOICE.guideAskChip }])]}
+            onMove={(id) => {
+              if (id === "__ask") {
+                setAsking(true);
+                return;
+              }
+              const chip = guide.find((c) => c.id + c.label === id);
+              if (chip) onGuide(chip);
+            }}
+          />
           {asking ? (
-            <form
+            <KeeperAskField
               className="ew-home-ask"
-              onSubmit={(event) => {
-                event.preventDefault();
-                const text = draft.trim();
-                if (!text) return;
-                onAsk(text);
+              inputId="ew-home-ask-input"
+              draft={draft}
+              onDraft={setDraft}
+              autoFocus
+              placeholder={VOICE.guideAskPlaceholder}
+              onSubmit={(question) => {
+                onAsk(question);
                 setDraft("");
                 setAsking(false);
               }}
-            >
-              <input
-                autoFocus
-                value={draft}
-                maxLength={200}
-                onChange={(event) => setDraft(event.target.value)}
-                placeholder={VOICE.guideAskPlaceholder}
-                aria-label="Ask the keeper"
-              />
-              <Button type="submit" variant="mono">
-                {VOICE.guideAskSend}
-              </Button>
-            </form>
+            />
           ) : null}
         </div>
       )}

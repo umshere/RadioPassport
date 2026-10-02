@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { readAppCss } from "./appCss";
 import { describe, expect, it } from "vitest";
-import { snapSheet } from "~/components/keeper/sheetSnap";
+import { snapRest, snapSheet } from "~/components/keeper/sheetSnap";
 import {
   answerLocally,
   buildKeeperFacts,
@@ -9,7 +9,6 @@ import {
   keeperTrackLine,
   sanitizeKeeperFacts,
   spokenHour,
-  suggestedQuestions,
   type KeeperFacts,
 } from "~/components/keeper/keeperFacts";
 import { KEEPER_INTENTS, ruleClassify } from "~/components/keeper/keeperIntent";
@@ -85,6 +84,24 @@ const icy = (artist: string | null, title: string | null): NowPlayingTrack => ({
   fetchedAt: "2026-09-28T20:00:00Z",
 });
 
+import { keeperOpeningMoves } from "~/components/keeper/keeperMoves";
+
+/** The opening moves with the notebook shut and no subject: only what the record can answer. */
+const openingMoves = (facts: KeeperFacts) =>
+  keeperOpeningMoves({
+    facts,
+    askEnabled: false,
+    offline: false,
+    subject: null,
+    topics: [],
+    hasSimilar: false,
+    canShare: false,
+    hushed: false,
+    surface: "sheet",
+    last: null,
+    asked: new Set(),
+  });
+
 describe("keeper state", () => {
   const base: KeeperStateInput = {
     hasStation: true,
@@ -125,9 +142,12 @@ describe("keeper state", () => {
     expect(deriveKeeperState({ ...base, delight: true, exchange: "speaking" })).toBe("speaking");
     expect(deriveKeeperState({ ...base, delight: true, sheetOpen: true })).toBe("delight");
     // No station still wins over everything.
-    expect(deriveKeeperState({ ...base, isPlaying: false, exchange: "speaking" })).toBe(
-      "sleeping",
-    );
+    expect(deriveKeeperState({ ...base, hasStation: false, exchange: "speaking" })).toBe("sleeping");
+    // Paused does not close his eyes mid-answer, nor with the sheet open.
+    expect(deriveKeeperState({ ...base, isPlaying: false, exchange: "speaking" })).toBe("speaking");
+    expect(deriveKeeperState({ ...base, isPlaying: false, sheetOpen: true })).toBe("idle");
+    expect(deriveKeeperState({ ...base, isPlaying: false, sheetOpen: true, typing: true })).toBe("listening");
+    expect(deriveKeeperState({ ...base, isPlaying: false })).toBe("sleeping");
   });
 
   it("maps the station's hour to a mood", () => {
@@ -174,7 +194,7 @@ describe("keeper facts", () => {
     expect(facts.hour).toBeNull();
     expect(keeperOpeningLine(facts)).toBe("Landed in Lisbon: this is Radio Alfama.");
     expect(answerLocally("city", facts).text).toContain("can’t tell you the hour");
-    expect(suggestedQuestions(facts).some((chip) => chip.intent === "city")).toBe(false);
+    expect(openingMoves(facts).some((move) => move.role === "city")).toBe(false);
   });
 
   it("says plainly when the station sends no titles — and invents none", () => {
@@ -184,7 +204,7 @@ describe("keeper facts", () => {
     expect(keeperTrackLine(facts)).toMatch(/names|sound|playing/);
     expect(answerLocally("track", facts).text).toMatch(/names|sound|playing/);
     expect(answerLocally("artist", facts).text).toMatch(/couldn’t tell you|guessing/);
-    const chips = suggestedQuestions(facts).map((chip) => chip.label);
+    const chips = openingMoves(facts).map((move) => move.label);
     expect(chips).not.toContain("Who is this artist?");
     expect(chips).not.toContain("What’s playing?");
   });
@@ -206,10 +226,10 @@ describe("keeper facts", () => {
     expect(answerLocally("artist", facts).text).toBe(
       "Mariza, is what comes through. Past that I’d be making it up.",
     );
-    expect(suggestedQuestions(facts)[0]?.label).toBe("Who is this artist?");
+    expect(openingMoves(facts)[0]?.label).toBe("Who is this artist?");
 
     const titleOnly = buildKeeperFacts(lisbon, room("ready", icy(null, "Noite")), at(9));
-    expect(suggestedQuestions(titleOnly).map((chip) => chip.label)).not.toContain(
+    expect(openingMoves(titleOnly).map((move) => move.label)).not.toContain(
       "Who is this artist?",
     );
     expect(answerLocally("artist", titleOnly).text).toContain("no name to go with it");
@@ -231,11 +251,11 @@ describe("keeper facts", () => {
 
   it("offers an hour hop to morning, or to night when it is already morning", () => {
     const night = buildKeeperFacts(lisbon, room("empty", null), at(22));
-    const hop = suggestedQuestions(night).slice(-1)[0];
-    expect(hop).toEqual({ intent: "hour_hop", label: "Take me somewhere it’s morning →", hour: "Dawn" });
+    const hop = openingMoves(night).find((move) => move.role === "hop");
+    expect(hop).toMatchObject({ intent: "hour_hop", label: "Take me somewhere it’s morning →", hour: "Dawn" });
     expect(answerLocally("hour_hop", night).action).toEqual({ kind: "hour_hop", hour: "Dawn" });
     const dawn = buildKeeperFacts(lisbon, room("empty", null), at(7));
-    expect(suggestedQuestions(dawn).slice(-1)[0]?.hour).toBe("Night");
+    expect(openingMoves(dawn).find((move) => move.role === "hop")?.hour).toBe("Night");
   });
 
   it("answers language and station from the record", () => {
@@ -368,7 +388,7 @@ describe("keeper wiring", () => {
     expect(sheet).not.toContain("fetch(");
     expect(sheet).toContain('aria-modal="true"');
     expect(sheet).toContain('aria-labelledby="ew-keeper-title"');
-    expect(sheet).toContain("snapSheet(");
+    expect(sheet).toContain("snapRest(");
     const client = read("app/components/keeper/keeperClient.ts");
     expect(client).toContain("Promise.race");
     expect(client).not.toContain("AbortController");
@@ -382,6 +402,19 @@ describe("keeper wiring", () => {
     expect(keeper).not.toMatch(/box-shadow/);
     expect(keeper).not.toMatch(/#[0-9a-fA-F]{3,6}\b/);
     expect(keeper).toContain(".ew-keeper-float");
+  });
+});
+
+describe("keeper counter rests", () => {
+  it("opens to content height, rises to tall on a flick or 48px, and closes on a long pull down", () => {
+    expect(snapRest(-60, -0.1, "open")).toBe("tall");
+    expect(snapRest(-10, -0.6, "open")).toBe("tall");
+    expect(snapRest(-20, -0.1, "open")).toBe("open");
+    expect(snapRest(120, 0.1, "open")).toBe("closed");
+    expect(snapRest(40, 0.6, "open")).toBe("closed");
+    expect(snapRest(60, 0.1, "open")).toBe("open");
+    expect(snapRest(60, 0.1, "tall")).toBe("open");
+    expect(snapRest(20, 0.1, "tall")).toBe("tall");
   });
 });
 

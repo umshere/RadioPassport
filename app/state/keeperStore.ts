@@ -21,6 +21,9 @@ function readHush(): boolean {
 
 export type KeeperScene = "passport" | "nextstop";
 
+/** What the sheet opens on: a line he just said (a murmur), or a question already asked. */
+export type SheetEntry = { line?: { topic: string; text: string }; ask?: string };
+
 type KeeperStoreState = {
   sheetOpen: boolean;
   typing: boolean;
@@ -50,7 +53,10 @@ type KeeperStoreState = {
   /** The listener asked the keeper to keep quiet. */
   hushed: boolean;
   setHushed: (hushed: boolean) => void;
-  openSheet: () => void;
+  /** Set by openSheet(entry); the counter reads it once and clears it. */
+  sheetEntry: SheetEntry | null;
+  takeSheetEntry: () => SheetEntry | null;
+  openSheet: (entry?: SheetEntry) => void;
   closeSheet: () => void;
   setTyping: (typing: boolean) => void;
   setExchange: (exchange: KeeperStoreState["exchange"]) => void;
@@ -62,7 +68,7 @@ type KeeperStoreState = {
 let delightTimer: ReturnType<typeof setTimeout> | undefined;
 let sceneTimer: ReturnType<typeof setTimeout> | undefined;
 
-export const useKeeperStore = create<KeeperStoreState>((set) => ({
+export const useKeeperStore = create<KeeperStoreState>((set, get) => ({
   sheetOpen: false,
   typing: false,
   exchange: "none",
@@ -104,11 +110,17 @@ export const useKeeperStore = create<KeeperStoreState>((set) => ({
       set({ scene: null });
     }, ms);
   },
-  openSheet: () => {
-    logUsage("keeper_open");
-    set({ sheetOpen: true, murmur: null });
+  sheetEntry: null,
+  takeSheetEntry: () => {
+    const entry = get().sheetEntry;
+    if (entry) set({ sheetEntry: null });
+    return entry;
   },
-  closeSheet: () => set({ sheetOpen: false, typing: false, exchange: "none" }),
+  openSheet: (entry) => {
+    logUsage("keeper_open");
+    set({ sheetOpen: true, murmur: null, sheetEntry: entry ?? null });
+  },
+  closeSheet: () => set({ sheetOpen: false, typing: false, exchange: "none", sheetEntry: null }),
   setTyping: (typing) => set({ typing }),
   setExchange: (exchange) => set({ exchange }),
   delight: (ms) => {

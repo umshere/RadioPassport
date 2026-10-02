@@ -1,3 +1,4 @@
+import { titlePlace } from "~/utils/titlePlace";
 import { useEffect, useState } from "react";
 import { Row, RowText } from "~/components/ui/Row";
 import type { Station } from "~/types/radio";
@@ -23,9 +24,9 @@ export function stationLocation(station: Station) {
       state && city.toLowerCase().endsWith(` ${state.toLowerCase()}`)
         ? city.slice(0, city.length - state.length).trim()
         : tidyPlace(city);
-    return withoutState || city;
+    return titlePlace(withoutState || city);
   }
-  return tidyPlace(state) || country || "Unknown location";
+  return titlePlace(tidyPlace(state)) || country || "Unknown location";
 }
 
 const SHORT_COUNTRY: Record<string, string> = {

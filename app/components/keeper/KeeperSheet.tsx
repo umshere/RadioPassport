@@ -1,35 +1,16 @@
 import { Link, useRouteLoaderData } from "@remix-run/react";
-import { Eyebrow } from "~/components/ui/Eyebrow";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
-import { snapSheet } from "./sheetSnap";
+import { snapRest } from "./sheetSnap";
 import { FlipBoard } from "~/components/radio-passport/FlipBoard";
-import { Button, ButtonLink, Chip } from "~/components/ui/Button";
-import { markArtworkUrlFailed } from "~/utils/stations";
+import { Button } from "~/components/ui/Button";
 import { useKeeperStore } from "~/state/keeperStore";
 import { usePlayerStore } from "~/state/playerStore";
-import { shareStation } from "~/components/share/shareStation";
-import { usePlayerNoticeStore } from "~/state/playerNoticeStore";
-import { FlapText } from "./FlapText";
 import { Keeper } from "./Keeper";
+import { KeeperCounter } from "./KeeperCounter";
 import { readKeeperFact } from "./keeperFactClient";
 import { planMurmurs } from "./keeperMurmur";
 import { VOICE } from "./keeperVoice";
-import {
-  keeperOpeningLine,
-  spokenHour,
-  titleCase,
-  keeperTrackLine,
-  suggestedQuestions,
-  type KeeperFacts,
-  type KeeperQuestion,
-} from "./keeperFacts";
-import { KEEPER_QUESTION_MAX } from "./keeperIntent";
-import { useKeeperTalk } from "./useKeeperTalk";
-import { KeeperTalkExtras } from "./KeeperTalkExtras";
-import { useStationSubject } from "./useStationSubject";
-import { findSimilar } from "./keeperSimilarClient";
-import { similarWhere, type Similar } from "./keeperSimilar";
-import { tidyStationName as tidyName } from "./keeperFacts";
+import type { KeeperFacts } from "./keeperFacts";
 import { skyHour } from "~/components/desk/deskModel";
 import type { KeeperView } from "./useKeeper";
 
@@ -42,36 +23,6 @@ export function useKeeperAskEnabled(): boolean {
 const FOCUSABLE =
   'button:not([disabled]), input:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])';
 
-function factRows(facts: KeeperFacts): Array<{ label: string; value: string }> {
-  const rows: Array<{ label: string; value: string }> = [];
-  if (facts.station.country) rows.push({ label: "Land", value: facts.station.country });
-  rows.push({
-    label: "Spoken",
-    value: facts.station.language ? titleCase(facts.station.language) : "Not listed",
-  });
-  rows.push({
-    label: "Hour",
-    value: facts.hour
-      ? `${facts.hour.clock} · ${facts.hour.solar}`
-      : "No coordinates sent",
-  });
-  if (facts.station.bitrate || facts.station.codec) {
-    rows.push({
-      label: "Signal",
-      value: [
-        facts.station.bitrate ? `${facts.station.bitrate} kbps` : null,
-        facts.station.codec ? facts.station.codec.toUpperCase() : null,
-      ]
-        .filter(Boolean)
-        .join(" · "),
-    });
-  }
-  if (facts.station.tags.length) {
-    rows.push({ label: "Tags", value: facts.station.tags.slice(0, 5).join(", ") });
-  }
-  return rows;
-}
-
 /** Where the dock (or band) begins, as px from the viewport bottom. */
 function dockFloor(): number {
   const dock = document.querySelector<HTMLElement>(".rp-dock");
@@ -80,66 +31,26 @@ function dockFloor(): number {
 }
 
 /**
- * The keeper's sheet: a bottom sheet over the page on the phone that stops
- * at the top of the dock (the transport stays in reach), a quiet side panel
- * on desktop. Dialog semantics: focus moves in and is trapped, Esc closes,
- * focus returns to the keeper. Drag the grip down to close.
+ * The keeper's counter: a bottom sheet over the page on the phone that stops
+ * at the top of the dock (the transport stays in reach), a quiet side panel on
+ * desktop. It is as tall as what he is saying; drag the header up for all the
+ * room, down to put it away. Dialog semantics: focus moves in and is trapped,
+ * Esc closes, focus returns to the keeper.
  */
 export function KeeperSheet({ view }: { view: KeeperView & { facts: KeeperFacts } }) {
   const { facts } = view;
   const askEnabled = useKeeperAskEnabled();
   const closeSheet = useKeeperStore((state) => state.closeSheet);
-  const setTyping = useKeeperStore((state) => state.setTyping);
-  const setExchange = useKeeperStore((state) => state.setExchange);
   const factLog = useKeeperStore((state) => state.factLog);
-  const reading = useKeeperStore((state) => state.reading);
-  const hushed = useKeeperStore((state) => state.hushed);
-  const setHushed = useKeeperStore((state) => state.setHushed);
   const nowStation = usePlayerStore((state) => state.nowPlaying);
   const stationId = nowStation?.uuid ?? null;
   const entries = stationId && factLog.stationId === stationId ? factLog.entries : [];
-  const topicSteps = planMurmurs(facts).flatMap((step) => (step.type === "fact" ? [step] : [])).slice(0, 3);
   const sheetRef = useRef<HTMLElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const queue = usePlayerStore((state) => state.queue);
-  const startStation = usePlayerStore((state) => state.startStation);
-  const threadFor = useKeeperStore((state) => state.threadFor);
-  const [tab, setTab] = useState<"postcards" | "onair" | "station" | "more">(() =>
-    threadFor && threadFor === stationId ? "more" : "postcards",
-  );
-  const [similar, setSimilar] = useState<Similar | null | undefined>(undefined);
-  useEffect(() => {
-    useKeeperStore.getState().setThreadFor(null);
-  }, []);
-  useEffect(() => {
-    if (!nowStation) return;
-    let live = true;
-    setSimilar(undefined);
-    void findSimilar(nowStation, queue).then((found) => {
-      if (live) setSimilar(found);
-    });
-    return () => {
-      live = false;
-    };
-    // The queue changes as stations board; the thread is about the one on air.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [stationId]);
-  const setNotice = usePlayerNoticeStore((state) => state.setNotice);
-  const [draft, setDraft] = useState("");
   const [floor, setFloor] = useState(0);
+  const [rest, setRest] = useState<"open" | "tall">("open");
   const [dragY, setDragY] = useState<number | null>(null);
-  const [plateFailed, setPlateFailed] = useState(false);
-  useEffect(() => setPlateFailed(false), [view.plate]);
   const drag = useRef<{ startY: number; startT: number; moved: boolean } | null>(null);
-  const suppressGripClick = useRef(false);
-
-  const subject = useStationSubject(facts, askEnabled);
-  const { talk, ask, onChip, hopTo, interrupt } = useKeeperTalk({
-    facts,
-    askEnabled,
-    entries,
-    onLeave: closeSheet,
-  });
+  const paused = view.hasStation && !view.present;
 
   // The sheet stands on the dock, never over it.
   useLayoutEffect(() => {
@@ -149,8 +60,8 @@ export function KeeperSheet({ view }: { view: KeeperView & { facts: KeeperFacts 
     return () => window.removeEventListener("resize", update);
   }, []);
 
-  // Opened with nothing to say yet? Read up on the place and the country now,
-  // so the sheet is never a dead end.
+  // Opened with nothing read yet? Read up on the place and the country now,
+  // so the topic moves have something to say at once.
   useEffect(() => {
     if (!askEnabled || !stationId) return;
     const held = useKeeperStore.getState().factLog;
@@ -162,9 +73,8 @@ export function KeeperSheet({ view }: { view: KeeperView & { facts: KeeperFacts 
   }, [askEnabled, stationId]);
 
   const close = useCallback(() => {
-    interrupt();
     closeSheet();
-  }, [closeSheet, interrupt]);
+  }, [closeSheet]);
 
   // Focus in, trap, Esc, focus back to the keeper.
   useEffect(() => {
@@ -174,8 +84,7 @@ export function KeeperSheet({ view }: { view: KeeperView & { facts: KeeperFacts 
     const first =
       // Not the input: focusing a text field would raise the phone keyboard
       // the moment the sheet opens.
-      sheet.querySelector<HTMLElement>(".ew-keeper-close") ??
-      sheet.querySelector<HTMLElement>(FOCUSABLE);
+      sheet.querySelector<HTMLElement>(".ew-keeper-close") ?? sheet.querySelector<HTMLElement>(FOCUSABLE);
     first?.focus({ preventScroll: true });
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
@@ -212,34 +121,13 @@ export function KeeperSheet({ view }: { view: KeeperView & { facts: KeeperFacts 
     };
   }, [close]);
 
-  const onAsk = async (event: React.FormEvent) => {
-    event.preventDefault();
-    const question = draft.trim().slice(0, KEEPER_QUESTION_MAX);
-    if (!question) return;
-    setDraft("");
-    setTyping(false);
-    await ask(question);
-  };
-
-  const onShare = async () => {
-    if (!nowStation) return;
-    const clock = facts.hour ? spokenHour(facts.hour.clock, facts.hour.localHour) : null;
-    const result = await shareStation(nowStation, clock);
-    if (result === "copied") setNotice({ kind: "info", message: VOICE.shared, durationMs: 3200 });
-  };
-
-  const chips = suggestedQuestions(facts);
-  const opening = keeperOpeningLine(facts);
-  const where = [facts.city || facts.station.country, facts.hour?.clock]
-    .filter(Boolean)
-    .join(" · ");
-  const title = where ? `The keeper · ${where}` : "The keeper";
+  const place = facts.city || facts.station.country;
+  const when = paused ? VOICE.headerPaused : facts.hour ? facts.hour.clock : VOICE.hourUnknownShort;
+  const where = [place, when].filter(Boolean).join(" · ");
+  const title = `${VOICE.keeperTitle} · ${where}`;
 
   return (
-    <div
-      className="ew-keeper-layer"
-      style={{ ["--keeper-floor" as string]: `${floor}px` }}
-    >
+    <div className="ew-keeper-layer" style={{ ["--keeper-floor" as string]: `${floor}px` }}>
       <div className="ew-keeper-scrim" aria-hidden="true" onClick={close} />
       <section
         ref={sheetRef}
@@ -249,17 +137,22 @@ export function KeeperSheet({ view }: { view: KeeperView & { facts: KeeperFacts 
         aria-labelledby="ew-keeper-title"
         aria-describedby="ew-keeper-line"
         data-state={view.state}
+        data-rest={rest}
         style={
           dragY !== null
             ? { transform: `translateY(${dragY}px)`, transition: "none", animation: "none" }
             : undefined
         }
+        // A field in focus means a keyboard: give the counter all the room.
+        onFocus={(event) => {
+          if (event.target instanceof HTMLInputElement) setRest("tall");
+        }}
       >
-        <Button
-          variant="text"
-          className="ew-keeper-grip"
-          aria-label="Close the keeper"
+        <header
+          className="ew-keeper-top"
+          data-hour={skyHour(facts.hour?.solar)}
           onPointerDown={(event) => {
+            if ((event.target as HTMLElement).closest("a, button, input")) return;
             event.currentTarget.setPointerCapture(event.pointerId);
             drag.current = { startY: event.clientY, startT: performance.now(), moved: false };
           }}
@@ -275,253 +168,42 @@ export function KeeperSheet({ view }: { view: KeeperView & { facts: KeeperFacts 
             drag.current = null;
             setDragY(null);
             if (!start?.moved) return;
-            suppressGripClick.current = true;
             const travel = event.clientY - start.startY;
             const velocity = travel / Math.max(1, performance.now() - start.startT);
-            if (snapSheet(travel, velocity, "open") === "peek") close();
+            const next = snapRest(travel, velocity, rest);
+            if (next === "closed") close();
+            else setRest(next);
           }}
           onPointerCancel={() => {
             drag.current = null;
             setDragY(null);
           }}
-          onClick={() => {
-            if (suppressGripClick.current) {
-              suppressGripClick.current = false;
-              return;
-            }
-            close();
-          }}
         >
           <i className="ew-keeper-grip-bar" aria-hidden="true" />
-        </Button>
-        <header className="ew-keeper-top" data-hour={skyHour(facts.hour?.solar)}>
           <Keeper state={view.state} mood={view.mood} size="sheet" />
-          <div className="ew-keeper-heading">
-            <h2 id="ew-keeper-title" className="ew-keeper-eyebrow">
-              <span className="sr-only">{title}</span>
-              <span aria-hidden="true">The keeper</span>
-              {where ? <FlipBoard text={where} className="is-meta" /> : null}
-            </h2>
-            <FlapText id="ew-keeper-line" className="ew-keeper-line" text={opening} />
-          </div>
+          <h2 id="ew-keeper-title" className="ew-keeper-eyebrow">
+            <span className="sr-only">{title}</span>
+            <span aria-hidden="true">{VOICE.keeperTitle}</span>
+            {where ? <FlipBoard text={where} className="is-meta" /> : null}
+          </h2>
+          {/* SPA link: the audio bridge in root keeps playing. */}
+          <Link to="/listen" className="ew-keeper-door" onClick={close}>
+            {VOICE.deskDoor}
+          </Link>
           <Button variant="text" className="ew-keeper-close" onClick={close}>
             Close
           </Button>
         </header>
-        <div className="ew-keeper-body">
-          {/* 1 — Ask. The first thing on the sheet, not the last. */}
-          <form className="ew-keeper-ask" onSubmit={onAsk}>
-            <label htmlFor="ew-keeper-input" className="sr-only">
-              Ask the desk a question
-            </label>
-            <input
-              ref={inputRef}
-              id="ew-keeper-input"
-              type="text"
-              value={draft}
-              maxLength={KEEPER_QUESTION_MAX}
-              autoComplete="off"
-              enterKeyHint="send"
-              placeholder={VOICE.askPlaceholder}
-              onChange={(event) => {
-                const typing = event.target.value.trim().length > 0;
-                setDraft(event.target.value);
-                setTyping(typing);
-                // Typing interrupts the keeper: it stops talking and listens.
-                if (typing && useKeeperStore.getState().exchange === "speaking") {
-                  interrupt();
-                  setExchange("none");
-                }
-              }}
-              onBlur={() => setTyping(false)}
-            />
-            <Button type="submit" variant="mono" disabled={!draft.trim()}>
-              Ask
-            </Button>
-          </form>
-          <div className="ew-keeper-chips" role="group" aria-label="Ask the keeper">
-            {chips.map((chip) => (
-              <Chip key={chip.label} onClick={() => onChip(chip)}>
-                {chip.label}
-              </Chip>
-            ))}
-            {askEnabled && subject ? (
-              <Chip onClick={() => void ask(VOICE.askAbout(subject.title))}>{VOICE.askAbout(subject.title)}</Chip>
-            ) : null}
-            {askEnabled
-              ? topicSteps.map((step) => (
-                  <Chip key={`${step.kind}:${step.name}`} onClick={() => void ask(VOICE.askAbout(step.name))}>
-                    {VOICE.askAbout(step.name)}
-                  </Chip>
-                ))
-              : null}
-          </div>
-
-          {/* 2 — The answer lands right under the question. */}
-          <div className="ew-keeper-talk" aria-live="polite">
-            {talk ? (
-              <>
-                <p className="ew-keeper-q">{talk.question}</p>
-                {talk.answer && talk.basis === "knowledge" ? (
-                  <Eyebrow as="span" tone="dust" className="ew-keeper-basis">
-                    {VOICE.notebook}
-                  </Eyebrow>
-                ) : null}
-                {talk.answer ? (
-                  <FlapText className="ew-keeper-a" text={talk.answer} />
-                ) : (
-                  <p className="ew-keeper-a is-pending">
-                    <span className="sr-only">The keeper is thinking.</span>
-                    <span aria-hidden="true">…</span>
-                  </p>
-                )}
-                {talk.answer && talk.stationLine ? (
-                  <p className="ew-keeper-station-line">{talk.stationLine}</p>
-                ) : null}
-                <KeeperTalkExtras talk={talk} className="ew-keeper" onFacts={(topic) => void ask(VOICE.askFacts(topic))} />
-                {talk.answer && talk.hop ? (
-                  <Chip className="ew-keeper-hop" onClick={() => hopTo(talk.hop!)}>
-                    Off we go →
-                  </Chip>
-                ) : null}
-              </>
-            ) : null}
-          </div>
-
-          {/* 3 — One panel at a time: postcards, what is on air, the station. */}
-          <div className="ew-keeper-tabs" role="tablist" aria-label="The desk">
-            {(
-              [
-                ["postcards", VOICE.tabPostcards],
-                ["onair", VOICE.tabOnAir],
-                ["station", VOICE.tabStation],
-                ...(similar ? ([["more", VOICE.tabMore]] as const) : []),
-              ] as const
-            ).map(([id, label]) => (
-              <button
-                key={id}
-                type="button"
-                role="tab"
-                id={`ew-keeper-tab-${id}`}
-                aria-selected={tab === id}
-                aria-controls="ew-keeper-panel"
-                className="ew-keeper-tab"
-                onClick={() => setTab(id)}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-          <div
-            className="ew-keeper-panel"
-            id="ew-keeper-panel"
-            role="tabpanel"
-            aria-labelledby={`ew-keeper-tab-${tab}`}
-          >
-            {tab === "postcards" ? (
-              <>
-                {entries.slice(-4).map((entry) => (
-                  <div key={`${entry.kind}:${entry.topic}`} className="ew-keeper-know-item">
-                    <Eyebrow as="span" tone="foil">{entry.topic}</Eyebrow>
-                    <p>{entry.text}</p>
-                  </div>
-                ))}
-                {reading && askEnabled && entries.length < 3 ? (
-                  <p className="ew-keeper-know-wait">{VOICE.reading(facts.city || facts.station.country)}</p>
-                ) : null}
-                {!entries.length && !reading ? (
-                  <p className="ew-keeper-know-wait">{VOICE.noPostcards(facts.city || facts.station.country)}</p>
-                ) : null}
-                {entries.length ? (
-                  <Eyebrow as="span" tone="dust" className="ew-keeper-basis">
-                    {VOICE.notebook}
-                  </Eyebrow>
-                ) : null}
-              </>
-            ) : null}
-            {tab === "onair" ? (
-              <div className="ew-keeper-onair-row">
-                {view.plate && !plateFailed ? (
-                  <img
-                    className="ew-keeper-plate-art"
-                    src={view.plate}
-                    alt=""
-                    width={56}
-                    height={56}
-                    onError={() => {
-                      markArtworkUrlFailed(view.plate!);
-                      setPlateFailed(true);
-                    }}
-                  />
-                ) : null}
-                <p className="ew-keeper-onair">
-                  <span className="ew-keeper-label">On air</span>
-                  <span className={facts.track ? "ew-keeper-track" : "ew-keeper-notrack"}>
-                    {keeperTrackLine(facts)}
-                  </span>
-                </p>
-              </div>
-            ) : null}
-            {tab === "more" && similar ? (
-              <>
-                <Eyebrow as="span" tone="foil">{similar.label}</Eyebrow>
-                <ol className="ew-keeper-more">
-                  {similar.stations.map((station) => (
-                    <li key={station.uuid}>
-                      <button
-                        type="button"
-                        className="ew-keeper-more-row"
-                        onClick={() => {
-                          startStation(station, { preserveQueue: true, autoPlay: true });
-                          close();
-                        }}
-                      >
-                        <b>{similarWhere(station)}</b>
-                        <small>{tidyName(station.name)}</small>
-                        <span aria-hidden="true">{VOICE.board} →</span>
-                      </button>
-                    </li>
-                  ))}
-                </ol>
-              </>
-            ) : null}
-            {tab === "station" ? (
-              <dl className="ew-keeper-facts">
-                {factRows(facts).map((row) => (
-                  <div key={row.label}>
-                    <dt>{row.label}</dt>
-                    <dd>{row.value}</dd>
-                  </div>
-                ))}
-              </dl>
-            ) : null}
-          </div>
-
-        </div>
-        <footer className="ew-keeper-foot">
-          <div className="ew-keeper-actions">
-            {nowStation ? (
-              <button type="button" className="ew-keeper-act" onClick={() => void onShare()}>
-                <span className="ew-keeper-act-main">{VOICE.actShare} <span aria-hidden="true">↗</span></span>
-                <span className="ew-keeper-act-sub">{VOICE.actShareSub}</span>
-              </button>
-            ) : null}
-            <button
-              type="button"
-              className="ew-keeper-act"
-              aria-pressed={!hushed}
-              onClick={() => setHushed(!hushed)}
-            >
-              <span className="ew-keeper-act-main">{hushed ? VOICE.actChatterOff : VOICE.actChatterOn}</span>
-              <span className="ew-keeper-act-sub">{hushed ? VOICE.actChatterOffSub : VOICE.actChatterOnSub}</span>
-            </button>
-            {/* SPA link: the audio bridge in root keeps playing. */}
-            <Link to="/listen" className="ew-keeper-act" onClick={close}>
-              <span className="ew-keeper-act-main">{VOICE.actDesk} <span aria-hidden="true">→</span></span>
-              <span className="ew-keeper-act-sub">{VOICE.actDeskSub}</span>
-            </Link>
-          </div>
-        </footer>
+        <KeeperCounter
+          facts={facts}
+          askEnabled={askEnabled}
+          surface="sheet"
+          plate={view.plate}
+          paused={paused}
+          entries={entries}
+          onLeave={close}
+          idPrefix="ew-keeper"
+        />
       </section>
     </div>
   );

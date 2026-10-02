@@ -1,3 +1,4 @@
+import { titlePlace } from "~/utils/titlePlace";
 import { stationLocation } from "~/components/radio-passport/StationRow";
 import { cleanTrack } from "~/services/keeper/cleanTitle";
 import { stationTags } from "~/components/radio-passport/stationInsights";
@@ -49,12 +50,6 @@ export type KeeperAnswer = {
   action?: { kind: "hour_hop"; hour: SolarHour };
 };
 
-export type KeeperQuestion = {
-  intent: KeeperIntent;
-  label: string;
-  /** The hour a hop chip lands on. */
-  hour?: SolarHour;
-};
 
 const LIMITS = {
   text: 120,
@@ -132,7 +127,7 @@ export function buildKeeperFacts(
         .slice(0, LIMITS.tags)
         .map((tag) => tag.slice(0, LIMITS.tag)),
     },
-    city: clip(stationLocation(station), LIMITS.text) ?? "",
+    city: titlePlace(clip(stationLocation(station), LIMITS.text) ?? ""),
     hour:
       local
         ? {
@@ -292,31 +287,12 @@ export function hopHour(facts: KeeperFacts): SolarHour {
   return facts.hour?.solar === "Dawn" ? "Night" : "Dawn";
 }
 
-const HOP_LABEL: Record<SolarHour, string> = {
+export const HOP_LABEL: Record<SolarHour, string> = {
   Dawn: "Take me somewhere it’s morning →",
   Midday: "Take me somewhere it’s midday →",
   Dusk: "Take me somewhere it’s dusk →",
   Night: "Take me somewhere it’s night →",
 };
-
-/** Chips for this moment. "Who is this artist?" only when an artist was sent. */
-export function suggestedQuestions(facts: KeeperFacts): KeeperQuestion[] {
-  const chips: KeeperQuestion[] = [];
-  if (facts.track?.artist) {
-    chips.push({ intent: "artist", label: "Who is this artist?" });
-  }
-  if (facts.track) {
-    chips.push({ intent: "track", label: "What’s playing?" });
-  }
-  chips.push({ intent: "language", label: "What language is this?" });
-  if (facts.hour) {
-    chips.push({ intent: "city", label: "What’s the hour there?" });
-  }
-  chips.push({ intent: "station", label: "Who’s this station?" });
-  const hour = hopHour(facts);
-  chips.push({ intent: "hour_hop", label: HOP_LABEL[hour], hour });
-  return chips;
-}
 
 /** "english,spanish" → "English, Spanish". */
 export function titleCase(value: string) {

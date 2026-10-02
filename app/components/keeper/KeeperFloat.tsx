@@ -269,7 +269,7 @@ export function KeeperFloat({ view }: { view: KeeperView }) {
             type="button"
             className="ew-keeper-murmur-body"
             aria-label={`The keeper, on ${murmur.topic}: ${murmur.text} Open the keeper for more.`}
-            onClick={() => openSheet()}
+            onClick={() => openSheet({ line: { topic: murmur.topic, text: murmur.text } })}
           >
             <Eyebrow as="span" tone="foil">{murmur.topic}</Eyebrow>
             <FlapText key={murmur.id} className="ew-keeper-murmur-text" text={murmur.text} />

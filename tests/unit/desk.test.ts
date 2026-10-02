@@ -160,11 +160,14 @@ describe("desk wiring", () => {
   it("shares one exchange between the sheet and the desk", () => {
     const sheet = read("app/components/keeper/KeeperSheet.tsx");
     const ask = read("app/components/desk/DeskAsk.tsx");
-    expect(sheet).toContain("useKeeperTalk(");
-    expect(ask).toContain("useKeeperTalk(");
+    const counter = read("app/components/keeper/KeeperCounter.tsx");
+    // One counter, two skins: the exchange lives in the counter only.
+    expect(sheet).toContain("<KeeperCounter");
+    expect(ask).toContain("<KeeperCounter");
+    expect(counter).toContain("useKeeperTalk(");
     expect(sheet).not.toContain("askKeeper(");
-    // The footer actions stay on the sheet.
-    expect(sheet).toContain('className="ew-keeper-foot"');
+    expect(sheet).not.toContain("ew-keeper-foot");
+    expect(sheet).not.toContain("ew-keeper-tab");
   });
 
   it("keeps copy in the keeper's voice file and marks notebook facts", () => {
@@ -191,12 +194,10 @@ describe("desk wiring", () => {
     expect(dock).not.toContain("upNextStore");
   });
 
-  it("drops the on-air chip and keeps one topic chip on a phone-width desk", () => {
-    const ask = read("app/components/desk/DeskAsk.tsx");
-    expect(ask).toContain('chip.intent !== "track"');
-    expect(ask).toContain('className="is-topic"');
-    const css = readAppCss();
-    expect(css).toMatch(/@container desk \(max-width: 699px\) \{\s*\.ew-ask-chips > \.is-topic ~ \.is-topic \{ display: none; \}/);
+  it("leaves out of the desk's moves what the desk already shows", () => {
+    expect(read("app/components/desk/DeskAsk.tsx")).toContain('surface="desk"');
+    const moves = read("app/components/keeper/keeperMoves.ts");
+    expect(moves).toContain('ctx.surface === "desk"');
   });
 
   it("never clips the keeper: the wide sky grows to its content", () => {
@@ -213,6 +214,6 @@ describe("desk wiring", () => {
     expect(desk).toMatch(/prefers-reduced-motion: reduce\) \{\s*\.ew-desk \*, \.ew-desk \*::before, \.ew-desk \*::after \{ animation: none !important;/);
     expect(desk).not.toMatch(/box-shadow/);
     // Chips wrap on the desk; nothing scrolls sideways.
-    expect(desk).toMatch(/\.ew-ask-chips \{ display: flex; flex-wrap: wrap;/);
+    expect(readAppCss()).toMatch(/\.ew-counter-moves \{ display: flex; flex-wrap: wrap;/);
   });
 });

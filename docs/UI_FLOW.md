@@ -29,7 +29,7 @@ Elsewhere is one loop: **land, intent, tune, inhabit, stamp, next**. The contrac
 | Share square (site bar) | Opens the ticket sheet for the station on the air |
 | Night / Day | Switches the room. Does not stop audio. Does not follow the OS clock |
 | "How it works" / "?" | `/about` |
-| Keeper figure | Opens his sheet (ask, postcards, on air, station; Ticket, Chatter, The desk) |
+| Keeper figure | Opens his counter: one line, up to three moves, an ask field (The desk → in the header) |
 | Dock art or Desk tab | `/listen` |
 
 Search, hours and overlays never call `stop()`.

@@ -34,3 +34,16 @@ describe("pickFacts", () => {
     expect(facts.join(" ")).not.toContain("works in Malayalam cinema");
   });
 });
+
+import { titlePlace } from "~/utils/titlePlace";
+
+describe("titlePlace", () => {
+  it("capitalises a place spelled all in lower case, and leaves cased names alone", () => {
+    expect(titlePlace("kerala")).toBe("Kerala");
+    expect(titlePlace("new york")).toBe("New York");
+    expect(titlePlace("saint-denis")).toBe("Saint-Denis");
+    expect(titlePlace("São Paulo")).toBe("São Paulo");
+    expect(titlePlace("McAllen")).toBe("McAllen");
+    expect(titlePlace("")).toBe("");
+  });
+});

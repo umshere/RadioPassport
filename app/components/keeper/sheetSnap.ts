@@ -11,3 +11,21 @@ export function snapSheet(travelY: number, velocityY: number, current: SheetRest
   if (current === "peek") return travelY < -48 ? "open" : "peek";
   return travelY > 48 ? "peek" : "open";
 }
+
+export type SheetHeight = "open" | "tall";
+
+/**
+ * The counter's rests once it is open: content height ("open") or all the
+ * room above the dock ("tall"), or closed. A flick decides by direction, a
+ * slow drag by travel (48px toward the nearest rest; 96px down from open to
+ * close).
+ */
+export function snapRest(travelY: number, velocityY: number, current: SheetHeight): "closed" | SheetHeight {
+  if (current === "tall") {
+    if (velocityY > 0.4 || travelY > 48) return "open";
+    return "tall";
+  }
+  if (velocityY < -0.4 || travelY < -48) return "tall";
+  if (velocityY > 0.4 || travelY > 96) return "closed";
+  return "open";
+}

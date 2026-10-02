@@ -71,14 +71,17 @@ export type KeeperStateInput = {
 };
 
 /**
- * One state at a time, in priority order: no signal sleeps; a live exchange
- * beats a one-shot; a one-shot beats the sheet; deep night dozes only while
+ * One state at a time, in priority order: no station sleeps; a live exchange
+ * beats everything, paused included; paused dozes unless the sheet is open;
+ * a one-shot beats the sheet; a one-shot beats the sheet; deep night dozes only while
  * nobody is at the desk.
  */
 export function deriveKeeperState(input: KeeperStateInput): KeeperState {
-  if (!input.hasStation || !input.isPlaying) return "sleeping";
+  if (!input.hasStation) return "sleeping";
   if (input.exchange === "thinking") return "thinking";
   if (input.exchange === "speaking") return "speaking";
+  // Paused dozes only while nobody is at the desk: an open sheet is somebody.
+  if (!input.isPlaying) return input.sheetOpen ? (input.typing ? "listening" : "idle") : "sleeping";
   if (input.delight) return "delight";
   if (input.reading && !input.sheetOpen) return "thinking";
   if (input.murmuring && !input.sheetOpen) return "speaking";

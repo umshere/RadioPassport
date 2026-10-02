@@ -453,7 +453,7 @@ export default function Index() {
             onGuide={(chip) => {
               if (chip.id === "how") setAskLine(VOICE.askSteps);
               else if (chip.id === "surprise") void requestAiWorld();
-              else if (chip.id === "ask") openKeeperSheet();
+              else if (chip.id === "ask") openKeeperSheet(arrivalCity ? { ask: VOICE.askAbout(arrivalCity) } : undefined);
               else if (chip.id === "hour") {
                 setHour(chip.hour);
                 setPlace(null);
@@ -461,7 +461,7 @@ export default function Index() {
                 scrollToBoard();
               }
             }}
-            onOpenKeeper={nowPlaying ? openKeeperSheet : undefined}
+            onOpenKeeper={nowPlaying ? () => openKeeperSheet() : undefined}
           />
         </div>
         <div className="ew-home-main">

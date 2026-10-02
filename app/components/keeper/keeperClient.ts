@@ -38,15 +38,33 @@ export async function askKeeper(
   fetchImpl: typeof fetch = fetch,
   timeoutMs = CLIENT_TIMEOUT_MS,
 ): Promise<KeeperReply | null> {
+  return (await askKeeperDetailed(question, facts, fetchImpl, timeoutMs)).reply;
+}
+
+/** Why an ask came back empty: the line is down, the desk is rationing, or it simply failed. */
+export type AskStatus = "ok" | "offline" | "limited" | "failed";
+
+export async function askKeeperDetailed(
+  question: string,
+  facts: KeeperFacts,
+  fetchImpl: typeof fetch = fetch,
+  timeoutMs = CLIENT_TIMEOUT_MS,
+): Promise<{ reply: KeeperReply | null; status: AskStatus }> {
   logUsage("keeper_ask");
+  if (typeof navigator !== "undefined" && navigator.onLine === false) {
+    return { reply: null, status: "offline" };
+  }
+  let status: AskStatus = "ok";
   const request = fetchImpl("/api/keeper/ask", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ question, facts }),
   })
     .then(async (response) => {
-      const payload = (await response.json().catch(() => null)) as Partial<KeeperReply> | null;
+      const payload = (await response.json().catch(() => null)) as (Partial<KeeperReply> & { error?: string }) | null;
+      if (response.status === 429 || payload?.error === "rate_limited") status = "limited";
       if (!payload || typeof payload.answer !== "string" || !payload.answer.trim()) {
+        if (status === "ok") status = "failed";
         return null;
       }
       const action =
@@ -69,13 +87,21 @@ export async function askKeeper(
           : undefined,
       } satisfies KeeperReply;
     })
-    .catch(() => null);
+    .catch(() => {
+      // A request that cannot even leave: the line to the notebook is down.
+      status = "offline";
+      return null;
+    });
   let timer: ReturnType<typeof setTimeout> | undefined;
   const timeout = new Promise<null>((resolve) => {
-    timer = setTimeout(() => resolve(null), timeoutMs);
+    timer = setTimeout(() => {
+      if (status === "ok") status = "failed";
+      resolve(null);
+    }, timeoutMs);
   });
   try {
-    return await Promise.race([request, timeout]);
+    const reply = await Promise.race([request, timeout]);
+    return { reply, status: reply && status === "ok" ? "ok" : status };
   } finally {
     if (timer) clearTimeout(timer);
   }

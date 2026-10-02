@@ -14,7 +14,7 @@
     height: var(--keeper-size);
     flex: none;
   }
-  .ew-keeper[data-size="sheet"] { --keeper-size: 88px; }
+  .ew-keeper[data-size="sheet"] { --keeper-size: 48px; }
   .ew-keeper[data-mood="drowsy"] { --keeper-ember: var(--ew-hour-night); }
   .ew-keeper[data-mood="bright"] { --keeper-ember: var(--ew-hour-dawn); }
   .ew-keeper[data-mood="warm"] { --keeper-ember: var(--ew-hour-dusk); }
@@ -142,9 +142,10 @@
     .ew-keeper-float { transition: none; }
   }
 
-  /* The keeper's sheet. Phone: from the bottom, standing on the dock (its
+  /* The keeper's counter. Phone: from the bottom, standing on the dock (its
      floor is the dock's measured top), so play/next stay in reach and the
-     scrim never covers them. Desktop: a quiet side panel, no scrim tint. */
+     scrim never covers them. As tall as what he is saying (62% of the room at
+     most); data-rest="tall" gives it all the room. Desktop: a quiet side panel. */
   .ew-keeper-layer { position: fixed; inset: 0; z-index: 42; pointer-events: none; }
   .ew-keeper-scrim {
     position: absolute;
@@ -160,76 +161,39 @@
     left: 0;
     display: flex;
     flex-direction: column;
-    max-height: calc(100dvh - var(--keeper-floor, 0px) - 56px - env(safe-area-inset-top, 0px));
+    max-height: min(62dvh, calc(100dvh - var(--keeper-floor, 0px) - 56px - env(safe-area-inset-top, 0px)));
     border-top: 1px solid var(--ew-foil-line);
     border-radius: 0;
     background: var(--ew-leather);
     pointer-events: auto;
-    animation: ew-keeper-rise .32s var(--ew-settle) both;
+    animation: ew-keeper-rise .24s var(--ew-settle) both;
   }
-  @keyframes ew-keeper-rise { from { transform: translateY(24px); opacity: 0; } to { transform: none; opacity: 1; } }
-  .ew-keeper-grip {
+  .ew-keeper-sheet[data-rest="tall"] { max-height: calc(100dvh - var(--keeper-floor, 0px) - 56px - env(safe-area-inset-top, 0px)); height: calc(100dvh - var(--keeper-floor, 0px) - 56px - env(safe-area-inset-top, 0px)); }
+  @keyframes ew-keeper-rise { from { transform: translateY(16px); opacity: 0; } to { transform: none; opacity: 1; } }
+  /* The header is the handle: grip bar in its top 12px, the figure, two mono lines, the door to the desk, close. */
+  .ew-keeper-top {
+    position: relative;
     display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto auto;
+    align-items: center;
+    gap: 10px;
     flex: none;
-    width: 100%;
-    min-height: 44px;
-    place-items: center;
-    padding: 0;
+    min-height: 68px;
+    padding: 14px 8px 8px 16px;
+    border-bottom: 1px solid var(--ew-rule);
+    background: color-mix(in srgb, var(--ew-hour-midday) 10%, var(--ew-leather));
     touch-action: none;
     cursor: grab;
   }
-  .ew-keeper-grip-bar { display: block; width: 44px; height: 4px; border-radius: 2px; background: var(--ew-ghost); }
-  .ew-keeper-grip:hover .ew-keeper-grip-bar, .ew-keeper-grip:focus-visible .ew-keeper-grip-bar { background: var(--ew-foil); }
-  .ew-keeper-top {
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr) auto;
-    align-items: start;
-    gap: 12px;
-    padding: 0 16px 14px;
-    border-bottom: 1px solid var(--ew-rule);
-  }
-  .ew-keeper-heading { min-width: 0; padding-top: 4px; }
-  .ew-keeper-eyebrow { margin: 0; color: var(--ew-foil); font: 500 10px/1.4 "Azeret Mono", ui-monospace, monospace; letter-spacing: .16em; text-transform: uppercase; }
-  .ew-keeper-eyebrow { display: grid; gap: 4px; }
+  .ew-keeper-top[data-hour="Dawn"] { background: color-mix(in srgb, var(--ew-hour-dawn) 16%, var(--ew-leather)); }
+  .ew-keeper-top[data-hour="Dusk"] { background: color-mix(in srgb, var(--ew-hour-dusk) 16%, var(--ew-leather)); }
+  .ew-keeper-top[data-hour="Night"] { background: color-mix(in srgb, var(--ew-hour-night) 16%, var(--ew-leather)); }
+  .ew-keeper-grip-bar { position: absolute; top: 5px; left: 50%; width: 44px; height: 4px; margin-left: -22px; border-radius: 2px; background: var(--ew-ghost); }
+  .ew-keeper-eyebrow { display: grid; gap: 3px; min-width: 0; margin: 0; color: var(--ew-foil); font: 500 10px/1.4 "Azeret Mono", ui-monospace, monospace; letter-spacing: .16em; text-transform: uppercase; }
   .ew-keeper-eyebrow .ew-flap-line.is-meta .ew-flap { color: var(--ew-dust); }
-  .ew-keeper-line { margin: 8px 0 0; color: var(--ew-bone); font: italic 400 20px/1.3 "Newsreader", "Iowan Old Style", serif; letter-spacing: -.01em; }
+  .ew-keeper-door { display: inline-grid; min-height: 44px; place-items: center; padding: 0 8px; color: var(--ew-foil); font: 500 10px/1 "Azeret Mono", ui-monospace, monospace; letter-spacing: .14em; text-transform: uppercase; text-decoration: none; cursor: pointer; }
+  .ew-keeper-door:hover, .ew-keeper-door:focus-visible { color: var(--ew-bone); }
   .ew-keeper-close { min-width: 44px; min-height: 44px; }
-  .ew-keeper-body {
-    display: grid;
-    min-height: 0;
-    gap: 16px;
-    overflow: auto;
-    overscroll-behavior: contain;
-    padding: 14px 16px 16px;
-  }
-  .ew-keeper-onair { display: grid; gap: 4px; margin: 0; }
-  .ew-keeper-label, .ew-keeper-facts dt { color: var(--ew-dust); font: 500 10px/1.3 "Azeret Mono", ui-monospace, monospace; letter-spacing: .16em; text-transform: uppercase; }
-  .ew-keeper-track { color: var(--ew-bone); font: 500 15px/1.35 "Schibsted Grotesk", sans-serif; }
-  .ew-keeper-notrack { color: var(--ew-dust); font: 400 15px/1.4 "Schibsted Grotesk", sans-serif; }
-  .ew-keeper-facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 16px; margin: 0; }
-  .ew-keeper-facts dd { margin: 3px 0 0; overflow-wrap: anywhere; color: var(--ew-bone); font: 400 15px/1.35 "Schibsted Grotesk", sans-serif; }
-  .ew-keeper-talk:empty { display: none; }
-  .ew-keeper-talk { display: grid; gap: 6px; border-top: 1px solid var(--ew-rule); padding-top: 12px; }
-  .ew-keeper-q { margin: 0; color: var(--ew-dust); font: 500 13px/1.35 "Schibsted Grotesk", sans-serif; }
-  .ew-keeper-a { margin: 0; color: var(--ew-bone); font: italic 400 18px/1.4 "Newsreader", "Iowan Old Style", serif; }
-  .ew-keeper-a.is-pending { color: var(--ew-foil); }
-  .ew-keeper-hop { justify-self: start; }
-  .ew-keeper-chips { display: flex; flex-wrap: wrap; gap: 8px; }
-  .ew-keeper-ask { display: flex; gap: 8px; }
-  .ew-keeper-ask input {
-    flex: 1 1 auto;
-    min-width: 0;
-    min-height: 44px;
-    border: 1px solid var(--ew-rule-2, var(--ew-ghost));
-    border-radius: 0;
-    background: var(--ew-ink);
-    padding: 0 12px;
-    color: var(--ew-bone);
-    font: 400 15px/1.2 "Schibsted Grotesk", sans-serif;
-  }
-  .ew-keeper-ask input::placeholder { color: var(--ew-dust); }
-  .ew-keeper-ask input:focus-visible { outline: 1px solid var(--ew-foil); outline-offset: 0; }
-  .ew-keeper-ask .rp-surprise { min-height: 44px; padding: 0 16px; }
 
   /* The keeper's lines land like a board: each character a flap. */
   .ew-flaptext-word { display: inline-block; white-space: nowrap; perspective: 240px; }
@@ -244,10 +208,12 @@
       left: auto;
       width: min(400px, calc(100vw - 40px));
       max-height: none;
+      height: auto;
       border: 1px solid var(--ew-foil-line);
     }
-    .ew-keeper-grip { display: none; }
-    .ew-keeper-top { padding-top: 16px; }
+    .ew-keeper-grip-bar { display: none; }
+    .ew-keeper-top { padding-top: 12px; cursor: default; }
+    .ew-keeper-sheet[data-rest] { height: auto; }
   }
   @media (prefers-reduced-motion: reduce) {
     .ew-keeper-sheet, .ew-flaptext-char { animation: none; }
@@ -277,16 +243,6 @@
   .ew-keeper[data-state="speaking"] .ew-keeper-sprite { animation: ew-keeper-flapin .26s steps(4, end), ew-keeper-bob .6s steps(2, end) .3s infinite; }
 }
 
-/* ---- keeper basis label — knowledge answers say where they come from. */
-.ew-keeper-basis { display: block; margin-bottom: 6px; }
-.ew-keeper-station-line { margin-top: 6px; font: 13px "Azeret Mono", monospace; text-transform: uppercase; letter-spacing: .08em; color: var(--ew-foil); }
-
-/* ---- keeper sheet: artwork beside "On air", and the door to the desk. */
-.ew-keeper-onair-row { display: flex; align-items: center; gap: 12px; }
-.ew-keeper-onair-row .ew-keeper-onair { min-width: 0; flex: 1 1 auto; }
-.ew-keeper-plate-art { flex: none; width: 56px; height: 56px; object-fit: cover; border: 1px solid var(--ew-foil-line); background: var(--ew-ink); }
-.ew-keeper-desk { margin-top: 14px; }
-
 /* ---- keeper murmurs — a line spoken unasked, beside the figure. */
 .ew-keeper-murmur { position: absolute; bottom: 10px; z-index: 3; width: min(252px, calc(100vw - 104px)); border: 1px solid var(--ew-foil-line); background: var(--ew-dock); animation: ew-murmur-in .32s var(--ew-settle) both; }
 .ew-keeper-float[data-side="right"] .ew-keeper-murmur { right: calc(100% + 8px); }
@@ -298,41 +254,60 @@
 @keyframes ew-murmur-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .ew-keeper-murmur { animation: none; } }
 
-/* ---- keeper sheet: worth knowing — facts the desk found about the place. */
-.ew-keeper-know-item { display: grid; gap: 2px; }
-.ew-keeper-know-item p { margin: 0; font: italic 16px/1.4 "Newsreader", serif; color: var(--ew-bone); }
-.ew-keeper-know-wait { margin: 0; font: italic 15px/1.4 "Newsreader", serif; color: var(--ew-dust); }
 
-/* ---- keeper sheet v2: ask first, one panel at a time, three plain actions. */
-.ew-keeper-body { gap: 12px; }
-.ew-keeper-chips { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; margin: 0 -16px; padding: 0 16px; }
-.ew-keeper-chips::-webkit-scrollbar { display: none; }
-.ew-keeper-chips > * { flex: none; }
-.ew-keeper-tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-bottom: 1px solid var(--ew-rule); }
-.ew-keeper-tab { min-height: 44px; border: 0; border-bottom: 2px solid transparent; background: none; color: var(--ew-dust); font: 500 11px/1 "Azeret Mono", ui-monospace, monospace; letter-spacing: .16em; text-transform: uppercase; cursor: pointer; }
-.ew-keeper-tab[aria-selected="true"] { color: var(--ew-foil); border-bottom-color: var(--ew-foil); }
-.ew-keeper-panel { display: grid; gap: 12px; min-height: 96px; align-content: start; }
-.ew-keeper-actions { display: grid; gap: 8px; }
-.ew-keeper-act { display: grid; align-content: center; gap: 2px; min-height: 56px; padding: 8px 12px; border: 1px solid var(--ew-foil-line); background: none; color: var(--ew-bone); text-align: left; text-decoration: none; cursor: pointer; }
-.ew-keeper-act:hover { border-color: var(--ew-foil); }
-.ew-keeper-act[aria-pressed="false"] .ew-keeper-act-main { color: var(--ew-dust); }
-.ew-keeper-act-main { font: 500 11px/1.25 "Azeret Mono", ui-monospace, monospace; letter-spacing: .12em; text-transform: uppercase; color: var(--ew-foil); }
-.ew-keeper-act-sub { font: 400 12px/1.3 "Schibsted Grotesk", sans-serif; color: var(--ew-dust); }
-
-/* Sheet v2.1: the body never lets a row collapse (a scrolling child has a zero
-   automatic minimum in a grid, so rows overlapped on iOS); the actions live in
-   a footer that is always in view. */
-.ew-keeper-body { display: flex; flex-direction: column; }
-.ew-keeper-body > * { flex: none; }
-.ew-keeper-foot { flex: none; padding: 10px 16px calc(12px + env(safe-area-inset-bottom, 0px)); border-top: 1px solid var(--ew-rule); background: var(--ew-leather); }
-.ew-keeper-actions { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-.ew-keeper-act { min-height: 52px; padding: 6px 8px; gap: 2px; }
-.ew-keeper-act-main { font-size: 10px; letter-spacing: .1em; }
-.ew-keeper-act-sub { font-size: 11px; }
-
-.ew-keeper-more { display: grid; gap: 6px; margin: 8px 0 0; padding: 0; list-style: none; }
-.ew-keeper-more-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 10px; align-items: center; width: 100%; min-height: 48px; padding: 8px 12px; border: 1px solid var(--ew-rule); border-radius: 0; background: transparent; color: var(--ew-bone); text-align: left; cursor: pointer; }
-.ew-keeper-more-row b { font: 500 14px/1.2 "Schibsted Grotesk", sans-serif; }
-.ew-keeper-more-row small { grid-column: 1; font: 400 12px/1.3 "Schibsted Grotesk", sans-serif; color: var(--ew-dust); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.ew-keeper-more-row span { grid-column: 2; grid-row: 1 / span 2; font: 500 11px/1 "Azeret Mono", ui-monospace, monospace; letter-spacing: .14em; text-transform: uppercase; color: var(--ew-foil); }
-.ew-keeper-more-row:hover, .ew-keeper-more-row:focus-visible { border-color: var(--ew-foil-line); }
+/* ---- The counter: one line, where it came from, at most three moves, a quiet
+   field. The sheet (phone: bottom, desktop: side panel) and the desk card both
+   wear it. Square, tokens only; the moves wrap and never scroll sideways. */
+.ew-counter { display: flex; flex: 1 1 auto; flex-direction: column; min-height: 0; }
+.ew-counter-scroll { display: flex; flex: 1 1 auto; flex-direction: column; gap: 14px; min-height: 0; overflow: auto; overscroll-behavior: contain; padding: 14px 16px 12px; }
+.ew-counter-scroll > * { flex: none; }
+.ew-counter[data-surface="desk"] .ew-counter-scroll { overflow: visible; padding: 0; }
+.ew-counter-talk { display: flex; flex-direction: column; gap: 8px; outline: none; }
+.ew-counter-talk > * { flex: none; }
+.ew-counter-q { margin: 0; color: var(--ew-dust); font: 500 13px/1.35 "Schibsted Grotesk", sans-serif; }
+.ew-counter-tag { align-self: flex-start; padding-left: 8px; border-left: 2px solid var(--ew-foil); color: var(--ew-dust); font: 500 10px/1.4 "Azeret Mono", ui-monospace, monospace; letter-spacing: .14em; text-transform: uppercase; }
+.ew-counter-tag[data-kind="station"] { border-left-color: var(--ew-ether); color: var(--ew-ether); }
+.ew-counter-answer::after { content: ""; display: block; clear: both; }
+.ew-counter-portrait { float: left; width: 76px; height: 100px; margin: 2px 12px 4px 0; object-fit: cover; border: 1px solid var(--ew-foil-line); background: var(--ew-ink); }
+.ew-counter-line { margin: 0; color: var(--ew-bone); font: italic 400 21px/1.3 "Newsreader", "Iowan Old Style", serif; letter-spacing: -.01em; }
+.ew-counter-line.is-long { font-size: 18px; line-height: 1.4; }
+.ew-counter-line.is-pending { color: var(--ew-foil); }
+.ew-counter-note { margin: 8px 0 0; color: var(--ew-dust); font: 400 13px/1.4 "Schibsted Grotesk", sans-serif; }
+.ew-counter-lead { margin: 0; color: var(--ew-dust); font: 400 14px/1.4 "Schibsted Grotesk", sans-serif; }
+.ew-counter-facts { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.ew-counter-facts li { position: relative; padding-left: 16px; color: var(--ew-bone); font: 400 15px/1.45 "Schibsted Grotesk", sans-serif; }
+.ew-counter-facts li::before { content: ""; position: absolute; top: .62em; left: 0; width: 8px; height: 1px; background: var(--ew-foil); }
+.ew-counter-source { margin: 0; font: 500 10px/1.3 "Azeret Mono", ui-monospace, monospace; letter-spacing: .12em; text-transform: uppercase; }
+.ew-counter-source a { color: var(--ew-dust); text-decoration: none; }
+.ew-counter-source a:hover, .ew-counter-source a:focus-visible { color: var(--ew-foil); }
+.ew-counter-hop { align-self: flex-start; }
+.ew-counter-moves { display: flex; flex-wrap: wrap; gap: 8px; }
+.ew-counter-moves > * { min-height: 44px; max-width: 100%; white-space: normal; text-align: left; }
+.ew-counter-field { display: flex; flex: none; gap: 8px; padding: 10px 16px 12px; border-top: 1px solid var(--ew-rule); background: var(--ew-leather); }
+.ew-counter[data-surface="desk"] .ew-counter-field { margin-top: 14px; padding: 0; border-top: 0; background: none; }
+.ew-counter-field input { flex: 1 1 auto; min-width: 0; min-height: 44px; padding: 0 12px; border: 1px solid var(--ew-ghost); border-radius: 0; background: var(--ew-ink); color: var(--ew-bone); font: 400 16px/1.2 "Schibsted Grotesk", sans-serif; }
+.ew-counter-field input::placeholder { color: var(--ew-dust); }
+.ew-counter-field input:focus-visible { outline: 1px solid var(--ew-foil); outline-offset: 0; }
+.ew-counter-field input:disabled { opacity: .6; }
+.ew-counter-field .rp-surprise { flex: none; min-height: 44px; padding: 0 16px; }
+.ew-counter-closed { margin: 0; padding: 12px 16px; border-top: 1px solid var(--ew-rule); color: var(--ew-dust); font: 400 14px/1.4 "Schibsted Grotesk", sans-serif; }
+.ew-counter[data-surface="desk"] .ew-counter-closed { padding: 14px 0 0; border-top: 0; }
+.ew-counter-onair { display: flex; align-items: center; gap: 12px; }
+.ew-counter-onair img { flex: none; width: 48px; height: 48px; object-fit: cover; border: 1px solid var(--ew-foil-line); background: var(--ew-ink); }
+.ew-counter-onair p { margin: 0; min-width: 0; color: var(--ew-bone); font: 500 15px/1.35 "Schibsted Grotesk", sans-serif; overflow-wrap: anywhere; }
+.ew-counter-onair p.is-none { color: var(--ew-dust); font-weight: 400; }
+.ew-counter-board { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.ew-counter-board-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 10px; align-items: center; width: 100%; min-height: 48px; padding: 8px 12px; border: 1px solid var(--ew-rule); border-radius: 0; background: transparent; color: var(--ew-bone); text-align: left; cursor: pointer; }
+.ew-counter-board-row b { font: 500 14px/1.2 "Schibsted Grotesk", sans-serif; }
+.ew-counter-board-row small { grid-column: 1; overflow: hidden; color: var(--ew-dust); font: 400 12px/1.3 "Schibsted Grotesk", sans-serif; text-overflow: ellipsis; white-space: nowrap; }
+.ew-counter-board-row span { grid-column: 2; grid-row: 1 / span 2; color: var(--ew-foil); font: 500 11px/1 "Azeret Mono", ui-monospace, monospace; letter-spacing: .14em; text-transform: uppercase; }
+.ew-counter-board-row:hover, .ew-counter-board-row:focus-visible { border-color: var(--ew-foil-line); }
+.ew-keeper-file { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 16px; margin: 0; }
+.ew-keeper-file dt { color: var(--ew-dust); font: 500 10px/1.3 "Azeret Mono", ui-monospace, monospace; letter-spacing: .16em; text-transform: uppercase; }
+.ew-keeper-file dd { margin: 3px 0 0; overflow-wrap: anywhere; color: var(--ew-bone); font: 400 15px/1.35 "Schibsted Grotesk", sans-serif; }
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes ew-counter-in { from { opacity: 0; } to { opacity: 1; } }
+  .ew-counter-moves > *, .ew-counter-portrait, .ew-counter-facts, .ew-counter-onair, .ew-counter-board, .ew-keeper-file { animation: ew-counter-in .16s ease both; }
+  .ew-counter-moves > *:nth-child(2) { animation-delay: .04s; }
+  .ew-counter-moves > *:nth-child(3) { animation-delay: .08s; }
+}
