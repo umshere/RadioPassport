@@ -56,6 +56,14 @@ export async function bump(event: string, extra?: { source?: string; page?: stri
   await run.catch(() => {});
 }
 
+/** One visit from a country (ISO code). The count is all that is kept. */
+export async function bumpCountry(code: string) {
+  if (!/^[A-Z]{2}$/.test(code)) return;
+  const run = queue.then(() => write(`country:${code}`));
+  queue = run.catch(() => {});
+  await run.catch(() => {});
+}
+
 async function write(field: string) {
   try {
     if (store()) {

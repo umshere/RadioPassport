@@ -1,3 +1,4 @@
+import { logUsage } from "~/utils/usage";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { freshlyInkedStampIds } from "~/components/radio-passport/productFlow";
 import { trackKey } from "~/components/radio-passport/stationInsights";
@@ -144,6 +145,7 @@ export function useKeeperDelight() {
     seenStamps.current = ids;
     if (!seen) return;
     if (freshlyInkedStampIds(seen, stamps).length) {
+      logUsage("stamp");
       useKeeperStore.getState().delight(KEEPER_DELIGHT_MS);
       useKeeperStore.getState().showScene("passport", KEEPER_DELIGHT_MS);
       // The keeper says so, in a bubble, the moment the stamp lands.

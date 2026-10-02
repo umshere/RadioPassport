@@ -110,7 +110,7 @@ export default function Legal() {
           <h2>What we count</h2>
           <p>
             We count visits and a few actions (a page type, a ticket shared, the Keeper opened) as anonymous events: just
-            the name of the event. No ID, no station, no text you typed. They are written to our server logs and tallied.
+            the name of the event, and for a visit the country it came from (a two-letter code the host derives from the request; we don’t keep your address or anything finer). No ID, no station, no text you typed. They are written to our server logs and tallied as daily totals.
           </p>
           <h2>What leaves your device</h2>
           <ul>

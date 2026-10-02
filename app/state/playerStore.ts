@@ -1,5 +1,6 @@
 import { create, persist } from "~/utils/zustand-lite";
 import type { SceneDescriptor } from "~/scenes/types";
+import { logUsage } from "~/utils/usage";
 import type { NowPlayingTrack } from "~/types/nowPlaying";
 import type {
   QueueSession,
@@ -332,6 +333,7 @@ export const usePlayerStore = create<PlayerState>(
         const shouldAutoplay = options?.autoPlay ?? true;
         const currentQueue = get().queue;
         const nextSession = options?.queueSession ?? null;
+        if (hasStream && shouldAutoplay) logUsage("land");
 
         // Determine the new queue and index
         let nextQueue: Station[];

@@ -15,6 +15,8 @@ export const USAGE_EVENTS = [
   "ticket_save",
   "visit",
   "pageview",
+  "land",
+  "stamp",
 ] as const;
 export type UsageEvent = (typeof USAGE_EVENTS)[number];
 
