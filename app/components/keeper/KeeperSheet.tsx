@@ -25,6 +25,9 @@ import {
 } from "./keeperFacts";
 import { KEEPER_QUESTION_MAX } from "./keeperIntent";
 import { useKeeperTalk } from "./useKeeperTalk";
+import { findSimilar } from "./keeperSimilarClient";
+import { similarWhere, type Similar } from "./keeperSimilar";
+import { tidyStationName as tidyName } from "./keeperFacts";
 import { skyHour } from "~/components/desk/deskModel";
 import type { KeeperView } from "./useKeeper";
 
@@ -96,7 +99,29 @@ export function KeeperSheet({ view }: { view: KeeperView & { facts: KeeperFacts 
   const topicSteps = planMurmurs(facts).flatMap((step) => (step.type === "fact" ? [step] : [])).slice(0, 3);
   const sheetRef = useRef<HTMLElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const [tab, setTab] = useState<"postcards" | "onair" | "station">("postcards");
+  const queue = usePlayerStore((state) => state.queue);
+  const startStation = usePlayerStore((state) => state.startStation);
+  const threadFor = useKeeperStore((state) => state.threadFor);
+  const [tab, setTab] = useState<"postcards" | "onair" | "station" | "more">(() =>
+    threadFor && threadFor === stationId ? "more" : "postcards",
+  );
+  const [similar, setSimilar] = useState<Similar | null | undefined>(undefined);
+  useEffect(() => {
+    useKeeperStore.getState().setThreadFor(null);
+  }, []);
+  useEffect(() => {
+    if (!nowStation) return;
+    let live = true;
+    setSimilar(undefined);
+    void findSimilar(nowStation, queue).then((found) => {
+      if (live) setSimilar(found);
+    });
+    return () => {
+      live = false;
+    };
+    // The queue changes as stations board; the thread is about the one on air.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stationId]);
   const setNotice = usePlayerNoticeStore((state) => state.setNotice);
   const [draft, setDraft] = useState("");
   const [floor, setFloor] = useState(0);
@@ -363,6 +388,7 @@ export function KeeperSheet({ view }: { view: KeeperView & { facts: KeeperFacts 
                 ["postcards", VOICE.tabPostcards],
                 ["onair", VOICE.tabOnAir],
                 ["station", VOICE.tabStation],
+                ...(similar ? ([["more", VOICE.tabMore]] as const) : []),
               ] as const
             ).map(([id, label]) => (
               <button
@@ -428,6 +454,29 @@ export function KeeperSheet({ view }: { view: KeeperView & { facts: KeeperFacts 
                   </span>
                 </p>
               </div>
+            ) : null}
+            {tab === "more" && similar ? (
+              <>
+                <Eyebrow as="span" tone="foil">{similar.label}</Eyebrow>
+                <ol className="ew-keeper-more">
+                  {similar.stations.map((station) => (
+                    <li key={station.uuid}>
+                      <button
+                        type="button"
+                        className="ew-keeper-more-row"
+                        onClick={() => {
+                          startStation(station, { preserveQueue: true, autoPlay: true });
+                          close();
+                        }}
+                      >
+                        <b>{similarWhere(station)}</b>
+                        <small>{tidyName(station.name)}</small>
+                        <span aria-hidden="true">{VOICE.board} →</span>
+                      </button>
+                    </li>
+                  ))}
+                </ol>
+              </>
             ) : null}
             {tab === "station" ? (
               <dl className="ew-keeper-facts">

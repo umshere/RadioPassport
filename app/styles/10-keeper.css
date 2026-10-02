@@ -329,3 +329,10 @@
 .ew-keeper-act { min-height: 52px; padding: 6px 8px; gap: 2px; }
 .ew-keeper-act-main { font-size: 10px; letter-spacing: .1em; }
 .ew-keeper-act-sub { font-size: 11px; }
+
+.ew-keeper-more { display: grid; gap: 6px; margin: 8px 0 0; padding: 0; list-style: none; }
+.ew-keeper-more-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 10px; align-items: center; width: 100%; min-height: 48px; padding: 8px 12px; border: 1px solid var(--ew-rule); border-radius: 0; background: transparent; color: var(--ew-bone); text-align: left; cursor: pointer; }
+.ew-keeper-more-row b { font: 500 14px/1.2 "Schibsted Grotesk", sans-serif; }
+.ew-keeper-more-row small { grid-column: 1; font: 400 12px/1.3 "Schibsted Grotesk", sans-serif; color: var(--ew-dust); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ew-keeper-more-row span { grid-column: 2; grid-row: 1 / span 2; font: 500 11px/1 "Azeret Mono", ui-monospace, monospace; letter-spacing: .14em; text-transform: uppercase; color: var(--ew-foil); }
+.ew-keeper-more-row:hover, .ew-keeper-more-row:focus-visible { border-color: var(--ew-foil-line); }

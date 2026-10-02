@@ -32,6 +32,9 @@ type KeeperStoreState = {
   showScene: (scene: KeeperScene, ms: number) => void;
   /** An hour hop asked for from the sheet, for the home board to apply. */
   pendingHour: SolarHour | null;
+  /** The station the keeper offered "more like this" for; the sheet opens on it. */
+  threadFor: string | null;
+  setThreadFor: (stationId: string | null) => void;
   /** Something the keeper is saying unasked (a bubble beside it). */
   murmur: KeeperMurmur | null;
   setMurmur: (murmur: KeeperMurmur | null) => void;
@@ -65,6 +68,8 @@ export const useKeeperStore = create<KeeperStoreState>((set) => ({
   exchange: "none",
   delighting: false,
   pendingHour: null,
+  threadFor: null,
+  setThreadFor: (threadFor) => set({ threadFor }),
   murmur: null,
   setMurmur: (murmur) => set({ murmur }),
   reading: false,

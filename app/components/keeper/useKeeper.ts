@@ -9,6 +9,7 @@ import { roomForStation, useRoomStore } from "~/state/roomStore";
 import { preferSecureArtworkUrl, sanitizeArtworkUrl } from "~/utils/stations";
 import { stationLocation } from "~/components/radio-passport/StationRow";
 import { VOICE } from "./keeperVoice";
+import { findSimilar } from "./keeperSimilarClient";
 import { buildKeeperFacts, type KeeperFacts } from "./keeperFacts";
 import {
   deriveKeeperState,
@@ -142,6 +143,22 @@ export function useKeeperDelight() {
         window.setTimeout(() => {
           if (useKeeperStore.getState().murmur?.id === id) useKeeperStore.getState().setMurmur(null);
         }, 7000);
+        // A beat later, one offer to keep the thread, once, unless he is hushed.
+        const queue = usePlayerStore.getState().queue;
+        void findSimilar(here, queue).then((found) => {
+          if (!found) return;
+          window.setTimeout(() => {
+            const now = useKeeperStore.getState();
+            if (now.hushed || now.sheetOpen || now.murmur) return;
+            if (usePlayerStore.getState().nowPlaying?.uuid !== here.uuid) return;
+            const offerId = Date.now();
+            now.setThreadFor(here.uuid);
+            now.setMurmur({ id: offerId, topic: "More like this", text: VOICE.threadOffer(found.label) });
+            window.setTimeout(() => {
+              if (useKeeperStore.getState().murmur?.id === offerId) useKeeperStore.getState().setMurmur(null);
+            }, 9000);
+          }, 7600);
+        });
       }
     }
   }, [journeyReady, stamps]);
