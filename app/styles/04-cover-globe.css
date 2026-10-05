@@ -210,7 +210,15 @@
   }
 }
   .ew-atlas-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin: -24px 0 22px; }
-  @media (max-width: 760px) { .ew-atlas-tabs { margin-top: 0; } }
+  @media (max-width: 760px) {
+    .ew-atlas-tabs {
+      flex-wrap: nowrap; overflow-x: auto; margin-top: 0; margin-inline: -16px; padding-inline: 16px;
+      scrollbar-width: none; overscroll-behavior-x: contain;
+      -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent);
+      mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent);
+    }
+    .ew-atlas-tabs::-webkit-scrollbar { display: none; }
+  }
   .ew-atlas-more { margin-top: 16px; }
   .ew-atlas-hint { margin-top: 16px; color: var(--ew-dust); font-size: 13px; }
-  .ew-atlas-tabs .ew-btn, .ew-atlas-tabs button { padding-inline: 12px; min-height: 40px; }
+  .ew-atlas-tabs button { flex: none; padding-inline: 12px; min-height: 40px; }

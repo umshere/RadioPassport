@@ -82,7 +82,14 @@ export function AtlasOverlay({
       {normalized ? null : (
         <div className="ew-atlas-tabs" role="group" aria-label="Browse by region">
           {tabs.map((item) => (
-            <Chip key={item.id} selected={item.id === tab} onClick={() => pick(item.id)}>
+            <Chip
+              key={item.id}
+              selected={item.id === tab}
+              onClick={(event) => {
+                pick(item.id);
+                event.currentTarget.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" });
+              }}
+            >
               {item.label}
               {item.id === POPULAR ? "" : ` ${item.count}`}
             </Chip>
