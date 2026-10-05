@@ -222,3 +222,8 @@
   .ew-atlas-more { margin-top: 16px; }
   .ew-atlas-hint { margin-top: 16px; color: var(--ew-dust); font-size: 13px; }
   .ew-atlas-tabs button { flex: none; padding-inline: 12px; min-height: 40px; }
+  .ew-atlas-tabs {
+    position: sticky; top: calc(-1 * clamp(20px, 5vw, 64px)); z-index: 3;
+    background: var(--ew-veil); padding-block: 8px; margin-bottom: 14px;
+  }
+  @media (max-width: 760px) { .ew-atlas-tabs { top: calc(-56px - env(safe-area-inset-top, 0px)); } }
