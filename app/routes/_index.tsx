@@ -65,7 +65,40 @@ import { useKeeperStore } from "~/state/keeperStore";
 import { useHydrated } from "~/hooks/useHydrated";
 import { HOME_NO_STORE, loadHomeBoard } from "~/services/home/homeBoard.server";
 
+const LD = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebSite",
+      "@id": "https://elsewheremusic.com/#site",
+      name: "Elsewhere",
+      url: "https://elsewheremusic.com/",
+      description: "Live radio from someone else's now. Land in a city, stay long enough to be stamped.",
+      inLanguage: "en",
+    },
+    {
+      "@type": "WebApplication",
+      name: "Elsewhere",
+      url: "https://elsewheremusic.com/",
+      applicationCategory: "MultimediaApplication",
+      operatingSystem: "Any (web browser)",
+      description:
+        "Live radio from cities that are awake without you. Pick a place on the globe, listen to a real local station and collect passport stamps.",
+      offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+      isPartOf: { "@id": "https://elsewheremusic.com/#site" },
+    },
+  ],
+};
+
 export const meta = () => [
+  { title: "Elsewhere — Live radio from someone else's now" },
+  {
+    name: "description",
+    content:
+      "Live radio from cities that are awake without you. Pick a place on the globe, listen to a real local station, and stay long enough to be stamped.",
+  },
+  { tagName: "link", rel: "canonical", href: "https://elsewheremusic.com/" },
+  { "script:ld+json": LD },
   { property: "og:title", content: "Elsewhere — You are not here." },
   {
     property: "og:description",

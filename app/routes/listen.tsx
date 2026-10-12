@@ -42,6 +42,7 @@ import type { NowPlayingTrack } from "~/types/nowPlaying";
 import { useFloorClearance, useMinuteClock } from "~/components/desk/deskHooks";
 
 export const meta = () => [
+  { name: "robots", content: "noindex, follow" },
   { title: `The desk · ${BRAND.name}` },
   {
     name: "description",

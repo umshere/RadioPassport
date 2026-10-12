@@ -15,6 +15,7 @@ export const meta = () => [
   { property: "og:title", content: `How it works · ${BRAND.name}` },
   { property: "og:description", content: DESCRIPTION },
   { property: "og:url", content: "https://elsewheremusic.com/about" },
+  { tagName: "link", rel: "canonical", href: "https://elsewheremusic.com/about" },
 ];
 
 

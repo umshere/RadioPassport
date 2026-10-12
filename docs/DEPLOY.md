@@ -4,7 +4,7 @@ Ship Elsewhere to production. Domain facts live in [DOMAINS.md](./DOMAINS.md).
 
 Trigger: user says **make it live**, **deploy**, **ship**, **push prod**.
 
-The only deploy command is `npm run ship`. Never run it twice in a row and never chain it (`ship && ship`, or a ship inside a loop). Each push already starts one build, and a second build of the same commit races the first.
+The only deploy command is `npm run ship`. The owner has authorised shipping without asking each time (2026-10-11): ship when tests pass and the change is ready. Run ships one at a time and wait for each to finish; never twice for the same commit (a second build of the same commit races the first) and never as a blind `until`-loop chain.
 
 ## Identity
 

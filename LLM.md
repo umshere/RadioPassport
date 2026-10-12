@@ -15,7 +15,7 @@ Elsewhere (heritage: Radio Passport). Live radio from someone else's now. Remix 
 
 - Never invent a track title; never put AI on the audio path; never charge to hear radio.
 - Never `AbortController.abort()` a Remix fetch on the server; use `Promise.race`.
-- Deploy is `npm run ship` only. Never chain ships.
+- Deploy is `npm run ship` only; Claude may ship without asking once tests pass, one ship at a time (2026-10-11).
 - JSX uses literal `↗` and `→`, not HTML entities.
 - iOS: a grid item that is a scroll container collapses; use flex columns with `flex: none` children.
 

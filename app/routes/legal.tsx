@@ -13,6 +13,7 @@ export const meta = () => [
   { property: "og:title", content: `Terms, privacy, credits · ${BRAND.name}` },
   { property: "og:description", content: DESCRIPTION },
   { property: "og:url", content: "https://elsewheremusic.com/legal" },
+  { tagName: "link", rel: "canonical", href: "https://elsewheremusic.com/legal" },
 ];
 
 function Source({ href, children }: { href: string; children: string }) {

@@ -22,7 +22,7 @@ Heritage repo name: Radio Passport. Product name: **Elsewhere**. Tagline: You ar
 - Do not commit `.env`. Keys are set by the owner in Vercel; never ask for or paste them in chat.
 - Keep `public/FTS.jpeg` (404 wallpaper).
 - No streaks, XP, scores.
-- **Deploy = `npm run ship` only.** Never chain ships, never run it twice, never `vercel --prod` after a push, never raw `git push` to deploy. Push identity is `umshere` (see `docs/DEPLOY.md`).
+- **Deploy = `npm run ship` only.** The owner has authorised shipping without asking each time (2026-10-11): ship when tests pass and the change is ready. Ships go one at a time (wait for each to finish before the next), never twice for the same commit, never `vercel --prod` after a push, never raw `git push` to deploy. Push identity is `umshere` (see `docs/DEPLOY.md`).
 
 Voice: land · dusk · hour · stamp · live · cover · elsewhere · now  
 Ban: discover · seamless · AI-powered · widget · playlist · unlock · explore

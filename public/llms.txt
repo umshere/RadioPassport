@@ -1,0 +1,10 @@
+# Elsewhere
+
+> Live radio from someone else's now. Pick a city on the globe, land there, listen to a real local station, and stay long enough to be stamped in your passport. Free, no account, no streaks or scores.
+
+Elsewhere streams real stations from the open Radio Browser catalogue. It shows the local hour, language and a few notes about the place. Anything not said by the station comes from the Keeper's notebook and is labelled as such. The Keeper never invents a song title.
+
+## Pages
+- [Home](https://elsewheremusic.com/): the departures board and globe of live stations.
+- [How it works](https://elsewheremusic.com/about): land, listen, get stamped, send a ticket, ask the Keeper.
+- [Terms, privacy, credits](https://elsewheremusic.com/legal): terms, what is and is not collected, station and data credits.

@@ -6,4 +6,4 @@ description: >
   push prod, vercel --prod, or /elsewhere-deploy.
 ---
 
-Read `docs/DEPLOY.md` and execute that runbook. After tests and commit, ship with `npm run ship`. Never chain or repeat ships, and do not raw `git push` or bare `npx vercel` on this machine. Domain facts are only in `docs/DOMAINS.md`. Do not invent a second flow.
+Read `docs/DEPLOY.md` and execute that runbook. After tests and commit, ship with `npm run ship`. You may ship without asking (owner-approved 2026-10-11) once tests pass; run ships sequentially, never repeat a ship of the same commit, and do not raw `git push` or bare `npx vercel` on this machine. Domain facts are only in `docs/DOMAINS.md`. Do not invent a second flow.
