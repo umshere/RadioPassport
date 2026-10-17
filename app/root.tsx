@@ -33,6 +33,7 @@ import {
   MAX_PLAYBACK_RECOVERY_ATTEMPTS,
   withRetryToken,
 } from "~/utils/playbackRecovery";
+import { shouldStopAfterAudioInterruption } from "~/utils/audioInterruption";
 import { playbackNoticeCopy } from "~/utils/playbackNoticeCopy";
 import stylesheet from "./tailwind.css?url";
 import PlayerDock from "~/components/PlayerDock";
@@ -406,6 +407,7 @@ function AtmosphereBridge() {
 
 function GlobalAudioBridge() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const expectedSourceChangeRef = useRef(false);
   const nowPlayingRef =
     useRef<ReturnType<typeof usePlayerStore.getState>["nowPlaying"]>(null);
   const retryRef = useRef<{
@@ -594,6 +596,7 @@ function GlobalAudioBridge() {
         if (!audio) return;
 
         const retryToken = `${Date.now()}-${retryAttempt}`;
+        expectedSourceChangeRef.current = true;
         audio.src = withRetryToken(streamUrl, retryToken);
         void audio.play().catch(() => {
           // Let normal error handlers decide whether to keep retrying or skip.
@@ -643,6 +646,7 @@ function GlobalAudioBridge() {
       autoSkipToNext(current, reason);
     };
     const handlePlaying = () => {
+      expectedSourceChangeRef.current = false;
       const current = nowPlayingRef.current;
       if (!current) return;
       clearFailure(current.uuid);
@@ -653,21 +657,47 @@ function GlobalAudioBridge() {
     };
 
     // The system can pause the audio without us asking: a phone call, Siri,
-    // another app taking the session, a Bluetooth disconnect. The element then
-    // stops but the store still says "playing", so the UI lies and the next
-    // re-render calls play() again. Mirror the element back into the store.
-    // Deferred a beat so our own station swaps (pause → new src → play) pass.
+    // another app taking the session, a Bluetooth disconnect. Give deliberate
+    // source swaps a moment to finish, then treat a same-station pause as the
+    // listener's new playback intent. If iOS resumes that source on its own,
+    // handleResumed pauses it again instead of promoting the resume to intent.
     let pauseCheck: number | undefined;
+    let previousPlaybackIntent = usePlayerStore.getState().isPlaying;
+    const unsubscribeFromPlaybackIntent = usePlayerStore.subscribe(() => {
+      const nextPlaybackIntent = usePlayerStore.getState().isPlaying;
+      if (!previousPlaybackIntent && nextPlaybackIntent) {
+        window.clearTimeout(pauseCheck);
+      }
+      previousPlaybackIntent = nextPlaybackIntent;
+    });
     const handlePause = () => {
       if (audio.ended) return;
+      if (expectedSourceChangeRef.current) {
+        expectedSourceChangeRef.current = false;
+        return;
+      }
+      const stateAtPause = usePlayerStore.getState();
+      if (!stateAtPause.isPlaying) return;
+      const stationAtPause = stateAtPause.nowPlaying?.uuid ?? null;
+      const sourceAtPause = audio.currentSrc || audio.src;
       window.clearTimeout(pauseCheck);
       pauseCheck = window.setTimeout(() => {
-        if (audio.paused && usePlayerStore.getState().isPlaying) setIsPlaying(false);
+        const stateNow = usePlayerStore.getState();
+        if (
+          shouldStopAfterAudioInterruption({
+            playbackIntent: stateNow.isPlaying,
+            stationAtPause,
+            stationNow: stateNow.nowPlaying?.uuid ?? null,
+            sourceAtPause,
+            sourceNow: audio.currentSrc || audio.src,
+          })
+        ) {
+          setIsPlaying(false);
+        }
       }, 300);
     };
     const handleResumed = () => {
-      window.clearTimeout(pauseCheck);
-      if (!audio.paused && !usePlayerStore.getState().isPlaying) setIsPlaying(true);
+      if (!audio.paused && !usePlayerStore.getState().isPlaying) audio.pause();
     };
 
     audio.addEventListener("ended", handleEnded);
@@ -683,6 +713,7 @@ function GlobalAudioBridge() {
       audio.removeEventListener("playing", handleResumed);
       audio.removeEventListener("pause", handlePause);
       window.clearTimeout(pauseCheck);
+      unsubscribeFromPlaybackIntent();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
@@ -810,6 +841,7 @@ function GlobalAudioBridge() {
     }
 
     if (audio.src !== streamUrl) {
+      expectedSourceChangeRef.current = true;
       audio.src = streamUrl;
     }
   }, [nowPlaying, normalizeStreamUrl]);
