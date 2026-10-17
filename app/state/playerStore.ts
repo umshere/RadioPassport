@@ -400,9 +400,12 @@ export const usePlayerStore = create<PlayerState>(
         if (!audio) return;
 
         if (audio.paused) {
+          // Record the listener's intent before the browser emits `playing`.
+          // GlobalAudioBridge uses this state to distinguish an explicit Play
+          // from an unsolicited media-session resume.
+          set({ isPlaying: true });
           void audio
             .play()
-            .then(() => set({ isPlaying: true }))
             .catch(() => set({ isPlaying: false }));
         } else {
           audio.pause();
@@ -414,9 +417,10 @@ export const usePlayerStore = create<PlayerState>(
         if (!audio) return;
 
         if (audio.paused) {
+          // Keep the explicit Play intent synchronous with the user action.
+          set({ isPlaying: true });
           void audio
             .play()
-            .then(() => set({ isPlaying: true }))
             .catch(() => set({ isPlaying: false }));
         } else {
           audio.pause();

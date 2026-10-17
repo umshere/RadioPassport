@@ -1,4 +1,4 @@
-import { describe, expect, it, beforeEach } from "vitest";
+import { describe, expect, it, beforeEach, vi } from "vitest";
 
 import { usePlayerStore } from "~/state/playerStore";
 import type { SceneDescriptor } from "~/scenes/types";
@@ -113,5 +113,26 @@ describe("playerStore recordLastTrack", () => {
     );
     expect(remembered.length).toBeLessThanOrEqual(20);
     expect(remembered).toContain("station-24");
+  });
+});
+
+describe("playerStore playback intent", () => {
+  beforeEach(() => {
+    usePlayerStore.getState().setAudioElement(null);
+    usePlayerStore.getState().setIsPlaying(false);
+  });
+
+  it("records explicit Play before the browser play promise settles", () => {
+    const audio = {
+      paused: true,
+      play: vi.fn(() => new Promise<void>(() => undefined)),
+      pause: vi.fn(),
+    } as unknown as HTMLAudioElement;
+    usePlayerStore.getState().setAudioElement(audio);
+
+    usePlayerStore.getState().togglePlay();
+
+    expect(audio.play).toHaveBeenCalledOnce();
+    expect(usePlayerStore.getState().isPlaying).toBe(true);
   });
 });
