@@ -33,7 +33,10 @@ import {
   MAX_PLAYBACK_RECOVERY_ATTEMPTS,
   withRetryToken,
 } from "~/utils/playbackRecovery";
-import { shouldStopAfterAudioInterruption } from "~/utils/audioInterruption";
+import {
+  shouldPauseAfterUnexpectedResume,
+  shouldStopAfterAudioInterruption,
+} from "~/utils/audioInterruption";
 import { playbackNoticeCopy } from "~/utils/playbackNoticeCopy";
 import stylesheet from "./tailwind.css?url";
 import PlayerDock from "~/components/PlayerDock";
@@ -408,6 +411,7 @@ function AtmosphereBridge() {
 function GlobalAudioBridge() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const expectedSourceChangeRef = useRef(false);
+  const interruptionConfirmedRef = useRef(false);
   const nowPlayingRef =
     useRef<ReturnType<typeof usePlayerStore.getState>["nowPlaying"]>(null);
   const retryRef = useRef<{
@@ -667,6 +671,7 @@ function GlobalAudioBridge() {
       const nextPlaybackIntent = usePlayerStore.getState().isPlaying;
       if (!previousPlaybackIntent && nextPlaybackIntent) {
         window.clearTimeout(pauseCheck);
+        interruptionConfirmedRef.current = false;
       }
       previousPlaybackIntent = nextPlaybackIntent;
     });
@@ -692,12 +697,21 @@ function GlobalAudioBridge() {
             sourceNow: audio.currentSrc || audio.src,
           })
         ) {
+          interruptionConfirmedRef.current = true;
           setIsPlaying(false);
         }
       }, 300);
     };
     const handleResumed = () => {
-      if (!audio.paused && !usePlayerStore.getState().isPlaying) audio.pause();
+      if (
+        !audio.paused &&
+        shouldPauseAfterUnexpectedResume({
+          interruptionConfirmed: interruptionConfirmedRef.current,
+          playbackIntent: usePlayerStore.getState().isPlaying,
+        })
+      ) {
+        audio.pause();
+      }
     };
 
     audio.addEventListener("ended", handleEnded);

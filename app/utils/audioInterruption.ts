@@ -6,6 +6,11 @@ type AudioInterruptionSnapshot = {
   sourceNow: string;
 };
 
+type UnexpectedResumeSnapshot = {
+  interruptionConfirmed: boolean;
+  playbackIntent: boolean;
+};
+
 /** Keep an interrupted stream paused unless the listener or station changed. */
 export function shouldStopAfterAudioInterruption({
   playbackIntent,
@@ -19,4 +24,12 @@ export function shouldStopAfterAudioInterruption({
     stationAtPause === stationNow &&
     sourceAtPause === sourceNow
   );
+}
+
+/** Pause an automatic resume, but allow a user-started play request to settle. */
+export function shouldPauseAfterUnexpectedResume({
+  interruptionConfirmed,
+  playbackIntent,
+}: UnexpectedResumeSnapshot): boolean {
+  return interruptionConfirmed && !playbackIntent;
 }

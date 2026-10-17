@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { shouldStopAfterAudioInterruption } from "~/utils/audioInterruption";
+import {
+  shouldPauseAfterUnexpectedResume,
+  shouldStopAfterAudioInterruption,
+} from "~/utils/audioInterruption";
 
 describe("audio interruption recovery", () => {
   const samePlayback = {
@@ -32,6 +35,30 @@ describe("audio interruption recovery", () => {
       shouldStopAfterAudioInterruption({
         ...samePlayback,
         sourceNow: "https://radio.example/alternate",
+      }),
+    ).toBe(false);
+  });
+
+  it("allows a user-started play while the play promise is still settling", () => {
+    expect(
+      shouldPauseAfterUnexpectedResume({
+        interruptionConfirmed: false,
+        playbackIntent: false,
+      }),
+    ).toBe(false);
+  });
+
+  it("pauses an automatic resume after a confirmed interruption", () => {
+    expect(
+      shouldPauseAfterUnexpectedResume({
+        interruptionConfirmed: true,
+        playbackIntent: false,
+      }),
+    ).toBe(true);
+    expect(
+      shouldPauseAfterUnexpectedResume({
+        interruptionConfirmed: true,
+        playbackIntent: true,
       }),
     ).toBe(false);
   });
