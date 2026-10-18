@@ -173,7 +173,7 @@ describe("desk wiring", () => {
   it("keeps copy in the keeper's voice file and marks notebook facts", () => {
     const note = read("app/components/desk/DeskNote.tsx");
     expect(note).toContain("VOICE.notebook");
-    const listen = read("app/routes/listen.tsx");
+    const listen = read("app/pages/ListenRedesign.tsx");
     expect(listen).not.toContain("BoardSheet");
     expect(listen).not.toMatch(/&[a-z]+;/);
     // The desk has no sky: phones get the edge float there.
@@ -181,7 +181,7 @@ describe("desk wiring", () => {
   });
 
   it("keeps model prose off the desk and labels the file as notebook", () => {
-    const listen = read("app/routes/listen.tsx");
+    const listen = read("app/pages/ListenRedesign.tsx");
     expect(listen).toContain("caption={null}");
     expect(listen).not.toContain("deskSigned");
     expect(listen).toMatch(/ew-file-title[\s\S]*VOICE\.notebook[\s\S]*<DeskDossier/);

@@ -78,7 +78,7 @@ describe("home: the sheet is gone", () => {
     expect(readAppCss()).not.toContain("rp-board-sheet");
     expect(readAppCss()).not.toContain("rp-board-grip");
     for (const path of [
-      "app/routes/_index.tsx",
+      "app/pages/HomeRedesign.tsx",
       "app/components/keeper/KeeperFloat.tsx",
       "app/components/keeper/KeeperSheet.tsx",
       "app/components/home/HomeDepartures.tsx",
@@ -96,7 +96,7 @@ describe("home: the sheet is gone", () => {
   });
 
   it("brings the board into view for a search and a keeper hop, not a sheet", () => {
-    const home = read("app/routes/_index.tsx");
+    const home = read("app/pages/HomeRedesign.tsx");
     expect(home).toContain("onHop: scrollToBoard");
     expect(home).toMatch(/if \(isSeeking\) scrollToBoard\(\)/);
     expect(home).toContain('getElementById("live-board")');

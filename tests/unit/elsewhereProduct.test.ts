@@ -256,7 +256,7 @@ describe("live stylesheet", () => {
 describe("home: the departures hall", () => {
   it("keeps the shell, the nav and the overlays wired; no globe on the home", () => {
     const home = readFileSync(
-      new URL("../../app/routes/_index.tsx", import.meta.url),
+      new URL("../../app/pages/HomeRedesign.tsx", import.meta.url),
       "utf8"
     );
     const root = readFileSync(
@@ -358,11 +358,11 @@ describe("mobile cover strip", () => {
   it("is retired from the home: the gates stand sticky instead", () => {
     const css = readAppCss();
     const home = readFileSync(
-      new URL("../../app/routes/_index.tsx", import.meta.url),
+      new URL("../../app/pages/HomeRedesign.tsx", import.meta.url),
       "utf8",
     );
     const listen = readFileSync(
-      new URL("../../app/routes/listen.tsx", import.meta.url),
+      new URL("../../app/pages/ListenRedesign.tsx", import.meta.url),
       "utf8",
     );
     expect(home).not.toContain("CoverStrip");

@@ -159,7 +159,7 @@ describe("Atmosphere", () => {
 
 describe("AtmospherePin placement", () => {
   const home = readFileSync(
-    new URL("../../app/routes/_index.tsx", import.meta.url),
+    new URL("../../app/pages/HomeRedesign.tsx", import.meta.url),
     "utf8"
   );
   const pin = readFileSync(

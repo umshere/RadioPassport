@@ -98,6 +98,10 @@ describe("flip board", () => {
 
   it("staggers rows on the home board and refetches the catalog", () => {
     const home = readFileSync(
+      new URL("../../app/pages/HomeRedesign.tsx", import.meta.url),
+      "utf8",
+    );
+    const route = readFileSync(
       new URL("../../app/routes/_index.tsx", import.meta.url),
       "utf8",
     );
@@ -120,8 +124,8 @@ describe("flip board", () => {
     expect(homeBoard).toContain('cache: "no-store"');
     expect(homeBoard).toContain("HOME_CATALOG_TTL_MS");
     expect(homeBoard).toContain("homeCatalogCache");
-    expect(home).toContain("HOME_NO_STORE");
-    expect(home).toContain("loadHomeBoard");
+    expect(route).toContain("HOME_NO_STORE");
+    expect(route).toContain("loadHomeBoard");
     // Rows are plain, readable type; the flip board is kept for the place name and overlay titles.
     expect(row).not.toContain("FlipBoard");
     expect(home).toContain("setShuffle");
