@@ -1,6 +1,6 @@
 # Features
 
-Everything Elsewhere does today (2026-09-30), checked against the code, not against older docs. Each entry says what it does for the listener, where it lives, and the constraint that matters.
+Everything Elsewhere does today (2026-10-18), checked against the code, not against older docs. Each entry says what it does for the listener, where it lives, and the constraint that matters.
 
 Elsewhere is live radio from someone else's now. The listener picks a place or an hour, hears a real station on the air in another city, and after sixty seconds that city is stamped in their passport. A dry pixel-art clerk, the Keeper, keeps the desk. Live at https://elsewheremusic.com. Hearing radio is always free.
 

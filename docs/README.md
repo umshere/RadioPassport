@@ -1,6 +1,6 @@
 # Documentation index
 
-Elsewhere (repo heritage name: Radio Passport). Live radio from someone else's now. Remix + Vite. Live at https://elsewheremusic.com. Everything below was checked against the code on 2026-09-30.
+Elsewhere (repo heritage name: Radio Passport). Live radio from someone else's now. Remix + Vite. Live at https://elsewheremusic.com. Everything below was checked against the code on 2026-10-18.
 
 ## Start here
 

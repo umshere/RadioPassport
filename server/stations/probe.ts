@@ -1,4 +1,5 @@
 import type { Station } from "~/types/radio";
+import { fetchPublicUrl } from "~/server/http/publicUrl";
 
 export type StationProbeStatus = "ok" | "slow" | "down" | "unknown";
 
@@ -72,9 +73,8 @@ async function probeRequest(
   const startedAt = Date.now();
   const { signal, cleanup } = withTimeout(timeoutMs);
   try {
-    const response = await fetch(url, {
+    const response = await fetchPublicUrl(url, {
       method,
-      redirect: "follow",
       headers:
         method === "GET"
           ? {

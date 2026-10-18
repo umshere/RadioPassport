@@ -777,6 +777,16 @@ function GlobalAudioBridge() {
     const handleVisibility = () => {
       if (!document.hidden) lastProgressAtRef.current = Date.now();
     };
+    // Safari restores from the back/forward cache with the element paused while
+    // our playback intent still says playing. Nudge it once; a blocked gesture
+    // is left to the dock's Play button.
+    const handlePageShow = (event: PageTransitionEvent) => {
+      if (!event.persisted) return;
+      lastProgressAtRef.current = Date.now();
+      const stateNow = usePlayerStore.getState();
+      if (!nowPlayingRef.current || !stateNow.isPlaying) return;
+      if (audio.paused) void audio.play().catch(() => undefined);
+    };
 
     audio.addEventListener("ended", handleEnded);
     audio.addEventListener("error", handleError);
@@ -789,6 +799,7 @@ function GlobalAudioBridge() {
     audio.addEventListener("canplay", handleProgress);
     window.addEventListener("online", handleOnline);
     document.addEventListener("visibilitychange", handleVisibility);
+    window.addEventListener("pageshow", handlePageShow);
 
     return () => {
       audio.removeEventListener("ended", handleEnded);
@@ -802,6 +813,7 @@ function GlobalAudioBridge() {
       audio.removeEventListener("canplay", handleProgress);
       window.removeEventListener("online", handleOnline);
       document.removeEventListener("visibilitychange", handleVisibility);
+      window.removeEventListener("pageshow", handlePageShow);
       window.clearInterval(stallCheck);
       window.clearTimeout(pauseCheck);
       unsubscribeFromPlaybackIntent();
@@ -905,6 +917,7 @@ function GlobalAudioBridge() {
     if (!nowPlaying) {
       audio.pause();
       audio.removeAttribute("src");
+      audio.load();
       return;
     }
 
@@ -914,6 +927,7 @@ function GlobalAudioBridge() {
     if (!streamUrl) {
       audio.pause();
       audio.removeAttribute("src");
+      audio.load();
       return;
     }
 
@@ -927,6 +941,7 @@ function GlobalAudioBridge() {
       setIsPlaying(false);
       audio.pause();
       audio.removeAttribute("src");
+      audio.load();
       autoSkipToNext(nowPlaying, skipReason);
       return;
     }

@@ -205,6 +205,7 @@ export const usePlayerStore = create<PlayerState>(
           if (audio) {
             audio.pause();
             audio.removeAttribute("src");
+            audio.load();
           }
           set({ isPlaying: false });
         }
@@ -392,6 +393,7 @@ export const usePlayerStore = create<PlayerState>(
           if (audio) {
             audio.pause();
             audio.removeAttribute("src");
+            audio.load();
           }
         }
       },
@@ -432,6 +434,7 @@ export const usePlayerStore = create<PlayerState>(
         if (audio) {
           audio.pause();
           audio.removeAttribute("src");
+          audio.load();
         }
         set({ nowPlaying: null, isPlaying: false });
       },
