@@ -59,9 +59,9 @@ for (const c of cases) {
   const fetchImpl = mock
     ? ((async (_u: unknown, init: { body: string }) => {
         const q = JSON.parse(init.body).questions;
-        const pickIn = (name: string, want: string | null) =>
-          q[name] && want && want in q[name].criteria
-            ? { choice: want, confidence: 0.9 }
+        const pickIn = (name: string, want: string | string[] | null) =>
+          q[name] && want && (Array.isArray(want) ? want[0] : want) && (Array.isArray(want) ? want[0] : want)! in q[name].criteria
+            ? { choice: Array.isArray(want) ? want[0] : want, confidence: 0.9 }
             : { choice: "none", confidence: 0.9 };
         return new Response(
           JSON.stringify({
