@@ -5,8 +5,9 @@ import { KEEPER_ANCHOR_ATTR, type RoamStop } from "./keeperRoamModel";
 import { VOICE } from "./keeperVoice";
 
 /**
- * Demo wiring for the roaming keeper, behind a flag: open any page with
- * `?roam=demo` (it sticks for the tab; `?roam=off` clears it). It tags the
+ * Demo wiring for the roaming keeper, dev server only: open any page with
+ * `?roam=demo` (it sticks for the tab; `?roam=off` clears it). Production
+ * builds never read the flag. It tags the
  * desk's and the home's existing cards as anchors at runtime, so their
  * layouts stay untouched, and sets him wandering between them. The desk and
  * home rebuilds replace this with real `keeperAnchor()` attributes and
@@ -35,6 +36,7 @@ const DEMO: Record<string, Array<{ selector: string; stop: RoamStop }>> = {
 };
 
 function readFlag(search: string): boolean {
+  if (!import.meta.env.DEV) return false;
   try {
     const param = new URLSearchParams(search).get("roam");
     if (param === "demo") window.sessionStorage.setItem(FLAG_KEY, "1");

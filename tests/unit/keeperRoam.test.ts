@@ -176,6 +176,15 @@ describe("roaming keeper: state transitions", () => {
     expect(roamReducer(state, { type: "wander", stops, inView: () => false, at })).toBe(state);
   });
 
+  it("shows wander lines without reading them out; asked-for lines are read", () => {
+    const stops: RoamStop[] = [{ anchor: "next", pose: "travel", line: "c" }];
+    const wandered = roamReducer({ ...INITIAL_ROAM, anchor: "onair" }, { type: "wander", stops, inView: () => true, at });
+    const arrived = roamReducer(wandered, { type: "arrive", at });
+    expect(arrived.bubble).toMatchObject({ line: "c", announce: false });
+    const told = roamReducer(arrived, { type: "say", say: { line: "Asked." }, at });
+    expect(told.bubble?.announce).toBe(true);
+  });
+
   it("wanders only after a quiet spell at rest, and never away from a choice", () => {
     const state: RoamState = { ...INITIAL_ROAM, anchor: "onair", activeAt: 0 };
     expect(wanderDue(state, 5000)).toBe(false);
@@ -187,7 +196,7 @@ describe("roaming keeper: state transitions", () => {
   });
 
   it("leaves with the page, keeping only the count of pokes", () => {
-    const state: RoamState = { ...INITIAL_ROAM, anchor: "onair", pokes: 3, bubble: { line: "x", sub: null, source: null, actions: [] } };
+    const state: RoamState = { ...INITIAL_ROAM, anchor: "onair", pokes: 3, bubble: { line: "x", sub: null, source: null, actions: [], announce: true } };
     expect(roamReducer(state, { type: "leave" })).toMatchObject({ anchor: null, bubble: null, pokes: 3 });
   });
 });
@@ -255,9 +264,25 @@ describe("roaming keeper: wiring and rules", () => {
     expect(read("app/components/keeper/KeeperHost.tsx")).toContain("<KeeperRoam");
   });
 
-  it("pokes with a labelled button and speaks in a status region", () => {
+  it("pokes with a labelled button and announces only lines worth reading out", () => {
     expect(roam).toContain('aria-label={VOICE.roamPoke}');
-    expect(roam).toContain('role="status"');
+    expect(roam).toContain('role={announce ? "status" : undefined}');
+    expect(roam).toContain('aria-live={announce ? "polite" : "off"}');
+    expect(roam).not.toContain('<div className="ew-roam-say" role="status">');
+  });
+
+  it("keeps his words to himself when hushed, but still walks", () => {
+    expect(roam).toMatch(/walking \|\| hushed \? null/);
+  });
+
+  it("measures on events, not on a poll", () => {
+    expect(roam).not.toMatch(/setInterval\(measure/);
+    expect(roam).toContain("requestAnimationFrame");
+    expect(roam).toContain("ResizeObserver");
+  });
+
+  it("keeps the demo on the dev server only", () => {
+    expect(read("app/components/keeper/keeperRoamDemo.ts")).toContain("if (!import.meta.env.DEV) return false;");
   });
 
   it("sits under the header and the dock, and stops moving for reduced motion", () => {

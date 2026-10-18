@@ -178,7 +178,7 @@ export const VOICE = {
     next: "There’s always another gate.",
     ask: "Ask me where, when, who.",
     gates: "Pick a city. It’s live there now.",
-    board: "Every one of these is on air right now.",
+    board: "These are the stations you can board.",
   },
   /** The small mono line over his bubble: what he is doing. */
   roamDoing: {

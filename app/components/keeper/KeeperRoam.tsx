@@ -134,13 +134,26 @@ export function KeeperRoam({ view, askEnabled }: { view: KeeperView; askEnabled:
   const [spot, setSpot] = useState<RoamSpot | null>(null);
   const [facing, setFacing] = useState<1 | -1>(1);
   const spotRef = useRef<RoamSpot | null>(null);
+  const nodeRef = useRef<HTMLElement | null>(null);
 
   const anchor = wide ? roam.anchor : null;
 
-  const measure = useCallback(() => {
-    if (!anchor) return setSpot(null);
-    const node = findKeeperAnchor(anchor);
-    if (!node) return setSpot(null);
+  /** Returns false when the anchor is not on the page (yet). */
+  const measure = useCallback((): boolean => {
+    if (!anchor) {
+      setSpot(null);
+      return true;
+    }
+    // One lookup per anchor; look again only if the node left the page.
+    let node = nodeRef.current;
+    if (!node || !node.isConnected || node.getAttribute(KEEPER_ANCHOR_ATTR) !== anchor) {
+      node = findKeeperAnchor(anchor);
+      nodeRef.current = node;
+    }
+    if (!node) {
+      setSpot(null);
+      return false;
+    }
     const next = roamSpot({
       anchor: toRect(node.getBoundingClientRect()),
       stage: measureStage(),
@@ -149,25 +162,59 @@ export function KeeperRoam({ view, askEnabled }: { view: KeeperView; askEnabled:
       below: node.dataset.keeperBelow === "true" ? true : undefined,
     });
     const previous = spotRef.current;
-    if (sameSpot(previous, next)) return;
+    if (sameSpot(previous, next)) return true;
     if (previous) setFacing((current) => roamFacing(previous.x, next.x, current));
     spotRef.current = next;
     setSpot(next);
+    return true;
   }, [anchor]);
 
-  // Re-measure on a new anchor, a resize, any scroll, and on a light poll (cards grow,
-  // fonts land, the dock deck opens). Same reasoning as KeeperFloat.
+  // Measure on a new anchor, then only when something moves: a resize, any
+  // scroll, or the anchor (or the page) changing size. At most once a frame.
+  // No poll: an anchor not mounted yet is looked for again a few times.
   useEffect(() => {
-    measure();
-    if (!anchor) return;
-    window.addEventListener("resize", measure);
+    nodeRef.current = null;
+    if (!anchor) {
+      measure();
+      return;
+    }
+    let frame = 0;
+    let retry = 0;
+    let tries = 0;
+    const attempt = () => {
+      if (measure()) return observe();
+      if (tries++ < 10) retry = window.setTimeout(attempt, 400);
+    };
+    const schedule = () => {
+      if (frame) return;
+      frame = window.requestAnimationFrame(() => {
+        frame = 0;
+        attempt();
+      });
+    };
+    const resize = typeof ResizeObserver !== "undefined" ? new ResizeObserver(schedule) : null;
+    let watched: HTMLElement | null = null;
+    const observe = () => {
+      if (!resize || watched === nodeRef.current) return;
+      resize.disconnect();
+      watched = nodeRef.current;
+      if (watched) resize.observe(watched);
+      // A card above growing moves the anchor without resizing it; its
+      // column grows, so watch that too.
+      if (watched?.parentElement) resize.observe(watched.parentElement);
+      resize.observe(document.documentElement);
+    };
+    // First measure at once (no frame wait), so he is placed on the commit.
+    attempt();
+    window.addEventListener("resize", schedule);
     // Capture: the home and desk scroll inside their own columns, not the page.
-    window.addEventListener("scroll", measure, { capture: true, passive: true });
-    const timer = window.setInterval(measure, 500);
+    window.addEventListener("scroll", schedule, { capture: true, passive: true });
     return () => {
-      window.removeEventListener("resize", measure);
-      window.removeEventListener("scroll", measure, { capture: true });
-      window.clearInterval(timer);
+      window.cancelAnimationFrame(frame);
+      window.clearTimeout(retry);
+      resize?.disconnect();
+      window.removeEventListener("resize", schedule);
+      window.removeEventListener("scroll", schedule, { capture: true });
     };
   }, [anchor, measure]);
 
@@ -200,6 +247,7 @@ export function KeeperRoam({ view, askEnabled }: { view: KeeperView; askEnabled:
           line: murmur.text,
           sub: murmur.topic,
           source: null,
+          announce: false,
           actions: [
             {
               label: VOICE.roamMurmurMore,
@@ -208,7 +256,9 @@ export function KeeperRoam({ view, askEnabled }: { view: KeeperView; askEnabled:
           ],
         }
       : null;
-  const bubble = walking ? null : (roam.bubble ?? murmurBubble);
+  // Hushed: he still walks and poses, but keeps his words to himself.
+  const bubble = walking || hushed ? null : (roam.bubble ?? murmurBubble);
+  const announce = Boolean(bubble?.announce);
   const pose: RoamPose = walking ? "travel" : murmurBubble ? "speaking" : roam.pose;
 
   const onPoke = () => {
@@ -234,7 +284,7 @@ export function KeeperRoam({ view, askEnabled }: { view: KeeperView; askEnabled:
       data-pose={pose}
       style={{ transform: `translate(${spot.x}px, ${spot.y}px)` }}
     >
-      <div className="ew-roam-say" role="status">
+      <div className="ew-roam-say" role={announce ? "status" : undefined} aria-live={announce ? "polite" : "off"}>
         {bubble ? (
           <div className="ew-roam-bubble" key={bubble.line}>
             <p className="ew-roam-doing">{VOICE.roamDoing[pose]}</p>

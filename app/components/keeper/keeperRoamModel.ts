@@ -148,6 +148,8 @@ export type RoamBubble = {
   sub: string | null;
   source: RoamSource | null;
   actions: RoamAction[];
+  /** Read out to a screen reader. Lines he says unasked (wandering) are not. */
+  announce: boolean;
 };
 
 export type RoamStop = RoamLine & { anchor: string };
@@ -188,13 +190,14 @@ export type RoamEvent =
   | { type: "wander"; stops: RoamStop[]; inView: (anchor: string) => boolean; at: number }
   | { type: "leave" };
 
-export function toBubble(say: RoamLine | undefined): RoamBubble | null {
+export function toBubble(say: RoamLine | undefined, announce = true): RoamBubble | null {
   if (!say?.line?.trim()) return null;
   return {
     line: say.line,
     sub: say.sub?.trim() ? say.sub : null,
     source: say.source ?? null,
     actions: (say.actions ?? []).slice(0, 2),
+    announce,
   };
 }
 
@@ -254,7 +257,14 @@ export function roamReducer(state: RoamState, event: RoamEvent): RoamState {
       const stop = nextWanderStop(state, event.stops, event.inView);
       if (!stop) return state;
       const next = roamReducer(state, { type: "goTo", anchor: stop.stop.anchor, say: stop.stop, at: event.at });
-      return { ...next, wanderIndex: stop.index + 1 };
+      // An idle wander line is scenery: shown, not read out.
+      const quietly = (bubble: RoamBubble | null) => (bubble ? { ...bubble, announce: false } : null);
+      return {
+        ...next,
+        bubble: quietly(next.bubble),
+        pending: next.pending ? { ...next.pending, bubble: quietly(next.pending.bubble) } : null,
+        wanderIndex: stop.index + 1,
+      };
     }
     case "leave":
       return { ...INITIAL_ROAM, pokes: state.pokes, wanderIndex: state.wanderIndex };
