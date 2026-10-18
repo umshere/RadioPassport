@@ -88,6 +88,9 @@ export function KeeperFloat({ view }: { view: KeeperView }) {
   // (the sky); no second figure.
   const { pathname } = useLocation();
   const onDesk = pathname === "/listen" || pathname === "/";
+  // On wider screens a page may set the keeper roaming (KeeperRoam): then
+  // he walks the page and this edge figure steps aside.
+  const roaming = useKeeperStore((state) => state.roamShown);
   const murmur = useKeeperStore((state) => state.murmur);
   const setMurmur = useKeeperStore((state) => state.setMurmur);
   const stationId = usePlayerStore((state) => state.nowPlaying?.uuid ?? null);
@@ -158,7 +161,7 @@ export function KeeperFloat({ view }: { view: KeeperView }) {
     [bounds],
   );
 
-  if (!view.present || !bounds || onDesk) return null;
+  if (!view.present || !bounds || onDesk || roaming) return null;
 
   const resting = clampKeeperSpot(spot, bounds);
   const peek = keeperPeeks({
