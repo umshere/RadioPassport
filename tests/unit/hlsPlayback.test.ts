@@ -7,6 +7,7 @@ import {
   hlsFor,
   isHlsPending,
   isHlsStreamUrl,
+  isVideoOnlyHlsLevels,
   rememberHls,
   setHlsPending,
 } from "~/utils/hlsPlayback";
@@ -134,5 +135,27 @@ describe("hls pending flag", () => {
     setHlsPending(audio, true);
     destroyHlsFor(audio);
     expect(isHlsPending(audio)).toBe(false);
+  });
+});
+
+describe("isVideoOnlyHlsLevels", () => {
+  it("flags masters with video and no audio", () => {
+    expect(
+      isVideoOnlyHlsLevels([
+        { videoCodec: "avc1.4d401f" },
+        { videoCodec: "avc1.4d401e" },
+      ])
+    ).toBe(true);
+  });
+
+  it("keeps audio-only and muxed masters", () => {
+    expect(isVideoOnlyHlsLevels([{ audioCodec: "mp4a.40.2" }])).toBe(false);
+    expect(
+      isVideoOnlyHlsLevels([
+        { audioCodec: "mp4a.40.2" },
+        { audioCodec: "mp4a.40.2", videoCodec: "avc1.4d401f" },
+      ])
+    ).toBe(false);
+    expect(isVideoOnlyHlsLevels([])).toBe(false);
   });
 });

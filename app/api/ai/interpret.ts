@@ -1,4 +1,5 @@
 import { json, type ActionFunctionArgs } from "@remix-run/node";
+import { clientKey, createTokenBucket } from "~/services/keeper/rateLimit.server";
 import { completeJson, isGatewayConfigured } from "~/services/ai/gateway";
 import {
   extractPromptIntent,
@@ -12,6 +13,25 @@ import type {
 } from "~/types/ai";
 
 export { wantsMixFromPrompt };
+
+/** ~30 interpretations an hour per listener: enough for typed searches, not for scripts. */
+const INTERPRET_PER_HOUR = 30;
+const interpretBucket = createTokenBucket({
+  capacity: INTERPRET_PER_HOUR,
+  refillPerHour: INTERPRET_PER_HOUR,
+});
+
+function rateLimitResponse(retryAfterMs: number) {
+  return json(
+    { error: "Too many requests" },
+    {
+      status: 429,
+      headers: {
+        "Retry-After": String(Math.max(1, Math.ceil(retryAfterMs / 1000))),
+      },
+    }
+  );
+}
 
 export function intentFromExtractor(
   prompt: string,
@@ -110,6 +130,8 @@ export async function action({ request }: ActionFunctionArgs) {
   if (request.method !== "POST") {
     return json({ error: "Method not allowed" }, { status: 405 });
   }
+  const limit = interpretBucket.take(clientKey(request));
+  if (!limit.ok) return rateLimitResponse(limit.retryAfterMs);
   const body = (await request.json()) as InterpretRequest;
   return json(await interpretPrompt(body));
 }

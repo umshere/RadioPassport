@@ -70,6 +70,20 @@ describe("probe-ahead skip", () => {
     ).toBe("http");
   });
 
+  it("prefers the smaller stream when Data Saver is on", () => {
+    const big = station({ uuid: "big", bitrate: 320, probeStatus: "ok" });
+    const small = station({ uuid: "small", bitrate: 64, probeStatus: "ok" });
+    const current = station({ uuid: "now" });
+    const base = {
+      queue: [current, big, small],
+      startIndex: 0,
+      pinnedId: "now",
+      protocol: "https:",
+    };
+    expect(pickSkipCandidate({ ...base })?.uuid).toBe("big");
+    expect(pickSkipCandidate({ ...base, saveData: true })?.uuid).toBe("small");
+  });
+
   it("does not celebrate a dead land before play", () => {
     expect(
       shouldSkipBeforePlay(

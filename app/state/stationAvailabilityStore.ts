@@ -8,6 +8,7 @@ export type StationFailureReason =
   | "hls_native_error"
   | "hls_unsupported"
   | "hls_js_error"
+  | "hls_video"
   | "timeout"
   | "unknown";
 

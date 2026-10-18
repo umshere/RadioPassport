@@ -54,3 +54,15 @@ export function isSafariBrowser(): boolean {
   return isSafari;
 }
 
+
+/** Honour Data Saver and very slow connections by preferring small streams. */
+export function prefersLowBitrate(
+  connection?: { saveData?: boolean; effectiveType?: string } | null
+): boolean {
+  if (!connection) return false;
+  return (
+    Boolean(connection.saveData) ||
+    connection.effectiveType === "slow-2g" ||
+    connection.effectiveType === "2g"
+  );
+}

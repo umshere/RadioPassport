@@ -12,8 +12,28 @@ import { rbFetchJson } from "~/utils/radioBrowser";
 import { normalizeStations } from "~/utils/stations";
 import { filterStationCandidates } from "~/services/ai/providers/providerUtils";
 import { extractPromptIntent } from "~/services/ai/intent/promptIntent";
+import { clientKey, createTokenBucket } from "~/services/keeper/rateLimit.server";
 
 const USE_MOCK = process.env.USE_MOCK?.trim().toLowerCase() === "true";
+
+/** ~30 recommendation requests an hour per listener, loader and action shared. */
+const RECOMMEND_PER_HOUR = 30;
+const recommendBucket = createTokenBucket({
+  capacity: RECOMMEND_PER_HOUR,
+  refillPerHour: RECOMMEND_PER_HOUR,
+});
+
+function rateLimitResponse(retryAfterMs: number) {
+  return json(
+    { error: "Too many requests" },
+    {
+      status: 429,
+      headers: {
+        "Retry-After": String(Math.max(1, Math.ceil(retryAfterMs / 1000))),
+      },
+    }
+  );
+}
 
 const LANGUAGE_CODE_TO_NAME: Record<string, string> = {
   ta: "tamil",
@@ -1079,6 +1099,8 @@ function shouldUseRelatedFallback(intent: IntentMeta): boolean {
 }
 
 export async function loader({ request }: LoaderFunctionArgs) {
+  const limit = recommendBucket.take(clientKey(request));
+  if (!limit.ok) return rateLimitResponse(limit.retryAfterMs);
   const url = new URL(request.url);
   const descriptor = await withRouteDeadline(
     enrichRequestWithIntent(
@@ -1105,6 +1127,8 @@ export async function loader({ request }: LoaderFunctionArgs) {
 }
 
 export async function action({ request }: ActionFunctionArgs) {
+  const limit = recommendBucket.take(clientKey(request));
+  if (!limit.ok) return rateLimitResponse(limit.retryAfterMs);
   let body: Partial<RecommendRequest> = {};
   const contentType = request.headers.get("content-type") ?? "";
   if (contentType.includes("application/json")) {

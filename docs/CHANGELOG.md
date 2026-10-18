@@ -2,6 +2,14 @@
 
 Newest first. Sections from 2026-08-16 to 2026-09-27 were written afterwards from the commit log; earlier ones were written at the time. The current feature list is [FEATURES.md](./FEATURES.md).
 
+## 2026-10-18 — Mobile playback, HLS, server guards
+
+- **Playback on phones.** Removed the forced CORS mode so streams without `Access-Control-Allow-Origin` play; a progress watchdog retries a silent stall after 10s and again on `online`; bfcache restores resume; clearing a source calls `load()` so the old connection stops; autoplay and abort rejections no longer mark a station dead.
+- **HTTP streams** are tried as HTTPS first, with an honest "only speaks HTTP" notice when the host has no TLS. iOS requests the playback audio session and shows a one-time silent-switch hint.
+- **HLS.** Safari/iOS plays HLS natively; Android/Chromium lazy-loads hls.js in a separate chunk (~150KB gzip), with one recovery attempt per network or media error and no `rp_retry` on playlists. Video-only masters are skipped; HLS never polls for ICY titles.
+- **Server guards.** `/api/now-playing` and `/api/stations/probe` reject private, link-local and metadata hosts and re-check every redirect. `/api/ai/interpret` (30/h) and `/api/ai/recommend` (30/h) are rate-limited per listener.
+- **Data Saver.** Auto-skip prefers lower-bitrate stations when `saveData` or 2g is reported.
+
 ## 2026-09-29 — Departures Hall, tickets, the room's light, the round mark
 
 - **Home is the Departures Hall.** Sky (city flip-clock, Keeper line, Land here), sticky gates (search, Dawn/Midday/Dusk/Night, Atlas door), a departures board, recent stamps. The globe and the phone sheet are gone. Board rows with no coordinates show a rough clock from the country's centre.

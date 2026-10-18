@@ -38,6 +38,7 @@ export function pickSkipCandidate(opts: {
   now?: number;
   unavailable?: (uuid: string, now: number) => boolean;
   probes?: Record<string, ProbeStatus | undefined>;
+  saveData?: boolean;
 }): Station | null {
   const {
     queue,
@@ -46,6 +47,7 @@ export function pickSkipCandidate(opts: {
     now = Date.now(),
     unavailable,
     probes = {},
+    saveData = false,
   } = opts;
   if (queue.length <= 1) return null;
   const start = Math.max(0, startIndex);
@@ -58,14 +60,19 @@ export function pickSkipCandidate(opts: {
     if (probeStatusOf(station, probes) === "down") continue;
     eligible.push(station);
   }
-  return (
-    eligible.find((station) => {
-      const status = probeStatusOf(station, probes);
-      return status === "ok" || status === "slow";
-    }) ??
-    eligible[0] ??
-    null
-  );
+  const healthy = eligible.filter((station) => {
+    const status = probeStatusOf(station, probes);
+    return status === "ok" || status === "slow";
+  });
+  const pool = healthy.length ? healthy : eligible;
+  const ordered = saveData
+    ? [...pool].sort(
+        (a, b) =>
+          (a.bitrate || Number.POSITIVE_INFINITY) -
+          (b.bitrate || Number.POSITIVE_INFINITY)
+      )
+    : pool;
+  return ordered[0] ?? null;
 }
 
 export function shouldSkipBeforePlay(

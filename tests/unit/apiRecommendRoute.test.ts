@@ -179,6 +179,7 @@ describe("POST /api/ai/recommend", () => {
 
     expect(response.status).toBe(200);
     const payload = await response.json();
+    if ("error" in payload) throw new Error(payload.error);
     expect(payload.descriptor.visual).toBe("atlas");
     expect(payload.descriptor.stations[0]?.uuid).toBe("station-route-1");
     expect(fetchMock).toHaveBeenCalledTimes(2);
@@ -233,6 +234,7 @@ describe("/api/ai/recommend route deadline", () => {
 
     expect(response.status).toBe(200);
     const payload = await response.json();
+    if ("error" in payload) throw new Error(payload.error);
     expect(payload.descriptor.stations.length).toBeGreaterThan(0);
     expect(payload.descriptor.play?.strategy).toBe("autoplay_first");
     expect(warnSpy).not.toHaveBeenCalled();
@@ -263,6 +265,7 @@ describe("/api/ai/recommend route deadline", () => {
 
     expect(response.status).toBe(200);
     const payload = await response.json();
+    if ("error" in payload) throw new Error(payload.error);
     expect(payload.descriptor.stations.length).toBeGreaterThan(0);
     expect(payload.descriptor.play?.strategy).toBe("autoplay_first");
     expect(

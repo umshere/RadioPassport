@@ -24,7 +24,20 @@ export function canPlayNativeHls(audio: CanPlayType): boolean {
   }
 }
 
-export type HlsFailureReason = "hls_native_error" | "hls_unsupported";
+export type HlsFailureReason =
+  | "hls_native_error"
+  | "hls_unsupported"
+  | "hls_video";
+
+/** A master with video variants and no audio track cannot feed an <audio>. */
+export function isVideoOnlyHlsLevels(
+  levels: Array<{ videoCodec?: string; audioCodec?: string }>
+): boolean {
+  return (
+    levels.length > 0 &&
+    levels.every((level) => Boolean(level.videoCodec) && !level.audioCodec)
+  );
+}
 
 /** One-line kill switch for the Android/Chromium hls.js path. */
 export const HLS_JS_ENABLED = true;

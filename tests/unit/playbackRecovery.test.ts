@@ -23,6 +23,7 @@ describe("playbackRecovery", () => {
     expect(canRetryPlayback("hls_stream")).toBe(false);
     expect(canRetryPlayback("hls_unsupported")).toBe(false);
     expect(canRetryPlayback("hls_js_error")).toBe(false);
+    expect(canRetryPlayback("hls_video")).toBe(false);
   });
 
   it("returns bounded retry delays", () => {

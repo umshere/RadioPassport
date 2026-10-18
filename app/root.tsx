@@ -21,7 +21,11 @@ import {
   isStationTemporarilyUnavailable,
   useStationAvailabilityStore,
 } from "~/state/stationAvailabilityStore";
-import { isMixedContentStream, upgradeHttpToHttps } from "~/utils/streamHeuristics";
+import {
+  isMixedContentStream,
+  prefersLowBitrate,
+  upgradeHttpToHttps,
+} from "~/utils/streamHeuristics";
 import {
   canPlayNativeHls,
   destroyHlsFor,
@@ -30,6 +34,7 @@ import {
   hlsFor,
   isHlsPending,
   isHlsStreamUrl,
+  isVideoOnlyHlsLevels,
   rememberHls,
   setHlsPending,
 } from "~/utils/hlsPlayback";
@@ -559,6 +564,15 @@ function GlobalAudioBridge() {
       const protocol =
         typeof window !== "undefined" ? window.location.protocol : "https:";
 
+      const connection =
+        typeof navigator !== "undefined"
+          ? (
+              navigator as Navigator & {
+                connection?: { saveData?: boolean; effectiveType?: string };
+              }
+            ).connection
+          : null;
+
       const candidate = pickSkipCandidate({
         queue: currentQueue,
         startIndex,
@@ -568,6 +582,7 @@ function GlobalAudioBridge() {
         unavailable: (uuid, at) =>
           isStationTemporarilyUnavailable(availability[uuid], at),
         probes: probePatchesRef.current,
+        saveData: prefersLowBitrate(connection),
       });
 
       if (!candidate) {
@@ -1040,7 +1055,15 @@ function GlobalAudioBridge() {
           let recoveredMedia = false;
           rememberHls(audio, instance);
 
-          instance.on(Hls.Events.MANIFEST_PARSED, () => {
+          instance.on(Hls.Events.MANIFEST_PARSED, (_event, data) => {
+            if (isVideoOnlyHlsLevels(data.levels)) {
+              setHlsPending(audio, false);
+              destroyHlsFor(audio);
+              setIsPlaying(false);
+              markFailed(nowPlaying.uuid, "hls_video");
+              autoSkipToNext(nowPlaying, "hls_video");
+              return;
+            }
             setHlsPending(audio, false);
             lastProgressAtRef.current = Date.now();
             if (usePlayerStore.getState().isPlaying) {
