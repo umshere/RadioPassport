@@ -1,6 +1,6 @@
 # Documentation index
 
-Elsewhere (repo heritage name: Radio Passport). Live radio from someone else's now. Remix + Vite. Live at https://elsewheremusic.com. Everything below was checked against the code on 2026-09-30.
+Elsewhere (repo heritage name: Radio Passport). Live radio from someone else's now. Remix + Vite. Live at https://elsewheremusic.com. Everything below was checked against the code on 2026-10-18.
 
 ## Start here
 
@@ -28,6 +28,7 @@ Elsewhere (repo heritage name: Radio Passport). Live radio from someone else's n
 |---|---|
 | [ARCHITECTURE.md](./ARCHITECTURE.md) | Tree, routes, playback, the Room, data, styling |
 | [AI_PIPELINE.md](./AI_PIPELINE.md) | AI calls, provider order, trivia pipeline, the world-mix contract |
+| [station-labels-wave1.md](./station-labels-wave1.md) | Offline Jev station labels: the wave-1 run, confidence threshold, loader (groundwork; no route reads it yet) |
 | [ENVIRONMENT.md](./ENVIRONMENT.md) | Environment **variables** (not the light) |
 | [TESTING_GUIDE.md](./TESTING_GUIDE.md) | Tests, rules that bite, manual checklist |
 | [CHANGELOG.md](./CHANGELOG.md) | Dated history, newest first |

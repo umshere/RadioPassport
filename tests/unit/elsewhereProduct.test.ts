@@ -127,6 +127,12 @@ describe("Elsewhere interpret fallback", () => {
     expect(intentFromExtractor("Lisbon at dusk").wantsMix).toBe(false);
     expect(intentFromExtractor("three unknown words").wantsMix).toBe(false);
   });
+
+  it("carries the named hour as its own field", () => {
+    expect(intentFromExtractor("Lisbon at dusk").hour).toBe("Dusk");
+    expect(intentFromExtractor("Malayalam tonight").hour).toBe("Night");
+    expect(intentFromExtractor("jazz").hour).toBeNull();
+  });
 });
 
 describe("Elsewhere dispatch templates", () => {

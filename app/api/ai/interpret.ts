@@ -5,6 +5,8 @@ import {
   resolveTypedIntent,
   wantsMixFromPrompt,
 } from "~/services/ai/intent/promptIntent";
+import { interpretWithJev } from "~/services/ai/intent/jevInterpret.server";
+import { trimEnv } from "~/services/ai/completeFallback";
 import type {
   InterpretRequest,
   InterpretResponse,
@@ -29,8 +31,15 @@ export function intentFromExtractor(
     language: extracted.languages[0] ?? null,
     tags: extracted.tags,
     wantsMix: fallbackWantsMix,
+    hour: resolved.hour,
     confidence,
   };
+}
+
+function asNamedHour(value: unknown): InterpretedIntent["hour"] {
+  return value === "Dawn" || value === "Midday" || value === "Dusk" || value === "Night"
+    ? value
+    : null;
 }
 
 function normalizeIntent(
@@ -38,6 +47,7 @@ function normalizeIntent(
   prompt: string
 ): InterpretedIntent {
   const fallback = intentFromExtractor(prompt, false);
+  const typed = resolveTypedIntent(prompt);
   const confidence =
     raw?.confidence === "high" ||
     raw?.confidence === "medium" ||
@@ -56,7 +66,8 @@ function normalizeIntent(
     tags: Array.isArray(raw?.tags)
       ? raw.tags.filter((tag): tag is string => typeof tag === "string")
       : fallback.tags,
-    wantsMix: resolveTypedIntent(prompt).wantsMix,
+    wantsMix: typed.wantsMix,
+    hour: asNamedHour(raw?.hour) ?? typed.hour,
     confidence,
   };
 }
@@ -73,6 +84,10 @@ export async function interpretPrompt(
   }
 
   if (!isGatewayConfigured()) {
+    if (trimEnv(process.env.TYPESAFE_API_KEY)) {
+      const jev = await interpretWithJev(prompt);
+      if (jev) return { intent: jev, fallback: false };
+    }
     return { intent: intentFromExtractor(prompt), fallback: true };
   }
 

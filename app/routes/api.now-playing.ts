@@ -1,23 +1,10 @@
 import { json, type LoaderFunctionArgs } from "@remix-run/node";
 import { repairMojibake } from "~/utils/repairMojibake";
 import type { NowPlayingResponse } from "~/types/nowPlaying";
+import { fetchPublicUrl, isPublicHttpUrl } from "~/server/http/publicUrl";
 
 const REQUEST_TIMEOUT_MS = 8000;
 const MAX_METADATA_BLOCKS = 3;
-
-const PRIVATE_HOST_PATTERNS = [
-  /^localhost$/i,
-  /^127\./,
-  /^0\./,
-  /^10\./,
-  /^192\.168\./,
-  /^172\.(1[6-9]|2\d|3[0-1])\./,
-  /^\[::1\]$/i,
-];
-
-function isBlockedHost(hostname: string) {
-  return PRIVATE_HOST_PATTERNS.some((pattern) => pattern.test(hostname));
-}
 
 function parseStreamTitle(raw: string) {
   const cleaned = raw.replace(/\s+/g, " ").trim();
@@ -126,18 +113,17 @@ export async function loader({ request }: LoaderFunctionArgs) {
     );
   }
 
-  if (isBlockedHost(parsed.hostname)) {
+  if (!isPublicHttpUrl(parsed)) {
     return json<NowPlayingResponse>(
       { status: "error", reason: "Stream host is not allowed." },
       { status: 400 }
     );
   }
-
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
   try {
-    const response = await fetch(streamUrl, {
+    const response = await fetchPublicUrl(streamUrl, {
       method: "GET",
       headers: {
         "Icy-MetaData": "1",

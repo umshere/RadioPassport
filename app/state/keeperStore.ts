@@ -1,3 +1,13 @@
+import {
+  INITIAL_ROAM,
+  ROAM_HOP_MS,
+  ROAM_WALK_MS,
+  roamReducer,
+  type RoamEvent,
+  type RoamLine,
+  type RoamState,
+  type RoamStop,
+} from "~/components/keeper/keeperRoamModel";
 import type { SolarHour } from "~/utils/localTime";
 import { logUsage } from "~/utils/usage";
 import { create } from "~/utils/zustand-lite";
@@ -63,10 +73,43 @@ type KeeperStoreState = {
   /** Fire the one-shot; it clears itself after `ms`. */
   delight: (ms: number) => void;
   requestHour: (hour: SolarHour | null) => void;
+
+  /* ---- The roaming keeper (wider screens; see keeperRoamModel.ts) ---- */
+  roam: RoamState;
+  /** Where he wanders when nothing is happening, in turn. Empty: he stays. */
+  roamStops: RoamStop[];
+  /** The roaming figure is on screen (the edge float steps aside). */
+  roamShown: boolean;
+  setRoamShown: (shown: boolean) => void;
+  /** Walk to an anchor, then stand in `pose` and say `line`. */
+  goTo: (anchor: string, say?: RoamLine & { instant?: boolean }) => void;
+  /** Say something where he stands (held until he arrives, if walking). */
+  roamSay: (say: RoamLine) => void;
+  roamQuiet: () => void;
+  poke: (say: RoamLine) => void;
+  setRoamStops: (stops: RoamStop[]) => void;
+  /** Called by the figure when he has been idle long enough. */
+  roamWander: (inView: (anchor: string) => boolean) => void;
+  /** The page with his anchors went away. */
+  roamLeave: () => void;
 };
 
 let delightTimer: ReturnType<typeof setTimeout> | undefined;
 let sceneTimer: ReturnType<typeof setTimeout> | undefined;
+let walkTimer: ReturnType<typeof setTimeout> | undefined;
+let hopTimer: ReturnType<typeof setTimeout> | undefined;
+
+/** Reduced motion: he jumps, so he arrives at once. */
+function walkMs(): number {
+  try {
+    if (typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) {
+      return 0;
+    }
+  } catch {
+    // No matchMedia (tests): walk.
+  }
+  return ROAM_WALK_MS;
+}
 
 export const useKeeperStore = create<KeeperStoreState>((set, get) => ({
   sheetOpen: false,
@@ -132,4 +175,62 @@ export const useKeeperStore = create<KeeperStoreState>((set, get) => ({
     }, ms);
   },
   requestHour: (pendingHour) => set({ pendingHour }),
+
+  roam: INITIAL_ROAM,
+  roamStops: [],
+  roamShown: false,
+  setRoamShown: (roamShown) => {
+    if (get().roamShown !== roamShown) set({ roamShown });
+  },
+  goTo: (anchor, say) => {
+    const { instant, ...line } = say ?? {};
+    const hasSay = say !== undefined && (line.line !== undefined || line.pose !== undefined);
+    roamDispatch({ type: "goTo", anchor, say: hasSay ? line : undefined, instant, at: Date.now() });
+  },
+  roamSay: (say) => roamDispatch({ type: "say", say, at: Date.now() }),
+  roamQuiet: () => roamDispatch({ type: "quiet", at: Date.now() }),
+  poke: (say) => {
+    roamDispatch({ type: "poke", say, at: Date.now() });
+    if (hopTimer) clearTimeout(hopTimer);
+    hopTimer = setTimeout(() => {
+      hopTimer = undefined;
+      roamDispatch({ type: "hopDone" });
+    }, ROAM_HOP_MS);
+  },
+  setRoamStops: (roamStops) => set({ roamStops }),
+  roamWander: (inView) =>
+    roamDispatch({ type: "wander", stops: get().roamStops, inView, at: Date.now() }),
+  roamLeave: () => {
+    if (walkTimer) clearTimeout(walkTimer);
+    walkTimer = undefined;
+    roamDispatch({ type: "leave" });
+  },
 }));
+
+/**
+ * Every roam change goes through the pure reducer. A walk that starts sets
+ * the arrival timer; a new walk replaces the old one's.
+ */
+function roamDispatch(event: RoamEvent) {
+  const store = useKeeperStore.getState();
+  const before = store.roam;
+  let after = roamReducer(before, event);
+  if (after === before) return;
+  const startedWalk =
+    after.phase === "walking" && (before.phase !== "walking" || before.anchor !== after.anchor);
+  const ms = startedWalk ? walkMs() : ROAM_WALK_MS;
+  // Reduced motion: he jumps. Arrive in the same update, so no frame of
+  // walking (and no wiggle) is ever drawn.
+  if (startedWalk && ms === 0) {
+    if (walkTimer) clearTimeout(walkTimer);
+    walkTimer = undefined;
+    after = roamReducer(after, { type: "arrive", at: Date.now() });
+  }
+  useKeeperStore.setState({ roam: after });
+  if (!startedWalk || ms === 0) return;
+  if (walkTimer) clearTimeout(walkTimer);
+  walkTimer = setTimeout(() => {
+    walkTimer = undefined;
+    roamDispatch({ type: "arrive", at: Date.now() });
+  }, ms);
+}

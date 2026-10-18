@@ -29,8 +29,11 @@ import {
 } from "~/utils/probeAhead";
 import {
   canRetryPlayback,
+  classifyPlayRejection,
   getRetryDelayMs,
+  isPlaybackStalled,
   MAX_PLAYBACK_RECOVERY_ATTEMPTS,
+  STALL_CHECK_INTERVAL_MS,
   withRetryToken,
 } from "~/utils/playbackRecovery";
 import {
@@ -412,6 +415,8 @@ function GlobalAudioBridge() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const expectedSourceChangeRef = useRef(false);
   const interruptionConfirmedRef = useRef(false);
+  /** Last time the element made progress; the stall watchdog reads it. */
+  const lastProgressAtRef = useRef(0);
   const nowPlayingRef =
     useRef<ReturnType<typeof usePlayerStore.getState>["nowPlaying"]>(null);
   const retryRef = useRef<{
@@ -617,7 +622,6 @@ function GlobalAudioBridge() {
     if (element) {
       element.autoplay = false;
       element.preload = "none";
-      element.crossOrigin = "anonymous";
     }
     setAudioElement(element ?? null);
 
@@ -633,7 +637,12 @@ function GlobalAudioBridge() {
     if (!audio) return;
 
     const handleEnded = () => setIsPlaying(false);
+    const handleProgress = () => {
+      lastProgressAtRef.current = Date.now();
+    };
     const handleError = () => {
+      // MEDIA_ERR_ABORTED is our own pause or source swap, not a dead station.
+      if (audio.error?.code === 1) return;
       setIsPlaying(false);
       const current = nowPlayingRef.current;
       if (!current) return;
@@ -651,6 +660,7 @@ function GlobalAudioBridge() {
     };
     const handlePlaying = () => {
       expectedSourceChangeRef.current = false;
+      lastProgressAtRef.current = Date.now();
       const current = nowPlayingRef.current;
       if (!current) return;
       clearFailure(current.uuid);
@@ -672,6 +682,7 @@ function GlobalAudioBridge() {
       if (!previousPlaybackIntent && nextPlaybackIntent) {
         window.clearTimeout(pauseCheck);
         interruptionConfirmedRef.current = false;
+        lastProgressAtRef.current = Date.now();
       }
       previousPlaybackIntent = nextPlaybackIntent;
     });
@@ -714,11 +725,81 @@ function GlobalAudioBridge() {
       }
     };
 
+    // A live stream that dies has no `error`: on mobile a WiFi→LTE switch or a
+    // tunnel often leaves the element "playing" but silent. Watch progress and
+    // retry once; if the retry budget is spent, skip like any other failure.
+    const stallCheck = window.setInterval(() => {
+      const current = nowPlayingRef.current;
+      const stateNow = usePlayerStore.getState();
+      if (!current || !stateNow.isPlaying) return;
+      if (
+        !isPlaybackStalled({
+          isPlaying: stateNow.isPlaying,
+          paused: audio.paused,
+          hidden: document.hidden,
+          lastProgressAt: lastProgressAtRef.current,
+          now: Date.now(),
+        })
+      ) {
+        return;
+      }
+      lastProgressAtRef.current = Date.now();
+      const url = current.streamUrl ?? current.url ?? "";
+      const reason = isMixedContentStream(url, window.location.protocol)
+        ? "mixed_content"
+        : current.hls
+        ? "hls_stream"
+        : "timeout";
+      if (tryPlaybackRecovery(current, reason)) return;
+      markFailed(current.uuid, reason);
+      autoSkipToNext(current, reason);
+    }, STALL_CHECK_INTERVAL_MS);
+
+    // Coming back onto a network: give the station a fresh retry budget.
+    const handleOnline = () => {
+      const current = nowPlayingRef.current;
+      const stateNow = usePlayerStore.getState();
+      if (!current || !stateNow.isPlaying) return;
+      lastProgressAtRef.current = Date.now();
+      if (!audio.paused && audio.readyState >= 2) return;
+      retryRef.current.stationId = current.uuid;
+      retryRef.current.attempts = 0;
+      const url = current.streamUrl ?? current.url ?? "";
+      const reason = isMixedContentStream(url, window.location.protocol)
+        ? "mixed_content"
+        : current.hls
+        ? "hls_stream"
+        : "timeout";
+      if (tryPlaybackRecovery(current, reason)) return;
+      void audio.play().catch(() => undefined);
+    };
+    // Timers throttle in the background; do not read that as a stall.
+    const handleVisibility = () => {
+      if (!document.hidden) lastProgressAtRef.current = Date.now();
+    };
+    // Safari restores from the back/forward cache with the element paused while
+    // our playback intent still says playing. Nudge it once; a blocked gesture
+    // is left to the dock's Play button.
+    const handlePageShow = (event: PageTransitionEvent) => {
+      if (!event.persisted) return;
+      lastProgressAtRef.current = Date.now();
+      const stateNow = usePlayerStore.getState();
+      if (!nowPlayingRef.current || !stateNow.isPlaying) return;
+      if (audio.paused) void audio.play().catch(() => undefined);
+    };
+
     audio.addEventListener("ended", handleEnded);
     audio.addEventListener("error", handleError);
     audio.addEventListener("playing", handlePlaying);
     audio.addEventListener("playing", handleResumed);
     audio.addEventListener("pause", handlePause);
+    audio.addEventListener("progress", handleProgress);
+    audio.addEventListener("timeupdate", handleProgress);
+    audio.addEventListener("loadeddata", handleProgress);
+    audio.addEventListener("canplay", handleProgress);
+    window.addEventListener("online", handleOnline);
+    document.addEventListener("visibilitychange", handleVisibility);
+    window.addEventListener("pageshow", handlePageShow);
 
     return () => {
       audio.removeEventListener("ended", handleEnded);
@@ -726,6 +807,14 @@ function GlobalAudioBridge() {
       audio.removeEventListener("playing", handlePlaying);
       audio.removeEventListener("playing", handleResumed);
       audio.removeEventListener("pause", handlePause);
+      audio.removeEventListener("progress", handleProgress);
+      audio.removeEventListener("timeupdate", handleProgress);
+      audio.removeEventListener("loadeddata", handleProgress);
+      audio.removeEventListener("canplay", handleProgress);
+      window.removeEventListener("online", handleOnline);
+      document.removeEventListener("visibilitychange", handleVisibility);
+      window.removeEventListener("pageshow", handlePageShow);
+      window.clearInterval(stallCheck);
       window.clearTimeout(pauseCheck);
       unsubscribeFromPlaybackIntent();
     };
@@ -828,6 +917,7 @@ function GlobalAudioBridge() {
     if (!nowPlaying) {
       audio.pause();
       audio.removeAttribute("src");
+      audio.load();
       return;
     }
 
@@ -837,6 +927,7 @@ function GlobalAudioBridge() {
     if (!streamUrl) {
       audio.pause();
       audio.removeAttribute("src");
+      audio.load();
       return;
     }
 
@@ -850,6 +941,7 @@ function GlobalAudioBridge() {
       setIsPlaying(false);
       audio.pause();
       audio.removeAttribute("src");
+      audio.load();
       autoSkipToNext(nowPlaying, skipReason);
       return;
     }
@@ -915,8 +1007,19 @@ function GlobalAudioBridge() {
         .then(() => {
           clearFailure(nowPlaying.uuid);
         })
-        .catch(() => {
+        .catch((error: unknown) => {
+          const kind = classifyPlayRejection(error);
+          // Our own pause/swap, or a browser autoplay policy: not a dead station.
+          if (kind === "aborted") return;
           setIsPlaying(false);
+          if (kind === "blocked") {
+            setNotice({
+              kind: "info",
+              message: playbackNoticeCopy("tap-play"),
+              durationMs: 4000,
+            });
+            return;
+          }
           const url = nowPlaying.streamUrl ?? nowPlaying.url ?? "";
           const reason = isMixedContentStream(url, window.location.protocol)
             ? "mixed_content"
