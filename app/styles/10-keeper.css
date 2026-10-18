@@ -237,3 +237,47 @@
   .ew-counter-moves > *:nth-child(2) { animation-delay: .04s; }
   .ew-counter-moves > *:nth-child(3) { animation-delay: .08s; }
 }
+
+/* ---- The roaming keeper (wider screens, KeeperRoam.tsx). He walks in the
+   document (absolute from its origin, so he scrolls with the page) and sits
+   under the header (30) and the dock (40), so he can never cover the
+   transport. Walk = transform transition; the wiggle, bob and hop are on the
+   body inside. Reduced motion: he jumps, no wiggle, no bob. */
+.ew-roam { position: absolute; top: 0; left: 0; z-index: 29; width: 104px; transition: opacity .2s ease; will-change: transform; pointer-events: none; }
+/* Only a walk glides; following a scroll or a layout shift is instant. */
+.ew-roam[data-walking] { transition: transform 1.1s cubic-bezier(.45,.05,.3,1), opacity .2s ease; }
+.ew-roam[data-away] { visibility: hidden; opacity: 0; }
+:root:has(.rp-overlay) .ew-roam { visibility: hidden; opacity: 0; }
+.ew-roam-body { display: block; width: 104px; height: 104px; padding: 0; border: 0; background: transparent; cursor: pointer; pointer-events: auto; }
+.ew-roam-body:focus-visible { outline: 1px solid var(--ew-foil); outline-offset: 2px; }
+.ew-roam-sprite { display: block; width: 100%; height: 100%; object-fit: contain; image-rendering: pixelated; transition: transform .25s ease; user-select: none; -webkit-user-drag: none; }
+.ew-roam-shadow { display: block; width: 60px; height: 8px; margin: -6px auto 0; border-radius: 50%; background: var(--ew-ink); opacity: .35; }
+.ew-roam-say { position: absolute; bottom: 24px; left: calc(100% + 4px); width: 288px; pointer-events: none; }
+.ew-roam[data-flip] .ew-roam-say { right: calc(100% + 4px); left: auto; }
+.ew-roam[data-below] .ew-roam-say { top: 8px; bottom: auto; }
+.ew-roam-bubble { position: relative; display: grid; gap: 6px; padding: 10px 34px 12px 12px; border: 1px solid var(--ew-foil-line); background: var(--ew-dock); pointer-events: auto; }
+.ew-roam-bubble::after { content: ""; position: absolute; bottom: 18px; left: -6px; width: 10px; height: 10px; border-bottom: 1px solid var(--ew-foil-line); border-left: 1px solid var(--ew-foil-line); background: var(--ew-dock); transform: rotate(45deg); }
+.ew-roam[data-flip] .ew-roam-bubble::after { right: -6px; left: auto; transform: rotate(225deg); }
+.ew-roam[data-below] .ew-roam-bubble::after { top: 18px; bottom: auto; }
+.ew-roam-doing { margin: 0; color: var(--ew-ether); font: 500 9px/1.3 "Azeret Mono", ui-monospace, monospace; letter-spacing: .14em; text-transform: uppercase; }
+.ew-roam-line { margin: 0; color: var(--ew-bone); font: italic 400 17px/1.35 "Newsreader", "Iowan Old Style", serif; }
+.ew-roam-sub { margin: 0; color: var(--ew-dust); font: 400 13px/1.4 "Schibsted Grotesk", sans-serif; }
+.ew-roam-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+.ew-roam-act { display: inline-flex; align-items: center; min-height: 36px; padding: 0 12px; border: 1px solid var(--ew-ghost); background: transparent; color: var(--ew-bone); font: 400 13px/1.2 "Schibsted Grotesk", sans-serif; text-decoration: none; cursor: pointer; }
+.ew-roam-act[data-primary] { border-color: var(--ew-lacquer); background: var(--ew-lacquer); color: var(--ew-on-lacquer); font: italic 400 15px/1.2 "Newsreader", serif; }
+.ew-roam-act:hover, .ew-roam-act:focus-visible { border-color: var(--ew-foil); }
+.ew-roam-x { position: absolute; top: 0; right: 0; width: 32px; height: 32px; border: 0; background: none; color: var(--ew-dust); font: 18px/1 "Azeret Mono", monospace; cursor: pointer; }
+.ew-roam-x:hover, .ew-roam-x:focus-visible { color: var(--ew-foil); }
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes ew-roam-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+  @keyframes ew-roam-walk { 0%, 100% { transform: translateY(0) rotate(-4deg); } 50% { transform: translateY(-7px) rotate(4deg); } }
+  @keyframes ew-roam-hop { 0% { transform: translateY(0); } 35% { transform: translateY(-30px) scale(1.04); } 70% { transform: translateY(0) scale(1, .92); } 100% { transform: translateY(0); } }
+  @keyframes ew-roam-pop { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+  .ew-roam-body { animation: ew-roam-bob 2.4s ease-in-out infinite; }
+  .ew-roam[data-walking] .ew-roam-body { animation: ew-roam-walk .32s ease-in-out infinite; }
+  .ew-roam[data-hop] .ew-roam-body { animation: ew-roam-hop .55s ease-out 2; }
+  .ew-roam-bubble { animation: ew-roam-pop .28s var(--ew-settle) both; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ew-roam, .ew-roam[data-walking], .ew-roam-sprite { transition: none; }
+}

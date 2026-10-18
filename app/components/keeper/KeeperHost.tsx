@@ -3,20 +3,25 @@ import { useKeeperStore } from "~/state/keeperStore";
 import { usePlayerStore } from "~/state/playerStore";
 import { preloadKeeperSprites } from "./Keeper";
 import { KeeperFloat } from "./KeeperFloat";
+import { KeeperRoam } from "./KeeperRoam";
+import { useKeeperRoamDemo } from "./keeperRoamDemo";
 import { KeeperSheet, useKeeperAskEnabled } from "./KeeperSheet";
 import { useKeeperMurmurs } from "./useKeeperMurmurs";
 import { useKeeperDelight, useKeeperView } from "./useKeeper";
 
 /**
  * The keeper, mounted once at the root beside the dock: the floating figure
- * and its sheet. It reads the Room; it never writes to it and never touches
+ * (or, on wider screens when a page sets him roaming, the walking one) and
+ * its sheet. It reads the Room; it never writes to it and never touches
  * playback, so the audio path cannot wait on it.
  */
 export function KeeperHost() {
   useKeeperDelight();
   useEffect(preloadKeeperSprites, []);
   const view = useKeeperView();
-  useKeeperMurmurs(view, useKeeperAskEnabled());
+  const askEnabled = useKeeperAskEnabled();
+  useKeeperMurmurs(view, askEnabled);
+  useKeeperRoamDemo();
   const closeSheet = useKeeperStore((state) => state.closeSheet);
   const land = useKeeperStore((state) => state.land);
   const stationId = usePlayerStore((state) => state.nowPlaying?.uuid ?? null);
@@ -35,6 +40,7 @@ export function KeeperHost() {
   return (
     <>
       <KeeperFloat view={view} />
+      <KeeperRoam view={view} askEnabled={askEnabled} />
       {view.sheetOpen && view.facts ? (
         <KeeperSheet view={{ ...view, facts: view.facts }} />
       ) : null}

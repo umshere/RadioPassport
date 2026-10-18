@@ -155,6 +155,40 @@ export const VOICE = {
   factsSource: "From Wikipedia ↗",
   moreFacts: (topic: string) => `A few facts about ${topic}`,
   askFacts: (topic: string) => `Tell me a few facts about ${topic}`,
+
+  /* ---- The roaming keeper (wider screens): walks the page, says a line. ---- */
+  roamPoke: "Poke the keeper",
+  roamPokes: [
+    "Careful. That’s my antenna.",
+    "Still here. Still listening.",
+    "I don’t do tricks. I do stamps.",
+    "If you’re restless, I know a station somewhere it’s morning.",
+    "Shh. I think this is the good part.",
+  ],
+  roamAskMe: "Ask me",
+  roamDismiss: "Hush",
+  roamMurmurMore: "Tell me more",
+  /** Demo walk (?roam=demo only) until the desk and home give him real stops. */
+  roamDemo: {
+    onair: "I’ll sit with the music a while.",
+    place: "Same sky. Someone else’s hour.",
+    pass: "Stay a minute and I’ll stamp it.",
+    notebook: "Let me see what’s in my notebook.",
+    notebookSub: "Anything I add is mine, not the station’s word.",
+    next: "There’s always another gate.",
+    ask: "Ask me where, when, who.",
+    gates: "Pick a city. It’s live there now.",
+    board: "These are the stations you can board.",
+  },
+  /** The small mono line over his bubble: what he is doing. */
+  roamDoing: {
+    idle: "At the desk",
+    listening: "Listening with you",
+    speaking: "Talking",
+    searching: "Looking it up",
+    found: "Perked up",
+    travel: "On the move",
+  },
 } as const;
 
 /** "Dawn" → "morning", for the lines that say where the sun is. */
