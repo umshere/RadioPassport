@@ -1,5 +1,6 @@
 import { json, type ActionFunctionArgs } from "@remix-run/node";
 import { probeShelfStations } from "~/server/stations/probe";
+import { isPublicHttpUrl } from "~/server/http/publicUrl";
 import type { Station } from "~/types/radio";
 
 /** Bounds the live-probe fan-out to a small, leading shelf — never the full catalog. */
@@ -18,6 +19,10 @@ function isProbeRequestStation(value: unknown): value is ProbeRequestStation {
     typeof (value as { uuid?: unknown }).uuid === "string" &&
     (value as { uuid: string }).uuid.length > 0
   );
+}
+
+function probeUrl(entry: ProbeRequestStation): string {
+  return entry.streamUrl ?? entry.url ?? "";
 }
 
 function toProbeTarget(entry: ProbeRequestStation): Station {
@@ -54,6 +59,7 @@ export async function action({ request }: ActionFunctionArgs) {
 
   const targets = rawStations
     .filter(isProbeRequestStation)
+    .filter((entry) => isPublicHttpUrl(probeUrl(entry)))
     .slice(0, MAX_PROBE_TARGETS)
     .map(toProbeTarget);
 
