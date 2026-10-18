@@ -16,7 +16,7 @@ import {
   type EnvHour,
 } from "./envModel";
 
-const LANDING_MS = 6000;
+const LANDING_MS = 1800;
 
 type Lite = "on" | undefined;
 
@@ -35,6 +35,7 @@ export function EnvLayer() {
   const [lite, setLite] = useState<Lite>(undefined);
   const [saver, setSaver] = useState(false);
   const [ready, setReady] = useState(false);
+  const [farReady, setFarReady] = useState(false);
   const [arrived, setArrived] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const prevHour = useRef<EnvHour | null>(null);
@@ -58,11 +59,23 @@ export function EnvLayer() {
       (navigator.hardwareConcurrency !== undefined && navigator.hardwareConcurrency <= 4);
     setLite(weak ? "on" : undefined);
     setSaver(Boolean(nav.connection?.saveData) || window.matchMedia("(prefers-reduced-data: reduce)").matches);
-    // Sprites arrive after the page is up.
-    const idle = (window as Window & { requestIdleCallback?: (cb: () => void) => number }).requestIdleCallback;
-    const id = idle ? idle(() => setReady(true)) : window.setTimeout(() => setReady(true), 600);
+    // The near light is the LCP element: show it on the next frame, not after
+    // idle, so the landing can start as soon as the page is up. The far sprite
+    // is atmosphere and can still wait for idle.
+    const frame = requestAnimationFrame(() => setReady(true));
+    const idleWindow = window as Window & {
+      requestIdleCallback?: (cb: () => void) => number;
+      cancelIdleCallback?: (id: number) => void;
+    };
+    const idle = idleWindow.requestIdleCallback;
+    let idleId: number | undefined;
+    let fallbackId: number | undefined;
+    if (idle) idleId = idle(() => setFarReady(true));
+    else fallbackId = window.setTimeout(() => setFarReady(true), 600);
     return () => {
-      if (!idle) window.clearTimeout(id);
+      cancelAnimationFrame(frame);
+      if (idleId !== undefined) idleWindow.cancelIdleCallback?.(idleId);
+      if (fallbackId !== undefined) window.clearTimeout(fallbackId);
     };
   }, []);
 
@@ -324,15 +337,17 @@ export function EnvLayer() {
       style={style}
     >
       <div className="ew-env-tint" />
-      {ready && !saver ? (
+      {!saver ? (
         <div className="ew-env-rig">
-          <span className="ew-env-layer is-far" data-gust="far">
-            <span className="ew-env-bloom">
-            <span className="ew-env-breath">
-              <span className="ew-env-img" style={{ maskImage: "url(/env/fleck-far.webp)", WebkitMaskImage: "url(/env/fleck-far.webp)" }} />
+          {farReady ? (
+            <span className="ew-env-layer is-far" data-gust="far">
+              <span className="ew-env-bloom">
+              <span className="ew-env-breath">
+                <span className="ew-env-img" style={{ maskImage: "url(/env/fleck-far.webp)", WebkitMaskImage: "url(/env/fleck-far.webp)" }} />
+              </span>
+              </span>
             </span>
-            </span>
-          </span>
+          ) : null}
           <span className="ew-env-layer is-near" data-gust="near">
             <span className="ew-env-bloom">
             <span className="ew-env-breath">

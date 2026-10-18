@@ -21,7 +21,7 @@
     --ew-hour-midday: #EFE3CE;
     --ew-hour-dusk: #E07840;
     --ew-hour-night: #A79BEC;
-    --ew-on-lacquer: #E8DFD0;
+    --ew-on-lacquer: #FBF6EC;
     --ew-on-ink: #E8DFD0;
     /* Lacquer as small text: the seal red is 3.84:1 on ink, so text uses this lift (5.1:1). */
     --ew-lacquer-text: #E5615C;
@@ -70,7 +70,7 @@
     --ew-hour-midday: #5F5030;
     --ew-hour-dusk: #A8461A;
     --ew-hour-night: #4B3FA0;
-    --ew-on-lacquer: #E8DFD0;
+    --ew-on-lacquer: #FBF6EC;
     --ew-on-ink: #E8DFD0;
     --ew-lacquer-text: #B5302F;
     --ew-header: rgba(242, 235, 225, .90);

@@ -361,13 +361,6 @@ html, body {
 @keyframes ew-flap-in { from { transform: rotateX(90deg); } to { transform: rotateX(0deg); } }
 .ew-flap-line.is-meta .ew-flap { height: 1.05em; background: transparent; font-size: 10px; letter-spacing: .04em; color: var(--ew-dust); }
 .ew-flap-line.is-meta .ew-flap::after { opacity: .4; }
-/* The cover place-name is the board at headline size: cells inherit the
-   coverline scale so the flip reads across the room, the line stays inline
-   so the flag rides beside it, and the wider perspective keeps the drop
-   gentle at display sizes. */
-.ew-cover .ew-coverline .ew-flap-line { display: inline-flex; max-width: 100%; font-style: normal; vertical-align: -.14em; }
-.ew-cover .ew-coverline .ew-flap { width: .68em; height: 1.04em; margin-left: .03em; font-size: 1em; perspective: 5em; border-radius: .045em; }
-
 /* Overlay headers are boards too: Atlas and the country name flip at the h2
    scale, upright against the serif italic around them. */
 .rp-overlay h2 .ew-flap-line { display: inline-flex; max-width: 100%; font-style: normal; vertical-align: -.12em; }

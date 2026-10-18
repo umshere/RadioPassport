@@ -1,4 +1,4 @@
-import { json, type LinksFunction } from "@remix-run/node";
+import { json, type LinkDescriptor, type LinksFunction } from "@remix-run/node";
 import type { ShouldRevalidateFunction } from "@remix-run/react";
 import { Eyebrow } from "~/components/ui/Eyebrow";
 import {
@@ -85,6 +85,16 @@ export const shouldRevalidate: ShouldRevalidateFunction = () => false;
 
 export const links: LinksFunction = () => [
   { rel: "stylesheet", href: stylesheet },
+  // The near sprite is the home's largest paint: start it with the document,
+  // not after hydration.
+  {
+    rel: "preload",
+    as: "image",
+    type: "image/webp",
+    href: "/env/fleck-near.webp",
+    // React 18 has no fetchPriority prop; the lowercase attribute is what ships.
+    fetchpriority: "high",
+  } as LinkDescriptor,
   // Our own copies of the three typefaces: no request ever leaves for Google.
   { rel: "stylesheet", href: "/fonts/site/fonts.css" },
   ...[

@@ -7,7 +7,6 @@
 @layer components {
   .ew-keeper {
     --keeper-size: 64px;
-    --keeper-ember: var(--ew-hour-midday);
     position: relative;
     display: block;
     width: var(--keeper-size);
@@ -15,25 +14,6 @@
     flex: none;
   }
   .ew-keeper[data-size="sheet"] { --keeper-size: 48px; }
-  .ew-keeper[data-mood="drowsy"] { --keeper-ember: var(--ew-hour-night); }
-  .ew-keeper[data-mood="bright"] { --keeper-ember: var(--ew-hour-dawn); }
-  .ew-keeper[data-mood="warm"] { --keeper-ember: var(--ew-hour-dusk); }
-  .ew-keeper-svg { display: block; width: 100%; height: 100%; overflow: visible; }
-  .ew-keeper-coat { fill: var(--ew-leather); stroke: var(--ew-foil-line-strong); stroke-width: 1; stroke-linejoin: miter; }
-  .ew-keeper-collar { fill: none; stroke: var(--keeper-ember); stroke-width: 1.5; stroke-linejoin: miter; }
-  .ew-keeper-seal { fill: var(--ew-lacquer); stroke: var(--ew-foil); stroke-width: 1.25; }
-  .ew-keeper-seal-ring { fill: none; stroke: var(--ew-on-lacquer); stroke-opacity: .35; stroke-width: .75; stroke-dasharray: 1.5 1.5; }
-  .ew-keeper-band { fill: none; stroke: var(--ew-foil); stroke-width: 1.5; }
-  .ew-keeper-cup { fill: var(--ew-foil); }
-  .ew-keeper-eyes, .ew-keeper-eye, .ew-keeper-mouth { transform-box: fill-box; transform-origin: 50% 50%; }
-  .ew-keeper-eye { fill: var(--ew-on-lacquer); transition: transform .16s steps(2, end); }
-  .ew-keeper-smile { fill: none; stroke: var(--ew-on-lacquer); stroke-width: 1.1; stroke-linecap: square; opacity: 0; }
-  .ew-keeper-mouth { fill: var(--ew-on-lacquer); opacity: .75; }
-  .ew-keeper-head { transform-box: view-box; transform-origin: 32px 27px; transition: transform .3s var(--ew-settle); }
-  .ew-keeper-mic { stroke: var(--ew-dust); stroke-width: 1; }
-  .ew-keeper-mic-head { fill: var(--ew-dust); }
-  .ew-keeper-desk { stroke: var(--ew-foil-line-strong); stroke-width: 1; }
-  .ew-keeper-think rect { fill: var(--ew-foil); opacity: 0; }
 
   /* The desk plate: a three-cell split-flap (FlipBoard, meta size). */
   .ew-keeper-plate {
@@ -49,59 +29,6 @@
     pointer-events: none;
   }
   .ew-keeper-plate .ew-flap-line.is-meta .ew-flap { width: .74em; height: 1.1em; font-size: 1em; letter-spacing: 0; color: var(--ew-foil); }
-
-  /* Poses — static, so reduced motion still reads every state. */
-  .ew-keeper[data-mood="drowsy"]:not([data-state="delight"]):not([data-state="sleeping"]) .ew-keeper-eye { transform: scaleY(.6); }
-  .ew-keeper[data-state="listening"] .ew-keeper-head { transform: rotate(-6deg); }
-  .ew-keeper[data-state="listening"] .ew-keeper-eye { transform: scaleY(1.12); }
-  .ew-keeper[data-state="thinking"] .ew-keeper-eyes { transform: translate(1.2px, -1.4px); }
-  .ew-keeper[data-state="thinking"] .ew-keeper-think rect { opacity: .9; }
-  .ew-keeper[data-state="speaking"] .ew-keeper-mouth { transform: scaleY(2.4); }
-  /* Sleeping: the eye flaps settle half-closed, the head leans to the desk. */
-  .ew-keeper[data-state="sleeping"] .ew-keeper-eye { transform: scaleY(.3) translateY(1.6px); }
-  .ew-keeper[data-state="sleeping"] .ew-keeper-head { transform: rotate(6deg) translateY(1px); }
-  .ew-keeper[data-state="sleeping"] .ew-keeper-mouth { opacity: .35; }
-  .ew-keeper[data-state="delight"] .ew-keeper-eyes { opacity: 0; }
-  .ew-keeper[data-state="delight"] .ew-keeper-smile { opacity: 1; }
-
-  @media (prefers-reduced-motion: no-preference) {
-    /* A blink is a flap drop: shut and open in single steps, no ease. */
-    @keyframes ew-keeper-blink {
-      0%, 93%, 100% { transform: scaleY(1); }
-      94%, 97% { transform: scaleY(.08); }
-    }
-    .ew-keeper[data-state="idle"] .ew-keeper-eyes,
-    .ew-keeper[data-state="listening"] .ew-keeper-eyes {
-      animation: ew-keeper-blink 5.2s steps(1, end) infinite;
-    }
-    .ew-keeper[data-mood="drowsy"][data-state="idle"] .ew-keeper-eyes { animation-duration: 7.4s; }
-    /* Thought lamps light in turn, like bulbs on a board. */
-    @keyframes ew-keeper-lamp {
-      0%, 100% { opacity: .15; }
-      33% { opacity: .95; }
-    }
-    .ew-keeper[data-state="thinking"] .ew-keeper-think rect { animation: ew-keeper-lamp .9s steps(1, end) infinite; }
-    .ew-keeper[data-state="thinking"] .ew-keeper-think rect:nth-child(2) { animation-delay: .3s; }
-    .ew-keeper[data-state="thinking"] .ew-keeper-think rect:nth-child(3) { animation-delay: .6s; }
-    /* The mouth is a flap too: open, shut, in steps. */
-    @keyframes ew-keeper-say {
-      0%, 100% { transform: scaleY(2.4); }
-      50% { transform: scaleY(.9); }
-    }
-    .ew-keeper[data-state="speaking"] .ew-keeper-mouth { animation: ew-keeper-say .36s steps(1, end) infinite; }
-    /* Delight: one quick full-flap roll of the head, then it rests. */
-    @keyframes ew-keeper-roll {
-      0% { transform: scaleY(1); }
-      25% { transform: scaleY(0); }
-      50% { transform: scaleY(-1); }
-      75% { transform: scaleY(0); }
-      100% { transform: scaleY(1); }
-    }
-    .ew-keeper[data-state="delight"] .ew-keeper-head { animation: ew-keeper-roll .48s var(--ew-settle) 1 both; }
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .ew-keeper-head, .ew-keeper-eye { transition: none; }
-  }
 
   .ew-keeper-button {
     display: grid;
@@ -228,7 +155,6 @@
 .ew-keeper { background: none; }
 .ew-keeper-button:focus-visible .ew-keeper { outline: 1px solid var(--ew-foil); outline-offset: 2px; }
 .ew-keeper-sprite { display: block; width: 100%; height: 100%; object-fit: cover; user-select: none; -webkit-user-drag: none; }
-.ew-keeper-svg { display: none; }
 @media (prefers-reduced-motion: no-preference) {
   @keyframes ew-keeper-flapin {
     0% { transform: scaleY(.08); opacity: .4; }

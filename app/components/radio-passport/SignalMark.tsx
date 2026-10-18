@@ -10,7 +10,7 @@ type SignalMarkProps = {
 export function SignalMark({ size = 28 }: SignalMarkProps) {
   return (
     <img
-      src="/elsewhere-mark.png"
+      src="/elsewhere-mark.webp"
       alt=""
       width={size}
       height={size}

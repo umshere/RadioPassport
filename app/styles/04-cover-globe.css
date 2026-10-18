@@ -40,16 +40,6 @@
      user (WCAG 1.4.4); every other gesture belongs to the globe, so the aim
      never fights the page. */
 
-  .ew-cover {
-    position: absolute;
-    left: 28px;
-    right: 28px;
-    bottom: 28px;
-    pointer-events: none;
-    z-index: 2;
-  }
-  .ew-cover .ew-coverline { margin: 0 0 8px; font-size: clamp(48px, 7vw, 84px); }
-
   .rp-overlay {
     position: fixed;
     inset: 0;

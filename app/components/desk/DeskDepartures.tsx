@@ -29,13 +29,13 @@ export function DeskDepartures({ rows, children }: { rows: Departure[]; children
                   className="ew-board-row"
                   data-hour={solar?.toLowerCase() ?? "unknown"}
                   onClick={() => startStation(station, { preserveQueue: true, autoPlay: true })}
-                  aria-label={`${VOICE.board}: ${tidyStationName(station.name)}, ${where}${clock ? `, ${clock} there` : ""}`}
+                  aria-label={`${where}, ${tidyStationName(station.name)}${shared.length ? ` · ${shared.join(" · ")}` : ""}${clock ? `, ${clock} there` : ""}`}
                 >
                   <span className="ew-board-time" aria-hidden="true">
                     <FlipBoard text={clock ?? "--:--"} className="is-board" />
                   </span>
                   <span className="ew-board-dest">
-                    <b>{where}</b>
+                    <b>{where}</b>{" "}
                     <small>
                       {tidyStationName(station.name)}
                       {shared.length ? ` · ${shared.join(" · ")}` : ""}

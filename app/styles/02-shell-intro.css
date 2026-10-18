@@ -23,18 +23,6 @@
     line-height: 1.35;
     text-transform: uppercase;
   }
-  .rp-home-header {
-    position: relative;
-    z-index: 30;
-    display: flex;
-    align-items: center;
-    gap: 18px;
-    min-height: 56px;
-    padding: 8px max(20px, calc((100vw - 1360px) / 2));
-    border-bottom: 1px solid var(--ew-rule);
-    background: var(--ew-header);
-    backdrop-filter: blur(20px);
-  }
   .rp-intent {
     display: flex;
     align-items: center;
@@ -189,7 +177,7 @@
     font: 500 10px/1 "Azeret Mono", monospace;
     letter-spacing: .22em;
     text-transform: uppercase;
-    color: rgba(232, 223, 208, .8);
+    color: var(--ew-on-lacquer);
   }
   .ew-land-city {
     font: italic 400 17px/1.2 "Newsreader", serif;

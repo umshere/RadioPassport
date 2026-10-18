@@ -64,7 +64,7 @@ export default function SiteBar() {
               navigate(homeWithPassportHref())
             )
           }
-          aria-label={`Open passport, ${count} places stamped`}
+          aria-label={`Open passport ${String(count).padStart(2, "0")} — ${count} places stamped`}
         >
           Passport <b>{String(count).padStart(2, "0")}</b>
         </Button>

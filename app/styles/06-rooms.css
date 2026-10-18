@@ -1,11 +1,4 @@
 @layer components {
-  /* Desktop fold: the well's reserved letter-height pushed the station board
-     below the fold in every state that had room to spare. On desktop the
-     letter keeps only the height its words need; the board rides right
-     beneath the horizon. Mobile keeps the reservation (the sheet floats). */
-  @media (min-width: 961px) {
-    .ew-horizon { margin-top: 18px; }
-  }
   .ew-letter:not(.is-open) .ew-caption {
     display: -webkit-box;
     overflow: hidden;
@@ -80,9 +73,6 @@
      into the night sky, the city name carries across. Browsers without the
      View Transitions API keep the Passage rise above. */
 
-  .ew-theater .ew-coverline {
-    view-transition-name: vt-city;
-  }
   ::view-transition-old(root),
   ::view-transition-new(root) {
     animation-duration: 0.32s;
@@ -125,13 +115,6 @@
       --player-dock-clearance: 44px;
       padding-bottom: calc(var(--player-dock-clearance) + env(safe-area-inset-bottom, 0px));
     }
-    .rp-home-header {
-      position: relative;
-      flex-wrap: wrap;
-      gap: 10px;
-      min-height: 52px;
-      padding: calc(10px + env(safe-area-inset-top, 0px)) 14px 10px;
-    }
     .rp-passport-button { margin-left: auto; padding: 0 10px; }
     .rp-surprise { padding: 0 8px; letter-spacing: .1em; }
 
@@ -143,31 +126,11 @@
     .rp-home.is-seeking #live-board {
       scroll-margin-top: 0;
     }
-    .ew-cover {
-      /* The cover overlays the globe's lower crescent, as on desktop: the
-         rows it would push down (land button, hour rail) must stand above
-         the board sheet's peek on the first phone screen. */
-      position: absolute;
-      left: 16px;
-      right: 16px;
-      bottom: 10px;
-      min-height: 0;
-      padding: 0;
-    }
-    /* Readability scrim between the particle field and the coverline. */
-
-    .ew-cover .ew-coverline {
-      overflow: hidden;
-      font-size: clamp(28px, 9vw, 36px);
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
     /* The globe tip rides taps on the phone too: the tapped land names
        itself before the cover does. Smaller card, same ink. */
 
     .rp-chip,
 .ew-atlas { flex: none; min-height: 44px; }
-    .ew-horizon { gap: 12px; }
     .ew-hours { max-width: none; }
     .ew-atlas { margin-left: 0; padding-left: 10px; }
 

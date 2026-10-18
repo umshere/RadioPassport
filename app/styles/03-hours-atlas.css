@@ -2,12 +2,6 @@
   /* The horizon as one pill rail: four icon stops, one glowing cursor.
      Each hour owns an ember hue; the lit stop glows in its own color while
      the cursor dot rides the track below. */
-  .ew-horizon {
-    display: flex;
-    align-items: flex-end;
-    gap: 20px;
-    margin-top: 26px;
-  }
   .ew-hours {
     --hour-hue: var(--ew-foil);
     position: relative;

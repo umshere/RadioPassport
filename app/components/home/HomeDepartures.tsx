@@ -119,7 +119,7 @@ export function HomeDepartures({
               type="button"
               className="ew-home-fresh"
               onClick={onShuffle}
-              aria-label="Show fresh stations"
+              aria-label={`${VOICE.homeFresh}: Show fresh stations`}
               title={VOICE.homeFresh}
             >
               <svg
@@ -201,7 +201,7 @@ export function HomeDepartures({
                     data-hour={solar?.toLowerCase() ?? "unknown"}
                     aria-current={live || undefined}
                     onClick={() => onPlay(station)}
-                    aria-label={`${VOICE.board}: ${name}, ${where}${clock ? `, ${clock} there` : ""}`}
+                    aria-label={`${name}, ${place}${clock ? `, ${clock} there` : ""}`}
                   >
                     <span className="ew-board-time" aria-hidden="true">
                       <FlipBoard text={clock ?? "--:--"} className="is-board" />
@@ -209,7 +209,7 @@ export function HomeDepartures({
                     </span>
                     <StationMark station={station} name={name} />
                     <span className="ew-board-dest">
-                      <b>{name}</b>
+                      <b>{name}</b>{" "}
                       <small>{place}</small>
                     </span>
                     <span className="ew-board-go" aria-hidden="true">

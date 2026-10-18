@@ -136,8 +136,11 @@ html.ew-atmosphere-shift .ew-env * { transition: none !important; animation: non
    stretched long, like a low sun. It sweeps once, smoothly, into the hour. */
 @media (prefers-reduced-motion: no-preference) {
   .ew-env:not([data-arrived]) .ew-env-rig { visibility: hidden; rotate: calc(var(--env-angle) + var(--env-nudge, 0deg) + 190deg); scale: 1 calc(var(--env-stretch) * 1.5); transition: none; }
-  .ew-env[data-landing] .ew-env-rig { transition: rotate 6s cubic-bezier(.16, .6, .18, 1), scale 6s cubic-bezier(.16, .6, .18, 1), translate 6s cubic-bezier(.16, .6, .18, 1); }
-  .ew-env[data-landing] .ew-env-tint { transition-duration: 6s; }
+  /* The near light is the LCP: show it in the pre-landing pose rather than
+     waiting for the sweep, so the largest paint is not held for 6s. */
+  .ew-env:not([data-arrived]) .ew-env-layer.is-near { visibility: visible; }
+  .ew-env[data-landing] .ew-env-rig { transition: rotate 1.8s cubic-bezier(.16, .6, .18, 1), scale 1.8s cubic-bezier(.16, .6, .18, 1), translate 1.8s cubic-bezier(.16, .6, .18, 1); }
+  .ew-env[data-landing] .ew-env-tint { transition-duration: 1.8s; }
 }
 
 /* Desktop: the light lives in the sky panel. The rest of the room stays black. */
