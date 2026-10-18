@@ -352,7 +352,6 @@
 .ew-ask-like { align-self: flex-start; margin-top: 12px; }
 .ew-onair-station { margin: 2px 0 0; font: 400 14px/1.35 "Schibsted Grotesk", sans-serif; color: var(--ew-dust); overflow-wrap: anywhere; }
 .ew-onair-station b { font-weight: 500; color: var(--ew-bone); }
-.ew-onair-label .ew-onair-src { color: inherit; }
 
 .ew-shelf { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
 .ew-shelf > * { flex: none; min-width: 0; }
@@ -383,7 +382,7 @@
   .ew-desk-more { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); align-items: start; gap: 20px; }
 }
 @container desk (min-width: 960px) {
-  .ew-desk-inner { --desk-head-room: 112px; box-sizing: border-box; width: 100%; max-width: 1320px; margin: 0 auto; gap: var(--desk-head-room); padding-top: var(--desk-head-room); }
+  .ew-desk-inner { --desk-head-room: 112px; box-sizing: border-box; width: 100%; max-width: 1320px; margin: 0 auto; gap: var(--desk-head-room); padding-top: 168px; }
   .ew-desk-top { grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) minmax(0, 1fr); }
   .ew-desk-top > .ew-ask { grid-column: auto; }
   .ew-desk-more { grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); }
