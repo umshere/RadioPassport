@@ -117,13 +117,14 @@ export type TypedIntent = {
 const MIX_PATTERN = /\b(mix|surprise|take me|anywhere|wander|random)\b/i;
 
 const HOUR_WORD_PATTERN =
-  /\b(tonight|night|dusk|sunset|evening|dawn|sunrise|morning|midday|noon|afternoon)\b/gi;
+  /\b(tonight|midnight|night|dusk|sunset|evening|dawn|sunrise|morning|midday|noon|afternoon)\b/gi;
 
 const HOUR_STRIP_PATTERN =
-  /\b(?:at\s+)?(tonight|night|dusk|sunset|evening|dawn|sunrise|morning|midday|noon|afternoon)\b/gi;
+  /\b(?:at\s+)?(tonight|midnight|night|dusk|sunset|evening|dawn|sunrise|morning|midday|noon|afternoon)\b/gi;
 
 const HOUR_BY_WORD: Record<string, SolarHour> = {
   tonight: "Night",
+  midnight: "Night",
   night: "Night",
   dusk: "Dusk",
   sunset: "Dusk",
