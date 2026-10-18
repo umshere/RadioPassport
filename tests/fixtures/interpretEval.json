@@ -218,10 +218,11 @@
   "language": null,
   "tag": [
    "ambient",
+   "chillout",
    "relaxing",
    "classical"
   ],
-  "hour": "Night",
+  "hour": null,
   "mix": false
  },
  {
@@ -290,7 +291,7 @@
  },
  {
   "prompt": "turkish evening",
-  "country": "Turkey",
+  "country": "Türkiye",
   "language": "Turkish",
   "tag": null,
   "hour": "Dusk",
@@ -300,7 +301,10 @@
   "prompt": "Urdu ghazals tonight",
   "country": null,
   "language": "Urdu",
-  "tag": "Classical",
+  "tag": [
+   "ghazal",
+   "classical"
+  ],
   "hour": "Night",
   "mix": false
  },
@@ -309,6 +313,7 @@
   "country": null,
   "language": null,
   "tag": [
+   "melancholy",
    "ballads",
    "blues",
    "acoustic"

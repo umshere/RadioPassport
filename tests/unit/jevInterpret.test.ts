@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi, afterEach } from "vitest";
 import {
   buildCandidates,
   confidenceFrom,
@@ -10,12 +10,22 @@ const env = { TYPESAFE_API_KEY: "k" } as unknown as NodeJS.ProcessEnv;
 const jev = (answers: unknown) =>
   (async () => new Response(JSON.stringify({ answers }), { status: 200 })) as unknown as typeof fetch;
 
+afterEach(() => {
+  vi.unstubAllEnvs();
+});
+
 describe("candidates", () => {
   it("come from the vocabulary, typo tolerant, capped", () => {
     const c = buildCandidates("japnese radio in Tokio at dusk");
     expect(c.languages).toContain("Japanese");
     const many = buildCandidates("india france spain japan brazil mexico nigeria germany");
     expect(many.countries.length).toBeLessThanOrEqual(6);
+  });
+  it("knows the misses from the live eval", () => {
+    expect(buildCandidates("turkish evening").countries).toContain("Türkiye");
+    expect(buildCandidates("Nigerian afrobeats").tags).toContain("afrobeats");
+    expect(buildCandidates("urdu ghazals").tags).toContain("ghazal");
+    expect(buildCandidates("I am feeling sad").tags).toContain("melancholy");
   });
   it("finds a city's country", () => {
     expect(buildCandidates("cairo at dusk").countries).toContain("Egypt");
@@ -34,7 +44,7 @@ describe("interpretWithJev", () => {
         country: { choice: "none" },
       }),
     });
-    expect(out).toMatchObject({ language: "Malayalam", country: null, wantsMix: false, confidence: "high", mood: "Dusk" });
+    expect(out).toMatchObject({ language: "Malayalam", country: null, wantsMix: false, confidence: "high", hour: "Dusk", mood: null });
   });
 
   it("falls back (null) on timeout without aborting", async () => {
@@ -67,7 +77,7 @@ describe("interpretWithJev", () => {
         tag: { choice: "none" },
       }),
     });
-    expect(out).toMatchObject({ wantsMix: true, country: null, language: null, tags: [], mood: null });
+    expect(out).toMatchObject({ wantsMix: true, country: null, language: null, tags: [], mood: null, hour: null });
   });
 
   it("maps confidence to named bands", () => {
@@ -79,8 +89,7 @@ describe("interpretWithJev", () => {
 
 describe("interpretPrompt with only TYPESAFE_API_KEY", () => {
   it("falls back to the extractor with fallback: true when Jev misses", async () => {
-    const prev = { ...process.env };
-    process.env.TYPESAFE_API_KEY = "k";
+    vi.stubEnv("TYPESAFE_API_KEY", "k");
     const realFetch = globalThis.fetch;
     globalThis.fetch = (async () => new Response("no", { status: 500 })) as unknown as typeof fetch;
     try {
@@ -89,12 +98,11 @@ describe("interpretPrompt with only TYPESAFE_API_KEY", () => {
       expect(res.intent.language).toBe("Tamil");
     } finally {
       globalThis.fetch = realFetch;
-      process.env = prev;
+      vi.unstubAllEnvs();
     }
   });
   it("reports fallback: false when Jev answers", async () => {
-    const prev = { ...process.env };
-    process.env.TYPESAFE_API_KEY = "k";
+    vi.stubEnv("TYPESAFE_API_KEY", "k");
     const realFetch = globalThis.fetch;
     globalThis.fetch = jev({ action: { choice: "mix_surprise", confidence: 0.9 } });
     try {
@@ -103,7 +111,7 @@ describe("interpretPrompt with only TYPESAFE_API_KEY", () => {
       expect(res.intent.wantsMix).toBe(true);
     } finally {
       globalThis.fetch = realFetch;
-      process.env = prev;
+      vi.unstubAllEnvs();
     }
   });
 });

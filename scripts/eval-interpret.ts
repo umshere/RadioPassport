@@ -88,10 +88,7 @@ for (const c of cases) {
     results.jev.push(score(c, intentFromExtractor(c.prompt), solarHourFromPrompt(c.prompt)));
     continue;
   }
-  // Jev's hour is not on InterpretedIntent; mood carries it when no tag was chosen.
-  const hourOf = jev.mood && ["Dawn", "Midday", "Dusk", "Night"].includes(jev.mood)
-    ? jev.mood
-    : solarHourFromPrompt(c.prompt);
+  const hourOf = jev.hour ?? null;
   const s = score(c, jev, hourOf);
   results.jev.push(s);
   const bad = FIELDS.filter((f) => !s[f]);
