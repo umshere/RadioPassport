@@ -3,7 +3,7 @@ import {
   STATION_LABEL_MIN_CONFIDENCE,
   stationLabelsFor,
   type StationLabelsFile,
-} from "~/services/catalog/stationLabels";
+} from "~/services/catalog/stationLabels.server";
 
 const a = (choice: string, confidence: number | null) => ({ choice, confidence });
 const file: StationLabelsFile = {

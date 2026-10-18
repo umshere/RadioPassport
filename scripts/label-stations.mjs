@@ -124,12 +124,18 @@ function pickAnswer(a) {
 
 async function callJev(body, apiKey) {
   const started = Date.now();
-  const res = await fetch(JEV_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-    body: JSON.stringify(body),
-    signal: AbortSignal.timeout(30000),
-  });
+  let res;
+  try {
+    res = await fetch(JEV_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(30000),
+    });
+  } catch {
+    // Network level (DNS, reset, timeout): worth retrying. Message omitted on purpose.
+    throw Object.assign(new Error("jev network error"), { network: true });
+  }
   const latencyMs = Date.now() - started;
   // Status only: never echo the body or headers.
   if (!res.ok) throw Object.assign(new Error(`jev ${res.status}`), { status: res.status });
@@ -143,7 +149,7 @@ async function callWithRetry(body, apiKey) {
       return await callJev(body, apiKey);
     } catch (e) {
       const status = e.status;
-      const retryable = status === undefined || status === 429 || status >= 500;
+      const retryable = e.network === true || status === 429 || (typeof status === "number" && status >= 500);
       if (!retryable || attempt >= 3) throw e;
       await new Promise((r) => setTimeout(r, 1000 * 2 ** attempt++));
     }

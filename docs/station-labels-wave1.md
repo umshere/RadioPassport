@@ -1,6 +1,6 @@
 # Station labels, wave 1 (200-station run, 2026-10-17)
 
-Offline Jev labelling: `scripts/label-stations.mjs` -> `app/data/stationLabels.json`, read via `app/services/catalog/stationLabels.ts`. Labels describe how a station presents itself (name + tags), never what is on air now. Never call Jev per visit.
+Offline Jev labelling: `scripts/label-stations.mjs` -> `app/data/stationLabels.json`, read via `app/services/catalog/stationLabels.server.ts (server-only)`. Labels describe how a station presents itself (name + tags), never what is on air now. Never call Jev per visit.
 
 Run: model jev-1.13.0, 200 stations, 200 ok, 0 failures, latency p50 120 ms / p95 193 ms / max 278 ms (concurrency 4).
 Usage: 509,669 input + 349,787 output tokens (about 2.5k in / 1.75k out per station, 5 questions each; output includes the full probability distribution). Full 500 pool is roughly 1.25M in / 0.87M out. Price per token not known to us; multiply by the TypeSafe rate.
