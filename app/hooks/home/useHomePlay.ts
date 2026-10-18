@@ -200,6 +200,7 @@ export function useHomePlay({
           setQuery(payload.intent.query);
         }
         const hour =
+          payload.intent.hour ??
           solarHourFromWord(payload.intent.mood) ??
           solarHourFromWord(payload.intent.query);
         if (hour) setHour(hour);
