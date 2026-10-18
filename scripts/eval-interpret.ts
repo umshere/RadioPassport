@@ -15,7 +15,7 @@ type Case = {
   prompt: string;
   country: string | null;
   language: string | null;
-  tag: string | null;
+  tag: string | string[] | null;
   hour: string | null;
   mix: boolean;
 };
@@ -31,7 +31,11 @@ function score(c: Case, i: InterpretedIntent, hourOf: string | null): Record<Fie
   return {
     country: eq(i.country, c.country),
     language: eq(i.language, c.language),
-    tag: eq(i.tags[0], c.tag),
+    tag: Array.isArray(c.tag)
+      ? c.tag.some((t) => eq(i.tags[0], t))
+      : c.tag === null
+        ? !i.tags[0]
+        : !!i.tags[0] && i.tags[0].toLowerCase().includes(c.tag.toLowerCase()),
     hour: eq(hourOf, c.hour),
     mix: i.wantsMix === c.mix,
   };

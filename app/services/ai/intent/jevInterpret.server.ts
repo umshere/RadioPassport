@@ -22,6 +22,8 @@ export const JEV_MEDIUM_CONFIDENCE = 0.45;
 export const JEV_INTERPRET_MIN_CONFIDENCE = 0.3;
 /** A field is only taken when its own answer is at least this sure. */
 export const JEV_FIELD_MIN_CONFIDENCE = 0.4;
+/** A country is only taken at this confidence: a language alone ("korean pop") is not a place. */
+export const JEV_COUNTRY_MIN_CONFIDENCE = 0.6;
 export const MAX_CANDIDATES_PER_FIELD = 6;
 
 export const INTERPRET_ACTIONS = {
@@ -151,6 +153,12 @@ function uniq(items: string[], cap: number) {
 }
 
 const NOISE_TAG = /^[#\d]|^\W/;
+/** Words that name the medium, not a genre: offering them makes Jev pick them. */
+const GENERIC_TAGS = new Set([
+  "radio", "music", "musica", "mix", "fm", "am", "station", "stations", "songs",
+  "song", "online", "live", "hits", "best", "estacion", "radios", "world",
+]);
+const isGenericTag = (t: string) => GENERIC_TAGS.has(norm(t));
 
 export function buildCandidates(prompt: string): InterpretCandidates {
   const phrase = norm(prompt);
@@ -179,12 +187,14 @@ export function buildCandidates(prompt: string): InterpretCandidates {
       moodTags.push(match ?? alias);
     }
   }
+  const tagPool = [
+    ...exact.tags,
+    ...fuzzyMatches(VOCAB.tags, tokens, phrase, (n) => NOISE_TAG.test(n)),
+    ...moodTags,
+  ].filter((t) => !isGenericTag(t));
+  const seenTags = new Set<string>();
   const tags = uniq(
-    [
-      ...exact.tags,
-      ...fuzzyMatches(VOCAB.tags, tokens, phrase, (n) => NOISE_TAG.test(n)),
-      ...moodTags,
-    ],
+    tagPool.filter((t) => !seenTags.has(norm(t)) && !!seenTags.add(norm(t))),
     MAX_CANDIDATES_PER_FIELD,
   );
   return { countries, languages, tags };
@@ -269,15 +279,15 @@ export function intentFromJevAnswers(
   if (actionConfidence !== null && actionConfidence < JEV_INTERPRET_MIN_CONFIDENCE) return null;
 
   // Only ever a value from the candidate list; `none`, junk and unsure picks drop to null.
-  const pick = (answer: Answer, allowed: string[]): string | null => {
+  const pick = (answer: Answer, allowed: string[], min = JEV_FIELD_MIN_CONFIDENCE): string | null => {
     if (!answer || typeof answer.choice !== "string") return null;
     if (!allowed.includes(answer.choice)) return null;
     const conf = num(answer.confidence);
-    if (conf !== null && conf < JEV_FIELD_MIN_CONFIDENCE) return null;
+    if (conf !== null && conf < min) return null;
     return answer.choice;
   };
 
-  const country = pick(answers?.country, c.countries);
+  const country = pick(answers?.country, c.countries, JEV_COUNTRY_MIN_CONFIDENCE);
   const language = pick(answers?.language, c.languages);
   const tag = pick(answers?.tag, c.tags);
   const hourChoice = answers?.hour?.choice;
