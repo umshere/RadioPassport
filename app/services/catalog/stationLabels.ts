@@ -11,7 +11,7 @@ import vocab from "~/data/stationLabelVocab.json";
  * An answer below this is treated as unknown. Chosen from the 200-station run
  * (see docs/station-labels-wave1.md); raise it for stricter shelves.
  */
-export const STATION_LABEL_MIN_CONFIDENCE = 0.5;
+export const STATION_LABEL_MIN_CONFIDENCE = 0.6;
 
 export type StationFormat = keyof typeof vocab.formats;
 export type StationFamily = keyof typeof vocab.families;
