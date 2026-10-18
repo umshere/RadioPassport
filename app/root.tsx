@@ -21,7 +21,7 @@ import {
   isStationTemporarilyUnavailable,
   useStationAvailabilityStore,
 } from "~/state/stationAvailabilityStore";
-import { isMixedContentStream } from "~/utils/streamHeuristics";
+import { isMixedContentStream, upgradeHttpToHttps } from "~/utils/streamHeuristics";
 import {
   nextProbeTargets,
   pickSkipCandidate,
@@ -41,6 +41,7 @@ import {
   shouldStopAfterAudioInterruption,
 } from "~/utils/audioInterruption";
 import { playbackNoticeCopy } from "~/utils/playbackNoticeCopy";
+import { isIosDevice, setPlaybackAudioSession } from "~/utils/audioSession";
 import stylesheet from "./tailwind.css?url";
 import PlayerDock from "~/components/PlayerDock";
 import SiteBar from "~/components/SiteBar";
@@ -417,6 +418,8 @@ function GlobalAudioBridge() {
   const interruptionConfirmedRef = useRef(false);
   /** Last time the element made progress; the stall watchdog reads it. */
   const lastProgressAtRef = useRef(0);
+  /** True once the current source has actually played, so failure copy stays honest. */
+  const playedCurrentSourceRef = useRef(false);
   const nowPlayingRef =
     useRef<ReturnType<typeof usePlayerStore.getState>["nowPlaying"]>(null);
   const retryRef = useRef<{
@@ -432,6 +435,7 @@ function GlobalAudioBridge() {
     lastSkipAt: 0,
     recentFailures: [],
   });
+  const silentHintRef = useRef(false);
   const probePatchesRef = useRef<Record<string, Station["probeStatus"]>>({});
   const setAudioElement = usePlayerStore((state) => state.setAudioElement);
   const setIsPlaying = usePlayerStore((state) => state.setIsPlaying);
@@ -477,13 +481,29 @@ function GlobalAudioBridge() {
         : trimmed;
       const parsed = new URL(candidate, window.location.origin);
       if (parsed.protocol === "http:" || parsed.protocol === "https:") {
-        return parsed.href;
+        return window.location.protocol === "https:" && parsed.protocol === "http:"
+          ? upgradeHttpToHttps(parsed.href)
+          : parsed.href;
       }
       return "";
     } catch {
       return "";
     }
   }, []);
+
+  const noteHttpOnlyStream = useCallback(
+    (station: Station | null) => {
+      if (!station || playedCurrentSourceRef.current) return;
+      const url = station.streamUrl ?? station.url ?? "";
+      if (!isMixedContentStream(url, window.location.protocol)) return;
+      setNotice({
+        kind: "info",
+        message: playbackNoticeCopy("http-only"),
+        durationMs: 6000,
+      });
+    },
+    [setNotice]
+  );
 
   const autoSkipToNext = useCallback(
     (
@@ -606,6 +626,7 @@ function GlobalAudioBridge() {
 
         const retryToken = `${Date.now()}-${retryAttempt}`;
         expectedSourceChangeRef.current = true;
+        playedCurrentSourceRef.current = false;
         audio.src = withRetryToken(streamUrl, retryToken);
         void audio.play().catch(() => {
           // Let normal error handlers decide whether to keep retrying or skip.
@@ -640,6 +661,21 @@ function GlobalAudioBridge() {
     const handleProgress = () => {
       lastProgressAtRef.current = Date.now();
     };
+    const maybeShowSilentSwitchHint = () => {
+      if (silentHintRef.current || !isIosDevice()) return;
+      silentHintRef.current = true;
+      try {
+        if (window.sessionStorage.getItem("elsewhere.silentHintShown")) return;
+        window.sessionStorage.setItem("elsewhere.silentHintShown", "1");
+      } catch {
+        // No storage: the in-memory guard still keeps it to once per session.
+      }
+      setNotice({
+        kind: "info",
+        message: playbackNoticeCopy("silent-switch"),
+        durationMs: 6000,
+      });
+    };
     const handleError = () => {
       // MEDIA_ERR_ABORTED is our own pause or source swap, not a dead station.
       if (audio.error?.code === 1) return;
@@ -652,6 +688,7 @@ function GlobalAudioBridge() {
         : current.hls
         ? "hls_stream"
         : "audio_error";
+      noteHttpOnlyStream(current);
       if (tryPlaybackRecovery(current, reason)) {
         return;
       }
@@ -660,6 +697,7 @@ function GlobalAudioBridge() {
     };
     const handlePlaying = () => {
       expectedSourceChangeRef.current = false;
+      playedCurrentSourceRef.current = true;
       lastProgressAtRef.current = Date.now();
       const current = nowPlayingRef.current;
       if (!current) return;
@@ -668,6 +706,7 @@ function GlobalAudioBridge() {
       clearRetryTimer();
       retryRef.current.stationId = current.uuid;
       retryRef.current.attempts = 0;
+      maybeShowSilentSwitchHint();
     };
 
     // The system can pause the audio without us asking: a phone call, Siri,
@@ -824,6 +863,8 @@ function GlobalAudioBridge() {
     clearFailure,
     clearRetryTimer,
     markFailed,
+    noteHttpOnlyStream,
+    setNotice,
     setIsPlaying,
     tryPlaybackRecovery,
   ]);
@@ -915,6 +956,7 @@ function GlobalAudioBridge() {
     if (!audio) return;
 
     if (!nowPlaying) {
+      playedCurrentSourceRef.current = false;
       audio.pause();
       audio.removeAttribute("src");
       audio.load();
@@ -925,6 +967,7 @@ function GlobalAudioBridge() {
       nowPlaying.streamUrl ?? nowPlaying.url ?? ""
     );
     if (!streamUrl) {
+      playedCurrentSourceRef.current = false;
       audio.pause();
       audio.removeAttribute("src");
       audio.load();
@@ -937,6 +980,7 @@ function GlobalAudioBridge() {
       probePatchesRef.current
     );
     if (skipReason) {
+      playedCurrentSourceRef.current = false;
       markFailed(nowPlaying.uuid, skipReason);
       setIsPlaying(false);
       audio.pause();
@@ -948,6 +992,7 @@ function GlobalAudioBridge() {
 
     if (audio.src !== streamUrl) {
       expectedSourceChangeRef.current = true;
+      playedCurrentSourceRef.current = false;
       audio.src = streamUrl;
     }
   }, [nowPlaying, normalizeStreamUrl]);
@@ -1002,6 +1047,7 @@ function GlobalAudioBridge() {
     }
 
     if (isPlaying) {
+      setPlaybackAudioSession();
       void audio
         .play()
         .then(() => {
@@ -1026,6 +1072,7 @@ function GlobalAudioBridge() {
             : nowPlaying.hls
             ? "hls_stream"
             : "play_rejected";
+          noteHttpOnlyStream(nowPlaying);
           if (tryPlaybackRecovery(nowPlaying, reason)) {
             return;
           }
@@ -1040,6 +1087,7 @@ function GlobalAudioBridge() {
     autoSkipToNext,
     isPlaying,
     markFailed,
+    noteHttpOnlyStream,
     nowPlaying,
     setIsPlaying,
     tryPlaybackRecovery,

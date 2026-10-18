@@ -26,6 +26,18 @@ export function getUrlProtocol(url?: string | null): "http:" | "https:" | null {
   }
 }
 
+export function upgradeHttpToHttps(url: string): string {
+  if (!/^http:\/\//i.test(url)) return url;
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== "http:") return url;
+    parsed.protocol = "https:";
+    return parsed.href;
+  } catch {
+    return url;
+  }
+}
+
 export function isMixedContentStream(
   streamUrl?: string | null,
   pageProtocol?: string | null

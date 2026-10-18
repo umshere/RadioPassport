@@ -42,7 +42,7 @@ describe("probe-ahead skip", () => {
     ]);
   });
 
-  it("skips mixed content and confirmed-down probes, then prefers a live probe", () => {
+  it("tries mixed content as https instead of skipping it before play", () => {
     const http = station({
       uuid: "http",
       url: "http://stream.example/plain",
@@ -52,13 +52,22 @@ describe("probe-ahead skip", () => {
     const unknown = station({ uuid: "unknown" });
     const live = station({ uuid: "live", probeStatus: "ok" });
     const current = station({ uuid: "now" });
-    const picked = pickSkipCandidate({
-      queue: [current, http, down, unknown, live],
-      startIndex: 0,
-      pinnedId: "now",
-      protocol: "https:",
-    });
-    expect(picked?.uuid).toBe("live");
+    expect(
+      pickSkipCandidate({
+        queue: [current, http, down, unknown, live],
+        startIndex: 0,
+        pinnedId: "now",
+        protocol: "https:",
+      })?.uuid
+    ).toBe("live");
+    expect(
+      pickSkipCandidate({
+        queue: [current, http, down, unknown],
+        startIndex: 0,
+        pinnedId: "now",
+        protocol: "https:",
+      })?.uuid
+    ).toBe("http");
   });
 
   it("does not celebrate a dead land before play", () => {
@@ -76,7 +85,7 @@ describe("probe-ahead skip", () => {
         }),
         "https:"
       )
-    ).toBe("mixed_content");
+    ).toBeNull();
     expect(shouldSkipBeforePlay(station(), "https:")).toBeNull();
   });
 });

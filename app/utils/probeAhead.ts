@@ -1,5 +1,4 @@
 import type { Station } from "~/types/radio";
-import { isMixedContentStream } from "~/utils/streamHeuristics";
 
 export const PROBE_AHEAD_LIMIT = 3;
 
@@ -44,7 +43,6 @@ export function pickSkipCandidate(opts: {
     queue,
     startIndex,
     pinnedId,
-    protocol,
     now = Date.now(),
     unavailable,
     probes = {},
@@ -57,8 +55,6 @@ export function pickSkipCandidate(opts: {
     if (!station) continue;
     if (pinnedId && station.uuid === pinnedId) continue;
     if (unavailable?.(station.uuid, now)) continue;
-    const url = station.streamUrl ?? station.url ?? "";
-    if (isMixedContentStream(url, protocol)) continue;
     if (probeStatusOf(station, probes) === "down") continue;
     eligible.push(station);
   }
@@ -77,8 +73,6 @@ export function shouldSkipBeforePlay(
   protocol: string,
   probes: Record<string, ProbeStatus | undefined> = {}
 ): "mixed_content" | "unknown" | null {
-  const url = station.streamUrl ?? station.url ?? "";
-  if (isMixedContentStream(url, protocol)) return "mixed_content";
   if (probeStatusOf(station, probes) === "down") return "unknown";
   return null;
 }

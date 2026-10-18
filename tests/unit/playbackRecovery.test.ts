@@ -91,12 +91,20 @@ describe("playbackNoticeCopy", () => {
     expect(playbackNoticeCopy("tap-play")).toBe(
       "Tap play to start the signal."
     );
+    expect(playbackNoticeCopy("http-only")).toBe(
+      "This signal only speaks HTTP; the browser won't allow it."
+    );
+    expect(playbackNoticeCopy("silent-switch")).toBe(
+      "No sound? Check the silent switch."
+    );
     for (const kind of [
       "retrying",
       "skip",
       "queue-empty",
       "too-many-failures",
       "tap-play",
+      "http-only",
+      "silent-switch",
     ] as const) {
       expect(playbackNoticeCopy(kind)).not.toMatch(/filter/i);
     }

@@ -5,7 +5,9 @@ export type PlaybackNoticeKind =
   | "skip"
   | "queue-empty"
   | "too-many-failures"
-  | "tap-play";
+  | "tap-play"
+  | "http-only"
+  | "silent-switch";
 
 export function playbackNoticeCopy(
   kind: PlaybackNoticeKind,
@@ -22,5 +24,8 @@ export function playbackNoticeCopy(
   if (kind === "skip") return "This signal failed. Next station.";
   if (kind === "queue-empty") return "No other live signal in this line.";
   if (kind === "tap-play") return "Tap play to start the signal.";
+  if (kind === "http-only")
+    return "This signal only speaks HTTP; the browser won't allow it.";
+  if (kind === "silent-switch") return "No sound? Check the silent switch.";
   return "Playback paused. Try another station.";
 }
