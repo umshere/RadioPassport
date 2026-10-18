@@ -64,6 +64,24 @@ import { useKeeperAskEnabled } from "~/components/keeper/KeeperSheet";
 import { useKeeperStore } from "~/state/keeperStore";
 import { useHydrated } from "~/hooks/useHydrated";
 import { HOME_NO_STORE, loadHomeBoard } from "~/services/home/homeBoard.server";
+import { homeShelfData } from "~/services/home/homeShelves.server";
+import { slimToStation } from "~/state/favoriteSnapshot";
+import { useTripsStore, type Trip } from "~/state/tripsStore";
+import { HomeShelfRow, HomeYours, type YoursTab } from "~/components/home/HomeShelfRows";
+import { TripPicker, type CardActions } from "~/components/home/HomeCard";
+import {
+  buildHourShelf,
+  hourCounts,
+  shelfFromSpec,
+  shelfHour,
+  tourStops,
+  type HomeShelf,
+  type ShelfCard,
+} from "~/components/home/homeShelves";
+import { useHomeGuide, GUIDE_BOARD } from "~/hooks/home/useHomeGuide";
+import { keeperAnchor } from "~/components/keeper/keeperRoamModel";
+import { hourWord } from "~/components/keeper/keeperVoice";
+import type { Station } from "~/types/radio";
 
 const LD = {
   "@context": "https://schema.org",
@@ -130,7 +148,10 @@ export async function loader(_: LoaderFunctionArgs) {
   // while the catalog itself comes from the short server-side cache.
   const boardSeed = Date.now();
   const board = await loadHomeBoard();
-  return json({ ...board, boardSeed }, { headers: HOME_NO_STORE });
+  // Label shelves join the offline station labels to the live pool here, on
+  // the server: no model call per visitor, and the labels never ship whole.
+  const { shelves, labels } = homeShelfData(board.stations);
+  return json({ ...board, shelves, labels, boardSeed }, { headers: HOME_NO_STORE });
 }
 
 
@@ -143,15 +164,18 @@ function scrollBehavior(): ScrollBehavior {
 }
 
 /**
- * The home: the departures hall. One scrolling column of three bands (the
- * arrival city's sky, the gates, the departures board) that becomes a sticky
- * sky beside the gates and the board on wide screens. No globe: the Atlas
- * keeps the world.
+ * The home: the departures hall, with the keeper showing you around. One
+ * scrolling column: a compact landing band (the arrival city's card beside
+ * the gates), your stations (saved, recently boarded, trips), shelves (the
+ * hour, mostly music, voices, a genre or two), then all departures. No globe:
+ * the Atlas keeps the world.
  */
 export default function Index() {
   const {
     countries,
     stations: initialStations,
+    shelves: shelfSpecs = [],
+    labels = {},
     boardSeed = 0,
   } = useLoaderData<typeof loader>();
   const [searchParams] = useSearchParams();
@@ -389,6 +413,97 @@ export default function Index() {
   });
   const departures = useMemo(() => homeDepartures(boardRows, now), [boardRows, now]);
 
+  /* ---- Your stations and the shelves. ---- */
+  const hydrateTrips = useTripsStore((state) => state.hydrate);
+  const trips = useTripsStore((state) => state.trips);
+  const createTrip = useTripsStore((state) => state.createTrip);
+  const deleteTrip = useTripsStore((state) => state.deleteTrip);
+  useEffect(() => hydrateTrips(), [hydrateTrips]);
+  const roamAt = useKeeperStore((state) => (state.roam.phase === "resting" ? state.roam.anchor : null));
+  const roamShown = useKeeperStore((state) => state.roamShown);
+  const roamSay = useKeeperStore((state) => state.roamSay);
+  const toCards = useCallback(
+    (stations: Station[]): ShelfCard[] =>
+      homeDepartures(stations, now).map((row) => ({ ...row, label: labels[row.station.uuid] ?? null })),
+    [labels, now],
+  );
+  const savedCards = useMemo(() => {
+    const pool = [...initialStations, ...catalog, ...countryStations];
+    return toCards(resolveKeptSignals(favorites, favoriteSnapshots, pool));
+  }, [catalog, countryStations, favoriteSnapshots, favorites, initialStations, toCards]);
+  const recentCards = useMemo(() => {
+    if (!journeyReady) return [];
+    const known = new Map<string, Station>();
+    for (const station of [...countryStations, ...catalog, ...initialStations]) known.set(station.uuid, station);
+    for (const slim of favoriteSnapshots) if (!known.has(slim.uuid)) known.set(slim.uuid, slimToStation(slim));
+    for (const trip of trips) for (const slim of trip.stations) if (!known.has(slim.uuid)) known.set(slim.uuid, slimToStation(slim));
+    const stations = played.map((id) => known.get(id)).filter((station): station is Station => Boolean(station));
+    return toCards(stations.slice(0, 12));
+  }, [catalog, countryStations, favoriteSnapshots, initialStations, journeyReady, played, toCards, trips]);
+  const tripCards = useCallback((trip: Trip) => toCards(trip.stations.map(slimToStation)), [toCards]);
+  const [yoursTab, setYoursTab] = useState<YoursTab | null>(null);
+  // Nothing chosen yet: the hearts if there are any, else what you boarded.
+  const tab: YoursTab = yoursTab ?? (savedCards.length === 0 && recentCards.length > 0 ? "recent" : "saved");
+
+  const counts = useMemo(() => hourCounts(initialStations, now), [initialStations, now]);
+  const listenerHour = hydrated ? solarHourFromDate(now) : null;
+  const theHour = shelfHour({ gate: hour, listenerHour, counts });
+  const shelves = useMemo(() => {
+    const byId = new Map(initialStations.map((station) => [station.uuid, station]));
+    const list: Array<HomeShelf | null> = [
+      buildHourShelf(initialStations, theHour, labels, now),
+      ...shelfSpecs.map((spec) => shelfFromSpec(spec, byId, labels, now)),
+    ];
+    return list.filter((shelf): shelf is HomeShelf => Boolean(shelf));
+  }, [initialStations, labels, now, shelfSpecs, theHour]);
+  const browsing = !(phase === "seek" || (phase === "empty" && isSeeking));
+  const playingUuid = isPlaying ? nowPlaying?.uuid ?? null : null;
+  const stops = useMemo(
+    () =>
+      browsing
+        ? tourStops(
+            [
+              ...(tab === "saved" ? [{ id: "yours", cards: savedCards, saved: true }] : []),
+              ...shelves,
+            ],
+            playingUuid,
+          )
+        : [],
+    [browsing, playingUuid, savedCards, shelves, tab],
+  );
+  const landArrival = useCallback(() => {
+    // The button always plays the city it names: the arrival station
+    // already resolves playing → hour travel → resume → featured.
+    if (arrivalStation) {
+      play(arrivalStation, selectedPool, arrival.ctaKind === "continue" ? "Continue" : "Land here");
+    }
+  }, [arrival.ctaKind, arrivalStation, play, selectedPool]);
+  useHomeGuide({
+    stops,
+    hourShelfId: shelves.some((shelf) => shelf.id === "hour") ? "hour" : null,
+    hour,
+    seeking: isSeeking,
+    query,
+    greetWord: listenerHour ? hourWord(listenerHour) : null,
+    canLand: Boolean(arrivalStation) && !isPlaying && arrival.ctaKind !== "none",
+    onLand: landArrival,
+    onBoard: (station) => play(station),
+  });
+  // The keeper's answers to a typed question: in his bubble when he roams.
+  useEffect(() => {
+    if (askLine && roamShown) roamSay({ pose: "speaking", line: askLine });
+  }, [askLine, roamSay, roamShown]);
+  const [tripFor, setTripFor] = useState<{ station: Station; from: HTMLElement } | null>(null);
+  const closeTrip = useCallback(() => setTripFor(null), []);
+  const cardActions: CardActions = {
+    playingUuid,
+    favoriteIds: favorites,
+    keeperAt: roamShown ? roamAt : null,
+    onPlay: (station) => play(station),
+    onFavorite: (station) => toggleFavorite(station.uuid, station),
+    onTrip: (station, from) => setTripFor((open) => (open?.station.uuid === station.uuid ? null : { station, from })),
+  };
+
   return (
     <main
       ref={pageRef}
@@ -432,6 +547,7 @@ export default function Index() {
         </SeekShell>
       </SiteSeekPortal>
       <div className="ew-home-inner">
+        <div className="ew-home-landing">
         <div className="ew-home-sky-col">
           <HomeSky
             phase={phase}
@@ -445,16 +561,7 @@ export default function Index() {
             keeperLine={keeperLine}
             keeperState={keeperState}
             cta={{ label: arrival.cta, kind: arrival.ctaKind }}
-            onLand={() =>
-              // The button always plays the city it names: the arrival station
-              // already resolves playing → hour travel → resume → featured.
-              arrivalStation &&
-              play(
-                arrivalStation,
-                selectedPool,
-                arrival.ctaKind === "continue" ? "Continue" : "Land here"
-              )
-            }
+            onLand={landArrival}
             onAsk={(question) => {
               const act = (route: HomeAsk) => {
                 if (route.kind === "search") {
@@ -497,21 +604,46 @@ export default function Index() {
             onOpenKeeper={nowPlaying ? () => openKeeperSheet() : undefined}
           />
         </div>
-        <div className="ew-home-main">
           <HomeGates
             hour={hour}
             onHourTap={(item) => {
+              // The hour shelf answers a gate; the keeper walks to its pick
+              // (useHomeGuide) and the board below narrows to that hour.
               const next = hourTapNextState(hour, item, query);
               setHour(next.hour as SolarHour | null);
               setPlace(next.place);
               if (next.query !== query) setQuery(next.query);
-              if (next.hour) scrollToBoard();
             }}
             onAtlas={() => setAtlas(true)}
           />
+        </div>
+        <div className="ew-home-main">
+          {browsing ? (
+            <>
+              <HomeYours
+                tab={tab}
+                onTab={setYoursTab}
+                saved={savedCards}
+                recent={recentCards}
+                trips={trips}
+                tripCards={tripCards}
+                onCreateTrip={createTrip}
+                onDeleteTrip={(id) => {
+                  deleteTrip(id);
+                  setYoursTab("saved");
+                }}
+                stops={stops}
+                actions={cardActions}
+              />
+              {shelves.map((shelf) => (
+                <HomeShelfRow key={shelf.id} shelf={shelf} stops={stops} actions={cardActions} />
+              ))}
+            </>
+          ) : null}
+          <div className="ew-home-all" {...keeperAnchor(GUIDE_BOARD)}>
           <HomeDepartures
             phase={phase}
-            heading={heading}
+            heading={phase === "arrive" ? VOICE.homeAllDepartures : heading}
             countLabel={countLabel}
             rows={departures}
             loading={catalogLoading}
@@ -519,6 +651,7 @@ export default function Index() {
             favoriteIds={favorites}
             onPlay={(station) => play(station)}
             onFavorite={(station) => toggleFavorite(station.uuid, station)}
+            onTrip={cardActions.onTrip}
             empty={phase === "empty" ? coverEmpty : null}
             onEmptyAction={(action) => {
               if (action.id === "surprise") void requestAiWorld();
@@ -545,6 +678,7 @@ export default function Index() {
               ) : null
             }
           />
+          </div>
           <footer className="ew-home-foot">
             <span>You are not here.</span>
             <Link to="/about" prefetch="intent">
@@ -559,6 +693,7 @@ export default function Index() {
           </footer>
         </div>
       </div>
+      {tripFor ? <TripPicker station={tripFor.station} from={tripFor.from} onClose={closeTrip} /> : null}
       <HomeOverlays
         overlays={overlays}
         countries={countries}

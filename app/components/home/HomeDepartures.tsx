@@ -18,7 +18,7 @@ const SKELETON_ROWS = 6;
  * The station's own logo when it has one that loads; otherwise its first
  * letter on the hour's tint, so every row keeps the same square.
  */
-function StationMark({ station, name }: { station: Station; name: string }) {
+export function StationMark({ station, name }: { station: Station; name: string }) {
   const [failed, setFailed] = useState(false);
   const src = station.favicon?.trim().replace(/^http:\/\//i, "https://");
   const letter = (name.match(/[\p{L}\p{N}]/u)?.[0] ?? "·").toUpperCase();
@@ -33,7 +33,7 @@ function StationMark({ station, name }: { station: Station; name: string }) {
   );
 }
 
-function Heart({ on }: { on: boolean }) {
+export function Heart({ on }: { on: boolean }) {
   return (
     <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill={on ? "currentColor" : "none"} stroke="currentColor" strokeWidth="1.5" strokeLinejoin="miter">
       <path d="M12 20 4.2 12.2a4.6 4.6 0 0 1 6.5-6.5L12 7l1.3-1.3a4.6 4.6 0 0 1 6.5 6.5z" />
@@ -57,6 +57,7 @@ export function HomeDepartures({
   favoriteIds,
   onPlay,
   onFavorite,
+  onTrip,
   empty,
   onEmptyAction,
   onShuffle,
@@ -76,6 +77,8 @@ export function HomeDepartures({
   favoriteIds: string[];
   onPlay: (station: Station) => void;
   onFavorite: (station: Station) => void;
+  /** Open "Add to a trip" for a row, beside its heart. */
+  onTrip?: (station: Station, from: HTMLElement) => void;
   empty: CoverEmptyState | null;
   onEmptyAction: (action: CoverEmptyAction) => void;
   onShuffle: () => void;
@@ -225,6 +228,20 @@ export function HomeDepartures({
                   >
                     <Heart on={kept} />
                   </button>
+                  {onTrip ? (
+                    <button
+                      type="button"
+                      className="ew-home-heart is-trip"
+                      aria-haspopup="dialog"
+                      aria-label={`${VOICE.tripAdd}: ${name}`}
+                      title={VOICE.tripAdd}
+                      onClick={(event) => onTrip(station, event.currentTarget)}
+                    >
+                      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.5">
+                        <path d="M12 5v14M5 12h14" />
+                      </svg>
+                    </button>
+                  ) : null}
                 </li>
               );
             })}

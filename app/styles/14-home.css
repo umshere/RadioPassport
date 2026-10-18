@@ -154,6 +154,83 @@
 .ew-home-stamp-city { display: block; font: italic 400 24px/1.1 "Newsreader", "Iowan Old Style", serif; color: var(--ew-postcard-ink); overflow-wrap: anywhere; }
 .ew-home-stamp-station { display: block; margin-top: 6px; font: 400 13px/1.3 "Schibsted Grotesk", sans-serif; color: var(--ew-postcard-ink); opacity: .75; overflow-wrap: anywhere; }
 
+/* ---- The landing band: the arrival card beside the gates. On a phone the
+   band is not a box (display: contents), so the gates still stick under the
+   header across the whole hall. */
+.ew-home-landing { display: contents; }
+.ew-home-all { display: flex; flex-direction: column; min-width: 0; }
+.ew-home-all > * { flex: none; min-width: 0; }
+
+/* ---- Your stations and the shelves: horizontal rows of station cards. */
+.ew-yours, .ew-shelf { display: flex; flex-direction: column; gap: 10px; min-width: 0; padding: 28px var(--desk-pad-r) 0 var(--desk-pad-l); }
+.ew-yours > *, .ew-shelf > * { flex: none; min-width: 0; }
+.ew-yours-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px 18px; }
+.ew-shelf-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 16px; }
+.ew-shelf-words { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.ew-shelf-title { margin: 0; font: 400 26px/1.1 "Newsreader", "Iowan Old Style", serif; letter-spacing: -.01em; color: var(--ew-bone); overflow-wrap: anywhere; }
+.ew-shelf-why { margin: 0; max-width: 62ch; font: 400 13px/1.4 "Schibsted Grotesk", sans-serif; color: var(--ew-dust); }
+.ew-shelf-count { flex: none; font: 500 10px/1.3 "Azeret Mono", ui-monospace, monospace; letter-spacing: .14em; text-transform: uppercase; color: var(--ew-foil); }
+.ew-yours-tabs { display: flex; flex-wrap: wrap; gap: 6px; min-width: 0; }
+.ew-yours-tab { display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 12px; border: 1px solid var(--ew-rule); border-radius: 0; background: none; color: var(--ew-dust); font: 400 14px/1.2 "Schibsted Grotesk", sans-serif; cursor: pointer; }
+.ew-yours-tab small { font: 500 10px/1 "Azeret Mono", ui-monospace, monospace; letter-spacing: .1em; color: var(--ew-dust); }
+.ew-yours-tab[aria-selected="true"] { border-color: var(--ew-bone); background: var(--ew-bone); color: var(--ew-ink); }
+.ew-yours-tab[aria-selected="true"] small { color: var(--ew-ink); }
+.ew-yours-tab.is-new { border-style: dashed; }
+.ew-yours-tab:hover, .ew-yours-tab:focus-visible { border-color: var(--ew-foil-line); }
+.ew-yours-tab:focus-visible { outline: 1px solid var(--ew-foil); outline-offset: 2px; }
+.ew-yours-new { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; padding: 12px 14px; border: 1px solid var(--ew-foil-line); background: var(--ew-leather); }
+.ew-yours-new label { font: italic 400 17px/1.2 "Newsreader", serif; color: var(--ew-bone); }
+.ew-yours-new input, .ew-trip-picker input { flex: 1 1 160px; min-width: 0; min-height: 44px; padding: 0 10px; border: 1px solid var(--ew-rule); border-radius: 0; background: var(--ew-ink); color: var(--ew-bone); font: 400 15px/1 "Schibsted Grotesk", sans-serif; }
+.ew-yours-new input:focus-visible, .ew-trip-picker input:focus-visible { outline: 1px solid var(--ew-foil); outline-offset: 1px; }
+.ew-yours-new p { flex: 1 1 100%; margin: 0; font: 400 13px/1.4 "Schibsted Grotesk", sans-serif; color: var(--ew-dust); }
+.ew-yours-new button:disabled { opacity: .5; cursor: default; }
+.ew-yours-panel { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.ew-yours-panel > * { flex: none; min-width: 0; }
+.ew-yours-empty { margin: 0; padding: 18px 0; font: italic 400 16px/1.4 "Newsreader", serif; color: var(--ew-dust); }
+.ew-yours-remove { align-self: flex-start; min-height: 40px; padding: 0; border: 0; background: none; color: var(--ew-dust); font: 500 10px/1 "Azeret Mono", ui-monospace, monospace; letter-spacing: .12em; text-transform: uppercase; text-decoration: underline; cursor: pointer; }
+.ew-yours-remove:hover, .ew-yours-remove:focus-visible { color: var(--ew-foil); }
+
+/* The row scrolls sideways inside a flex column (never a grid: iOS). */
+.ew-card-row { display: flex; gap: 12px; min-width: 0; margin: 0; padding: 4px 2px 12px; list-style: none; overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain; scroll-snap-type: x proximity; scroll-padding-left: 2px; -webkit-overflow-scrolling: touch; }
+.ew-card { --sky-tint: var(--ew-foil); position: relative; display: flex; flex: 0 0 208px; flex-direction: column; min-width: 0; border: 1px solid var(--ew-rule); background: color-mix(in srgb, var(--ew-leather) 72%, var(--ew-ink)); scroll-snap-align: start; }
+.ew-card[data-hour="dawn"] { --sky-tint: var(--ew-hour-dawn); }
+.ew-card[data-hour="midday"] { --sky-tint: var(--ew-hour-midday); }
+.ew-card[data-hour="dusk"] { --sky-tint: var(--ew-hour-dusk); }
+.ew-card[data-hour="night"] { --sky-tint: var(--ew-hour-night); }
+.ew-card:hover { border-color: var(--ew-foil-line); }
+.ew-card[data-live] { border-color: var(--ew-ether); }
+.ew-card[data-pick] { outline: 2px solid var(--ew-lacquer); outline-offset: 2px; }
+.ew-card-board { display: flex; flex: 1 1 auto; flex-direction: column; align-items: stretch; gap: 8px; min-width: 0; padding: 12px 12px 52px; border: 0; background: none; color: var(--ew-bone); font: inherit; text-align: left; cursor: pointer; }
+.ew-card-board:focus-visible { outline: 1px solid var(--ew-foil); outline-offset: -2px; }
+.ew-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+.ew-card-time { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+.ew-card-time b { font: 500 16px/1 "Azeret Mono", ui-monospace, monospace; color: var(--sky-tint); }
+.ew-card-time i { font: 500 9px/1 "Azeret Mono", ui-monospace, monospace; font-style: normal; letter-spacing: .16em; text-transform: uppercase; color: var(--sky-tint); }
+.ew-card-name { font: 500 15px/1.25 "Schibsted Grotesk", sans-serif; color: var(--ew-bone); overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.ew-card-place { font: 400 12px/1.3 "Schibsted Grotesk", sans-serif; color: var(--ew-dust); overflow-wrap: anywhere; }
+.ew-card-label { min-height: 12px; font: 500 10px/1.2 "Azeret Mono", ui-monospace, monospace; letter-spacing: .08em; text-transform: uppercase; color: var(--ew-ether); }
+.ew-card-go { position: absolute; bottom: 16px; left: 12px; font: 500 10px/1 "Azeret Mono", ui-monospace, monospace; letter-spacing: .12em; text-transform: uppercase; color: var(--ew-foil); }
+.ew-card[data-live] .ew-card-go { color: var(--ew-ether); }
+.ew-card-tools { position: absolute; right: 0; bottom: 0; display: flex; }
+.ew-card-tool { display: grid; place-items: center; width: 44px; height: 44px; padding: 0; border: 0; background: none; color: var(--ew-dust); cursor: pointer; }
+.ew-card-tool:hover { color: var(--ew-foil); }
+.ew-card-tool[aria-pressed="true"] { color: var(--ew-lacquer-text); }
+.ew-card-tool:focus-visible { outline: 1px solid var(--ew-foil); outline-offset: -2px; }
+.ew-home-heart.is-trip { width: 40px; }
+
+/* ---- Add to a trip: a small square panel by the + it came from. */
+.ew-trip-picker { position: fixed; z-index: 45; display: flex; flex-direction: column; gap: 8px; padding: 12px; border: 1px solid var(--ew-foil-line); background: var(--ew-dock); color: var(--ew-bone); }
+.ew-trip-picker > * { flex: none; min-width: 0; }
+.ew-trip-picker-title { margin: 0; font: 500 10px/1.2 "Azeret Mono", ui-monospace, monospace; letter-spacing: .14em; text-transform: uppercase; color: var(--ew-dust); }
+.ew-trip-picker-list { display: flex; flex-direction: column; margin: 0; padding: 0; list-style: none; }
+.ew-trip-picker-item { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 44px; padding: 0 8px; border: 0; border-bottom: 1px solid var(--ew-rule); background: none; color: var(--ew-bone); font: 400 15px/1.2 "Schibsted Grotesk", sans-serif; text-align: left; cursor: pointer; }
+.ew-trip-picker-item span { width: 14px; color: var(--ew-foil); }
+.ew-trip-picker-item[aria-pressed="true"] span { color: var(--ew-ether); }
+.ew-trip-picker-item:hover, .ew-trip-picker-item:focus-visible { background: var(--ew-ink); }
+.ew-trip-picker-new { display: flex; gap: 6px; }
+.ew-trip-picker-new button { flex: none; min-height: 44px; padding: 0 12px; border: 1px solid var(--ew-foil-line); background: none; color: var(--ew-foil); font: 500 10px/1 "Azeret Mono", ui-monospace, monospace; letter-spacing: .12em; text-transform: uppercase; cursor: pointer; }
+.ew-trip-picker-new button:disabled { opacity: .5; cursor: default; }
+
 /* ---- How it works: three plain steps for someone with no stamps yet. */
 
 /* ---- The quiet foot line: About lives here (and in the site bar on wider screens). */
@@ -181,17 +258,33 @@
   .ew-home-stamps-list > li { flex: 1 1 0%; }
   .ew-home-stamp { height: 100%; }
 }
-@container home (min-width: 1100px) {
-  .ew-home-inner { flex-direction: row; align-items: flex-start; gap: 28px; padding: 24px var(--desk-pad-r) 0 var(--desk-pad-l); }
-  .ew-home-sky-col { flex: 0 0 clamp(380px, 38%, 520px); position: sticky; top: 24px; align-self: flex-start; }
-  .ew-home-main { flex: 1 1 0%; }
-  /* Fills the visible hall but never clips: the keeper stands whole. */
-  .ew-home-sky, .ew-home-sky[data-compact] { min-height: max(420px, calc(var(--home-h, 760px) - var(--home-floor, 0px) - 48px)); padding: 22px 24px 0; border: 1px solid var(--ew-foil-line); }
-  .ew-gates { flex-direction: column; padding-right: 0; padding-left: 0; }
-  .ew-home-board, .ew-home-stamps, .ew-home-foot { padding-right: 0; padding-left: 0; }
+/* From a tablet up: one centred column, the landing band a real row (the
+   arrival card beside the gates, both compact), the shelves under it. */
+@container home (min-width: 700px) {
+  .ew-home-inner { width: 100%; max-width: 1320px; margin: 0 auto; padding: 20px var(--desk-pad-r) 0 var(--desk-pad-l); }
+  .ew-home-landing { display: flex; flex-wrap: wrap; align-items: stretch; gap: 16px; min-width: 0; }
+  .ew-home-landing > * { min-width: 0; }
+  .ew-home-sky-col { display: flex; flex: 1 1 380px; }
+  .ew-home-sky, .ew-home-sky[data-compact] { flex: 1 1 auto; min-height: 0; padding: 18px 22px 18px; border: 1px solid var(--ew-foil-line); }
+  .ew-home-landing .ew-gates { position: static; flex: 1 1 380px; flex-direction: column; justify-content: center; gap: 12px; padding: 16px; border: 1px solid var(--ew-rule); }
+  .ew-home-landing .ew-gates-seek, .ew-home-landing .ew-gates-row { flex: none; }
+  .ew-yours, .ew-shelf, .ew-home-board, .ew-home-stamps, .ew-home-foot { padding-right: 0; padding-left: 0; }
+  .ew-yours, .ew-shelf { padding-top: 36px; }
 }
-@container home (min-width: 1400px) {
-  .ew-gates { flex-direction: row; }
+@container home (min-width: 1100px) {
+  .ew-home-landing { flex-wrap: nowrap; }
+  .ew-home-sky-col { flex: 1 1 0%; }
+  .ew-home-landing .ew-gates { flex: 1 1 0%; }
+}
+
+/* The roaming keeper takes over from 960px: the card keeps no figure of its
+   own, and each shelf leaves him room to stand over its pick. */
+@media (min-width: 960px) {
+  /* Room over the landing band for him to stand and greet, bubble and all. */
+  .ew-home-inner { padding-top: 136px; }
+  .ew-home-sky .ew-sky-ground { display: none; }
+  .ew-yours, .ew-shelf { padding-top: 64px; }
+  .ew-home-all { padding-top: 40px; }
 }
 
 /* ---- Motion: stepped, like the character. Reduced motion stills it all. */
@@ -203,6 +296,8 @@
   .ew-home-fresh-icon { animation: ew-home-spin .48s steps(8, end); }
   .ew-home-live { animation: ew-home-blink 1.6s steps(1, end) infinite; }
   .ew-home-say { animation: ew-home-drop .24s steps(3, end) both; }
+  @keyframes ew-home-pick { 0%, 60% { outline-color: var(--ew-lacquer); } 61%, 100% { outline-color: transparent; } }
+  .ew-card[data-pick] { animation: ew-home-pick 1.2s steps(1, end) 3; }
 }
 @media (prefers-reduced-motion: reduce) {
   .ew-home *, .ew-home *::before, .ew-home *::after { animation: none !important; transition: none !important; }

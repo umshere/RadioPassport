@@ -5,6 +5,7 @@ import { AtmospherePin } from "~/components/radio-passport/AtmospherePin";
 import { Eyebrow } from "~/components/ui/Eyebrow";
 import { Button, ButtonLink, Chip } from "~/components/ui/Button";
 import { Keeper } from "~/components/keeper/Keeper";
+import { keeperAnchor } from "~/components/keeper/keeperRoamModel";
 import { KeeperAskField, KeeperMoves } from "~/components/keeper/KeeperCounter";
 import { hourWord, VOICE } from "~/components/keeper/keeperVoice";
 import { keeperMood, type KeeperState } from "~/components/keeper/keeperState";
@@ -14,8 +15,8 @@ import type { Station } from "~/types/radio";
 import { flapLine, isSeekQuery, type ArrivalSky, type GuideChip, type HomePhase } from "./homeModel";
 
 /**
- * The top band of the departures hall: the arrival city's sky at its own
- * hour. The same sky as the desk (.ew-sky, shared classes, not a fork): tint
+ * The arrival card on the home's landing band: the arrival city's sky at
+ * its own hour, compact beside the gates. The same sky as the desk (.ew-sky, shared classes, not a fork): tint
  * by the hour there, the sun or the moon where it stands, a split-flap clock,
  * the city on the board, and the keeper on the horizon with one line. One
  * call to action. While seeking, the sky folds to one flap line: the query.
@@ -81,6 +82,7 @@ export function HomeSky({
       data-phase={phase}
       data-compact={seeking || undefined}
       aria-labelledby="ew-home-place"
+      {...keeperAnchor("landing")}
     >
       <div className="ew-sky-field" aria-hidden="true">
         <i className="ew-sky-stars" />

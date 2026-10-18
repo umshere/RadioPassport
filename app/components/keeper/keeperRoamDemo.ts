@@ -8,10 +8,10 @@ import { VOICE } from "./keeperVoice";
  * Demo wiring for the roaming keeper, dev server only: open any page with
  * `?roam=demo` (it sticks for the tab; `?roam=off` clears it). Production
  * builds never read the flag. It tags the
- * desk's and the home's existing cards as anchors at runtime, so their
- * layouts stay untouched, and sets him wandering between them. The desk and
- * home rebuilds replace this with real `keeperAnchor()` attributes and
- * `useKeeperRoamStops()`.
+ * desk's existing cards as anchors at runtime, so its layout stays
+ * untouched, and sets him wandering between them. The home already guides
+ * him with real anchors (useHomeGuide); the desk rebuild replaces this the
+ * same way.
  */
 const FLAG_KEY = "elsewhere.keeper.roamDemo";
 
@@ -27,11 +27,6 @@ const DEMO: Record<string, Array<{ selector: string; stop: RoamStop }>> = {
     },
     { selector: ".ew-departures", stop: { anchor: "next", pose: "travel", line: D.next } },
     { selector: ".ew-ask", stop: { anchor: "ask", pose: "speaking", line: D.ask } },
-  ],
-  "/": [
-    { selector: ".ew-gates", stop: { anchor: "gates", pose: "speaking", line: D.gates } },
-    { selector: ".ew-home-board", stop: { anchor: "board", pose: "listening", line: D.board } },
-    { selector: ".ew-home-sky-col", stop: { anchor: "place", pose: "idle", line: D.place } },
   ],
 };
 
