@@ -942,12 +942,10 @@ function GlobalAudioBridge() {
       return;
     }
 
-    // Our mark on our black, always. iOS fills transparent artwork with white, so
-    // the lock screen and control centre get the opaque ink version. Station
-    // favicons are not used: they arrive as square boxes with their own colours.
+    // Use the dedicated opaque media artwork; iOS fills transparent artwork with
+    // white. Station favicons are not used: they arrive as square boxes with their own colours.
     const artwork = [
-      { src: "/icons/maskable-512.png", sizes: "512x512", type: "image/png" },
-      { src: "/icons/maskable-192.png", sizes: "192x192", type: "image/png" },
+      { src: "/icons/artwork-512.png", sizes: "512x512", type: "image/png" },
     ];
 
     mediaSession.metadata = new MediaMetadata({
