@@ -91,8 +91,10 @@ export function DeskOnAir({
       <div className="ew-onair-copy">
         <Eyebrow as="span" tone={playing ? "ether" : "dust"} className="ew-onair-label">
           {playing ? <i className="rp-live-dot" /> : null}
-          {VOICE.tabOnAir}
-          {onAir.kind === "track" ? <span className="ew-onair-src"> · {VOICE.onAirSent}</span> : null}
+          <span>
+            {VOICE.tabOnAir}
+            {onAir.kind === "track" ? ` · ${VOICE.onAirSent}` : ""}
+          </span>
         </Eyebrow>
         {body}
         <p className="ew-onair-station">
