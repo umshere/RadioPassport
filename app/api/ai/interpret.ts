@@ -6,6 +6,8 @@ import {
   resolveTypedIntent,
   wantsMixFromPrompt,
 } from "~/services/ai/intent/promptIntent";
+import { interpretWithJev } from "~/services/ai/intent/jevInterpret.server";
+import { trimEnv } from "~/services/ai/completeFallback";
 import type {
   InterpretRequest,
   InterpretResponse,
@@ -93,6 +95,10 @@ export async function interpretPrompt(
   }
 
   if (!isGatewayConfigured()) {
+    if (trimEnv(process.env.TYPESAFE_API_KEY)) {
+      const jev = await interpretWithJev(prompt);
+      if (jev) return { intent: jev, fallback: false };
+    }
     return { intent: intentFromExtractor(prompt), fallback: true };
   }
 

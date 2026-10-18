@@ -64,6 +64,8 @@ export type InterpretedIntent = {
   language: string | null;
   tags: string[];
   wantsMix: boolean;
+  /** Time of day the request names, when the interpreter read one. */
+  hour?: "Dawn" | "Midday" | "Dusk" | "Night" | null;
   confidence: "high" | "medium" | "low";
 };
 
