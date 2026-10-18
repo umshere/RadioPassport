@@ -2,6 +2,7 @@ import { HourRail } from "~/components/radio-passport/HourRail";
 import { SiteSeekRail } from "~/components/radio-passport/SiteSeek";
 import { Button } from "~/components/ui/Button";
 import { VOICE } from "~/components/keeper/keeperVoice";
+import { keeperAnchor } from "~/components/keeper/keeperRoamModel";
 import type { SolarHour } from "~/utils/localTime";
 
 /**
@@ -21,7 +22,7 @@ export function HomeGates({
 }) {
   return (
     <section className="ew-gates" aria-label={VOICE.homeGates}>
-      <div className="ew-gates-seek ew-gate-field">
+      <div className="ew-gates-seek ew-gate-field" {...keeperAnchor("seek")}>
         <SiteSeekRail />
       </div>
       <div className="ew-gates-row">

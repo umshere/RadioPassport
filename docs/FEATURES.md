@@ -29,7 +29,7 @@ Navigation is three places: **Elsewhere** (`/`), **Atlas** (an overlay on the ho
 
 ### 1.1 Home: the Departures Hall
 
-One scrolling column of three bands that becomes a sticky sky beside the gates and board on wide screens. There is no globe. Code: `app/routes/_index.tsx`, `app/components/home/*`, `app/hooks/home/*`, `app/services/home/homeBoard.server.ts`, CSS `14-home.css` and `08-home-board.css`.
+One scrolling column: a compact landing band (the arrival card beside the gates), Your stations, shelves, then All departures. There is no globe. Code: `app/routes/_index.tsx`, `app/components/home/*`, `app/hooks/home/*`, `app/services/home/homeBoard.server.ts`, `homeShelves.server.ts`, CSS `14-home.css` and `08-home-board.css`.
 
 **The sky** (`HomeSky.tsx`). The arrival city's sky at its own hour: tint by the hour there, sun or moon where it stands, a split-flap clock ("21:04"), the city name on split flaps, country, flag, hours ahead or behind the listener, and the Keeper on the horizon with one line. One call to action: **Land here** (first visit), **Continue** (this browser has a last city), none while playing. Status chip says On air or Now leaving. The Day/Night toggle sits in the sky head.
 - No coordinates, no clock and no sky. Nothing is guessed except the board clock below.
@@ -45,6 +45,18 @@ The field takes a short query (catalog search), a sentence (`/api/ai/interpret`,
 **The departures board** (`HomeDepartures.tsx`). Station rows, each with its local time on flaps, tinted by its hour, a heart to keep it, and the station art or the Elsewhere mark. Tap a row to board it. Shows 8, then 16, then 32 rows ("More departures"); a seek answer shows up to 32. "Fresh board" reshuffles. Phases: arrive, seek, hour, aboard, empty (`homePhase()` in `homeModel.ts`); each has its own Keeper line (`homeKeeperLine`).
 - Rows with no coordinates show a rough clock from the country's centre (`estimatedLongitude` in `app/utils/countryCentroids.ts`). It is labelled by the row only as a time; it is an estimate.
 - The board is the top 240 stations with geo from Radio Browser, cached 5 minutes on the server. An outage serves the last good board (`homeBoard.server.ts`). The document itself is `no-store`.
+
+**The landing band.** From 700px the arrival card (`HomeSky`) sits beside the gates (search, Surprise, the four hour buttons, Atlas); under 700px they stack and the gates stay sticky. From 960px the roaming Keeper replaces the figure drawn in the card.
+
+**Your stations** (`HomeShelfRows.tsx`). Tabs: **Saved** (the hearts), **Recently boarded** (`playedStationIds` joined to the pool, hearts and trips for the snapshots) and **Trips**. A trip is an optional named group: "+ New trip" names one, and the + button beside every heart ("Add to a trip", `TripPicker` in `HomeCard.tsx`) adds or removes a station. Stored in this browser only: `localStorage["elsewhere-trips"]` (`app/state/tripsStore.ts`; up to 12 trips of 40 stations, each station a slim snapshot like hearts). Nobody has to make one.
+
+**Shelves** (`homeShelves.ts`, pure; `HomeShelfRows.tsx`). Horizontal rows of station cards (art, local time tinted by the hour there, name, place, one label), each with a one-line "why" and a count; up to 16 cards. Phones scroll them sideways.
+- **Hour shelf** ("Where it's morning/…/the small hours"): the real local clock; stations with no clock are left off. The hour is the lit hour button, else one away from the listener's own, else the fullest. No labels needed.
+- **Label shelves** ("Mostly music, hardly any talk", "Voices: talk and news", the two biggest music families): built in the loader (`homeShelves.server.ts`) by joining the offline Jev labels (`stationLabels.server.ts`) to the live home pool. No model call per visitor; the labels file never reaches the client. A shelf with fewer than 4 stations is hidden; stations without labels are not on them. A card's label is label slot 1 (min confidence 0.6), else its format in plain words. Shelf copy never says what is on air this minute.
+- **All departures** stays at the bottom: the board with More departures and Fresh board, plus a + beside each heart.
+- While a question is typed, Your stations and the shelves hide and the board answers.
+
+**The Keeper as guide** (`useHomeGuide.ts`, on the roaming Keeper; 960px and wider). He greets on the landing band with **Show me around** and **Land here**. The tour walks shelf by shelf and points at one pick per shelf (`pickForShelf`: a card with a known clock, preferring one with a label and not the playing station; the card is outlined), with **Board it** and **Next shelf**. A hour button sends him to the hour shelf's pick; typing a search sends him to the search box (searching pose); idle, he wanders between picks; poking him reacts. Pick lines (`pickLine`) state only the station, its place, the local clock and the station's own label. Phones keep the edge float.
 
 **Recent stamps.** Under the board, the last three stamps as postcards, only once there are stamps. They open the passport.
 
@@ -201,6 +213,7 @@ Small Zustand-like stores from `app/utils/zustand-lite.ts`.
 |---|---|---|
 | `playerStore` | queue, now playing, play state, last track per station | yes, `player-store` |
 | `roomStore` | the Room for the station on the air | no |
+| `tripsStore` | user-made trips (named station groups) | yes, `elsewhere-trips` |
 | `journeyStore` | stamps, kept signals, played ids, traveller number | yes, `radio-passport-journey` |
 | `keeperStore` | sheet open, murmur, fact log, landed times, hush | hush only (`elsewhere.keeper.hush`) |
 | `atmosphereStore` | night or day | yes, `elsewhere-atmosphere` |

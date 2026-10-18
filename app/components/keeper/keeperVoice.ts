@@ -134,6 +134,70 @@ export const VOICE = {
   homeRecent: "Recent stamps",
   homeRecentOpen: "Open the passport",
   homeLeaving: "Ready",
+  homeLanding: "Landing now",
+
+  /* ---- Home shelves: what each row is, said from the data only. Shelf
+     words never claim what is on air this minute. ---- */
+  shelfHourTitle: {
+    Dawn: "Where it’s morning",
+    Midday: "Where it’s the middle of the day",
+    Dusk: "Where it’s evening",
+    Night: "Where it’s the small hours",
+  } as Record<string, string>,
+  shelfHourWhy: (word: string) => `The local clock says ${word} in each of these places.`,
+  shelfMusicTitle: "Mostly music, hardly any talk",
+  shelfMusicWhy: "Stations that describe themselves as mostly music, by their own name and tags.",
+  shelfVoicesTitle: "Voices: talk and news",
+  shelfVoicesWhy: "News, talk and sport, going by how each station describes itself.",
+  shelfGenreTitle: {
+    pop: "Pop and current hits",
+    rock: "Rock stations",
+    jazz: "Jazz and blues",
+    classical: "Classical",
+    electronic_dance: "Electronic and dance",
+    hiphop_rnb: "Hip-hop and R&B",
+    folk_traditional: "Folk, roots and regional",
+    film_soundtrack: "Film songs and soundtracks",
+    oldies_hits: "Hits of other decades",
+  } as Record<string, string>,
+  shelfGenreWhy: "Grouped by the stations’ own names and tags, not by this minute’s song.",
+  shelfCount: (count: number) => `${count} station${count === 1 ? "" : "s"}`,
+  shelfMusicLabel: "Mostly music",
+  shelfVoicesLabel: "Talk and news",
+  homeAllDepartures: "All departures",
+
+  /* ---- Your stations: hearts, history, trips. Nothing to set up. ---- */
+  yoursTitle: "Your stations",
+  yoursSaved: "Saved",
+  yoursRecent: "Recently boarded",
+  yoursNewTrip: "+ New trip",
+  yoursTripName: "Name this trip",
+  yoursTripPlaceholder: "Rainy Tuesdays",
+  yoursTripCreate: "Make it",
+  yoursTripHint: "Then tap + on any station and choose the trip. That’s it.",
+  yoursTripRemove: "Remove this trip",
+  yoursSavedEmpty: "Tap ♡ on any station and it waits here.",
+  yoursRecentEmpty: "Stations you board will wait here.",
+  yoursTripEmpty: (name: string) => `Nothing in ${name} yet. Tap + on any station to add it.`,
+  tripAdd: "Add to a trip",
+  tripMenuNew: "New trip…",
+  tripMenuCreate: "Add",
+
+  /* ---- The keeper as guide on the home (roaming, wider screens). Pick lines
+     state only the local time, the place and the station's own labels. ---- */
+  guideGreet: (word: string | null) =>
+    word ? `It’s ${word} where you are. Land somewhere now, or let me walk you along the shelves.` : "Land somewhere now, or let me walk you along the shelves.",
+  guideShowAround: "Show me around",
+  guideLand: "Land here",
+  guideBoardIt: "Board it",
+  guideNextShelf: "Next shelf",
+  guideFirstShelf: "From the top",
+  guidePick: (name: string, place: string) => `${name}, ${place}.`,
+  guidePickClock: (clock: string, word: string) => `${clock} there, ${word} by the local clock.`,
+  guidePickSaved: "One of yours.",
+  guidePickLabel: (label: string) => `By its own tags: ${label}.`,
+  guideTourDone: "That’s every shelf. The full board is at the bottom.",
+  guideSearch: (query: string) => `Looking for ${query}.`,
 
   /* ---- The counter: the keeper's sheet and the desk's ask card. ---- */
   keeperTitle: "The keeper",

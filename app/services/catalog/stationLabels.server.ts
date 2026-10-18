@@ -73,3 +73,19 @@ export function stationLabelsFor(
   };
   return out.format || out.family || out.labels.length ? out : null;
 }
+
+/**
+ * The station's label slot 1 alone, when it clears `minConfidence`: the one
+ * slot reliable enough to print on a card (slots 2 and 3 are noisy; see
+ * docs/station-labels-wave1.md). Null for unknown stations and for "none".
+ */
+export function stationPrimaryLabel(
+  uuid: string,
+  options: { file?: StationLabelsFile; minConfidence?: number } = {},
+): string | null {
+  const file = options.file ?? (labelsFile as unknown as StationLabelsFile);
+  const min = options.minConfidence ?? STATION_LABEL_MIN_CONFIDENCE;
+  const entry = Object.prototype.hasOwnProperty.call(file.stations, uuid) ? file.stations[uuid] : undefined;
+  const choice = confident(entry?.label1, min);
+  return choice && choice !== "none" && LABELS.has(choice) ? choice : null;
+}
