@@ -89,3 +89,72 @@ export function stationPrimaryLabel(
   const choice = confident(entry?.label1, min);
   return choice && choice !== "none" && LABELS.has(choice) ? choice : null;
 }
+
+/** Short, readable words for a format, for the desk's "What this station plays". */
+const FORMAT_WORDS: Record<StationFormat, string | null> = {
+  mostly_music: "Mostly music",
+  mostly_talk_or_news: "Mostly talk and news",
+  mixed: "Music and talk",
+  religious: "Religious",
+  unclear: null,
+};
+
+/** Short, readable words for a music family. */
+const FAMILY_WORDS: Record<StationFamily, string | null> = {
+  pop: "Pop",
+  rock: "Rock",
+  jazz: "Jazz and blues",
+  classical: "Classical",
+  electronic_dance: "Electronic and dance",
+  hiphop_rnb: "Hip-hop and R&B",
+  folk_traditional: "Folk and regional",
+  film_soundtrack: "Film songs and soundtracks",
+  oldies_hits: "Oldies and past hits",
+  eclectic: "A bit of everything",
+  none: null,
+};
+
+/** At most this many shelf labels per station. */
+export const SHELF_LABEL_MAX = 3;
+
+/**
+ * The desk's shelf labels for one station: only the reliable answers (the
+ * first label slot, the family, the format; see docs/station-labels-wave1.md),
+ * most specific first, in plain words, deduped. Empty when nothing clears the
+ * threshold: the desk then shows the station's raw tags as before.
+ */
+export function stationShelfLabels(
+  uuid: string,
+  options: { file?: StationLabelsFile; minConfidence?: number } = {},
+): string[] {
+  const file = options.file ?? (labelsFile as unknown as StationLabelsFile);
+  const min = options.minConfidence ?? STATION_LABEL_MIN_CONFIDENCE;
+  const entry = Object.prototype.hasOwnProperty.call(file.stations, uuid) ? file.stations[uuid] : undefined;
+  if (!entry) return [];
+  const label = confident(entry.label1, min);
+  const family = confident(entry.family, min);
+  const format = confident(entry.format, min);
+  const words = [
+    label && label !== "none" && LABELS.has(label) ? label : null,
+    family && FAMILIES.has(family) ? FAMILY_WORDS[family as StationFamily] : null,
+    format && FORMATS.has(format) ? FORMAT_WORDS[format as StationFormat] : null,
+  ];
+  const out: string[] = [];
+  for (const word of words) {
+    if (word && !out.some((held) => held.toLowerCase() === word.toLowerCase())) out.push(word);
+  }
+  return out.slice(0, SHELF_LABEL_MAX);
+}
+
+/** Every labelled station's shelf labels, for a route loader: small, no confidences. */
+export function allStationShelfLabels(
+  options: { file?: StationLabelsFile; minConfidence?: number } = {},
+): Record<string, string[]> {
+  const file = options.file ?? (labelsFile as unknown as StationLabelsFile);
+  const out: Record<string, string[]> = {};
+  for (const uuid of Object.keys(file.stations)) {
+    const labels = stationShelfLabels(uuid, { ...options, file });
+    if (labels.length) out[uuid] = labels;
+  }
+  return out;
+}

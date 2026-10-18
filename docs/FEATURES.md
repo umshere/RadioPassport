@@ -64,16 +64,16 @@ The field takes a short query (catalog search), a sentence (`/api/ai/interpret`,
 
 ### 1.2 The desk (`/listen`)
 
-The Keeper's own page for the station you are inside. One column on a phone; a sky beside cards on wide screens. Code: `app/routes/listen.tsx`, `app/components/desk/*`, CSS `11-desk.css`.
-- **Sky** (`DeskSky.tsx`): the station's hour, place, clock, flag, offset from you, the Keeper on the horizon, his murmur bubble. The misplaced-hour mark of the secret trail sits here (see 6).
-- **Boarding pass** (`DeskPass.tsx`): From (you), To (the station's place), local time there, spoken languages, signal, minutes aboard, stamped or "stay a minute", stamp count, and a share stub that opens the ticket sheet.
-- **On air** (`DeskOnAir.tsx`, `deskOnAir()` in `deskModel.ts`): only what the stream sent. Station idents, adverts, talk and programme names are recognised and labelled as such, not shown as songs. Empty ICY stays empty: "Ears up. Waiting for a name..." The last aired title stays when paused.
-- **Ask the desk** (`DeskAsk.tsx`): free-text question to the Keeper (see 2). Shows "closed to questions" when the ask flag is off.
-- **Postcards** (`DeskPostcards.tsx`): facts the Keeper looked up about the place, country, language, genre or artist, each labelled "Out of my notebook, not the station's word". The desk starts reading up as soon as you sit down.
-- **The station's file** (`DeskDossier.tsx`): facts and links from the free trivia pass, only when a title filed. The written caption is left off on purpose (model prose can contradict the clock).
-- **Next departures** (`DeskDepartures.tsx`): the queue as rows with clocks, plus a seek row (`TheaterSeek`, "Change gate"), which includes Surprise.
-- **Empty state:** no station, the Keeper sleeps: "Nobody at the desk yet." with a Land button.
-- **Floor clearance** (`useFloorClearance` in `deskHooks.ts`): the desk measures the dock and band and sets `--desk-floor` and `--desk-h`, so nothing hides under fixed UI.
+Rebuilt 2026-10-17 (wave 2) to the "Desk — the Keeper roams" mockup. Cards, in phone order:
+- **You are not here** (`DeskPlace`): split-flap clock at the station's longitude, place, hour word + offset, spoken, signal, a light hour tint, stamp ring filling over the continuous minute (reads the dock's `--stamp-ink`; reduced motion keeps a static ring and line), passport count, send-a-ticket. Replaces the big sky panel and the boarding pass.
+- **On air** (`DeskOnAir`): art, title/artist marked "sent by the station", the station's name.
+- **What this station plays** (`DeskPlays`): up to 3 plain-word labels from the offline Jev labels (label slot 1, family, format, at `STATION_LABEL_MIN_CONFIDENCE`), passed from the route loader (`allStationShelfLabels`) so `stationLabels.json` stays server-only; "The station's own tags (N)" reveals the raw tags. Unlabelled stations show raw tags.
+- **Ask the Keeper** (`DeskAsk`): the shared `KeeperCounter` plus "Somewhere like this".
+- **Postcards** (`DeskNote`): one notebook note at a time, "One more note" for the next; labelled as the notebook, not the station.
+- **Next on this shelf** (`DeskShelf`): `findSimilar` picks first, then the queue (`deskShelf`), each with its own clock; Change gate field under it.
+- **The station's file**: unchanged, below when filed.
+
+The Keeper hosts it (`useDeskKeeper`, pure rules in `deskKeeper.ts`), from 960px wide via the roam API: greets on the place card on landing, sits on On air while playing, walks to Ask when a question is asked (searching, then speaking; the answer stays in the card), runs to the site-bar passport badge (`data-keeper-anchor="passport"`) and hops when the stamp lands, goes to the shelf for "Somewhere like this" (Hop / Stay here), and wanders between cards when idle. Below 960px the edge float hosts the desk (it no longer hides on `/listen`). Removed: the "From here" clock and "Aboard N min" fields, and the six-postcard grid.
 
 ### 1.3 About ("How it works")
 

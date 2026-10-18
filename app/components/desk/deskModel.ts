@@ -155,14 +155,78 @@ export function deskDepartures(
     const next = queue[(((index + step) % queue.length) + queue.length) % queue.length];
     if (!next || seen.has(next.uuid)) continue;
     seen.add(next.uuid);
-    const estimated = estimatedLongitude(next);
-    const local = stationLocalDate(next, now) ?? (estimated === null ? null : localDateAtLongitude(estimated, now));
-    out.push({
-      station: next,
-      clock: local ? formatClock(local) : null,
-      solar: local ? solarHourFromLocal(local) : null,
-      shared: sharedSignals(current, next),
-    });
+    out.push(departureFor(next, current, now));
   }
   return out;
+}
+
+/** One station as a departure from the one on now: its own clock and what it shares. */
+export function departureFor(next: Station, current: Station, now = new Date()): Departure {
+  const estimated = estimatedLongitude(next);
+  const local = stationLocalDate(next, now) ?? (estimated === null ? null : localDateAtLongitude(estimated, now));
+  return {
+    station: next,
+    clock: local ? formatClock(local) : null,
+    solar: local ? solarHourFromLocal(local) : null,
+    shared: sharedSignals(current, next),
+  };
+}
+
+export type ShelfCard = Departure & {
+  /** One of the keeper's "somewhere like this" picks (shares something real). */
+  similar: boolean;
+};
+
+/**
+ * "Next on this shelf": the keeper's similar picks first (they share a
+ * language, a tag or the hour), then the room's queue in order. No station
+ * twice, never the one on now.
+ */
+export function deskShelf(
+  current: Station,
+  similar: Station[],
+  departures: Departure[],
+  now = new Date(),
+  limit = 6,
+): ShelfCard[] {
+  const out: ShelfCard[] = [];
+  const seen = new Set([current.uuid]);
+  for (const station of similar) {
+    if (out.length >= limit || seen.has(station.uuid)) continue;
+    seen.add(station.uuid);
+    out.push({ ...departureFor(station, current, now), similar: true });
+  }
+  for (const row of departures) {
+    if (out.length >= limit || seen.has(row.station.uuid)) continue;
+    seen.add(row.station.uuid);
+    out.push({ ...row, similar: false });
+  }
+  return out;
+}
+
+/** Seconds left of the stamp's continuous minute, from the dock's ink (0..1); null without it. */
+export function stampSecondsLeft(ink: number | null): number | null {
+  if (ink === null || !Number.isFinite(ink)) return null;
+  const clamped = Math.min(1, Math.max(0, ink));
+  return Math.max(0, Math.ceil(60 * (1 - clamped) - 0.001));
+}
+
+/**
+ * What the station plays: its readable shelf labels when the offline labeller
+ * was confident, else its own raw tags shown as they are.
+ */
+export function deskPlays(labels: string[] | null | undefined, tags: string[]): {
+  labels: string[];
+  raw: string[];
+  /** No labels: the raw tags are the card, not a reveal. */
+  rawOnly: boolean;
+} {
+  const raw = [...new Set(tags.map((tag) => tag.trim()).filter(Boolean))].slice(0, 12);
+  const clean = (labels ?? []).filter(Boolean).slice(0, 3);
+  return { labels: clean, raw, rawOnly: clean.length === 0 };
+}
+
+/** The next note in the keeper's stack, round again after the last. */
+export function nextNoteIndex(index: number, count: number): number {
+  return count > 0 ? (index + 1) % count : 0;
 }

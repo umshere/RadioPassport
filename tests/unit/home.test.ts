@@ -90,9 +90,9 @@ describe("home: the sheet is gone", () => {
     expect(existsSync(resolve(__dirname, "../../app/components/radio-passport/HomeGlobeSide.tsx"))).toBe(false);
   });
 
-  it("hides the floating keeper on the home and the desk: he stands in the sky", () => {
+  it("hides the floating keeper on the home: he stands in the sky", () => {
     const float = read("app/components/keeper/KeeperFloat.tsx");
-    expect(float).toContain('pathname === "/listen" || pathname === "/"');
+    expect(float).toContain('const onDesk = pathname === "/";');
   });
 
   it("brings the board into view for a search and a keeper hop, not a sheet", () => {

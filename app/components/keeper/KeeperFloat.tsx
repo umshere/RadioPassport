@@ -84,10 +84,11 @@ function sameBounds(a: KeeperBounds, b: KeeperBounds) {
  */
 export function KeeperFloat({ view }: { view: KeeperView }) {
   const openSheet = useKeeperStore((state) => state.openSheet);
-  // On the desk and the home the keeper stands on the page's own horizon
-  // (the sky); no second figure.
+  // On the home the keeper stands on the page's own horizon (the sky); no
+  // second figure. The desk has no sky: it is hosted by the roaming keeper on
+  // wider screens and by this float on phones.
   const { pathname } = useLocation();
-  const onDesk = pathname === "/listen" || pathname === "/";
+  const onDesk = pathname === "/";
   // On wider screens a page may set the keeper roaming (KeeperRoam): then
   // he walks the page and this edge figure steps aside.
   const roaming = useKeeperStore((state) => state.roamShown);
