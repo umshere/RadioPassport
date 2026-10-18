@@ -171,12 +171,13 @@ describe("desk wiring", () => {
   });
 
   it("keeps copy in the keeper's voice file and marks notebook facts", () => {
-    const postcards = read("app/components/desk/DeskPostcards.tsx");
-    expect(postcards).toContain("VOICE.notebook");
+    const note = read("app/components/desk/DeskNote.tsx");
+    expect(note).toContain("VOICE.notebook");
     const listen = read("app/routes/listen.tsx");
     expect(listen).not.toContain("BoardSheet");
     expect(listen).not.toMatch(/&[a-z]+;/);
-    expect(read("app/components/keeper/KeeperFloat.tsx")).toContain('pathname === "/listen"');
+    // The desk has no sky: phones get the edge float there.
+    expect(read("app/components/keeper/KeeperFloat.tsx")).not.toContain('pathname === "/listen"');
   });
 
   it("keeps model prose off the desk and labels the file as notebook", () => {
@@ -200,16 +201,16 @@ describe("desk wiring", () => {
     expect(moves).toContain('ctx.surface === "desk"');
   });
 
-  it("never clips the keeper: the wide sky grows to its content", () => {
+  it("leaves head room over each row for the roaming keeper on wide desks", () => {
     const css = readAppCss();
-    expect(css).toMatch(/\.ew-sky \{ position: sticky; top: 0; height: auto; min-height:/);
+    expect(css).toMatch(/@container desk \(min-width: 960px\) \{\s*\.ew-desk-inner \{ --desk-head-room: 112px;/);
   });
 
   it("stacks the phone desk in flex columns and stills motion when asked", () => {
     const css = readAppCss();
     const desk = css.slice(css.indexOf("/* ---- The desk (/listen)"));
-    expect(desk).toMatch(/\.ew-desk-body \{ display: flex; flex-direction: column;/);
-    expect(desk).toMatch(/\.ew-desk-col > \* \{ flex: none;/);
+    expect(desk).toMatch(/\.ew-desk-top, \.ew-desk-mid, \.ew-desk-more \{ display: flex; flex-direction: column;/);
+    expect(desk).toMatch(/:is\(\.ew-desk-top, \.ew-desk-mid, \.ew-desk-more\) > \* \{ flex: none;/);
     expect(desk).toContain("container: desk / inline-size");
     expect(desk).toMatch(/prefers-reduced-motion: reduce\) \{\s*\.ew-desk \*, \.ew-desk \*::before, \.ew-desk \*::after \{ animation: none !important;/);
     expect(desk).not.toMatch(/box-shadow/);

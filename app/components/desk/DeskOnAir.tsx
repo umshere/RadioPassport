@@ -1,15 +1,17 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { Eyebrow } from "~/components/ui/Eyebrow";
-import { keeperTrackLine, type KeeperFacts } from "~/components/keeper/keeperFacts";
+import { keeperAnchor } from "~/components/keeper/keeperRoamModel";
+import { keeperTrackLine, tidyStationName, type KeeperFacts } from "~/components/keeper/keeperFacts";
 import { VOICE } from "~/components/keeper/keeperVoice";
 import { markArtworkUrlFailed } from "~/utils/stations";
+import { DESK_ANCHORS } from "./deskKeeper";
 import type { OnAir } from "./deskModel";
 
 /**
  * What is on air, called what it is. A song gets its title large and the
  * artist under it, marked as sent by the station; an ident, an advert, talk or
  * a programme name gets a plain line from the keeper; a silent stream gets his
- * "no names here" and nothing invented.
+ * "no names here" and nothing invented. The station's name closes the card.
  */
 export function DeskOnAir({
   onAir,
@@ -33,7 +35,6 @@ export function DeskOnAir({
         <>
           <p className="ew-onair-title">{onAir.title ?? onAir.artist}</p>
           {onAir.title && onAir.artist ? <p className="ew-onair-artist">{onAir.artist}</p> : null}
-          <span className="ew-onair-src">{VOICE.onAirSent}</span>
         </>
       );
       break;
@@ -62,7 +63,13 @@ export function DeskOnAir({
   }
 
   return (
-    <section className="ew-onair" data-kind={onAir.kind} aria-live="polite">
+    <section
+      className="ew-onair"
+      data-kind={onAir.kind}
+      aria-label={VOICE.tabOnAir}
+      aria-live="polite"
+      {...keeperAnchor(DESK_ANCHORS.onair)}
+    >
       <figure className="ew-onair-art" data-empty={showArt ? undefined : ""}>
         {showArt ? (
           <img
@@ -85,8 +92,12 @@ export function DeskOnAir({
         <Eyebrow as="span" tone={playing ? "ether" : "dust"} className="ew-onair-label">
           {playing ? <i className="rp-live-dot" /> : null}
           {VOICE.tabOnAir}
+          {onAir.kind === "track" ? <span className="ew-onair-src"> · {VOICE.onAirSent}</span> : null}
         </Eyebrow>
         {body}
+        <p className="ew-onair-station">
+          {VOICE.onAirOn} <b>{tidyStationName(facts.station.name)}</b>
+        </p>
       </div>
     </section>
   );

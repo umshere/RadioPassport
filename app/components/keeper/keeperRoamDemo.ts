@@ -5,7 +5,8 @@ import { KEEPER_ANCHOR_ATTR, type RoamStop } from "./keeperRoamModel";
 import { VOICE } from "./keeperVoice";
 
 /**
- * Demo wiring for the roaming keeper, dev server only: open any page with
+ * Demo wiring for the roaming keeper, dev server only (the desk has its own
+ * real anchors now; this is the home's until its rebuild): open a page with
  * `?roam=demo` (it sticks for the tab; `?roam=off` clears it). Production
  * builds never read the flag. It tags the
  * desk's and the home's existing cards as anchors at runtime, so their
@@ -17,17 +18,6 @@ const FLAG_KEY = "elsewhere.keeper.roamDemo";
 
 const D = VOICE.roamDemo;
 const DEMO: Record<string, Array<{ selector: string; stop: RoamStop }>> = {
-  "/listen": [
-    { selector: ".ew-onair", stop: { anchor: "onair", pose: "listening", line: D.onair } },
-    { selector: ".ew-sky", stop: { anchor: "place", pose: "idle", line: D.place } },
-    { selector: ".ew-pass", stop: { anchor: "pass", pose: "speaking", line: D.pass } },
-    {
-      selector: ".ew-cards",
-      stop: { anchor: "postcards", pose: "searching", line: D.notebook, sub: D.notebookSub, source: "notebook" },
-    },
-    { selector: ".ew-departures", stop: { anchor: "next", pose: "travel", line: D.next } },
-    { selector: ".ew-ask", stop: { anchor: "ask", pose: "speaking", line: D.ask } },
-  ],
   "/": [
     { selector: ".ew-gates", stop: { anchor: "gates", pose: "speaking", line: D.gates } },
     { selector: ".ew-home-board", stop: { anchor: "board", pose: "listening", line: D.board } },

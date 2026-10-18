@@ -1,5 +1,6 @@
 import { Link, useLocation, useNavigate } from "@remix-run/react";
 import { SignalWordmark } from "~/components/radio-passport/SignalMark";
+import { keeperAnchor } from "~/components/keeper/keeperRoamModel";
 import BandNav from "~/components/BandNav";
 import {
   homeWithPassportHref,
@@ -65,6 +66,8 @@ export default function SiteBar() {
             )
           }
           aria-label={`Open passport, ${count} places stamped`}
+          {...keeperAnchor("passport")}
+          data-keeper-below="true"
         >
           Passport <b>{String(count).padStart(2, "0")}</b>
         </Button>

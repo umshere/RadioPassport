@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
   STATION_LABEL_MIN_CONFIDENCE,
+  allStationShelfLabels,
   stationLabelsFor,
+  stationShelfLabels,
   type StationLabelsFile,
 } from "~/services/catalog/stationLabels.server";
 
@@ -57,5 +59,29 @@ describe("stationLabelsFor", () => {
     expect(stationLabelsFor("anything")).toBeNull();
     expect(STATION_LABEL_MIN_CONFIDENCE).toBeGreaterThan(0);
     expect(STATION_LABEL_MIN_CONFIDENCE).toBeLessThan(1);
+  });
+});
+
+describe("stationShelfLabels", () => {
+  it("uses slot 1, then the family and the format, in plain words", () => {
+    expect(stationShelfLabels("sure", { file })).toEqual(["Italian oldies", "Oldies and past hits", "Mostly music"]);
+  });
+
+  it("leaves out unclear formats, the 'none' family and shaky answers", () => {
+    expect(stationShelfLabels("partial", { file })).toEqual(["News", "Mostly talk and news"]);
+    expect(stationShelfLabels("shaky", { file })).toEqual([]);
+    expect(stationShelfLabels("nope", { file })).toEqual([]);
+  });
+
+  it("never reads slots 2 and 3", () => {
+    expect(stationShelfLabels("dupes", { file })).toEqual(["Classical"]);
+  });
+
+  it("maps every labelled station and skips empty ones", () => {
+    expect(allStationShelfLabels({ file })).toEqual({
+      sure: ["Italian oldies", "Oldies and past hits", "Mostly music"],
+      partial: ["News", "Mostly talk and news"],
+      dupes: ["Classical"],
+    });
   });
 });
