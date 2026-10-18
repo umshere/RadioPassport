@@ -23,6 +23,11 @@ import {
 } from "~/state/stationAvailabilityStore";
 import { isMixedContentStream, upgradeHttpToHttps } from "~/utils/streamHeuristics";
 import {
+  canPlayNativeHls,
+  hlsFailureReason,
+  isHlsStreamUrl,
+} from "~/utils/hlsPlayback";
+import {
   nextProbeTargets,
   pickSkipCandidate,
   shouldSkipBeforePlay,
@@ -33,8 +38,8 @@ import {
   getRetryDelayMs,
   isPlaybackStalled,
   MAX_PLAYBACK_RECOVERY_ATTEMPTS,
+  retryStreamUrl,
   STALL_CHECK_INTERVAL_MS,
-  withRetryToken,
 } from "~/utils/playbackRecovery";
 import {
   shouldPauseAfterUnexpectedResume,
@@ -627,7 +632,8 @@ function GlobalAudioBridge() {
         const retryToken = `${Date.now()}-${retryAttempt}`;
         expectedSourceChangeRef.current = true;
         playedCurrentSourceRef.current = false;
-        audio.src = withRetryToken(streamUrl, retryToken);
+        audio.src = retryStreamUrl(streamUrl, retryToken);
+        audio.load();
         void audio.play().catch(() => {
           // Let normal error handlers decide whether to keep retrying or skip.
         });
@@ -685,9 +691,10 @@ function GlobalAudioBridge() {
       const url = current.streamUrl ?? current.url ?? "";
       const reason = isMixedContentStream(url, window.location.protocol)
         ? "mixed_content"
-        : current.hls
-        ? "hls_stream"
-        : "audio_error";
+        : hlsFailureReason({
+            isHls: isHlsStreamUrl(url),
+            nativeHls: canPlayNativeHls(audio),
+          }) ?? "audio_error";
       noteHttpOnlyStream(current);
       if (tryPlaybackRecovery(current, reason)) {
         return;
@@ -786,9 +793,10 @@ function GlobalAudioBridge() {
       const url = current.streamUrl ?? current.url ?? "";
       const reason = isMixedContentStream(url, window.location.protocol)
         ? "mixed_content"
-        : current.hls
-        ? "hls_stream"
-        : "timeout";
+        : hlsFailureReason({
+            isHls: isHlsStreamUrl(url),
+            nativeHls: canPlayNativeHls(audio),
+          }) ?? "timeout";
       if (tryPlaybackRecovery(current, reason)) return;
       markFailed(current.uuid, reason);
       autoSkipToNext(current, reason);
@@ -806,9 +814,10 @@ function GlobalAudioBridge() {
       const url = current.streamUrl ?? current.url ?? "";
       const reason = isMixedContentStream(url, window.location.protocol)
         ? "mixed_content"
-        : current.hls
-        ? "hls_stream"
-        : "timeout";
+        : hlsFailureReason({
+            isHls: isHlsStreamUrl(url),
+            nativeHls: canPlayNativeHls(audio),
+          }) ?? "timeout";
       if (tryPlaybackRecovery(current, reason)) return;
       void audio.play().catch(() => undefined);
     };
@@ -1069,9 +1078,10 @@ function GlobalAudioBridge() {
           const url = nowPlaying.streamUrl ?? nowPlaying.url ?? "";
           const reason = isMixedContentStream(url, window.location.protocol)
             ? "mixed_content"
-            : nowPlaying.hls
-            ? "hls_stream"
-            : "play_rejected";
+            : hlsFailureReason({
+                isHls: isHlsStreamUrl(url),
+                nativeHls: canPlayNativeHls(audio),
+              }) ?? "play_rejected";
           noteHttpOnlyStream(nowPlaying);
           if (tryPlaybackRecovery(nowPlaying, reason)) {
             return;

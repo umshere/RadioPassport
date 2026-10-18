@@ -6,6 +6,7 @@ import {
   getRetryDelayMs,
   isPlaybackStalled,
   MAX_PLAYBACK_RECOVERY_ATTEMPTS,
+  retryStreamUrl,
   STALL_TIMEOUT_MS,
   withRetryToken,
 } from "~/utils/playbackRecovery";
@@ -17,8 +18,10 @@ describe("playbackRecovery", () => {
     expect(canRetryPlayback("play_rejected")).toBe(true);
     expect(canRetryPlayback("timeout")).toBe(true);
     expect(canRetryPlayback("unknown")).toBe(true);
+    expect(canRetryPlayback("hls_native_error")).toBe(true);
     expect(canRetryPlayback("mixed_content")).toBe(false);
     expect(canRetryPlayback("hls_stream")).toBe(false);
+    expect(canRetryPlayback("hls_unsupported")).toBe(false);
   });
 
   it("returns bounded retry delays", () => {
@@ -30,6 +33,15 @@ describe("playbackRecovery", () => {
 
   it("adds cache-busting token to absolute URLs", () => {
     expect(withRetryToken("https://example.com/stream", "abc")).toBe(
+      "https://example.com/stream?rp_retry=abc"
+    );
+  });
+
+  it("reloads HLS playlists without adding a query param", () => {
+    expect(retryStreamUrl("https://example.com/live.m3u8", "abc")).toBe(
+      "https://example.com/live.m3u8"
+    );
+    expect(retryStreamUrl("https://example.com/stream", "abc")).toBe(
       "https://example.com/stream?rp_retry=abc"
     );
   });

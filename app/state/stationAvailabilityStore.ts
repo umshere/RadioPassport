@@ -5,6 +5,8 @@ export type StationFailureReason =
   | "play_rejected"
   | "mixed_content"
   | "hls_stream"
+  | "hls_native_error"
+  | "hls_unsupported"
   | "timeout"
   | "unknown";
 

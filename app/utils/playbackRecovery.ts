@@ -1,10 +1,12 @@
 import type { StationFailureReason } from "~/state/stationAvailabilityStore";
+import { isHlsStreamUrl } from "~/utils/hlsPlayback";
 
 const RECOVERABLE_REASONS: ReadonlySet<StationFailureReason> = new Set([
   "audio_error",
   "play_rejected",
   "timeout",
   "unknown",
+  "hls_native_error",
 ]);
 
 const RETRY_DELAYS_MS = [700, 1600] as const;
@@ -32,6 +34,14 @@ export function withRetryToken(url: string, token: string): string {
   } catch {
     return url;
   }
+}
+
+/**
+ * HLS playlists can be signed or reject unknown query params, so a retry
+ * reloads the same URL instead of adding `rp_retry`.
+ */
+export function retryStreamUrl(url: string, token: string): string {
+  return isHlsStreamUrl(url) ? url : withRetryToken(url, token);
 }
 
 export const MAX_PLAYBACK_RECOVERY_ATTEMPTS = RETRY_DELAYS_MS.length;
