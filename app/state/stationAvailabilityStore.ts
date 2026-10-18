@@ -7,6 +7,7 @@ export type StationFailureReason =
   | "hls_stream"
   | "hls_native_error"
   | "hls_unsupported"
+  | "hls_js_error"
   | "timeout"
   | "unknown";
 

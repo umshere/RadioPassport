@@ -1,4 +1,5 @@
 import { create, persist } from "~/utils/zustand-lite";
+import { destroyHlsFor, isHlsPending } from "~/utils/hlsPlayback";
 import type { SceneDescriptor } from "~/scenes/types";
 import { logUsage } from "~/utils/usage";
 import type { NowPlayingTrack } from "~/types/nowPlaying";
@@ -203,6 +204,7 @@ export const usePlayerStore = create<PlayerState>(
         if (!station) {
           const audio = get().audioElement;
           if (audio) {
+            destroyHlsFor(audio);
             audio.pause();
             audio.removeAttribute("src");
             audio.load();
@@ -391,6 +393,7 @@ export const usePlayerStore = create<PlayerState>(
         if (!hasStream) {
           const audio = get().audioElement;
           if (audio) {
+            destroyHlsFor(audio);
             audio.pause();
             audio.removeAttribute("src");
             audio.load();
@@ -406,6 +409,9 @@ export const usePlayerStore = create<PlayerState>(
           // GlobalAudioBridge uses this state to distinguish an explicit Play
           // from an unsolicited media-session resume.
           set({ isPlaying: true });
+          // hls.js starts playback from MANIFEST_PARSED once the MediaSource
+          // is attached; play() before that would reject and drop the intent.
+          if (isHlsPending(audio)) return;
           void audio
             .play()
             .catch(() => set({ isPlaying: false }));
@@ -421,6 +427,9 @@ export const usePlayerStore = create<PlayerState>(
         if (audio.paused) {
           // Keep the explicit Play intent synchronous with the user action.
           set({ isPlaying: true });
+          // hls.js starts playback from MANIFEST_PARSED once the MediaSource
+          // is attached; play() before that would reject and drop the intent.
+          if (isHlsPending(audio)) return;
           void audio
             .play()
             .catch(() => set({ isPlaying: false }));
@@ -432,6 +441,7 @@ export const usePlayerStore = create<PlayerState>(
       stop: () => {
         const audio = get().audioElement;
         if (audio) {
+          destroyHlsFor(audio);
           audio.pause();
           audio.removeAttribute("src");
           audio.load();

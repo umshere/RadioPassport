@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { Station } from "~/types/radio";
 import type { NowPlayingResponse, NowPlayingTrack } from "~/types/nowPlaying";
+import { isHlsStreamUrl } from "~/utils/hlsPlayback";
 
 export type NowPlayingState = {
   status: "idle" | "loading" | "ready" | "empty" | "error";
@@ -147,6 +148,20 @@ export function useNowPlayingMetadata(station: Station | null, isPlaying: boolea
         lastUpdated: Date.now(),
         refreshing: false,
         sourceKey: null,
+      });
+      return;
+    }
+
+    if (isHlsStreamUrl(streamUrl)) {
+      // HLS carries no ICY metadata we can read; do not poll the stream for a
+      // title that will never arrive.
+      setState({
+        status: "empty",
+        track: null,
+        message: "No track title from this station.",
+        lastUpdated: Date.now(),
+        refreshing: false,
+        sourceKey,
       });
       return;
     }

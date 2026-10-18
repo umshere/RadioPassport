@@ -2,8 +2,13 @@ import { describe, expect, it } from "vitest";
 
 import {
   canPlayNativeHls,
+  destroyHlsFor,
   hlsFailureReason,
+  hlsFor,
+  isHlsPending,
   isHlsStreamUrl,
+  rememberHls,
+  setHlsPending,
 } from "~/utils/hlsPlayback";
 
 describe("isHlsStreamUrl", () => {
@@ -66,5 +71,68 @@ describe("hlsFailureReason", () => {
   it("is null for non-HLS streams", () => {
     expect(hlsFailureReason({ isHls: false, nativeHls: true })).toBeNull();
     expect(hlsFailureReason({ isHls: false, nativeHls: false })).toBeNull();
+  });
+});
+
+describe("hls instance registry", () => {
+  function handle(label: string, calls: string[]) {
+    return {
+      destroy: () => calls.push(label),
+      startLoad: () => undefined,
+      loadSource: () => undefined,
+    };
+  }
+
+  it("keeps one instance per element and destroys the old one", () => {
+    const audio = {};
+    const calls: string[] = [];
+    const first = handle("first", calls);
+    const second = handle("second", calls);
+
+    rememberHls(audio, first);
+    expect(hlsFor(audio)).toBe(first);
+
+    rememberHls(audio, second);
+    expect(calls).toEqual(["first"]);
+    expect(hlsFor(audio)).toBe(second);
+
+    destroyHlsFor(audio);
+    expect(calls).toEqual(["first", "second"]);
+    expect(hlsFor(audio)).toBeNull();
+
+    destroyHlsFor(audio);
+    expect(calls).toEqual(["first", "second"]);
+  });
+
+  it("survives a destroy that throws", () => {
+    const audio = {};
+    rememberHls(audio, {
+      destroy: () => {
+        throw new Error("already gone");
+      },
+      startLoad: () => undefined,
+      loadSource: () => undefined,
+    });
+    expect(() => destroyHlsFor(audio)).not.toThrow();
+    expect(hlsFor(audio)).toBeNull();
+  });
+});
+
+describe("hls pending flag", () => {
+  it("marks a source as loading and clears it on destroy", () => {
+    const audio = {};
+    setHlsPending(audio, true);
+    expect(isHlsPending(audio)).toBe(true);
+    setHlsPending(audio, true);
+    expect(isHlsPending(audio)).toBe(true);
+    setHlsPending(audio, false);
+    expect(isHlsPending(audio)).toBe(false);
+  });
+
+  it("clears pending when the instance is destroyed", () => {
+    const audio = {};
+    setHlsPending(audio, true);
+    destroyHlsFor(audio);
+    expect(isHlsPending(audio)).toBe(false);
   });
 });

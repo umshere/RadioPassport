@@ -24,8 +24,14 @@ import {
 import { isMixedContentStream, upgradeHttpToHttps } from "~/utils/streamHeuristics";
 import {
   canPlayNativeHls,
+  destroyHlsFor,
+  HLS_JS_ENABLED,
   hlsFailureReason,
+  hlsFor,
+  isHlsPending,
   isHlsStreamUrl,
+  rememberHls,
+  setHlsPending,
 } from "~/utils/hlsPlayback";
 import {
   nextProbeTargets,
@@ -629,6 +635,14 @@ function GlobalAudioBridge() {
         const audio = audioRef.current;
         if (!audio) return;
 
+        const hls = hlsFor(audio);
+        if (hls && isHlsStreamUrl(streamUrl)) {
+          lastProgressAtRef.current = Date.now();
+          hls.startLoad();
+          void audio.play().catch(() => undefined);
+          return;
+        }
+
         const retryToken = `${Date.now()}-${retryAttempt}`;
         expectedSourceChangeRef.current = true;
         playedCurrentSourceRef.current = false;
@@ -683,6 +697,9 @@ function GlobalAudioBridge() {
       });
     };
     const handleError = () => {
+      // hls.js owns the media element while it is attached; it reports its own
+      // fatal errors after its recovery attempts.
+      if (hlsFor(audio)) return;
       // MEDIA_ERR_ABORTED is our own pause or source swap, not a dead station.
       if (audio.error?.code === 1) return;
       setIsPlaying(false);
@@ -962,6 +979,9 @@ function GlobalAudioBridge() {
     const audio = audioRef.current;
     if (!audio) return;
 
+    destroyHlsFor(audio);
+    setHlsPending(audio, false);
+
     if (!nowPlaying) {
       playedCurrentSourceRef.current = false;
       audio.pause();
@@ -995,6 +1015,79 @@ function GlobalAudioBridge() {
       audio.load();
       autoSkipToNext(nowPlaying, skipReason);
       return;
+    }
+
+    const needsHlsJs =
+      HLS_JS_ENABLED && isHlsStreamUrl(streamUrl) && !canPlayNativeHls(audio);
+
+    if (needsHlsJs) {
+      setHlsPending(audio, true);
+      let cancelled = false;
+      void import("hls.js")
+        .then(({ default: Hls }) => {
+          if (cancelled || nowPlayingRef.current?.uuid !== nowPlaying.uuid) return;
+          if (!Hls.isSupported()) {
+            setHlsPending(audio, false);
+            const reason = "hls_unsupported";
+            setIsPlaying(false);
+            markFailed(nowPlaying.uuid, reason);
+            autoSkipToNext(nowPlaying, reason);
+            return;
+          }
+
+          const instance = new Hls({ enableWorker: true, lowLatencyMode: false });
+          let recoveredNetwork = false;
+          let recoveredMedia = false;
+          rememberHls(audio, instance);
+
+          instance.on(Hls.Events.MANIFEST_PARSED, () => {
+            setHlsPending(audio, false);
+            lastProgressAtRef.current = Date.now();
+            if (usePlayerStore.getState().isPlaying) {
+              void audio.play().catch(() => undefined);
+            }
+          });
+          instance.on(Hls.Events.FRAG_BUFFERED, () => {
+            lastProgressAtRef.current = Date.now();
+          });
+          instance.on(Hls.Events.ERROR, (_event, data) => {
+            if (!data.fatal) return;
+            if (
+              data.type === Hls.ErrorTypes.NETWORK_ERROR &&
+              !recoveredNetwork
+            ) {
+              recoveredNetwork = true;
+              instance.startLoad();
+              return;
+            }
+            if (data.type === Hls.ErrorTypes.MEDIA_ERROR && !recoveredMedia) {
+              recoveredMedia = true;
+              instance.recoverMediaError();
+              return;
+            }
+            setHlsPending(audio, false);
+            destroyHlsFor(audio);
+            setIsPlaying(false);
+            markFailed(nowPlaying.uuid, "hls_js_error");
+            autoSkipToNext(nowPlaying, "hls_js_error");
+          });
+
+          instance.attachMedia(audio);
+          instance.loadSource(streamUrl);
+        })
+        .catch(() => {
+          if (cancelled) return;
+          setHlsPending(audio, false);
+          setIsPlaying(false);
+          markFailed(nowPlaying.uuid, "hls_js_error");
+          autoSkipToNext(nowPlaying, "hls_js_error");
+        });
+
+      return () => {
+        cancelled = true;
+        setHlsPending(audio, false);
+        destroyHlsFor(audio);
+      };
     }
 
     if (audio.src !== streamUrl) {
@@ -1055,6 +1148,9 @@ function GlobalAudioBridge() {
 
     if (isPlaying) {
       setPlaybackAudioSession();
+      // hls.js starts playback from MANIFEST_PARSED; calling play() before the
+      // MediaSource is attached would reject and count as a station failure.
+      if (isHlsPending(audio)) return;
       void audio
         .play()
         .then(() => {
