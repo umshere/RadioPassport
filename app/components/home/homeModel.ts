@@ -27,6 +27,8 @@ export type HomePhase = "arrive" | "seek" | "hour" | "aboard" | "empty";
 
 export const SEEK_MIN = 2;
 export const BOARD_STEPS = [8, 16, 32] as const;
+/** The redesign’s board is the main list, so it opens with 16 rows. */
+export const DESIGN_BOARD_STEPS = [16, 32, 64] as const;
 export const SEEK_CAP = 32;
 
 export function isSeekQuery(query: string): boolean {
@@ -49,17 +51,27 @@ export function homePhase(input: {
   return "arrive";
 }
 
-/** How many rows the board shows: a seek answer in full, else 8 → 16 → 32. */
-export function homeBoardCap(phase: HomePhase, more: number): number {
+/** How many rows the board shows: a seek answer in full, else 8 → 16 → 32
+ *  (the legacy home) or 16 → 32 → 64 (the redesign). */
+export function homeBoardCap(
+  phase: HomePhase,
+  more: number,
+  steps: readonly number[] = BOARD_STEPS,
+): number {
   if (phase === "seek") return SEEK_CAP;
-  const step = Math.max(0, Math.min(BOARD_STEPS.length - 1, Math.floor(more)));
-  return BOARD_STEPS[step]!;
+  const step = Math.max(0, Math.min(steps.length - 1, Math.floor(more)));
+  return steps[step]!;
 }
 
 /** Another press of "More departures" would show more rows. */
-export function canShowMore(phase: HomePhase, more: number, available: number): boolean {
+export function canShowMore(
+  phase: HomePhase,
+  more: number,
+  available: number,
+  steps: readonly number[] = BOARD_STEPS,
+): boolean {
   if (phase === "seek" || phase === "empty") return false;
-  return more < BOARD_STEPS.length - 1 && available > homeBoardCap(phase, more);
+  return more < steps.length - 1 && available > homeBoardCap(phase, more, steps);
 }
 
 export type HomeDeparture = Omit<Departure, "shared">;

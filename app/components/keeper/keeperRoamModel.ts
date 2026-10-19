@@ -29,6 +29,10 @@ export function keeperAnchor(name: string): { "data-keeper-anchor": string } {
 export const ROAM_MIN_WIDTH = 960;
 export const ROAM_SIZE = 104;
 export const ROAM_BUBBLE_WIDTH = 288;
+/** Before the first measure: taller than the longest welcome, so placement errs safe. */
+export const ROAM_BUBBLE_FALLBACK = 200;
+/** The bubble's bottom sits this far above his feet (the CSS says 24px inside a 104px figure). */
+export const ROAM_BUBBLE_BOTTOM = 80;
 /** The CSS transform transition is 1.1s; arrive a beat after it lands. */
 export const ROAM_WALK_MS = 1150;
 export const ROAM_HOP_MS = 1100;
@@ -57,6 +61,8 @@ export type RoamSpot = {
   flip: boolean;
   /** He hangs under the anchor (no room above it), not on top. */
   below: boolean;
+  /** The bubble has flipped to sit below him, clear of the header. */
+  bubbleBelow: boolean;
 };
 
 export type RoamPlacementInput = {
@@ -66,6 +72,7 @@ export type RoamPlacementInput = {
   viewport: Viewport;
   size?: number;
   bubbleWidth?: number;
+  bubbleHeight?: number;
   /** Force the below variant (e.g. a badge in the header). */
   below?: boolean;
 };
@@ -80,6 +87,7 @@ export type RoamPlacementInput = {
 export function roamSpot(input: RoamPlacementInput): RoamSpot {
   const size = input.size ?? ROAM_SIZE;
   const bubble = input.bubbleWidth ?? ROAM_BUBBLE_WIDTH;
+  const bubbleHeight = input.bubbleHeight ?? ROAM_BUBBLE_FALLBACK;
   const { anchor, stage, viewport } = input;
   const roomAbove = anchor.top - viewport.ceiling;
   const cramped = roomAbove < size - FOOT_SINK;
@@ -102,10 +110,15 @@ export function roamSpot(input: RoamPlacementInput): RoamSpot {
   }
   const right = Math.min(stage.width, viewport.width - stage.left) - size - GUTTER;
   x = Math.round(Math.max(GUTTER - stage.left, Math.min(x, right)));
-  y = Math.round(Math.max(GUTTER, y));
+  // Never let his feet slide under the sticky header, even when the anchor has.
+  y = Math.round(Math.max(viewport.ceiling + GUTTER - stage.top, y));
   const visibleRight = Math.min(viewport.width, stage.left + stage.width);
   const flip = stage.left + x + size + BUBBLE_GAP + bubble + GUTTER > visibleRight;
-  return { x, y, flip, below };
+  // The bubble hangs above him. If its top would cross the header, flip it
+  // below (the .ew-roam[data-bubble-below] layout) rather than cropping it.
+  const overhang = Math.max(0, bubbleHeight - ROAM_BUBBLE_BOTTOM);
+  const bubbleBelow = !below && y + stage.top - overhang < viewport.ceiling + GUTTER;
+  return { x, y, flip, below, bubbleBelow };
 }
 
 /** He faces the way he walks; standing still keeps his last facing. */

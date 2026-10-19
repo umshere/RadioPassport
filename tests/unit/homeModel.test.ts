@@ -3,6 +3,7 @@ import {
   arrivalSky,
   canShowMore,
   flapLine,
+  DESIGN_BOARD_STEPS,
   homeBoardCap,
   homeBoardHeading,
   homeDepartures,
@@ -57,6 +58,10 @@ describe("the board", () => {
     expect(homeBoardCap("arrive", 1)).toBe(16);
     expect(homeBoardCap("hour", 2)).toBe(32);
     expect(homeBoardCap("aboard", 9)).toBe(32);
+    expect(homeBoardCap("arrive", 0, DESIGN_BOARD_STEPS)).toBe(16);
+    expect(homeBoardCap("arrive", 1, DESIGN_BOARD_STEPS)).toBe(32);
+    expect(homeBoardCap("hour", 2, DESIGN_BOARD_STEPS)).toBe(64);
+    expect(homeBoardCap("aboard", 9, DESIGN_BOARD_STEPS)).toBe(64);
     expect(homeBoardCap("seek", 0)).toBe(32);
   });
   it("offers more only while there is more to show", () => {

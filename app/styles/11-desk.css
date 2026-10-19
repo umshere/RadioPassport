@@ -206,6 +206,12 @@
 .ew-place-when { display: flex; align-items: center; gap: 8px; margin: 0; font: 500 11px/1.4 "Azeret Mono", ui-monospace, monospace; letter-spacing: .1em; text-transform: uppercase; color: color-mix(in srgb, var(--sky-tint) 55%, var(--ew-bone)); }
 .ew-place-flag { flex: none; }
 .ew-place-note { margin: 0; max-width: 34ch; font: italic 400 15px/1.4 "Newsreader", serif; color: var(--ew-dust); }
+.ew-place-keeper-line { display: none; }
+@media (max-width: 699px) {
+  .ew-place-keeper-line { display: grid; gap: 3px; margin: 14px 0 0; padding: 10px 0 0 12px; border-left: 1px solid var(--ew-foil-line); }
+  .ew-place-keeper-say { font: italic 400 17px/1.35 "Newsreader", "Iowan Old Style", serif; color: var(--ew-bone); }
+  .ew-place-keeper-sub { font: 400 12px/1.4 "Schibsted Grotesk", sans-serif; color: var(--ew-dust); }
+}
 .ew-place-where .ew-secret-trail { min-height: 0; }
 .ew-place-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 0; padding-top: 12px; border-top: 1px solid var(--ew-rule); }
 .ew-place-grid dt { font: 500 10px/1.3 "Azeret Mono", ui-monospace, monospace; letter-spacing: .14em; text-transform: uppercase; color: var(--ew-dust); }

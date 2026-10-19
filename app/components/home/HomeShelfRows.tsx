@@ -61,6 +61,7 @@ export function HomeYours({
   onDeleteTrip,
   stops,
   actions,
+  onFind,
 }: {
   tab: YoursTab;
   onTab: (tab: YoursTab) => void;
@@ -72,6 +73,8 @@ export function HomeYours({
   onDeleteTrip: (id: string) => void;
   stops: TourStop[];
   actions: CardActions;
+  /** The empty state's way back to the live board. */
+  onFind: () => void;
 }) {
   const [naming, setNaming] = useState(false);
   const [draft, setDraft] = useState("");
@@ -90,28 +93,45 @@ export function HomeYours({
     ...trips.map((item) => ({ id: `trip:${item.id}` as YoursTab, label: item.name, count: item.stations.length })),
   ];
 
+  if (!saved.length && !recent.length && !trips.length) {
+    return (
+      <section className="ew-yours is-empty" aria-labelledby="ew-yours-title" {...keeperAnchor("shelf-yours")}>
+        <header className="ew-yours-head">
+          <h2 id="ew-yours-title" className="ew-shelf-title">
+            {VOICE.yoursTitle}
+          </h2>
+          <p className="ew-yours-empty-line">{VOICE.yoursSavedEmpty}</p>
+          <button type="button" className="ew-yours-tab ew-yours-find" onClick={onFind}>
+            {VOICE.yoursFind} <span aria-hidden="true">→</span>
+          </button>
+        </header>
+      </section>
+    );
+  }
+
   return (
     <section className="ew-yours" aria-labelledby="ew-yours-title" {...keeperAnchor("shelf-yours")}>
       <header className="ew-yours-head">
         <h2 id="ew-yours-title" className="ew-shelf-title">
           {VOICE.yoursTitle}
         </h2>
-        <div className="ew-yours-tabs" role="tablist" aria-label={VOICE.yoursTitle}>
-          {tabs.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              role="tab"
-              id={`ew-yours-tab-${item.id}`}
-              aria-selected={current === item.id}
-              aria-controls="ew-yours-panel"
-              className="ew-yours-tab"
-              onClick={() => onTab(item.id)}
-            >
-              {item.label}
-              {item.count ? <small>{item.count}</small> : null}
-            </button>
-          ))}
+        <div className="ew-yours-tabbar">
+          <div className="ew-yours-tabs" role="group" aria-label={VOICE.yoursTitle}>
+            {tabs.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                id={`ew-yours-tab-${item.id}`}
+                aria-pressed={current === item.id}
+                aria-controls="ew-yours-panel"
+                className="ew-yours-tab"
+                onClick={() => onTab(item.id)}
+              >
+                {item.label}
+                {item.count ? <small>{item.count}</small> : null}
+              </button>
+            ))}
+          </div>
           <button
             type="button"
             className="ew-yours-tab is-new"
@@ -149,7 +169,7 @@ export function HomeYours({
           <p>{VOICE.yoursTripHint}</p>
         </form>
       ) : null}
-      <div id="ew-yours-panel" role="tabpanel" aria-labelledby={`ew-yours-tab-${current}`} className="ew-yours-panel">
+      <div id="ew-yours-panel" className="ew-yours-panel">
         {cards.length ? (
           <CardRow
             cards={cards}

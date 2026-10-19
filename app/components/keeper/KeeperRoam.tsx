@@ -6,6 +6,7 @@ import { Provenance } from "./KeeperAttachment";
 import {
   anchorInView,
   KEEPER_ANCHOR_ATTR,
+  ROAM_BUBBLE_FALLBACK,
   ROAM_MIN_WIDTH,
   ROAM_SIZE,
   roamFacing,
@@ -87,7 +88,15 @@ function inViewNow(name: string): boolean {
 }
 
 function sameSpot(a: RoamSpot | null, b: RoamSpot | null) {
-  return Boolean(a && b && a.x === b.x && a.y === b.y && a.flip === b.flip && a.below === b.below);
+  return Boolean(
+    a &&
+      b &&
+      a.x === b.x &&
+      a.y === b.y &&
+      a.flip === b.flip &&
+      a.below === b.below &&
+      a.bubbleBelow === b.bubbleBelow,
+  );
 }
 
 /**
@@ -135,6 +144,9 @@ export function KeeperRoam({ view, askEnabled }: { view: KeeperView; askEnabled:
   const [facing, setFacing] = useState<1 | -1>(1);
   const spotRef = useRef<RoamSpot | null>(null);
   const nodeRef = useRef<HTMLElement | null>(null);
+  const bubbleNodeRef = useRef<HTMLDivElement | null>(null);
+  const bubbleHeightRef = useRef(ROAM_BUBBLE_FALLBACK);
+  const bubbleObserverRef = useRef<ResizeObserver | null>(null);
 
   const anchor = wide ? roam.anchor : null;
 
@@ -154,11 +166,14 @@ export function KeeperRoam({ view, askEnabled }: { view: KeeperView; askEnabled:
       setSpot(null);
       return false;
     }
+    const measuredBubble = bubbleNodeRef.current?.getBoundingClientRect().height ?? 0;
+    if (measuredBubble > 0) bubbleHeightRef.current = measuredBubble;
     const next = roamSpot({
       anchor: toRect(node.getBoundingClientRect()),
       stage: measureStage(),
       viewport: measureViewport(),
       size: ROAM_SIZE,
+      bubbleHeight: bubbleHeightRef.current,
       below: node.dataset.keeperBelow === "true" ? true : undefined,
     });
     const previous = spotRef.current;
@@ -217,6 +232,32 @@ export function KeeperRoam({ view, askEnabled }: { view: KeeperView; askEnabled:
       window.removeEventListener("scroll", schedule, { capture: true });
     };
   }, [anchor, measure]);
+
+  // The bubble's real height decides whether it can sit above him. The
+  // callback ref measures it on mount and the observer catches a longer line,
+  // a sub-line or actions appearing: re-place with the measured height, not a
+  // guess.
+  const attachBubble = useCallback(
+    (node: HTMLDivElement | null) => {
+      bubbleNodeRef.current = node;
+      bubbleObserverRef.current?.disconnect();
+      bubbleObserverRef.current = null;
+      if (!node) return;
+      const sync = () => {
+        const height = node.getBoundingClientRect().height;
+        if (height > 0 && Math.abs(height - bubbleHeightRef.current) > 0.5) {
+          bubbleHeightRef.current = height;
+          measure();
+        }
+      };
+      sync();
+      if (typeof ResizeObserver !== "undefined") {
+        bubbleObserverRef.current = new ResizeObserver(sync);
+        bubbleObserverRef.current.observe(node);
+      }
+    },
+    [measure],
+  );
 
   const shown = Boolean(anchor && spot);
   useEffect(() => {
@@ -280,11 +321,12 @@ export function KeeperRoam({ view, askEnabled }: { view: KeeperView; askEnabled:
       data-hop={roam.hopping || undefined}
       data-flip={spot.flip || undefined}
       data-below={spot.below || undefined}
+      data-bubble-below={spot.bubbleBelow || undefined}
       data-away={view.sheetOpen || undefined}
       data-pose={pose}
       style={{ transform: `translate(${spot.x}px, ${spot.y}px)` }}
     >
-      <div className="ew-roam-say" role={announce ? "status" : undefined} aria-live={announce ? "polite" : "off"}>
+      <div ref={attachBubble} className="ew-roam-say" role={announce ? "status" : undefined} aria-live={announce ? "polite" : "off"}>
         {bubble ? (
           <div className="ew-roam-bubble" key={bubble.line}>
             <p className="ew-roam-doing">{VOICE.roamDoing[pose]}</p>

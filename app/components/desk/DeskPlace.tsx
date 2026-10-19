@@ -4,7 +4,7 @@ import { FlipBoard } from "~/components/radio-passport/FlipBoard";
 import { Eyebrow } from "~/components/ui/Eyebrow";
 import { ShareButton } from "~/components/share/ShareButton";
 import { keeperAnchor } from "~/components/keeper/keeperRoamModel";
-import { spokenHour, titleCase, type KeeperFacts } from "~/components/keeper/keeperFacts";
+import { spokenHour, tidyStationName, titleCase, type KeeperFacts } from "~/components/keeper/keeperFacts";
 import { hourWord, VOICE } from "~/components/keeper/keeperVoice";
 import type { Station } from "~/types/radio";
 import { DESK_ANCHORS } from "./deskKeeper";
@@ -124,6 +124,16 @@ export function DeskPlace({
           <span>{[country && country !== place ? country : null, when].filter(Boolean).join(" · ") || facts.station.name}</span>
         </p>
         {hour ? null : <p className="ew-place-note">{VOICE.hourUnknown}</p>}
+        <p className="ew-place-keeper-line">
+          <span className="ew-place-keeper-say">
+            {hour ? VOICE.deskRoam.landed(hour.clock, place) : VOICE.deskRoam.landedNoHour(place)}
+          </span>
+          <span className="ew-place-keeper-sub">
+            {stamped
+              ? VOICE.deskRoam.landedSubStamped(tidyStationName(station.name))
+              : VOICE.deskRoam.landedSub(tidyStationName(station.name))}
+          </span>
+        </p>
         {children}
       </div>
 

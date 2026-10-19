@@ -34,6 +34,7 @@ describe("roaming keeper: where he stands", () => {
     expect(spot.x).toBe(100 + 500 - ROAM_SIZE - 24);
     expect(spot.y).toBe(400 - ROAM_SIZE + 6);
     expect(spot.flip).toBe(false);
+    expect(spot.bubbleBelow).toBe(false);
   });
 
   it("works in document coordinates when the page has scrolled", () => {
@@ -51,7 +52,8 @@ describe("roaming keeper: where he stands", () => {
     const spot = roamSpot({ anchor: { left: 1200, top: 20, width: 120, height: 36 }, stage, viewport });
     expect(spot.below).toBe(true);
     expect(spot.x).toBe(Math.round(1200 + 60 - ROAM_SIZE / 2));
-    expect(spot.y).toBe(20 + 36 + 4);
+    expect(spot.y).toBe(64 + 8);
+    expect(spot.bubbleBelow).toBe(false);
   });
 
   it("stands inside the top corner of a tall card against the header, never under it", () => {
@@ -59,6 +61,56 @@ describe("roaming keeper: where he stands", () => {
     expect(spot.below).toBe(false);
     expect(spot.y).toBe(76 + 8);
     expect(spot.x).toBe(24 + 520 - ROAM_SIZE - 24);
+    expect(spot.bubbleBelow).toBe(true);
+  });
+
+  it("hides the line when the bubble would cross the header as the page scrolls", () => {
+    const scrolled = { ...stage, top: -120 };
+    const spot = roamSpot({ anchor: { left: 24, top: 60, width: 520, height: 720 }, stage: scrolled, viewport });
+    expect(spot.y + scrolled.top).toBeGreaterThanOrEqual(viewport.ceiling + 8);
+    expect(spot.bubbleBelow).toBe(true);
+  });
+
+  it("keeps a short bubble above when there is room", () => {
+    const spot = roamSpot({
+      anchor: { left: 24, top: 260, width: 520, height: 360 },
+      stage,
+      viewport,
+      bubbleHeight: 100,
+    });
+    expect(spot.bubbleBelow).toBe(false);
+  });
+
+  it("flips a tall bubble below when it would cross the header", () => {
+    const spot = roamSpot({
+      anchor: { left: 24, top: 260, width: 520, height: 360 },
+      stage,
+      viewport,
+      bubbleHeight: 179,
+    });
+    expect(spot.bubbleBelow).toBe(true);
+  });
+
+  it("keeps a tall bubble above when the card is low enough", () => {
+    const spot = roamSpot({
+      anchor: { left: 24, top: 420, width: 520, height: 360 },
+      stage,
+      viewport,
+      bubbleHeight: 179,
+    });
+    expect(spot.bubbleBelow).toBe(false);
+  });
+
+  it("keeps the stamp hop’s passport-badge bubble below the header", () => {
+    const spot = roamSpot({
+      anchor: { left: 1299, top: 4, width: 121, height: 44 },
+      stage,
+      viewport,
+      bubbleHeight: 65,
+    });
+    expect(spot.below).toBe(true);
+    expect(spot.bubbleBelow).toBe(false);
+    expect(spot.y).toBe(64 + 8);
   });
 
   it("takes the below variant on request", () => {

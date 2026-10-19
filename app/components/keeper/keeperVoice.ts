@@ -171,6 +171,8 @@ export const VOICE = {
   homeFresh: "Fresh board",
   homeRecent: "Recent stamps",
   homeRecentOpen: "Open the passport",
+  homePassport: "Your passport",
+  homePassportEmpty: "No stamps yet. Land somewhere and stay a minute.",
   homeLeaving: "Ready",
   homeLanding: "Landing now",
 
@@ -215,6 +217,7 @@ export const VOICE = {
   yoursTripHint: "Then tap + on any station and choose the trip. That’s it.",
   yoursTripRemove: "Remove this trip",
   yoursSavedEmpty: "Tap ♡ on any station and it waits here.",
+  yoursFind: "Find a station",
   yoursRecentEmpty: "Stations you board will wait here.",
   yoursTripEmpty: (name: string) => `Nothing in ${name} yet. Tap + on any station to add it.`,
   tripAdd: "Add to a trip",

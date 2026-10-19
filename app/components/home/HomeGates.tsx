@@ -4,6 +4,7 @@ import { Button } from "~/components/ui/Button";
 import { VOICE } from "~/components/keeper/keeperVoice";
 import { keeperAnchor } from "~/components/keeper/keeperRoamModel";
 import type { SolarHour } from "~/utils/localTime";
+import type { PassportStamp } from "~/state/journeyStore";
 
 /**
  * The gates: where you ask to go. The intent field (a real child of its rail,
@@ -15,10 +16,15 @@ export function HomeGates({
   hour,
   onHourTap,
   onAtlas,
+  stamps,
+  onPassport,
 }: {
   hour: SolarHour | null;
   onHourTap: (item: SolarHour) => void;
   onAtlas: () => void;
+  /** The last few stamps: a quick way into the passport on wider screens. */
+  stamps?: PassportStamp[];
+  onPassport?: () => void;
 }) {
   return (
     <section className="ew-gates" aria-label={VOICE.homeGates}>
@@ -35,6 +41,27 @@ export function HomeGates({
           <span aria-hidden="true">→</span>
         </Button>
       </div>
+      {stamps && onPassport ? (
+        <div className="ew-gates-passport">
+          <p className="ew-gates-hint">{stamps.length ? VOICE.homeRecent : VOICE.homePassport}</p>
+          <p className="ew-gates-passport-count">{VOICE.stampCount(stamps.length)}</p>
+          {stamps.length ? (
+            <ul className="ew-gates-stamps">
+              {stamps.map((stamp) => (
+                <li key={stamp.id}>
+                  <b>{stamp.city}</b>
+                  <span>{stamp.country}</span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="ew-gates-passport-empty">{VOICE.homePassportEmpty}</p>
+          )}
+          <Button variant="text" className="ew-gates-passport-open" onClick={onPassport}>
+            {VOICE.homeRecentOpen} <span aria-hidden="true">→</span>
+          </Button>
+        </div>
+      ) : null}
     </section>
   );
 }

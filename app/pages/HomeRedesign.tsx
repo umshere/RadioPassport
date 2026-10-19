@@ -43,6 +43,7 @@ import { HomeDepartures } from "~/components/home/HomeDepartures";
 import {
   arrivalSky,
   canShowMore,
+  DESIGN_BOARD_STEPS,
   homeBoardCap,
   homeBoardHeading,
   homeDepartures,
@@ -77,7 +78,7 @@ import {
   type HomeShelf,
   type ShelfCard,
 } from "~/components/home/homeShelves";
-import { useHomeGuide, GUIDE_BOARD } from "~/hooks/home/useHomeGuide";
+import { useHomeGuide, GUIDE_BOARD, GUIDE_LANDING } from "~/hooks/home/useHomeGuide";
 import { keeperAnchor } from "~/components/keeper/keeperRoamModel";
 import { hourWord } from "~/components/keeper/keeperVoice";
 import type { Station } from "~/types/radio";
@@ -228,7 +229,7 @@ export function HomeRedesign() {
   // A real deal, not a rotation — rotating slides the window one slot and
   // leaves 7 of 8 rows standing.
   const [shuffle, setShuffle] = useState(0);
-  const cap = homeBoardCap(phase, more);
+  const cap = homeBoardCap(phase, more, DESIGN_BOARD_STEPS);
   const boardRows = useMemo(() => {
     const ordered = isSeeking
       ? filtered
@@ -349,6 +350,18 @@ export function HomeRedesign() {
   const roamAt = useKeeperStore((state) => (state.roam.phase === "resting" ? state.roam.anchor : null));
   const roamShown = useKeeperStore((state) => state.roamShown);
   const roamSay = useKeeperStore((state) => state.roamSay);
+  const roamBubbleOpen = useKeeperStore(
+    (state) => state.roam.phase === "resting" && state.roam.anchor === GUIDE_LANDING && Boolean(state.roam.bubble),
+  );
+  const keeperHushed = useKeeperStore((state) => state.hushed);
+  // The head room is for his greeting. Hold it until he has actually spoken
+  // there, then give it back once he walks off, is hushed or closes the bubble.
+  const [greeted, setGreeted] = useState(false);
+  useEffect(() => {
+    if (roamBubbleOpen) setGreeted(true);
+  }, [roamBubbleOpen]);
+  const roamElsewhere = Boolean(roamAt && roamAt !== GUIDE_LANDING);
+  const headRoom = !(roamElsewhere || keeperHushed || (greeted && !roamBubbleOpen));
   const toCards = useCallback(
     (stations: Station[]): ShelfCard[] =>
       homeDepartures(stations, now).map((row) => ({ ...row, label: labels[row.station.uuid] ?? null })),
@@ -434,7 +447,7 @@ export function HomeRedesign() {
   return (
     <main
       ref={pageRef}
-      className={`ew-home${nowPlaying ? " is-landed" : ""}`}
+      className={`ew-home is-redesign${headRoom ? " has-head-room" : ""}${nowPlaying ? " is-landed" : ""}`}
       data-phase={phase}
       style={
         {
@@ -533,6 +546,8 @@ export function HomeRedesign() {
         </div>
           <HomeGates
             hour={hour}
+            stamps={journeyReady ? stamps.slice(0, 3) : undefined}
+            onPassport={journeyReady ? () => setPassport(true) : undefined}
             onHourTap={(item) => {
               // The hour shelf answers a gate; the keeper walks to its pick
               // (useHomeGuide) and the board below narrows to that hour.
@@ -545,8 +560,50 @@ export function HomeRedesign() {
           />
         </div>
         <div className="ew-home-main">
+          <div className="ew-home-all" {...keeperAnchor(GUIDE_BOARD)}>
+            <HomeDepartures
+              phase={phase}
+              heading={phase === "arrive" ? VOICE.homeAllDepartures : heading}
+              countLabel={countLabel}
+              rows={departures}
+              loading={catalogLoading}
+              playingUuid={isPlaying ? nowPlaying?.uuid ?? null : null}
+              favoriteIds={favorites}
+              onPlay={(station) => play(station)}
+              onFavorite={(station) => toggleFavorite(station.uuid, station)}
+              onTrip={cardActions.onTrip}
+              empty={phase === "empty" ? coverEmpty : null}
+              onEmptyAction={(action) => {
+                if (action.id === "surprise") void requestAiWorld();
+                if (action.id === "atlas") setAtlas(true);
+                if (action.id === "clear-search") setQuery("");
+                if (action.id === "clear-hour") setHour(null);
+                if (action.id === "clear-place") setPlace(null);
+                if (action.id === "retry-catalog") retryCatalog();
+              }}
+              onShuffle={() => setShuffle((value) => value + 1)}
+              shuffleKey={shuffle}
+              canMore={canShowMore(phase, more, filtered.length, DESIGN_BOARD_STEPS)}
+              onMore={() => setMore((value) => value + 1)}
+              stamps={journeyReady ? stamps : []}
+              onOpenPassport={() => setPassport(true)}
+              notice={
+                aiStatus === "error" && listening.exploreError ? (
+                  <div className="ew-home-notice" role="alert">
+                    <p>{listening.exploreError}</p>
+                    <Button onClick={() => void requestAiWorld()}>
+                      Try the mix again →
+                    </Button>
+                  </div>
+                ) : null
+              }
+            />
+          </div>
           {browsing ? (
             <>
+              {shelves.slice(0, 1).map((shelf) => (
+                <HomeShelfRow key={shelf.id} shelf={shelf} stops={stops} actions={cardActions} />
+              ))}
               <HomeYours
                 tab={tab}
                 onTab={setYoursTab}
@@ -561,51 +618,13 @@ export function HomeRedesign() {
                 }}
                 stops={stops}
                 actions={cardActions}
+                onFind={scrollToBoard}
               />
-              {shelves.map((shelf) => (
+              {shelves.slice(1).map((shelf) => (
                 <HomeShelfRow key={shelf.id} shelf={shelf} stops={stops} actions={cardActions} />
               ))}
             </>
           ) : null}
-          <div className="ew-home-all" {...keeperAnchor(GUIDE_BOARD)}>
-          <HomeDepartures
-            phase={phase}
-            heading={phase === "arrive" ? VOICE.homeAllDepartures : heading}
-            countLabel={countLabel}
-            rows={departures}
-            loading={catalogLoading}
-            playingUuid={isPlaying ? nowPlaying?.uuid ?? null : null}
-            favoriteIds={favorites}
-            onPlay={(station) => play(station)}
-            onFavorite={(station) => toggleFavorite(station.uuid, station)}
-            onTrip={cardActions.onTrip}
-            empty={phase === "empty" ? coverEmpty : null}
-            onEmptyAction={(action) => {
-              if (action.id === "surprise") void requestAiWorld();
-              if (action.id === "atlas") setAtlas(true);
-              if (action.id === "clear-search") setQuery("");
-              if (action.id === "clear-hour") setHour(null);
-              if (action.id === "clear-place") setPlace(null);
-              if (action.id === "retry-catalog") retryCatalog();
-            }}
-            onShuffle={() => setShuffle((value) => value + 1)}
-            shuffleKey={shuffle}
-            canMore={canShowMore(phase, more, filtered.length)}
-            onMore={() => setMore((value) => value + 1)}
-            stamps={journeyReady ? stamps : []}
-            onOpenPassport={() => setPassport(true)}
-            notice={
-              aiStatus === "error" && listening.exploreError ? (
-                <div className="ew-home-notice" role="alert">
-                  <p>{listening.exploreError}</p>
-                  <Button onClick={() => void requestAiWorld()}>
-                    Try the mix again →
-                  </Button>
-                </div>
-              ) : null
-            }
-          />
-          </div>
           <footer className="ew-home-foot">
             <span>You are not here.</span>
             <Link to="/about" prefetch="intent">
