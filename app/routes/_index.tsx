@@ -1,10 +1,7 @@
 import { json, type LoaderFunctionArgs } from "@remix-run/node";
-import { useLoaderData } from "@remix-run/react";
 import { BRAND } from "~/constants/brand";
 import { HOME_NO_STORE, loadHomeBoard } from "~/services/home/homeBoard.server";
 import { homeShelfData } from "~/services/home/homeShelves.server";
-import { readRedesignFlag, redesignHeaders } from "~/services/redesign.server";
-import { HomeLegacy } from "~/pages/HomeLegacy";
 import { HomeRedesign } from "~/pages/HomeRedesign";
 
 const LD = {
@@ -67,29 +64,17 @@ export function shouldRevalidate({
   return currentUrl.search !== nextUrl.search;
 }
 
-export async function loader({ request }: LoaderFunctionArgs) {
+export async function loader(_args: LoaderFunctionArgs) {
   // boardSeed is per request, so the board deals a fresh window on every load
   // while the catalog itself comes from the short server-side cache.
   const boardSeed = Date.now();
-  const flag = readRedesignFlag(request);
   const board = await loadHomeBoard();
-  // The redesign's label shelves join the offline station labels to the live
-  // pool here, on the server: no model call per visitor, and the labels never
-  // ship whole. The old home does not need them.
-  const shelfData = flag.on ? homeShelfData(board.stations) : null;
-  return json(
-    {
-      ...board,
-      boardSeed,
-      redesign: flag.on,
-      shelves: shelfData?.shelves ?? [],
-      labels: shelfData?.labels ?? {},
-    },
-    { headers: redesignHeaders(flag, HOME_NO_STORE) },
-  );
+  // The label shelves join the offline station labels to the live pool here,
+  // on the server: no model call per visitor, and the labels never ship whole.
+  const { shelves, labels } = homeShelfData(board.stations);
+  return json({ ...board, boardSeed, shelves, labels }, { headers: HOME_NO_STORE });
 }
 
 export default function IndexRoute() {
-  const { redesign } = useLoaderData<typeof loader>();
-  return redesign ? <HomeRedesign /> : <HomeLegacy />;
+  return <HomeRedesign />;
 }
