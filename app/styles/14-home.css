@@ -36,7 +36,7 @@
 .ew-home-main > * { flex: none; min-width: 0; }
 
 /* ---- The Keeper's sourced route: a small closed door beside his greeting. */
-.ew-home-keeper-route { display: grid; gap: 8px; min-width: 0; padding-inline: var(--desk-pad-l) var(--desk-pad-r); }
+.ew-home-keeper-route { min-width: 0; padding-inline: var(--desk-pad-l) var(--desk-pad-r); }
 .ew-keeper-route { min-width: 0; border: 1px solid var(--ew-rule); background: var(--ew-leather); color: var(--ew-bone); }
 .ew-keeper-route-summary {
   display: grid;
@@ -57,6 +57,11 @@
 .ew-keeper-route-open, .ew-keeper-route[open] .ew-keeper-route-closed { display: none; }
 .ew-keeper-route[open] .ew-keeper-route-open { display: inline; }
 .ew-keeper-route-body { padding: 0 12px 12px; }
+.ew-keeper-route-artists { display: flex; flex-wrap: wrap; gap: 6px; min-width: 0; margin: 2px 0 8px; }
+.ew-keeper-route-artist { min-height: 36px; padding: 0 10px; border: 1px solid var(--ew-rule); background: var(--ew-ink); color: var(--ew-dust); font: 500 11px/1 "Azeret Mono", ui-monospace, monospace; letter-spacing: .06em; cursor: pointer; }
+.ew-keeper-route-artist[aria-pressed="true"] { border-color: var(--ew-foil); color: var(--ew-foil); }
+.ew-keeper-route-artist:focus-visible { outline: 2px solid var(--ew-foil); outline-offset: 1px; }
+@media (pointer: coarse) { .ew-keeper-route-artist { min-height: 44px; } }
 .ew-keeper-route-intro { margin: 4px 0 10px; color: var(--ew-dust); font: italic 400 15px/1.35 "Newsreader", "Iowan Old Style", serif; overflow-wrap: anywhere; }
 .ew-keeper-route-stops { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 256px), 1fr)); gap: 8px; min-width: 0; margin: 0; padding: 0; list-style: none; }
 .ew-keeper-route-stop { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-content: start; align-items: center; gap: 6px 10px; min-width: 0; padding: 10px; border: 1px solid var(--ew-rule); background: var(--ew-ink); }

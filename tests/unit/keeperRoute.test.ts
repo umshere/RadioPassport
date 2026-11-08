@@ -64,11 +64,33 @@ describe("Keeper's Route", () => {
   });
 
   describe("artist routes", () => {
-    it("offers Khruangbin, Radiohead and Yesudas, each with a unique id", () => {
+    it("leads with Khruangbin, Radiohead and Yesudas, then the rest, each with a unique id and chip label", () => {
       const ids = KEEPER_ROUTES.map((route) => route.id);
-      expect(ids).toEqual(["khruangbin", "radiohead", "yesudas"]);
+      expect(ids.slice(0, 3)).toEqual(["khruangbin", "radiohead", "yesudas"]);
+      expect(ids).toEqual(
+        expect.arrayContaining([
+          "beatles", "coldplay", "pink-floyd", "queen", "led-zeppelin", "elvis",
+          "michael-jackson", "bob-marley", "fairuz", "kishore-kumar",
+          "lata-mangeshkar", "mohammed-rafi", "ar-rahman", "arijit-singh",
+        ]),
+      );
       expect(new Set(ids).size).toBe(ids.length);
+      const labels = KEEPER_ROUTES.map((route) => route.label);
+      expect(labels.every((label) => label.trim() !== "")).toBe(true);
+      expect(new Set(labels).size).toBe(labels.length);
       expect(KEEPER_ROUTES[0]).toBe(HOME_KEEPER_ROUTE);
+    });
+
+    it("plays every stream over https with no expiring token in the URL", () => {
+      for (const route of KEEPER_ROUTES) {
+        for (const stop of route.stops) {
+          const stream = new URL(stop.station.streamUrl ?? "");
+          expect(stream.protocol).toBe("https:");
+          expect(stream.search).toBe("");
+          expect(stop.station.codec).toBe("MP3");
+          expect(stop.station.hls).toBe(false);
+        }
+      }
     });
 
     it("gives every stop a playable stream, a distinct station and a clean https source", () => {

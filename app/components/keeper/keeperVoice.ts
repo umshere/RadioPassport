@@ -194,6 +194,10 @@ export const VOICE = {
   homeKeeperRouteYesudasTitle: "The Yesudas trail",
   homeKeeperRouteYesudasReason: "A Malayalam stream for K. J. Yesudas.",
   homeKeeperRouteYesudasSource: "K. J. Yesudas · Wikipedia",
+  homeKeeperRouteArtistTitle: (artist: string) => `The ${artist} trail`,
+  homeKeeperRouteArtistReason: (artist: string) => `A stream given to ${artist}’s music.`,
+  homeKeeperRouteArtistSource: (artist: string) => `${artist} · Wikipedia`,
+  homeKeeperRouteChoose: "Choose an artist",
 
   /* ---- Home shelves: what each row is, said from the data only. Shelf
      words never claim what is on air this minute. ---- */
