@@ -27,6 +27,7 @@ Elsewhere (repo heritage name: Radio Passport). Live radio from someone else's n
 | Doc | Covers |
 |---|---|
 | [ARCHITECTURE.md](./ARCHITECTURE.md) | Tree, routes, playback, the Room, data, styling |
+| [STATE_MACHINES.md](./STATE_MACHINES.md) | Workflow owners, transition rules, and coverage gaps |
 | [AI_PIPELINE.md](./AI_PIPELINE.md) | AI calls, provider order, trivia pipeline, the world-mix contract |
 | [ENVIRONMENT.md](./ENVIRONMENT.md) | Environment **variables** (not the light) |
 | [TESTING_GUIDE.md](./TESTING_GUIDE.md) | Tests, rules that bite, manual checklist |

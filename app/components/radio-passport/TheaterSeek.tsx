@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { IntentBar } from "~/components/radio-passport/IntentBar";
 import { SeekShell } from "~/components/radio-passport/SeekShell";
+import { useStationRequest } from "~/hooks/useStationRequest";
 import { loadWorldDescriptorPreview } from "~/services/aiOrchestrator";
 import { resolveTypedIntent } from "~/services/ai/intent/promptIntent";
 import { useJourneyStore } from "~/state/journeyStore";
@@ -44,8 +45,9 @@ export function TheaterSeek({ held = false }: { held?: boolean }) {
   const open = held || openState;
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [mixLoading, setMixLoading] = useState(false);
+  const { pending, begin, cancel } = useStationRequest<"search" | "mix">();
+  const loading = pending === "search";
+  const mixLoading = pending === "mix";
   const startStation = usePlayerStore((state) => state.startStation);
   const nowPlaying = usePlayerStore((state) => state.nowPlaying);
   const recordPlayed = useJourneyStore((state) => state.recordPlayed);
@@ -72,11 +74,11 @@ export function TheaterSeek({ held = false }: { held?: boolean }) {
   );
 
   const surprise = useCallback(async () => {
-    if (mixLoading) return;
-    setMixLoading(true);
-    setStatus("Tuning");
+    const request = begin("mix");
+    setStatus("");
     try {
       const descriptor = await loadWorldDescriptorPreview({
+        signal: request.signal,
         prompt: query.trim() || "Take me somewhere live at this hour of the world",
         currentStationId: nowPlaying?.uuid ?? null,
         visual: "card_stack",
@@ -86,6 +88,7 @@ export function TheaterSeek({ held = false }: { held?: boolean }) {
         preferredCountries: nowPlaying?.country ? [nowPlaying.country] : [],
         preferredLanguages: nowPlaying?.language ? [nowPlaying.language] : [],
       });
+      if (!request.finish()) return;
       const first = descriptor.stations[0];
       if (!first) {
         setStatus("No signal");
@@ -93,35 +96,35 @@ export function TheaterSeek({ held = false }: { held?: boolean }) {
       }
       land(first, descriptor.stations, descriptor.mood || "World mix");
     } catch {
-      setStatus("Signal lost");
-    } finally {
-      setMixLoading(false);
+      if (request.finish()) setStatus("Signal lost");
     }
-  }, [land, mixLoading, nowPlaying, query]);
+  }, [begin, land, nowPlaying, query]);
 
   const submit = useCallback(
     async (value: string) => {
       const prompt = value.trim();
-      if (!prompt || loading) return;
+      if (!prompt) return;
       const resolved = resolveTypedIntent(prompt);
       if (resolved.wantsMix) {
         void surprise();
         return;
       }
-      setLoading(true);
-      setStatus("Filing");
+      const request = begin("search");
+      setStatus("");
       try {
         const response = await fetch(
           `/api/radio-catalog?stations=8000&q=${encodeURIComponent(resolved.query || prompt)}`,
+          { signal: request.signal },
         );
         if (!response.ok) {
-          setStatus("Signal lost");
+          if (request.finish()) setStatus("Signal lost");
           return;
         }
         const data = (await response.json()) as { stations?: Station[] };
         const pool = normalizeStations(data.stations || [])
           .filter((station) => stationMatches(station, resolved.query || prompt))
           .slice(0, 200);
+        if (!request.finish()) return;
         const first = pool[0];
         if (!first) {
           setStatus("No signal");
@@ -129,12 +132,10 @@ export function TheaterSeek({ held = false }: { held?: boolean }) {
         }
         land(first, pool, `Seek: ${resolved.query || prompt}`);
       } catch {
-        setStatus("Signal lost");
-      } finally {
-        setLoading(false);
+        if (request.finish()) setStatus("Signal lost");
       }
     },
-    [land, loading, surprise],
+    [begin, land, surprise],
   );
 
   useEffect(() => {
@@ -143,6 +144,7 @@ export function TheaterSeek({ held = false }: { held?: boolean }) {
     node?.focus();
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
+        cancel();
         setOpen(false);
         setStatus("");
         railRef.current
@@ -152,9 +154,10 @@ export function TheaterSeek({ held = false }: { held?: boolean }) {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [open, held]);
+  }, [cancel, open, held]);
 
   const busy = loading || mixLoading;
+  const statusLabel = loading ? "Filing" : mixLoading ? "Tuning" : status;
 
   return (
     <div
@@ -167,6 +170,7 @@ export function TheaterSeek({ held = false }: { held?: boolean }) {
         busy={busy}
         onLensClick={() => {
           if (open) {
+            cancel();
             setOpen(false);
             setStatus("");
           } else {
@@ -177,6 +181,7 @@ export function TheaterSeek({ held = false }: { held?: boolean }) {
         <IntentBar
           value={query}
           onChange={(value) => {
+            cancel();
             setQuery(value);
             if (status) setStatus("");
           }}
@@ -184,8 +189,8 @@ export function TheaterSeek({ held = false }: { held?: boolean }) {
           onSurprise={() => void surprise()}
           loading={loading}
           surpriseLoading={mixLoading}
-          statusLabel={status}
-          statusSpoken={status}
+          statusLabel={statusLabel}
+          statusSpoken={statusLabel}
           statusTone={
             loading || mixLoading
               ? "searching"

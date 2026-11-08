@@ -1,5 +1,6 @@
-import { useCallback, useRef, useState } from "react";
-import type { Station } from "~/types/radio";
+import { useCallback, useState } from "react";
+import { useStationRequest } from "~/hooks/useStationRequest";
+import type { QueueSession, Station } from "~/types/radio";
 import type { InterpretResponse } from "~/types/ai";
 import { usePlayerStore } from "~/state/playerStore";
 import { useJourneyStore } from "~/state/journeyStore";
@@ -52,12 +53,18 @@ export function useHomePlay({
   const favorites = useJourneyStore((state) => state.favoriteStationIds);
   const played = useJourneyStore((state) => state.playedStationIds);
   const recordPlayed = useJourneyStore((state) => state.recordPlayed);
-  const [aiStatus, setAiStatus] = useState<"idle" | "loading" | "error">("idle");
+  const { pending, begin, cancel } = useStationRequest<"mix" | "interpret">();
+  const [mixError, setMixError] = useState<string | null>(null);
   const [mixLabel, setMixLabel] = useState<string | null>(null);
   // The interpreter's whisper: what it understood differently, until the next keystroke.
   const [intentEcho, setIntentEcho] = useState<string | null>(null);
-  const queryRef = useRef(query);
-  queryRef.current = query;
+
+  const boardStation = useCallback((station: Station, queue: QueueSession) => {
+    cancel();
+    startStation(station, { autoPlay: true, queueSession: queue });
+    recordPlayed(station.uuid);
+    onLanded();
+  }, [cancel, onLanded, recordPlayed, startStation]);
 
   const play = useCallback(
     (
@@ -93,40 +100,33 @@ export function useHomePlay({
         },
         seed: `${q}:${h || ""}:${p || ""}`,
       });
-      startStation(station, { autoPlay: true, queueSession: queue });
-      recordPlayed(station.uuid);
-      // Landing is the globe's moment again: the sheet settles back to its
-      // peek so the cover and the land stay in view.
-      onLanded();
+      boardStation(station, queue);
     },
     [
+      boardStation,
       hour,
       listening.listeningMode,
       mixLabel,
-      onLanded,
       place,
       query,
-      recordPlayed,
       selectedPool,
       setHour,
       setPlace,
       setQuery,
-      startStation,
     ]
   );
 
   const requestAiWorld = useCallback(
     async (prompt?: string) => {
-      if (aiStatus === "loading") return;
+      const request = begin("mix");
       const next = surpriseTapNextState();
       setQuery(next.query);
       setHour(next.hour);
       setPlace(next.place);
-      setAiStatus("loading");
-      listening.setIsFetchingExplore(true);
-      listening.setExploreError(null);
+      setMixError(null);
       try {
         const descriptor = await loadWorldDescriptorPreview({
+          signal: request.signal,
           prompt:
             prompt || "Take me somewhere live at this hour of the world",
           currentStationId: nowPlaying?.uuid ?? null,
@@ -139,26 +139,24 @@ export function useHomePlay({
           favoriteStationIds: favorites,
           recentStationIds: played,
         });
+        if (!request.finish()) return;
         applyAiPreviewPool(descriptor, listening.setExploreStations);
         listening.setListeningMode("world");
         setMixLabel(descriptor.mood || descriptor.reason || "World mix");
-        setAiStatus("idle");
         const first = descriptor.stations[0];
         if (first) {
           play(first, descriptor.stations, descriptor.mood || "World mix");
         }
       } catch (error) {
+        if (!request.finish()) return;
         const message =
           error instanceof Error
             ? error.message
             : "We could not curate a world mix. Please try again.";
-        listening.setExploreError(message);
-        setAiStatus("error");
-      } finally {
-        listening.setIsFetchingExplore(false);
+        setMixError(message);
       }
     },
-    [aiStatus, favorites, listening, nowPlaying, play, played]
+    [begin, favorites, listening, nowPlaying, play, played, setHour, setPlace, setQuery]
   );
 
   const submitIntent = useCallback(
@@ -175,11 +173,14 @@ export function useHomePlay({
       const tightened =
         resolved.query.trim().toLowerCase() !== prompt.toLowerCase();
       if (resolved.hour || tightened || !looksLikeIntentSentence(prompt)) {
+        cancel();
         return;
       }
+      const request = begin("interpret");
       try {
         const response = await fetch("/api/ai/interpret", {
           method: "POST",
+          signal: request.signal,
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             prompt,
@@ -188,11 +189,12 @@ export function useHomePlay({
             language: nowPlaying?.language ?? null,
           }),
         });
-        if (!response.ok) return;
+        if (!response.ok) {
+          request.finish();
+          return;
+        }
         const payload = (await response.json()) as InterpretResponse;
-        // A slow response must never rewrite an intent the visitor already
-        // retyped (or cleared) while waiting — same staleness rule as the echo.
-        if (queryRef.current !== prompt) return;
+        if (!request.finish()) return;
         if (payload.intent.place) setPlace(payload.intent.place);
         if (payload.intent.language) {
           setQuery(payload.intent.language);
@@ -204,19 +206,23 @@ export function useHomePlay({
           solarHourFromWord(payload.intent.query);
         if (hour) setHour(hour);
         const echo = intentEchoFromInterpret(prompt, payload.intent);
-        if (echo && queryRef.current === prompt) setIntentEcho(echo);
+        if (echo) setIntentEcho(echo);
       } catch {
         // Catalog search already runs from the typed query.
+        request.finish();
       }
     },
-    [nowPlaying, requestAiWorld]
+    [begin, cancel, nowPlaying, requestAiWorld, setHour, setPlace, setQuery]
   );
 
   return {
+    boardStation,
     play,
     requestAiWorld,
     submitIntent,
-    aiStatus,
+    mixPending: pending === "mix",
+    mixError,
+    cancelRequest: cancel,
     mixLabel,
     setMixLabel,
     intentEcho,

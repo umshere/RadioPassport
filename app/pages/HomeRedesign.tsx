@@ -40,6 +40,8 @@ import { HomeSky } from "~/components/home/HomeSky";
 import { useFriendStore } from "~/state/friendStore";
 import { HomeGates } from "~/components/home/HomeGates";
 import { HomeDepartures } from "~/components/home/HomeDepartures";
+import { HomeKeeperRoute } from "~/components/home/HomeKeeperRoute";
+import { HOME_KEEPER_ROUTE } from "~/components/home/keeperRoute";
 import {
   arrivalSky,
   canShowMore,
@@ -82,6 +84,13 @@ import { useHomeGuide, GUIDE_BOARD, GUIDE_LANDING } from "~/hooks/home/useHomeGu
 import { keeperAnchor } from "~/components/keeper/keeperRoamModel";
 import { hourWord } from "~/components/keeper/keeperVoice";
 import type { Station } from "~/types/radio";
+import { createQueueSession } from "~/utils/playerQueue";
+
+const keeperRouteQueue = createQueueSession({
+  sourceType: "keeper_route",
+  sourceLabel: HOME_KEEPER_ROUTE.title,
+  stations: HOME_KEEPER_ROUTE.stops.map(({ station }) => station),
+});
 
 /** Reduced motion scrolls instantly; everyone else glides. */
 function scrollBehavior(): ScrollBehavior {
@@ -161,13 +170,6 @@ export function HomeRedesign() {
     });
   }, []);
 
-  useKeeperHourHop({
-    query,
-    setHour,
-    setPlace,
-    setQuery,
-    onHop: scrollToBoard,
-  });
   const {
     featured,
     continueStation,
@@ -188,10 +190,13 @@ export function HomeRedesign() {
   });
   const noop = useCallback(() => {}, []);
   const {
+    boardStation,
     play,
     requestAiWorld,
     submitIntent,
-    aiStatus,
+    mixPending,
+    mixError,
+    cancelRequest,
     mixLabel,
     intentEcho,
     setIntentEcho,
@@ -206,6 +211,11 @@ export function HomeRedesign() {
     listening,
     onLanded: noop,
   });
+  const onKeeperHourHop = useCallback(() => {
+    cancelRequest();
+    scrollToBoard();
+  }, [cancelRequest, scrollToBoard]);
+  useKeeperHourHop({ query, setHour, setPlace, setQuery, onHop: onKeeperHourHop });
 
   const isSeeking = isSeekQuery(query);
   // A typed search is a request for rows: the board comes into view.
@@ -459,12 +469,13 @@ export function HomeRedesign() {
       <SiteSeekPortal>
         <SeekShell
           open
-          busy={catalogLoading || aiStatus === "loading"}
+          busy={catalogLoading || mixPending}
           lensLabel="Seek the catalog — focus the intent field"
         >
         <IntentBar
           value={query}
           onChange={(value) => {
+            cancelRequest();
             setIntentEcho(null);
             setQuery(value);
             if (shouldClearBrowsingFilters(value)) {
@@ -475,7 +486,7 @@ export function HomeRedesign() {
           onSubmit={submitIntent}
           onSurprise={() => void requestAiWorld()}
           loading={catalogLoading}
-          surpriseLoading={aiStatus === "loading"}
+          surpriseLoading={mixPending}
           statusLabel={intentEcho ?? seek.label}
           statusSpoken={
             intentEcho ? `Heard: ${intentEcho}` : seek.spoken
@@ -513,6 +524,7 @@ export function HomeRedesign() {
                 setAskLine(route.line);
                 if (route.kind === "surprise") void requestAiWorld();
                 else if (route.kind === "hour") {
+                  cancelRequest();
                   setHour(route.hour);
                   setPlace(null);
                   setQuery("");
@@ -535,6 +547,7 @@ export function HomeRedesign() {
               else if (chip.id === "surprise") void requestAiWorld();
               else if (chip.id === "ask") openKeeperSheet(arrivalCity ? { ask: VOICE.askAbout(arrivalCity) } : undefined);
               else if (chip.id === "hour") {
+                cancelRequest();
                 setHour(chip.hour);
                 setPlace(null);
                 setQuery("");
@@ -543,12 +556,20 @@ export function HomeRedesign() {
             }}
             onOpenKeeper={nowPlaying ? () => openKeeperSheet() : undefined}
           />
+          {browsing ? (
+            <HomeKeeperRoute
+              route={HOME_KEEPER_ROUTE}
+              playingUuid={playingUuid}
+              onPlay={(station) => boardStation(station, keeperRouteQueue)}
+            />
+          ) : null}
         </div>
           <HomeGates
             hour={hour}
             stamps={journeyReady ? stamps.slice(0, 3) : undefined}
             onPassport={journeyReady ? () => setPassport(true) : undefined}
             onHourTap={(item) => {
+              cancelRequest();
               // The hour shelf answers a gate; the keeper walks to its pick
               // (useHomeGuide) and the board below narrows to that hour.
               const next = hourTapNextState(hour, item, query);
@@ -576,9 +597,12 @@ export function HomeRedesign() {
               onEmptyAction={(action) => {
                 if (action.id === "surprise") void requestAiWorld();
                 if (action.id === "atlas") setAtlas(true);
-                if (action.id === "clear-search") setQuery("");
-                if (action.id === "clear-hour") setHour(null);
-                if (action.id === "clear-place") setPlace(null);
+                if (action.id === "clear-search" || action.id === "clear-hour" || action.id === "clear-place") {
+                  cancelRequest();
+                  if (action.id === "clear-search") setQuery("");
+                  if (action.id === "clear-hour") setHour(null);
+                  if (action.id === "clear-place") setPlace(null);
+                }
                 if (action.id === "retry-catalog") retryCatalog();
               }}
               onShuffle={() => setShuffle((value) => value + 1)}
@@ -588,9 +612,9 @@ export function HomeRedesign() {
               stamps={journeyReady ? stamps : []}
               onOpenPassport={() => setPassport(true)}
               notice={
-                aiStatus === "error" && listening.exploreError ? (
+                mixError ? (
                   <div className="ew-home-notice" role="alert">
-                    <p>{listening.exploreError}</p>
+                    <p>{mixError}</p>
                     <Button onClick={() => void requestAiWorld()}>
                       Try the mix again →
                     </Button>

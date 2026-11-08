@@ -176,6 +176,18 @@ export const VOICE = {
   homeLeaving: "Ready",
   homeLanding: "Landing now",
 
+  /* ---- The Keeper's Route: editorial links beside live station doors. ---- */
+  homeKeeperRoute: "The Keeper’s Route",
+  homeKeeperRouteTune: (stationName: string) => `Tune in to ${stationName}`,
+  homeKeeperRouteTuneAction: "Tune",
+  homeKeeperRouteTuned: "Tuned",
+  homeKeeperRouteTitle: "The Khruangbin trail",
+  homeKeeperRouteIntro: "Two stops with a Khruangbin story. Hear what those stations are sending today.",
+  homeKeeperRouteKexpReason: "The band played the Seattle studio.",
+  homeKeeperRouteNtsReason: "The band hosted Cabin Pressure.",
+  homeKeeperRouteKexpArchive: "KEXP studio archive · 2018",
+  homeKeeperRouteNtsArchive: "NTS show archive · 2017–18",
+
   /* ---- Home shelves: what each row is, said from the data only. Shelf
      words never claim what is on air this minute. ---- */
   shelfHourTitle: {

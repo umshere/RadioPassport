@@ -97,7 +97,8 @@ describe("home: the sheet is gone", () => {
 
   it("brings the board into view for a search and a keeper hop, not a sheet", () => {
     const home = read("app/pages/HomeRedesign.tsx");
-    expect(home).toContain("onHop: scrollToBoard");
+    expect(home).toContain("onHop: onKeeperHourHop");
+    expect(home).toMatch(/const onKeeperHourHop = useCallback\(\(\) => \{\s*cancelRequest\(\);\s*scrollToBoard\(\);/);
     expect(home).toMatch(/if \(isSeeking\) scrollToBoard\(\)/);
     expect(home).toContain('getElementById("live-board")');
     expect(home).toContain("prefers-reduced-motion: reduce");

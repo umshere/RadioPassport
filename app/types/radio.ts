@@ -52,6 +52,7 @@ export type QueueSourceType =
   | "world"
   | "atlas"
   | "ai_mix"
+  | "keeper_route"
   | "direct";
 
 export type QueueSourceContext = {
