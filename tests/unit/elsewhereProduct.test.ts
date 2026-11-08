@@ -399,14 +399,18 @@ describe("ship command", () => {
     expect(ship).not.toContain("username=heuristicsai");
     // One push, one build: ship waits for the Git auto-deploy of the pushed
     // commit instead of firing a second CLI build after the push.
-    expect(ship).toContain("githubCommitSha");
     expect(ship).toContain("waitForGitDeploy");
-    // `vercel ls` draws its table on stderr when piped — the waiter must
-    // read both streams or it polls blind forever.
-    expect(ship).toContain("probed.stderr");
+    // The waiter reads Vercel's GitHub commit status with the umshere token.
+    // The Vercel CLI here is logged in as Heuristics AI, which cannot see
+    // umsheres-projects, so `vercel ls` fails ("Could not retrieve Project Settings").
+    expect(ship).toContain("commits/${sha}/statuses");
+    expect(ship).toContain('.context == "Vercel"');
+    expect(ship).not.toMatch(/"vercel",\s*"ls"/);
+    expect(ship).toContain("--watch");
     expect(deploy).toContain("npm run ship");
     expect(deploy).toContain("gh auth token -u umshere");
-    expect(deploy).toContain("vercel ls -m githubCommitSha");
+    expect(deploy).toContain("npm run ship -- --watch");
+    expect(deploy).not.toContain("vercel ls -m githubCommitSha");
     expect(deploy).toContain("never `vercel --prod` after a push");
   });
 });

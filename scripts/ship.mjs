@@ -11,6 +11,7 @@
 // Usage: npm run ship
 //        node scripts/ship.mjs --skip-push     (redeploy current main via CLI)
 //        node scripts/ship.mjs --skip-vercel   (push only, do not wait)
+//        node scripts/ship.mjs --watch         (no push; wait on HEAD's Git deploy)
 //
 // This machine has more than one `gh` login. The active account is often
 // heuristicsai, which 403s on umshere/RadioPassport. `gh auth switch` can
@@ -27,6 +28,7 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 const args = new Set(process.argv.slice(2));
 const skipPush = args.has("--skip-push");
 const skipVercel = args.has("--skip-vercel");
+const watchOnly = args.has("--watch");
 const npmCache =
   process.env.NPM_CACHE || path.join(os.tmpdir(), "elsewhere-npm-cache");
 
@@ -63,17 +65,15 @@ if (branch !== "main") {
   fail(`Ship only from main (now on ${branch}).`);
 }
 
+if (watchOnly) {
+  const sha = git(["rev-parse", "HEAD"]);
+  console.log(`Production: ${waitForGitDeploy(sha)}`);
+  console.log("Verify elsewheremusic.com before calling it live.");
+  process.exit(0);
+}
+
 if (!skipPush) {
-  const tokenResult = spawnSync("gh", ["auth", "token", "-u", "umshere"], {
-    cwd: repoRoot,
-    encoding: "utf8",
-  });
-  const token = (tokenResult.stdout || "").trim();
-  if (tokenResult.status !== 0 || !token) {
-    fail(
-      "Need a GitHub token for umshere (`gh auth token -u umshere`). Do not push as heuristicsai.",
-    );
-  }
+  const token = umshereToken();
 
   const stamp = `${process.pid}-${Date.now()}`;
   const askDir = mkdtempSync(path.join(os.tmpdir(), "elsewhere-ship-"));
@@ -149,62 +149,62 @@ if (!skipVercel) {
 }
 
 /**
- * Poll `vercel ls` for the Git-triggered deployment of `sha` until it is
- * Ready. Returns its URL. Fails on Error/Canceled or after ~10 minutes —
- * the deploy may still finish on its own; check the dashboard.
+ * Wait for Vercel's Git-triggered deployment of `sha` to finish, reading the
+ * commit status Vercel posts to GitHub (context "Vercel"). This uses the
+ * umshere GitHub token, not the Vercel CLI: the CLI login on this machine is
+ * the Heuristics AI account, which cannot see umsheres-projects, so
+ * `vercel ls` fails with "Could not retrieve Project Settings".
+ * Fails on failure/error or after ~10 minutes — the deploy may still finish
+ * on its own; check the dashboard.
  */
 function waitForGitDeploy(sha) {
+  const token = umshereToken();
   const tries = 40;
+  let last = "not reported yet";
   for (let attempt = 1; attempt <= tries; attempt++) {
-    // NOTE: `vercel ls` draws its table on stderr when piped — stdout
-    // carries only a bare URL. Parse both streams or the status is blind.
     const probed = spawnSync(
-      "npx",
+      "gh",
       [
-        "--yes",
-        "--cache",
-        npmCache,
-        "vercel",
-        "ls",
-        "--yes",
-        "-m",
-        `githubCommitSha=${sha}`,
+        "api",
+        `repos/umshere/RadioPassport/commits/${sha}/statuses`,
+        "--jq",
+        '[.[] | select(.context == "Vercel")][0] | [.state, .target_url] | @tsv',
       ],
-      {
-        cwd: repoRoot,
-        encoding: "utf8",
-        env: { ...process.env, npm_config_cache: npmCache },
-      },
+      { cwd: repoRoot, encoding: "utf8", env: { ...process.env, GH_TOKEN: token } },
     );
-    if (probed.error) fail(`vercel ls: ${probed.error.message}`);
+    if (probed.error) fail(`gh api: ${probed.error.message}`);
     if (probed.status !== 0) {
-      fail(
-        `vercel ls failed:\n${((probed.stderr || probed.stdout) || "").trim()}`,
-      );
+      fail(`gh api commit statuses failed:\n${((probed.stderr || probed.stdout) || "").trim()}`);
     }
-    const listing = `${probed.stdout || ""}\n${probed.stderr || ""}`;
-    const match = listing.match(/https:\/\/\S+\s+●\s+(\S+)/);
-    if (match) {
-      const status = match[1];
-      const url = match[0].split(/\s+/)[0];
-      if (status === "Ready") return url;
-      if (status === "Error" || status === "Canceled" || status === "Cancelled") {
-        fail(`Git deploy for ${sha} ended ${status}: ${url}`);
-      }
+    const [state, url] = (probed.stdout || "").trim().split("\t");
+    if (state === "success") return url;
+    if (state === "failure" || state === "error") {
+      fail(`Git deploy for ${sha} ended ${state}: ${url}`);
     }
+    if (state) last = state;
     if (attempt < tries) {
-      console.log(`…waiting on the Git deploy for ${sha} (${statusOf(match)})`);
+      console.log(`…waiting on the Git deploy for ${sha} (${last})`);
       Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 15000);
     }
   }
   fail(
-    `No Ready Git deploy for ${sha} after ~10 minutes. ` +
+    `No finished Git deploy for ${sha} after ~10 minutes. ` +
       `Check the Vercel dashboard for umsheres-projects/radio-passport.`,
   );
 }
 
-function statusOf(match) {
-  return match ? match[1] : "not listed yet";
+function umshereToken() {
+  const result = spawnSync("gh", ["auth", "token", "-u", "umshere"], {
+    cwd: repoRoot,
+    encoding: "utf8",
+  });
+  const token = (result.stdout || "").trim();
+  if (result.status !== 0 || !token) {
+    fail(
+      "Need a GitHub token for umshere (`gh auth token -u umshere`). Do not push as heuristicsai.",
+    );
+  }
+  return token;
 }
 
 console.log("Ship commands finished. Verify elsewheremusic.com before calling it live.");

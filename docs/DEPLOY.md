@@ -38,7 +38,11 @@ The only deploy command is `npm run ship`. The owner has authorised shipping wit
    npm run ship
    ```
 
-    That is `node scripts/ship.mjs`: push `main` as **umshere**, then wait for Vercel's Git auto-deploy of that commit (`vercel ls -m githubCommitSha=<sha>` until `● Ready`). One push, one build — never `vercel --prod` after a push; that double-builds the same commit and the two production promotions race.
+    That is `node scripts/ship.mjs`: push `main` as **umshere**, then wait for Vercel's Git auto-deploy of that commit by reading the `Vercel` commit status on GitHub (with the umshere token) until `success`. One push, one build — never `vercel --prod` after a push; that double-builds the same commit and the two production promotions race.
+
+    The watch does not use the Vercel CLI: the CLI login on this Mac is the **Heuristics AI** account, which cannot see `umsheres-projects` (`vercel ls` → *Could not retrieve Project Settings*). Do not `vercel login` over it — Heuristics deploys need it.
+
+    If the push went out but the watch broke, do not ship again. Run `npm run ship -- --watch` (no push; waits on HEAD's deploy).
 
 4. Verify (use `--tlsv1.2` if LibreSSL fails the handshake):
 
@@ -67,13 +71,13 @@ export NPM_CACHE="${TMPDIR:-/tmp}/elsewhere-npm-cache"
 GIT_TERMINAL_PROMPT=0 GH_TOKEN="$(gh auth token -u umshere)" \
   git -c credential.helper= -c credential.https://github.com.helper= push origin main
 # Then watch the single Git-triggered build — do NOT vercel --prod after a push:
-npx --yes --cache "$NPM_CACHE" vercel ls -m githubCommitSha="$(git rev-parse HEAD)"
+npm run ship -- --watch
 ```
 (`vercel --prod --yes` is only for redeploys with no push, e.g. after dashboard env changes — with no push there is no Git trigger, so the CLI build is the single deploy.)
 
 ## After env changes
 
-Vercel env (`AI_PROVIDER`, `GEMINI_MODEL`, `KEEPER_ASK_ENABLED`, `TYPESAFE_API_KEY`; see [ENVIRONMENT.md](./ENVIRONMENT.md)) needs a **redeploy** to take effect. Changing the dashboard and not shipping a build leaves prod on the old process. Keys are set by the owner in Vercel; never paste them into chat or commit them. `npm run ship -- --skip-push` redeploys the current `main`.
+Vercel env (`AI_PROVIDER`, `GEMINI_MODEL`, `KEEPER_ASK_ENABLED`, `TYPESAFE_API_KEY`; see [ENVIRONMENT.md](./ENVIRONMENT.md)) needs a **redeploy** to take effect. Changing the dashboard and not shipping a build leaves prod on the old process. Keys are set by the owner in Vercel; never paste them into chat or commit them. `npm run ship -- --skip-push` redeploys the current `main` through the Vercel CLI, so it needs the CLI on the **umshere** Vercel account; with the Heuristics AI login it stops at *Could not retrieve Project Settings* (nothing deploys). Use **Redeploy** in the Vercel dashboard instead.
 
 ## Product locks that survive a ship
 
