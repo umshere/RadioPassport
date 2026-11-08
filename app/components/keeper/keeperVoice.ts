@@ -187,6 +187,13 @@ export const VOICE = {
   homeKeeperRouteNtsReason: "The band hosted Cabin Pressure.",
   homeKeeperRouteKexpArchive: "KEXP studio archive · 2018",
   homeKeeperRouteNtsArchive: "NTS show archive · 2017–18",
+  homeKeeperRouteArtistIntro: "One stream given to the artist. Hear what it is sending today.",
+  homeKeeperRouteRadioheadTitle: "The Radiohead trail",
+  homeKeeperRouteRadioheadReason: "A stream given to Radiohead’s records.",
+  homeKeeperRouteRadioheadSource: "Radiohead · the band’s own site",
+  homeKeeperRouteYesudasTitle: "The Yesudas trail",
+  homeKeeperRouteYesudasReason: "A Malayalam stream for K. J. Yesudas.",
+  homeKeeperRouteYesudasSource: "K. J. Yesudas · Wikipedia",
 
   /* ---- Home shelves: what each row is, said from the data only. Shelf
      words never claim what is on air this minute. ---- */

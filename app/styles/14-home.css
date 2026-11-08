@@ -36,7 +36,7 @@
 .ew-home-main > * { flex: none; min-width: 0; }
 
 /* ---- The Keeper's sourced route: a small closed door beside his greeting. */
-.ew-home-keeper-route { min-width: 0; padding-inline: var(--desk-pad-l) var(--desk-pad-r); }
+.ew-home-keeper-route { display: grid; gap: 8px; min-width: 0; padding-inline: var(--desk-pad-l) var(--desk-pad-r); }
 .ew-keeper-route { min-width: 0; border: 1px solid var(--ew-rule); background: var(--ew-leather); color: var(--ew-bone); }
 .ew-keeper-route-summary {
   display: grid;

@@ -41,7 +41,7 @@ import { useFriendStore } from "~/state/friendStore";
 import { HomeGates } from "~/components/home/HomeGates";
 import { HomeDepartures } from "~/components/home/HomeDepartures";
 import { HomeKeeperRoute } from "~/components/home/HomeKeeperRoute";
-import { HOME_KEEPER_ROUTE } from "~/components/home/keeperRoute";
+import { KEEPER_ROUTES, type KeeperRoute } from "~/components/home/keeperRoute";
 import {
   arrivalSky,
   canShowMore,
@@ -86,11 +86,15 @@ import { hourWord } from "~/components/keeper/keeperVoice";
 import type { Station } from "~/types/radio";
 import { createQueueSession } from "~/utils/playerQueue";
 
-const keeperRouteQueue = createQueueSession({
-  sourceType: "keeper_route",
-  sourceLabel: HOME_KEEPER_ROUTE.title,
-  stations: HOME_KEEPER_ROUTE.stops.map(({ station }) => station),
-});
+/** One queue per route, so Next stays inside the route you tuned from. */
+function keeperRouteQueue(route: KeeperRoute) {
+  return createQueueSession({
+    sourceType: "keeper_route",
+    sourceLabel: route.title,
+    stations: route.stops.map(({ station }) => station),
+    seed: `keeper_route:${route.id}`,
+  });
+}
 
 /** Reduced motion scrolls instantly; everyone else glides. */
 function scrollBehavior(): ScrollBehavior {
@@ -558,9 +562,11 @@ export function HomeRedesign() {
           />
           {browsing ? (
             <HomeKeeperRoute
-              route={HOME_KEEPER_ROUTE}
+              routes={KEEPER_ROUTES}
               playingUuid={playingUuid}
-              onPlay={(station) => boardStation(station, keeperRouteQueue)}
+              onPlay={(station, route) =>
+                boardStation(station, keeperRouteQueue(route))
+              }
             />
           ) : null}
         </div>

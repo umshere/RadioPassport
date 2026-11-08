@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { HOME_KEEPER_ROUTE } from "~/components/home/keeperRoute";
+import { HOME_KEEPER_ROUTE, KEEPER_ROUTES } from "~/components/home/keeperRoute";
 
 const KEXP_UUID = "e9fddd49-3ee2-4597-8574-1b7dbd00aac0";
 const NTS_UUID = "a3dbc189-d23e-4308-803f-5aad26432b8c";
@@ -61,5 +61,61 @@ describe("Keeper's Route", () => {
       expect(stop.sourceLabel.trim()).not.toBe("");
       expect(stop.sourceUrl.trim()).not.toBe("");
     }
+  });
+
+  describe("artist routes", () => {
+    it("offers Khruangbin, Radiohead and Yesudas, each with a unique id", () => {
+      const ids = KEEPER_ROUTES.map((route) => route.id);
+      expect(ids).toEqual(["khruangbin", "radiohead", "yesudas"]);
+      expect(new Set(ids).size).toBe(ids.length);
+      expect(KEEPER_ROUTES[0]).toBe(HOME_KEEPER_ROUTE);
+    });
+
+    it("gives every stop a playable stream, a distinct station and a clean https source", () => {
+      const stationIds = new Set<string>();
+      const sources = new Set<string>();
+      for (const route of KEEPER_ROUTES) {
+        expect(route.title.trim()).not.toBe("");
+        expect(route.stops.length).toBeGreaterThan(0);
+        for (const stop of route.stops) {
+          expect(stationIds.has(stop.station.uuid)).toBe(false);
+          stationIds.add(stop.station.uuid);
+          expect(new URL(stop.station.streamUrl ?? "").protocol).toBe("https:");
+          expect(stop.station.url).toBe(stop.station.streamUrl);
+          const source = new URL(stop.sourceUrl);
+          expect(source.protocol).toBe("https:");
+          expect(source.search).toBe("");
+          expect(source.hash).toBe("");
+          expect(stop.sourceUrl).not.toBe(stop.station.streamUrl);
+          expect(sources.has(stop.sourceUrl)).toBe(false);
+          sources.add(stop.sourceUrl);
+        }
+      }
+    });
+
+    it("pairs each artist with its own station", () => {
+      const byId = new Map(KEEPER_ROUTES.map((route) => [route.id, route]));
+      const radiohead = byId.get("radiohead")!.stops[0]!;
+      const yesudas = byId.get("yesudas")!.stops[0]!;
+      expect(radiohead.station.streamUrl).toBe(
+        "https://streaming.exclusive.radio/er/radiohead/icecast.audio",
+      );
+      expect(radiohead.sourceUrl).toBe("https://www.radiohead.com/");
+      expect(yesudas.station.streamUrl).toBe("https://stream.zeno.fm/9x1sw687nf9uv");
+      expect(yesudas.station.languageCodes).toEqual(["ml"]);
+      expect(yesudas.sourceUrl).toBe("https://en.wikipedia.org/wiki/K._J._Yesudas");
+    });
+
+    it("keeps to the Elsewhere voice: no banned words, no claim of what is on air", () => {
+      const banned = /discover|seamless|ai-powered|widget|playlist|unlock|explore/i;
+      const onAir = /now playing|playing now|on air now|currently playing/i;
+      for (const route of KEEPER_ROUTES) {
+        const copy = [route.title, route.intro, ...route.stops.flatMap((stop) => [stop.name, stop.reason, stop.sourceLabel])];
+        for (const line of copy) {
+          expect(line).not.toMatch(banned);
+          expect(line).not.toMatch(onAir);
+        }
+      }
+    });
   });
 });

@@ -2,6 +2,7 @@ import type { Station } from "~/types/radio";
 import { VOICE } from "~/components/keeper/keeperVoice";
 
 export type KeeperRoute = {
+  id: string;
   title: string;
   intro: string;
   stops: readonly {
@@ -19,6 +20,7 @@ export type KeeperRoute = {
  * claims and are kept separate from the station stream URLs.
  */
 export const HOME_KEEPER_ROUTE: KeeperRoute = {
+  id: "khruangbin",
   title: VOICE.homeKeeperRouteTitle,
   intro: VOICE.homeKeeperRouteIntro,
   stops: [
@@ -74,3 +76,81 @@ export const HOME_KEEPER_ROUTE: KeeperRoute = {
     },
   ],
 };
+
+/**
+ * Artist routes: one live stream dedicated to the artist, paired with a
+ * stable page about them. Copy says only what the station data supports
+ * (a stream given to the artist), never what is playing now.
+ */
+const RADIOHEAD_ROUTE: KeeperRoute = {
+  id: "radiohead",
+  title: VOICE.homeKeeperRouteRadioheadTitle,
+  intro: VOICE.homeKeeperRouteArtistIntro,
+  stops: [
+    {
+      station: {
+        uuid: "5b368f1a-a1ea-480d-950e-c3f353b1af7c",
+        name: "Exclusively - Radiohead",
+        url: "https://streaming.exclusive.radio/er/radiohead/icecast.audio",
+        streamUrl: "https://streaming.exclusive.radio/er/radiohead/icecast.audio",
+        favicon: "",
+        country: "The United Arab Emirates",
+        countryCode: "AE",
+        state: "Dubai",
+        city: null,
+        language: "english",
+        languageCodes: ["en"],
+        tags: "exclusive,radiohead",
+        tagList: ["exclusive", "radiohead"],
+        bitrate: 128,
+        codec: "MP3",
+        homepage: "https://play.you.radio/",
+        hls: false,
+      },
+      name: "Exclusively Radiohead",
+      reason: VOICE.homeKeeperRouteRadioheadReason,
+      sourceLabel: VOICE.homeKeeperRouteRadioheadSource,
+      sourceUrl: "https://www.radiohead.com/",
+    },
+  ],
+};
+
+const YESUDAS_ROUTE: KeeperRoute = {
+  id: "yesudas",
+  title: VOICE.homeKeeperRouteYesudasTitle,
+  intro: VOICE.homeKeeperRouteArtistIntro,
+  stops: [
+    {
+      station: {
+        uuid: "4dbdab26-dd91-4b89-8219-c11e9a99efea",
+        name: "KJ Yesudas Malayalam radio",
+        url: "https://stream.zeno.fm/9x1sw687nf9uv",
+        streamUrl: "https://stream.zeno.fm/9x1sw687nf9uv",
+        favicon: "https://onlineradiohub.com/wp-content/uploads/2023/03/Yesudas-Radio.jpg",
+        country: "India",
+        countryCode: "IN",
+        state: null,
+        city: null,
+        language: "malayalam",
+        languageCodes: ["ml"],
+        tags: "",
+        tagList: [],
+        bitrate: 128,
+        codec: "MP3",
+        homepage: "",
+        hls: false,
+      },
+      name: "KJ Yesudas radio",
+      reason: VOICE.homeKeeperRouteYesudasReason,
+      sourceLabel: VOICE.homeKeeperRouteYesudasSource,
+      sourceUrl: "https://en.wikipedia.org/wiki/K._J._Yesudas",
+    },
+  ],
+};
+
+/** Every route Home offers, in order. Add an artist by adding a route here. */
+export const KEEPER_ROUTES: readonly KeeperRoute[] = [
+  HOME_KEEPER_ROUTE,
+  RADIOHEAD_ROUTE,
+  YESUDAS_ROUTE,
+];
