@@ -1,3 +1,5 @@
+import { ARTIST_PHOTOS } from "~/components/home/artistPhotos";
+import { KEEPER_ROUTES } from "~/components/home/keeperRoute";
 import { Link } from "@remix-run/react";
 import { Eyebrow } from "~/components/ui/Eyebrow";
 import { BRAND } from "~/constants/brand";
@@ -178,6 +180,20 @@ export default function Legal() {
               : short passages, a few facts and small photos about places, languages and artists in the Keeper’s notebook (photos are credited by a link to the article, where each image’s own licence is shown), used under{" "}
               <Source href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</Source>. Each is labelled as
               his notebook.
+            </li>
+            <li>
+              <b>Artist photos on Home</b> come from{" "}
+              <Source href="https://commons.wikimedia.org/">Wikimedia Commons</Source>, under the licence shown for each:{" "}
+              {KEEPER_ROUTES.filter((route) => ARTIST_PHOTOS[route.id]).map((route, index) => {
+                const photo = ARTIST_PHOTOS[route.id]!;
+                return (
+                  <span key={route.id}>
+                    {index > 0 ? "; " : null}
+                    <Source href={photo.page}>{route.label}</Source> ({photo.author}, {photo.license})
+                  </span>
+                );
+              })}
+              .
             </li>
             <li>
               <b>

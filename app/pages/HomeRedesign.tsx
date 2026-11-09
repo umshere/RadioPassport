@@ -40,7 +40,7 @@ import { HomeSky } from "~/components/home/HomeSky";
 import { useFriendStore } from "~/state/friendStore";
 import { HomeGates } from "~/components/home/HomeGates";
 import { HomeDepartures } from "~/components/home/HomeDepartures";
-import { buildArtistShelf } from "~/components/home/artistShelf";
+import { HomeArtistChips } from "~/components/home/HomeArtistChips";
 import { KEEPER_ROUTES } from "~/components/home/keeperRoute";
 import {
   arrivalSky,
@@ -394,7 +394,6 @@ export function HomeRedesign() {
     const byId = new Map(initialStations.map((station) => [station.uuid, station]));
     const list: Array<HomeShelf | null> = [
       buildHourShelf(initialStations, theHour, labels, now),
-      buildArtistShelf(KEEPER_ROUTES, now),
       ...shelfSpecs.map((spec) => shelfFromSpec(spec, byId, labels, now)),
     ];
     return list.filter((shelf): shelf is HomeShelf => Boolean(shelf));
@@ -614,6 +613,11 @@ export function HomeRedesign() {
               {shelves.slice(0, 1).map((shelf) => (
                 <HomeShelfRow key={shelf.id} shelf={shelf} stops={stops} actions={cardActions} />
               ))}
+              <HomeArtistChips
+                routes={KEEPER_ROUTES}
+                playingUuid={playingUuid}
+                onPlay={cardActions.onPlay}
+              />
               <HomeYours
                 tab={tab}
                 onTab={setYoursTab}

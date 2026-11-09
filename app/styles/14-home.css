@@ -321,3 +321,18 @@
   .ew-home *, .ew-home *::before, .ew-home *::after { animation: none !important; transition: none !important; }
   .ew-home { scroll-behavior: auto; }
 }
+
+/* ---- Artist chips: square faces in one sideways row, no paragraph. */
+.ew-artists { display: flex; flex-direction: column; gap: 10px; min-width: 0; padding: 24px var(--desk-pad-r) 0 var(--desk-pad-l); }
+.ew-artists-title { margin: 0; color: var(--ew-dust); font: 400 11px/1 "Azeret Mono", ui-monospace, monospace; letter-spacing: .14em; text-transform: uppercase; }
+.ew-artists-row { display: flex; gap: 14px; min-width: 0; padding: 2px 0 6px; overflow-x: auto; scroll-snap-type: x proximity; scrollbar-width: none; }
+.ew-artists-row::-webkit-scrollbar { display: none; }
+.ew-artist { display: flex; flex: none; flex-direction: column; align-items: center; gap: 6px; width: 72px; padding: 0; border: 0; background: none; color: var(--ew-bone); cursor: pointer; scroll-snap-align: start; }
+.ew-artist-face { display: grid; place-items: center; width: 64px; height: 64px; overflow: hidden; border: 1px solid var(--ew-rule); background: color-mix(in srgb, var(--ew-foil) 18%, var(--ew-ink)); }
+.ew-artist-face img { width: 100%; height: 100%; object-fit: cover; object-position: center 22%; filter: saturate(.85); }
+.ew-artist-face b { font: italic 400 26px/1 "Newsreader", serif; color: var(--ew-bone); }
+.ew-artist:hover .ew-artist-face, .ew-artist:focus-visible .ew-artist-face { border-color: var(--ew-foil); }
+.ew-artist:focus-visible { outline: 2px solid var(--ew-foil); outline-offset: 3px; }
+.ew-artist-face[data-playing] { border-color: var(--ew-foil); outline: 2px solid var(--ew-foil); outline-offset: 2px; }
+.ew-artist-name { display: -webkit-box; max-width: 100%; overflow: hidden; color: var(--ew-dust); font: 400 11px/1.25 "Schibsted Grotesk", sans-serif; text-align: center; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow-wrap: anywhere; }
+.ew-artist[aria-pressed="true"] .ew-artist-name { color: var(--ew-foil); }

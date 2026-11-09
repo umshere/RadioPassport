@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { buildArtistShelf } from "~/components/home/artistShelf";
+import { artistChips } from "~/components/home/HomeArtistChips";
+import { ARTIST_PHOTOS } from "~/components/home/artistPhotos";
 import { HOME_KEEPER_ROUTE, KEEPER_GROUPS, KEEPER_ROUTES } from "~/components/home/keeperRoute";
 
 const KEXP_UUID = "e9fddd49-3ee2-4597-8574-1b7dbd00aac0";
@@ -158,15 +159,17 @@ describe("Keeper's Route", () => {
       }
     });
 
-    it("lays every trail out as one shelf of cards, Malayalam first, named for the artist", () => {
-      const shelf = buildArtistShelf(KEEPER_ROUTES)!;
-      const stops = KEEPER_ROUTES.reduce((total, route) => total + route.stops.length, 0);
-      expect(shelf.id).toBe("artists");
-      expect(shelf.cards).toHaveLength(stops);
-      expect(shelf.count).toBe(stops);
-      expect(shelf.cards[0]!.station.name).toBe("K. J. Yesudas");
-      expect(shelf.cards[0]!.label).toBe("Malayalam");
-      expect(new Set(shelf.cards.map((card) => card.station.uuid)).size).toBe(stops);
+    it("chips come Malayalam first, and every photo is a local free-licence file", () => {
+      const chips = artistChips(KEEPER_ROUTES);
+      expect(chips).toHaveLength(KEEPER_ROUTES.length - 3);
+      expect(chips[0]!.id).toBe("yesudas");
+      const ids = new Set(KEEPER_ROUTES.map((route) => route.id));
+      for (const [id, photo] of Object.entries(ARTIST_PHOTOS)) {
+        expect(ids.has(id)).toBe(true);
+        expect(photo.src).toBe(`/artists/${id}.jpg`);
+        expect(photo.page).toMatch(/^https:\/\/commons\.wikimedia\.org\/wiki\/File:/);
+        expect(photo.license).not.toMatch(/fair use|non-?free/i);
+      }
     });
   });
 });
