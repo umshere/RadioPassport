@@ -40,7 +40,7 @@ import { HomeSky } from "~/components/home/HomeSky";
 import { useFriendStore } from "~/state/friendStore";
 import { HomeGates } from "~/components/home/HomeGates";
 import { HomeDepartures } from "~/components/home/HomeDepartures";
-import { HomeArtistChips } from "~/components/home/HomeArtistChips";
+import { HomeArtistChips, artistChips } from "~/components/home/HomeArtistChips";
 import { KEEPER_ROUTES } from "~/components/home/keeperRoute";
 import {
   arrivalSky,
@@ -400,19 +400,28 @@ export function HomeRedesign() {
   }, [initialStations, labels, now, shelfSpecs, theHour]);
   const browsing = !(phase === "seek" || (phase === "empty" && isSeeking));
   const playingUuid = isPlaying ? nowPlaying?.uuid ?? null : null;
+  // The keeper's first stop is the artist row above the board: one face to try.
+  const artistCard = useMemo<ShelfCard | null>(() => {
+    const chips = artistChips(KEEPER_ROUTES);
+    const chip = chips.find((item) => item.stops[0]!.station.uuid !== playingUuid) ?? chips[0];
+    const row = chip ? homeDepartures([chip.stops[0]!.station], now)[0] : null;
+    return chip && row ? { ...row, label: VOICE.homeKeeperGroups[chip.group] } : null;
+  }, [now, playingUuid]);
   const stops = useMemo(
     () =>
       browsing
         ? tourStops(
             [
+              ...(artistCard ? [{ id: "artists", cards: [artistCard] }] : []),
               ...(tab === "saved" ? [{ id: "yours", cards: savedCards, saved: true }] : []),
               ...shelves,
             ],
             playingUuid,
           )
         : [],
-    [browsing, playingUuid, savedCards, shelves, tab],
+    [artistCard, browsing, playingUuid, savedCards, shelves, tab],
   );
+  const artistStop = stops.find((stop) => stop.shelfId === "artists") ?? null;
   const landArrival = useCallback(() => {
     // The button always plays the city it names: the arrival station
     // already resolves playing → hour travel → resume → featured.
@@ -566,6 +575,16 @@ export function HomeRedesign() {
           />
         </div>
         <div className="ew-home-main">
+          {browsing ? (
+            <HomeArtistChips
+              routes={KEEPER_ROUTES}
+              playingUuid={playingUuid}
+              onPlay={cardActions.onPlay}
+              pickUuid={artistStop?.card.station.uuid ?? null}
+              pickAnchorName={artistStop?.anchor ?? null}
+              keeperAt={roamShown ? roamAt : null}
+            />
+          ) : null}
           <div className="ew-home-all" {...keeperAnchor(GUIDE_BOARD)}>
             <HomeDepartures
               phase={phase}
@@ -613,11 +632,6 @@ export function HomeRedesign() {
               {shelves.slice(0, 1).map((shelf) => (
                 <HomeShelfRow key={shelf.id} shelf={shelf} stops={stops} actions={cardActions} />
               ))}
-              <HomeArtistChips
-                routes={KEEPER_ROUTES}
-                playingUuid={playingUuid}
-                onPlay={cardActions.onPlay}
-              />
               <HomeYours
                 tab={tab}
                 onTab={setYoursTab}

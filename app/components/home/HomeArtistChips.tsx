@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { Station } from "~/types/radio";
 import { VOICE } from "~/components/keeper/keeperVoice";
+import { keeperAnchor } from "~/components/keeper/keeperRoamModel";
 import { ARTIST_PHOTOS } from "./artistPhotos";
 import { KEEPER_GROUPS, type KeeperRoute } from "./keeperRoute";
 
@@ -35,17 +36,24 @@ function Face({ id, label }: { id: string; label: string }) {
 }
 
 /**
- * Artists as round photo chips in one sideways row, like playlists: tap a face
+ * Artists as square photo chips in one sideways row, like playlists: tap a face
  * to tune the stream given to them. No paragraph, just faces and names.
  */
 export function HomeArtistChips({
   routes,
   playingUuid,
   onPlay,
+  pickUuid = null,
+  pickAnchorName = null,
+  keeperAt = null,
 }: {
   routes: readonly KeeperRoute[];
   playingUuid: string | null;
   onPlay: (station: Station) => void;
+  /** The chip the keeper may point at, and the anchor he stands on for it. */
+  pickUuid?: string | null;
+  pickAnchorName?: string | null;
+  keeperAt?: string | null;
 }) {
   const chips = artistChips(routes);
   if (chips.length === 0) return null;
@@ -56,6 +64,7 @@ export function HomeArtistChips({
         {chips.map((route) => {
           const station = route.stops[0]!.station;
           const playing = route.stops.some((stop) => stop.station.uuid === playingUuid);
+          const isPick = Boolean(pickAnchorName && station.uuid === pickUuid);
           return (
             <button
               type="button"
@@ -63,6 +72,8 @@ export function HomeArtistChips({
               key={route.id}
               className="ew-artist"
               aria-pressed={playing}
+              data-pick={isPick && keeperAt === pickAnchorName ? "" : undefined}
+              {...(isPick && pickAnchorName ? keeperAnchor(pickAnchorName) : {})}
               aria-label={VOICE.homeKeeperRouteTune(route.label)}
               onClick={() => onPlay(station)}
             >
