@@ -40,8 +40,8 @@ import { HomeSky } from "~/components/home/HomeSky";
 import { useFriendStore } from "~/state/friendStore";
 import { HomeGates } from "~/components/home/HomeGates";
 import { HomeDepartures } from "~/components/home/HomeDepartures";
-import { HomeKeeperRoute } from "~/components/home/HomeKeeperRoute";
-import { KEEPER_ROUTES, type KeeperRoute } from "~/components/home/keeperRoute";
+import { buildArtistShelf } from "~/components/home/artistShelf";
+import { KEEPER_ROUTES } from "~/components/home/keeperRoute";
 import {
   arrivalSky,
   canShowMore,
@@ -84,17 +84,6 @@ import { useHomeGuide, GUIDE_BOARD, GUIDE_LANDING } from "~/hooks/home/useHomeGu
 import { keeperAnchor } from "~/components/keeper/keeperRoamModel";
 import { hourWord } from "~/components/keeper/keeperVoice";
 import type { Station } from "~/types/radio";
-import { createQueueSession } from "~/utils/playerQueue";
-
-/** One queue per route, so Next stays inside the route you tuned from. */
-function keeperRouteQueue(route: KeeperRoute) {
-  return createQueueSession({
-    sourceType: "keeper_route",
-    sourceLabel: route.title,
-    stations: route.stops.map(({ station }) => station),
-    seed: `keeper_route:${route.id}`,
-  });
-}
 
 /** Reduced motion scrolls instantly; everyone else glides. */
 function scrollBehavior(): ScrollBehavior {
@@ -194,7 +183,6 @@ export function HomeRedesign() {
   });
   const noop = useCallback(() => {}, []);
   const {
-    boardStation,
     play,
     requestAiWorld,
     submitIntent,
@@ -406,6 +394,7 @@ export function HomeRedesign() {
     const byId = new Map(initialStations.map((station) => [station.uuid, station]));
     const list: Array<HomeShelf | null> = [
       buildHourShelf(initialStations, theHour, labels, now),
+      buildArtistShelf(KEEPER_ROUTES, now),
       ...shelfSpecs.map((spec) => shelfFromSpec(spec, byId, labels, now)),
     ];
     return list.filter((shelf): shelf is HomeShelf => Boolean(shelf));
@@ -560,15 +549,6 @@ export function HomeRedesign() {
             }}
             onOpenKeeper={nowPlaying ? () => openKeeperSheet() : undefined}
           />
-          {browsing ? (
-            <HomeKeeperRoute
-              routes={KEEPER_ROUTES}
-              playingUuid={playingUuid}
-              onPlay={(station, route) =>
-                boardStation(station, keeperRouteQueue(route))
-              }
-            />
-          ) : null}
         </div>
           <HomeGates
             hour={hour}

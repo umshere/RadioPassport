@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { buildArtistShelf } from "~/components/home/artistShelf";
 import { HOME_KEEPER_ROUTE, KEEPER_GROUPS, KEEPER_ROUTES } from "~/components/home/keeperRoute";
 
 const KEXP_UUID = "e9fddd49-3ee2-4597-8574-1b7dbd00aac0";
@@ -155,6 +156,17 @@ describe("Keeper's Route", () => {
       for (const route of KEEPER_ROUTES.filter((candidate) => candidate.group === "malayalam")) {
         expect(route.stops[0]!.station.languageCodes).toContain("ml");
       }
+    });
+
+    it("lays every trail out as one shelf of cards, Malayalam first, named for the artist", () => {
+      const shelf = buildArtistShelf(KEEPER_ROUTES)!;
+      const stops = KEEPER_ROUTES.reduce((total, route) => total + route.stops.length, 0);
+      expect(shelf.id).toBe("artists");
+      expect(shelf.cards).toHaveLength(stops);
+      expect(shelf.count).toBe(stops);
+      expect(shelf.cards[0]!.station.name).toBe("K. J. Yesudas");
+      expect(shelf.cards[0]!.label).toBe("Malayalam");
+      expect(new Set(shelf.cards.map((card) => card.station.uuid)).size).toBe(stops);
     });
   });
 });

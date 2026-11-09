@@ -20,10 +20,10 @@ import { homeDepartures, type HomeDeparture } from "./homeModel";
  * is not on them. No shelf ever claims what is on air this minute.
  */
 
-export type ShelfKind = "hour" | "music" | "voices" | "genre";
+export type ShelfKind = "hour" | "music" | "voices" | "genre" | "artists";
 
 /** What the server sends: which stations, never the words. */
-export type ShelfSpec = { id: string; kind: Exclude<ShelfKind, "hour">; family?: string; uuids: string[] };
+export type ShelfSpec = { id: string; kind: Exclude<ShelfKind, "hour" | "artists">; family?: string; uuids: string[] };
 
 /** The label facts one station carries (from the offline labels). */
 export type StationLabelFacts = {
