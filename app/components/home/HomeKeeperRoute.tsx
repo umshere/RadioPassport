@@ -2,7 +2,7 @@ import { useState } from "react";
 import type { Station } from "~/types/radio";
 import { Button } from "~/components/ui/Button";
 import { VOICE } from "~/components/keeper/keeperVoice";
-import type { KeeperRoute } from "./keeperRoute";
+import { KEEPER_GROUPS, type KeeperRoute } from "./keeperRoute";
 
 /**
  * The Keeper's Route: one closed strip. Open it, choose an artist, and tune
@@ -39,22 +39,36 @@ export function HomeKeeperRoute({
           </span>
         </summary>
         <div className="ew-keeper-route-body">
-          <div
-            className="ew-keeper-route-artists"
-            role="group"
-            aria-label={VOICE.homeKeeperRouteChoose}
-          >
-            {routes.map((candidate) => (
-              <button
-                type="button"
-                key={candidate.id}
-                className="ew-keeper-route-artist"
-                aria-pressed={candidate.id === route.id}
-                onClick={() => setActiveId(candidate.id)}
-              >
-                {candidate.label}
-              </button>
-            ))}
+          <div className="ew-keeper-route-groups">
+            {KEEPER_GROUPS.map((group) => {
+              const members = routes.filter((candidate) => candidate.group === group);
+              if (members.length === 0) return null;
+              const label = VOICE.homeKeeperGroups[group];
+              return (
+                <div className="ew-keeper-route-group" key={group}>
+                  <span className="ew-keeper-route-group-label" aria-hidden="true">
+                    {label}
+                  </span>
+                  <div
+                    className="ew-keeper-route-artists"
+                    role="group"
+                    aria-label={`${VOICE.homeKeeperRouteChoose}: ${label}`}
+                  >
+                    {members.map((candidate) => (
+                      <button
+                        type="button"
+                        key={candidate.id}
+                        className="ew-keeper-route-artist"
+                        aria-pressed={candidate.id === route.id}
+                        onClick={() => setActiveId(candidate.id)}
+                      >
+                        {candidate.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
           </div>
           <p className="ew-keeper-route-intro">{route.intro}</p>
           <ol className="ew-keeper-route-stops" role="list" aria-label={route.title}>

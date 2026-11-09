@@ -197,7 +197,17 @@ export const VOICE = {
   homeKeeperRouteArtistTitle: (artist: string) => `The ${artist} trail`,
   homeKeeperRouteArtistReason: (artist: string) => `A stream given to ${artist}’s music.`,
   homeKeeperRouteArtistSource: (artist: string) => `${artist} · Wikipedia`,
+  homeKeeperRouteThemeIntro: "A Malayalam stream for this kind of listening. Hear what it is sending today.",
+  homeKeeperRouteThemeTitle: (theme: string) => `The ${theme} trail`,
+  homeKeeperRouteThemeReason: (theme: string) => `A Malayalam stream for ${theme.toLowerCase()}.`,
+  homeKeeperRouteThemeSource: (page: string) => `${page} · Wikipedia`,
   homeKeeperRouteChoose: "Choose an artist",
+  homeKeeperGroups: {
+    malayalam: "Malayalam",
+    "indian-film": "Indian film",
+    "rock-pop": "Rock and pop",
+    "roots-world": "Roots and world",
+  },
 
   /* ---- Home shelves: what each row is, said from the data only. Shelf
      words never claim what is on air this minute. ---- */

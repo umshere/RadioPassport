@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { HOME_KEEPER_ROUTE, KEEPER_ROUTES } from "~/components/home/keeperRoute";
+import { HOME_KEEPER_ROUTE, KEEPER_GROUPS, KEEPER_ROUTES } from "~/components/home/keeperRoute";
 
 const KEXP_UUID = "e9fddd49-3ee2-4597-8574-1b7dbd00aac0";
 const NTS_UUID = "a3dbc189-d23e-4308-803f-5aad26432b8c";
@@ -137,6 +137,23 @@ describe("Keeper's Route", () => {
           expect(line).not.toMatch(banned);
           expect(line).not.toMatch(onAir);
         }
+      }
+    });
+
+    it("sorts every route into a known group, with Malayalam trails in the Malayalam group", () => {
+      for (const route of KEEPER_ROUTES) {
+        expect(KEEPER_GROUPS).toContain(route.group);
+      }
+      const malayalam = KEEPER_ROUTES.filter((route) => route.group === "malayalam").map((route) => route.id);
+      expect(malayalam).toEqual([
+        "yesudas",
+        "kalabhavan-mani",
+        "malayalam-old-melodies",
+        "malayalam-90s",
+        "malayalam-film-songs",
+      ]);
+      for (const route of KEEPER_ROUTES.filter((candidate) => candidate.group === "malayalam")) {
+        expect(route.stops[0]!.station.languageCodes).toContain("ml");
       }
     });
   });

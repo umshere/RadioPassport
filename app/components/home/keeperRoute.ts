@@ -1,8 +1,13 @@
 import type { Station } from "~/types/radio";
 import { VOICE } from "~/components/keeper/keeperVoice";
 
+/** Chip rows on Home, in this order. */
+export const KEEPER_GROUPS = ["malayalam", "indian-film", "rock-pop", "roots-world"] as const;
+export type KeeperGroup = (typeof KEEPER_GROUPS)[number];
+
 export type KeeperRoute = {
   id: string;
+  group: KeeperGroup;
   /** Short chip text: the artist. */
   label: string;
   title: string;
@@ -23,6 +28,7 @@ export type KeeperRoute = {
  */
 export const HOME_KEEPER_ROUTE: KeeperRoute = {
   id: "khruangbin",
+  group: "rock-pop",
   label: "Khruangbin",
   title: VOICE.homeKeeperRouteTitle,
   intro: VOICE.homeKeeperRouteIntro,
@@ -87,6 +93,7 @@ export const HOME_KEEPER_ROUTE: KeeperRoute = {
  */
 const RADIOHEAD_ROUTE: KeeperRoute = {
   id: "radiohead",
+  group: "rock-pop",
   label: "Radiohead",
   title: VOICE.homeKeeperRouteRadioheadTitle,
   intro: VOICE.homeKeeperRouteArtistIntro,
@@ -121,6 +128,7 @@ const RADIOHEAD_ROUTE: KeeperRoute = {
 
 const YESUDAS_ROUTE: KeeperRoute = {
   id: "yesudas",
+  group: "malayalam",
   label: "K. J. Yesudas",
   title: VOICE.homeKeeperRouteYesudasTitle,
   intro: VOICE.homeKeeperRouteArtistIntro,
@@ -156,12 +164,14 @@ const YESUDAS_ROUTE: KeeperRoute = {
 /** One artist, one dedicated live stream, one stable page about them. */
 function artistRoute({
   id,
+  group,
   artist,
   wiki,
   name,
   station,
 }: {
   id: string;
+  group: KeeperGroup;
   artist: string;
   wiki: string;
   name: string;
@@ -169,6 +179,7 @@ function artistRoute({
 }): KeeperRoute {
   return {
     id,
+    group,
     label: artist,
     title: VOICE.homeKeeperRouteArtistTitle(artist),
     intro: VOICE.homeKeeperRouteArtistIntro,
@@ -184,13 +195,147 @@ function artistRoute({
   };
 }
 
+/** A Malayalam stream for a kind of listening, not one named artist. */
+function malayalamThemeRoute({
+  id,
+  theme,
+  wiki,
+  wikiTitle,
+  station,
+}: {
+  id: string;
+  theme: string;
+  wiki: string;
+  wikiTitle: string;
+  station: Station;
+}): KeeperRoute {
+  return {
+    id,
+    group: "malayalam",
+    label: theme,
+    title: VOICE.homeKeeperRouteThemeTitle(theme),
+    intro: VOICE.homeKeeperRouteThemeIntro,
+    stops: [
+      {
+        station,
+        name: station.name,
+        reason: VOICE.homeKeeperRouteThemeReason(theme),
+        sourceLabel: VOICE.homeKeeperRouteThemeSource(wikiTitle),
+        sourceUrl: `https://en.wikipedia.org/wiki/${wiki}`,
+      },
+    ],
+  };
+}
+
 /** Every route Home offers, in order. Add an artist by adding a route here. */
 export const KEEPER_ROUTES: readonly KeeperRoute[] = [
   HOME_KEEPER_ROUTE,
   RADIOHEAD_ROUTE,
   YESUDAS_ROUTE,
   artistRoute({
+    id: "kalabhavan-mani",
+    group: "malayalam",
+    artist: "Kalabhavan Mani",
+    wiki: "Kalabhavan_Mani",
+    name: "Kalabhavan Mani Radio",
+    station: {
+      uuid: "a3e1d79b-54b3-4e01-ad75-4b5597758df5",
+      name: "Kalabhavan Mani Radio",
+      url: "https://stream.zeno.fm/s6hhy943w0hvv",
+      streamUrl: "https://stream.zeno.fm/s6hhy943w0hvv",
+      favicon: "https://onlineradiohub.com/wp-content/uploads/2023/02/mani-radio.jpg",
+      country: "India",
+      countryCode: "IN",
+      state: null,
+      city: null,
+      language: "malayalam",
+      languageCodes: ["ml"],
+      tags: "",
+      tagList: [],
+      bitrate: 128,
+      codec: "MP3",
+      homepage: "",
+      hls: false,
+    },
+  }),
+  malayalamThemeRoute({
+    id: "malayalam-old-melodies",
+    wiki: "Music_of_Kerala",
+    wikiTitle: "Music of Kerala",
+    theme: "Old melodies",
+    station: {
+      uuid: "b77facc0-b7a2-40a1-bf9f-b157abafbd82",
+      name: "Aural Melodics",
+      url: "https://stream.zeno.fm/7fmywrmrga0uv",
+      streamUrl: "https://stream.zeno.fm/7fmywrmrga0uv",
+      favicon: "",
+      country: "India",
+      countryCode: "IN",
+      state: null,
+      city: null,
+      language: "malayalam",
+      languageCodes: ["ml"],
+      tags: "",
+      tagList: [],
+      bitrate: 128,
+      codec: "MP3",
+      homepage: "",
+      hls: false,
+    },
+  }),
+  malayalamThemeRoute({
+    id: "malayalam-90s",
+    wiki: "Malayalam_cinema",
+    wikiTitle: "Malayalam cinema",
+    theme: "90s hits",
+    station: {
+      uuid: "6fa021ed-9f5b-4fb5-b832-75943a61ce47",
+      name: "Mala 90",
+      url: "https://stream.zeno.fm/gm3g9amzm0hvv",
+      streamUrl: "https://stream.zeno.fm/gm3g9amzm0hvv",
+      favicon: "",
+      country: "India",
+      countryCode: "IN",
+      state: null,
+      city: null,
+      language: "malayalam",
+      languageCodes: ["ml"],
+      tags: "",
+      tagList: [],
+      bitrate: 128,
+      codec: "MP3",
+      homepage: "",
+      hls: false,
+    },
+  }),
+  malayalamThemeRoute({
+    id: "malayalam-film-songs",
+    wiki: "Playback_singer",
+    wikiTitle: "Playback singing",
+    theme: "Film songs",
+    station: {
+      uuid: "fb5a60b2-f8c5-4650-aeee-cf118925450d",
+      name: "98.6 Malayalam Radio",
+      url: "https://stream.zeno.fm/512rbf1e3qzuv",
+      streamUrl: "https://stream.zeno.fm/512rbf1e3qzuv",
+      favicon: "https://radiosindia.com/images/986malayalamradio.jpg",
+      country: "India",
+      countryCode: "IN",
+      state: null,
+      city: null,
+      language: "malayalam",
+      languageCodes: ["ml"],
+      tags: "",
+      tagList: [],
+      bitrate: 128,
+      codec: "MP3",
+      homepage: "",
+      hls: false,
+    },
+  }),
+  artistRoute({
     id: "beatles",
+    group: "rock-pop",
     artist: "The Beatles",
     wiki: "The_Beatles",
     name: "Exclusively The Beatles",
@@ -216,6 +361,7 @@ export const KEEPER_ROUTES: readonly KeeperRoute[] = [
   }),
   artistRoute({
     id: "coldplay",
+    group: "rock-pop",
     artist: "Coldplay",
     wiki: "Coldplay",
     name: "Exclusively Coldplay",
@@ -241,6 +387,7 @@ export const KEEPER_ROUTES: readonly KeeperRoute[] = [
   }),
   artistRoute({
     id: "pink-floyd",
+    group: "rock-pop",
     artist: "Pink Floyd",
     wiki: "Pink_Floyd",
     name: "Exclusively Pink Floyd",
@@ -266,6 +413,7 @@ export const KEEPER_ROUTES: readonly KeeperRoute[] = [
   }),
   artistRoute({
     id: "queen",
+    group: "rock-pop",
     artist: "Queen",
     wiki: "Queen_(band)",
     name: "Exclusive Radio Queen",
@@ -291,6 +439,7 @@ export const KEEPER_ROUTES: readonly KeeperRoute[] = [
   }),
   artistRoute({
     id: "led-zeppelin",
+    group: "rock-pop",
     artist: "Led Zeppelin",
     wiki: "Led_Zeppelin",
     name: "Exclusively Led Zeppelin",
@@ -316,6 +465,7 @@ export const KEEPER_ROUTES: readonly KeeperRoute[] = [
   }),
   artistRoute({
     id: "elvis",
+    group: "rock-pop",
     artist: "Elvis Presley",
     wiki: "Elvis_Presley",
     name: "Exclusively Elvis Presley",
@@ -341,6 +491,7 @@ export const KEEPER_ROUTES: readonly KeeperRoute[] = [
   }),
   artistRoute({
     id: "michael-jackson",
+    group: "rock-pop",
     artist: "Michael Jackson",
     wiki: "Michael_Jackson",
     name: "Exclusively Michael Jackson",
@@ -366,6 +517,7 @@ export const KEEPER_ROUTES: readonly KeeperRoute[] = [
   }),
   artistRoute({
     id: "bob-marley",
+    group: "roots-world",
     artist: "Bob Marley",
     wiki: "Bob_Marley",
     name: "Exclusive Radio Bob Marley",
@@ -391,6 +543,7 @@ export const KEEPER_ROUTES: readonly KeeperRoute[] = [
   }),
   artistRoute({
     id: "fairuz",
+    group: "roots-world",
     artist: "Fairuz",
     wiki: "Fairuz",
     name: "Fairuz radio",
@@ -416,6 +569,7 @@ export const KEEPER_ROUTES: readonly KeeperRoute[] = [
   }),
   artistRoute({
     id: "kishore-kumar",
+    group: "indian-film",
     artist: "Kishore Kumar",
     wiki: "Kishore_Kumar",
     name: "Kishore Kumar radio",
@@ -441,6 +595,7 @@ export const KEEPER_ROUTES: readonly KeeperRoute[] = [
   }),
   artistRoute({
     id: "lata-mangeshkar",
+    group: "indian-film",
     artist: "Lata Mangeshkar",
     wiki: "Lata_Mangeshkar",
     name: "Lata Mangeshkar radio",
@@ -466,6 +621,7 @@ export const KEEPER_ROUTES: readonly KeeperRoute[] = [
   }),
   artistRoute({
     id: "mohammed-rafi",
+    group: "indian-film",
     artist: "Mohammed Rafi",
     wiki: "Mohammed_Rafi",
     name: "Mohammed Rafi radio",
@@ -491,6 +647,7 @@ export const KEEPER_ROUTES: readonly KeeperRoute[] = [
   }),
   artistRoute({
     id: "ar-rahman",
+    group: "indian-film",
     artist: "A. R. Rahman",
     wiki: "A._R._Rahman",
     name: "A. R. Rahman radio",
@@ -516,6 +673,7 @@ export const KEEPER_ROUTES: readonly KeeperRoute[] = [
   }),
   artistRoute({
     id: "arijit-singh",
+    group: "indian-film",
     artist: "Arijit Singh",
     wiki: "Arijit_Singh",
     name: "Arijit Singh radio",
