@@ -6,13 +6,25 @@ import { ARTIST_PHOTOS } from "./artistPhotos";
 import { KEEPER_GROUPS, type KeeperRoute } from "./keeperRoute";
 
 /**
- * Artists in chip order: global names first, then regional ones by group. Listening
+ * Artists in chip order: global names first, the best known leading (see FAME), then regional ones by group. Listening
  * themes (old melodies, 90s hits, film songs) have no face, so they are not
  * chips.
  */
+const FAME: readonly string[] = [
+  "beatles", "michael-jackson", "queen", "elvis", "bob-marley", "pink-floyd",
+  "led-zeppelin", "coldplay", "radiohead", "khruangbin",
+];
+
+function fameRank(id: string): number {
+  const at = FAME.indexOf(id);
+  return at === -1 ? FAME.length : at;
+}
+
 export function artistChips(routes: readonly KeeperRoute[]): KeeperRoute[] {
   return KEEPER_GROUPS.flatMap((group) =>
-    routes.filter((route) => route.group === group && !route.id.startsWith("malayalam-")),
+    routes
+      .filter((route) => route.group === group && !route.id.startsWith("malayalam-"))
+      .sort((a, b) => fameRank(a.id) - fameRank(b.id)),
   );
 }
 

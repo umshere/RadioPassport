@@ -162,7 +162,9 @@ describe("Keeper's Route", () => {
     it("chips lead with the global names, and every photo is a local free-licence file", () => {
       const chips = artistChips(KEEPER_ROUTES);
       expect(chips).toHaveLength(KEEPER_ROUTES.length - 3);
-      expect(chips[0]!.id).toBe("khruangbin");
+      expect(chips[0]!.id).toBe("beatles");
+      expect(chips[chips.findIndex((chip) => chip.id === "khruangbin")]).toBeDefined();
+      expect(chips.findIndex((chip) => chip.id === "khruangbin")).toBeGreaterThan(chips.findIndex((chip) => chip.id === "queen"));
       expect(chips[chips.length - 1]!.id).toBe("kalabhavan-mani");
       const ids = new Set(KEEPER_ROUTES.map((route) => route.id));
       for (const [id, photo] of Object.entries(ARTIST_PHOTOS)) {
