@@ -206,6 +206,8 @@ export const VOICE = {
     malayalam: "Malayalam",
     "indian-film": "Indian film",
     "rock-pop": "Rock and pop",
+    "jazz-soul": "Jazz, soul and country",
+    latin: "Latin",
     "roots-world": "Roots and world",
   },
 

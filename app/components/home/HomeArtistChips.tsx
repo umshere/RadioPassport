@@ -12,7 +12,13 @@ import { KEEPER_GROUPS, type KeeperRoute } from "./keeperRoute";
  */
 const FAME: readonly string[] = [
   "beatles", "michael-jackson", "queen", "elvis", "bob-marley", "pink-floyd",
-  "led-zeppelin", "coldplay", "radiohead", "khruangbin",
+  "led-zeppelin", "david-bowie", "abba", "prince", "nirvana", "coldplay",
+  "jimi-hendrix", "bob-dylan", "eminem", "bts", "scorpions", "rammstein",
+  "roxette", "kraftwerk", "radiohead", "khruangbin",
+  "frank-sinatra", "stevie-wonder", "louis-armstrong", "aretha-franklin",
+  "ella-fitzgerald", "johnny-cash", "dolly-parton", "billie-holiday",
+  "miles-davis", "andrea-bocelli",
+  "shakira", "bad-bunny", "enrique-iglesias", "julio-iglesias",
 ];
 
 function fameRank(id: string): number {
