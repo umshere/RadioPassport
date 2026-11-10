@@ -12,8 +12,8 @@ import { deskPlays, playsSearchTerm } from "./deskModel";
  * confident labels shows its raw tags as they are.
  */
 /** One chip: a link to Home searching for it, or plain text when there is nothing to search. */
-function PlaysChip({ text }: { text: string }) {
-  const term = playsSearchTerm(text);
+function PlaysChip({ text, kind = "label" }: { text: string; kind?: "label" | "tag" }) {
+  const term = playsSearchTerm(text, kind);
   if (!term) return <li>{text}</li>;
   return (
     <li>
@@ -44,7 +44,7 @@ export function DeskPlays({ labels, tags }: { labels: string[] | null; tags: str
         plays.raw.length ? (
           <ul className="ew-plays-raw" aria-label={VOICE.playsRaw(plays.raw.length)}>
             {plays.raw.map((tag) => (
-              <PlaysChip key={tag} text={tag} />
+              <PlaysChip key={tag} text={tag} kind="tag" />
             ))}
           </ul>
         ) : (
@@ -72,7 +72,7 @@ export function DeskPlays({ labels, tags }: { labels: string[] | null; tags: str
               {open ? (
                 <ul id={rawId} className="ew-plays-raw">
                   {plays.raw.map((tag) => (
-                    <PlaysChip key={tag} text={tag} />
+                    <PlaysChip key={tag} text={tag} kind="tag" />
                   ))}
                 </ul>
               ) : null}

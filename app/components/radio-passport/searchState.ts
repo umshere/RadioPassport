@@ -129,7 +129,7 @@ export function describeEmptyResults(input: {
   };
 }
 
-const SEARCH_VOCABULARY = [
+export const SEARCH_VOCABULARY = [
   "trance",
   "house",
   "techno",

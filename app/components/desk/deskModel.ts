@@ -1,3 +1,4 @@
+import { SEARCH_VOCABULARY } from "~/components/radio-passport/searchState";
 import { cleanTrack, cleanTrackLine } from "~/services/keeper/cleanTitle";
 import { estimatedLongitude } from "~/utils/countryCentroids";
 import type { Station } from "~/types/radio";
@@ -237,9 +238,18 @@ const NOT_SEARCHABLE = new Set([
  * the chip is a format word with nothing to search. "Ambient and chill" asks
  * for "ambient" (the first named thing), a raw tag asks for itself.
  */
-export function playsSearchTerm(chip: string): string | null {
+export function playsSearchTerm(chip: string, kind: "label" | "tag" = "label"): string | null {
   const text = chip.trim().toLowerCase();
   if (!text || NOT_SEARCHABLE.has(text)) return null;
+  if (kind === "tag") {
+    // A station's own tags are messy ("merseybeat", "clasic rock"): only send
+    // someone on when a tag holds a genre Home really finds stations for.
+    const words = text.split(/[^a-z0-9]+/).filter((word) => word.length >= 4 || SEARCH_VOCABULARY.includes(word as never));
+    const hits = words
+      .map((word) => SEARCH_VOCABULARY.find((v) => word === v || (word.length >= 4 && (word.startsWith(v) || v.startsWith(word)))))
+      .filter((v): v is (typeof SEARCH_VOCABULARY)[number] => Boolean(v));
+    return hits.length ? hits[hits.length - 1]! : null;
+  }
   const first = text.split(/ and |, /)[0]!.replace(/[’']/g, "").trim();
   return first.length >= 2 ? first : null;
 }

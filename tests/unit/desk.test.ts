@@ -230,5 +230,10 @@ describe("What this station plays: tapping a chip", () => {
     expect(playsSearchTerm("Mostly music")).toBeNull();
     expect(playsSearchTerm("Mid-tempo")).toBeNull();
     expect(playsSearchTerm(" ")).toBeNull();
+    expect(playsSearchTerm("Electronica", "tag")).toBe("electronic");
+    expect(playsSearchTerm("pop rock", "tag")).toBe("rock");
+    expect(playsSearchTerm("Ambient", "tag")).toBe("ambient");
+    expect(playsSearchTerm("merseybeat", "tag")).toBeNull();
+    expect(playsSearchTerm("am pop", "tag")).toBe("pop");
   });
 });
