@@ -226,6 +226,24 @@ export function deskPlays(labels: string[] | null | undefined, tags: string[]): 
   return { labels: clean, raw, rawOnly: clean.length === 0 };
 }
 
+/** Words that describe a format or a mood, not a place to search for. */
+const NOT_SEARCHABLE = new Set([
+  "mostly music", "mostly talk and news", "music and talk", "religious",
+  "a bit of everything", "eclectic mix", "local and regional", "mid-tempo", "none",
+]);
+
+/**
+ * What a tapped "What this station plays" chip searches Home for, or null when
+ * the chip is a format word with nothing to search. "Ambient and chill" asks
+ * for "ambient" (the first named thing), a raw tag asks for itself.
+ */
+export function playsSearchTerm(chip: string): string | null {
+  const text = chip.trim().toLowerCase();
+  if (!text || NOT_SEARCHABLE.has(text)) return null;
+  const first = text.split(/ and |, /)[0]!.replace(/[’']/g, "").trim();
+  return first.length >= 2 ? first : null;
+}
+
 /** The next note in the keeper's stack, round again after the last. */
 export function nextNoteIndex(index: number, count: number): number {
   return count > 0 ? (index + 1) % count : 0;

@@ -10,6 +10,7 @@ import {
   skyBody,
   skyHour,
 } from "~/components/desk/deskModel";
+import { playsSearchTerm } from "~/components/desk/deskModel";
 import { VOICE } from "~/components/keeper/keeperVoice";
 import { hourOffsetFromListener } from "~/components/keeper/keeperMurmur";
 import type { KeeperFacts } from "~/components/keeper/keeperFacts";
@@ -216,5 +217,18 @@ describe("desk wiring", () => {
     expect(desk).not.toMatch(/box-shadow/);
     // Chips wrap on the desk; nothing scrolls sideways.
     expect(readAppCss()).toMatch(/\.ew-counter-moves \{ display: flex; flex-wrap: wrap;/);
+  });
+});
+
+describe("What this station plays: tapping a chip", () => {
+  it("searches Home for the genre, and leaves format words alone", () => {
+    expect(playsSearchTerm("Ambient")).toBe("ambient");
+    expect(playsSearchTerm("Ambient and chill")).toBe("ambient");
+    expect(playsSearchTerm("House and techno")).toBe("house");
+    expect(playsSearchTerm("Classic rock")).toBe("classic rock");
+    expect(playsSearchTerm("’60s and ’70s")).toBe("60s");
+    expect(playsSearchTerm("Mostly music")).toBeNull();
+    expect(playsSearchTerm("Mid-tempo")).toBeNull();
+    expect(playsSearchTerm(" ")).toBeNull();
   });
 });

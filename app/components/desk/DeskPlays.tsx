@@ -1,8 +1,9 @@
+import { Link } from "@remix-run/react";
 import { useState } from "react";
 import { keeperAnchor } from "~/components/keeper/keeperRoamModel";
 import { VOICE } from "~/components/keeper/keeperVoice";
 import { DESK_ANCHORS } from "./deskKeeper";
-import { deskPlays } from "./deskModel";
+import { deskPlays, playsSearchTerm } from "./deskModel";
 
 /**
  * What this station plays: up to three readable labels, worked out once,
@@ -10,6 +11,24 @@ import { deskPlays } from "./deskModel";
  * now), with the station's own raw tags one tap away. A station without
  * confident labels shows its raw tags as they are.
  */
+/** One chip: a link to Home searching for it, or plain text when there is nothing to search. */
+function PlaysChip({ text }: { text: string }) {
+  const term = playsSearchTerm(text);
+  if (!term) return <li>{text}</li>;
+  return (
+    <li>
+      <Link
+        to={`/?q=${encodeURIComponent(term)}`}
+        className="ew-plays-link"
+        title={VOICE.playsTravel(text)}
+        prefetch="intent"
+      >
+        {text}
+      </Link>
+    </li>
+  );
+}
+
 export function DeskPlays({ labels, tags }: { labels: string[] | null; tags: string[] }) {
   const [open, setOpen] = useState(false);
   const plays = deskPlays(labels, tags);
@@ -25,7 +44,7 @@ export function DeskPlays({ labels, tags }: { labels: string[] | null; tags: str
         plays.raw.length ? (
           <ul className="ew-plays-raw" aria-label={VOICE.playsRaw(plays.raw.length)}>
             {plays.raw.map((tag) => (
-              <li key={tag}>{tag}</li>
+              <PlaysChip key={tag} text={tag} />
             ))}
           </ul>
         ) : (
@@ -35,7 +54,7 @@ export function DeskPlays({ labels, tags }: { labels: string[] | null; tags: str
         <>
           <ul className="ew-plays-labels">
             {plays.labels.map((label) => (
-              <li key={label}>{label}</li>
+              <PlaysChip key={label} text={label} />
             ))}
           </ul>
           <p className="ew-plays-basis">{VOICE.playsBasis}</p>
@@ -53,7 +72,7 @@ export function DeskPlays({ labels, tags }: { labels: string[] | null; tags: str
               {open ? (
                 <ul id={rawId} className="ew-plays-raw">
                   {plays.raw.map((tag) => (
-                    <li key={tag}>{tag}</li>
+                    <PlaysChip key={tag} text={tag} />
                   ))}
                 </ul>
               ) : null}

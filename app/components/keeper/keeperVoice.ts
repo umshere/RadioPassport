@@ -120,6 +120,7 @@ export const VOICE = {
     `Stay ${seconds} more second${seconds === 1 ? "" : "s"} and I’ll stamp ${place}.`,
   stampedIn: (place: string) => `${place} is in your passport.`,
   playsTitle: "What this station plays",
+  playsTravel: (chip: string) => `Find more stations like ${chip.toLowerCase()}`,
   playsBasis: "Read from the station’s own tags",
   playsRaw: (count: number) => `The station’s own tags (${count})`,
   playsRawHide: "Hide the station’s own tags",

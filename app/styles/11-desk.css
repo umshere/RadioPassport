@@ -348,6 +348,11 @@
 .ew-plays-toggle:hover { color: var(--ew-bone); }
 .ew-plays-raw { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; }
 .ew-plays-raw li { padding: 4px 8px; border: 1px solid var(--ew-rule); font: 500 10px/1.3 "Azeret Mono", ui-monospace, monospace; letter-spacing: .1em; text-transform: uppercase; color: var(--ew-dust); overflow-wrap: anywhere; }
+.ew-plays-link { display: inline-block; color: inherit; text-decoration: none; }
+.ew-plays-labels li:has(.ew-plays-link), .ew-plays-raw li:has(.ew-plays-link) { position: relative; }
+.ew-plays-link::after { content: ""; position: absolute; inset: -6px; }
+.ew-plays-link:hover, .ew-plays-link:focus-visible { color: var(--ew-foil); }
+.ew-plays-labels li:has(.ew-plays-link):hover, .ew-plays-raw li:has(.ew-plays-link):hover { border-color: var(--ew-foil); }
 .ew-plays-none { margin: 0; font: italic 400 15px/1.4 "Newsreader", serif; color: var(--ew-dust); }
 
 /* ---- One note at a time, and the next on this shelf. */
