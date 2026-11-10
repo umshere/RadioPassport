@@ -2,7 +2,7 @@ import type { Station } from "~/types/radio";
 import { VOICE } from "~/components/keeper/keeperVoice";
 
 /** Chip rows on Home, in this order. */
-export const KEEPER_GROUPS = ["malayalam", "indian-film", "rock-pop", "roots-world"] as const;
+export const KEEPER_GROUPS = ["rock-pop", "roots-world", "indian-film", "malayalam"] as const;
 export type KeeperGroup = (typeof KEEPER_GROUPS)[number];
 
 export type KeeperRoute = {

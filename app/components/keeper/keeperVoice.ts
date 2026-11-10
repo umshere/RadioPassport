@@ -235,7 +235,7 @@ export const VOICE = {
   } as Record<string, string>,
   shelfGenreWhy: "Grouped by the stations’ own names and tags, not by this minute’s song.",
   shelfArtistsTitle: "Made for one artist",
-  shelfArtistsWhy: "One stream given to each artist. Malayalam first.",
+  shelfArtistsWhy: "One stream given to each artist.",
   shelfCount: (count: number) => `${count} station${count === 1 ? "" : "s"}`,
   shelfMusicLabel: "Mostly music",
   shelfVoicesLabel: "Talk and news",

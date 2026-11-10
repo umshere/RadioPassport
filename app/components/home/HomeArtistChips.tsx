@@ -6,7 +6,7 @@ import { ARTIST_PHOTOS } from "./artistPhotos";
 import { KEEPER_GROUPS, type KeeperRoute } from "./keeperRoute";
 
 /**
- * Artists in chip order: Malayalam first, then the rest by group. Listening
+ * Artists in chip order: global names first, then regional ones by group. Listening
  * themes (old melodies, 90s hits, film songs) have no face, so they are not
  * chips.
  */
