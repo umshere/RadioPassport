@@ -5,6 +5,7 @@ import { ATLAS_PAGE, atlasSearch, atlasTabCountries, atlasTabs, POPULAR } from "
 import type { PassportStamp } from "~/state/journeyStore";
 import type { CountryDrilldownState } from "./countryData";
 import {
+  countryCacheKey,
   fetchStationsByCountryLanguage,
   languageChipsFromStations,
   mergeStationLists,
@@ -19,6 +20,8 @@ import { applyLiveCatalog } from "~/utils/stationMeta";
 import { Button, Chip } from "~/components/ui/Button";
 import { Row, RowText } from "~/components/ui/Row";
 import { Sheet } from "~/components/ui/Sheet";
+import { usePlayerStore } from "~/state/playerStore";
+import { useStationAvailabilityStore } from "~/state/stationAvailabilityStore";
 
 export function AtlasOverlay({
   countries,
@@ -176,15 +179,42 @@ export function CountryOverlay({
   favorites: string[];
   onBack: () => void;
   close: () => void;
-  onPlay: (station: Station) => void;
+  onPlay: (station: Station, pool: Station[], label: string) => void;
   onFavorite: (id: string, station?: Station) => void;
   drilldown: CountryDrilldownState | null;
   onRetry: () => void;
 }) {
+  const nowPlaying = usePlayerStore((state) => state.nowPlaying);
+  const isPlaying = usePlayerStore((state) => state.isPlaying);
+  const audioElement = usePlayerStore((state) => state.audioElement);
+  const failuresById = useStationAvailabilityStore((state) => state.failuresById);
+  const [attempt, setAttempt] = useState<{ id: string; previousFailureAt: number } | null>(null);
+  const [confirmedId, setConfirmedId] = useState<string | null>(null);
+  useEffect(() => {
+    if (!audioElement) return;
+    const confirm = () => {
+      const current = usePlayerStore.getState().nowPlaying;
+      if (!current) return;
+      setConfirmedId(current.uuid);
+    };
+    const uncertain = () => setConfirmedId(null);
+    audioElement.addEventListener("playing", confirm);
+    audioElement.addEventListener("waiting", uncertain);
+    audioElement.addEventListener("emptied", uncertain);
+    audioElement.addEventListener("pause", uncertain);
+    if (!audioElement.paused && audioElement.readyState >= 2) confirm();
+    return () => {
+      audioElement.removeEventListener("playing", confirm);
+      audioElement.removeEventListener("waiting", uncertain);
+      audioElement.removeEventListener("emptied", uncertain);
+      audioElement.removeEventListener("pause", uncertain);
+    };
+  }, [audioElement]);
   const [languageFilter, setLanguageFilter] = useState<string | null>(null);
   const [languageStations, setLanguageStations] = useState<Station[] | null>(
     null
   );
+  const [languageResultsKey, setLanguageResultsKey] = useState<string | null>(null);
   const [languageStatus, setLanguageStatus] = useState<
     "idle" | "loading" | "ready"
   >("idle");
@@ -197,31 +227,45 @@ export function CountryOverlay({
   useEffect(() => {
     if (!languageFilter) {
       setLanguageStations(null);
+      setLanguageResultsKey(null);
       setLanguageStatus("idle");
       return;
     }
     const local = stations.filter((station) =>
       stationSpeaksLanguage(station, languageFilter)
     );
+    const key = `${countryCacheKey(country)}:${languageFilter.toLocaleLowerCase()}`;
     let cancelled = false;
+    setLanguageStations(null);
+    setLanguageResultsKey(null);
     setLanguageStatus("loading");
     void fetchStationsByCountryLanguage(country, languageFilter)
       .then((found) => {
         if (cancelled) return;
-        setLanguageStations(mergeStationLists(found, local));
+        setLanguageStations(mergeStationLists(
+          found.filter((station) => stationSpeaksLanguage(station, languageFilter)),
+          local,
+        ));
+        setLanguageResultsKey(key);
         setLanguageStatus("ready");
       })
       .catch(() => {
         if (cancelled) return;
         setLanguageStations(local);
+        setLanguageResultsKey(key);
         setLanguageStatus("ready");
       });
     return () => {
       cancelled = true;
     };
   }, [country, languageFilter, stations]);
+  const activeLanguageKey = languageFilter
+    ? `${countryCacheKey(country)}:${languageFilter.toLocaleLowerCase()}`
+    : null;
   const visibleStations = languageFilter
-    ? languageStations ??
+    ? languageResultsKey === activeLanguageKey && languageStations
+      ? languageStations
+      :
     stations.filter((station) =>
       stationSpeaksLanguage(station, languageFilter)
     )
@@ -250,6 +294,12 @@ export function CountryOverlay({
     if (current.length >= maxPerGroup) return;
     grouped.set(key, [...current, station]);
   });
+  const displayedGroups = Array.from(grouped.entries()).slice(0, maxGroups);
+  const queueStations = displayedGroups.flatMap(([, list]) => list);
+  const queueLabel = `Atlas · ${country}${languageFilter ? ` · ${languageFilter}` : ""}`;
+  const failedAttemptId = attempt && (failuresById[attempt.id]?.lastFailedAt ?? 0) > attempt.previousFailureAt
+    ? attempt.id
+    : null;
   return (
     <Sheet close={close} label={`${country} stations`} hideClose>
       <Button onClick={onBack}>← Atlas</Button>
@@ -310,9 +360,7 @@ export function CountryOverlay({
             </div>
           )}
           <div className="mt-8 space-y-7">
-            {Array.from(grouped.entries())
-              .slice(0, maxGroups)
-              .map(([city, list], index) => (
+            {displayedGroups.map(([city, list], index) => (
                 <section key={city}>
                   <Eyebrow tone="foil">
                     {index === 0 &&
@@ -323,16 +371,30 @@ export function CountryOverlay({
                     {city.toUpperCase()}
                   </Eyebrow>
                   <div className="mt-2 space-y-2">
-                    {list.map((station) => (
-                      <StationRow
-                        key={station.uuid}
-                        station={station}
-                        active={false}
-                        favorite={favorites.includes(station.uuid)}
-                        onPlay={() => onPlay(station)}
-                        onFavorite={() => onFavorite(station.uuid, station)}
-                      />
-                    ))}
+                    {list.map((station) => {
+                      const isCurrent = nowPlaying?.uuid === station.uuid;
+                      const isActive = isCurrent && confirmedId === station.uuid && isPlaying;
+                      const failed = failedAttemptId === station.uuid;
+                      const status = failed ? "Signal failed. Try another station." :
+                        isActive ? "On air" : isPlaying ? "Connecting" : "Paused";
+                      return (
+                        <div key={station.uuid}>
+                          <StationRow
+                            station={station}
+                            active={isActive}
+                            favorite={favorites.includes(station.uuid)}
+                            onPlay={() => {
+                              setAttempt({ id: station.uuid, previousFailureAt: failuresById[station.uuid]?.lastFailedAt ?? 0 });
+                              onPlay(station, queueStations, queueLabel);
+                            }}
+                            onFavorite={() => onFavorite(station.uuid, station)}
+                          />
+                          {isCurrent || failed ? (
+                            <p className="mt-1 text-sm text-muted" role={failed ? "alert" : "status"}>{status}</p>
+                          ) : null}
+                        </div>
+                      );
+                    })}
                   </div>
                 </section>
               ))}

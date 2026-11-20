@@ -13,10 +13,7 @@ import {
   intentEchoFromInterpret,
   looksLikeIntentSentence,
 } from "~/components/radio-passport/productFlow";
-import {
-  playFromAtlasNextState,
-  surpriseTapNextState,
-} from "~/components/radio-passport/searchState";
+import { surpriseTapNextState } from "~/components/radio-passport/searchState";
 import type { SolarHour } from "~/utils/localTime";
 
 type Args = {
@@ -31,6 +28,7 @@ type Args = {
   /** A station landed (the home may answer it; the board stays where it is). */
   onLanded: () => void;
 };
+
 
 /**
  * Everything that starts a station from the home: a tap on a row or the
@@ -66,39 +64,34 @@ export function useHomePlay({
     onLanded();
   }, [cancel, onLanded, recordPlayed, startStation]);
 
+  const playAtlas = useCallback((station: Station, pool: Station[], label: string) => {
+    const queue = createQueueSession({
+      sourceType: "atlas",
+      sourceLabel: label,
+      stations: pool,
+      context: { country: station.country, view: "atlas" },
+      seed: `atlas:${label}:${station.uuid}`,
+    });
+    boardStation(station, queue);
+  }, [boardStation]);
+
   const play = useCallback(
     (
       station: Station,
       pool = selectedPool,
       label = "Live now",
-      home?: ReturnType<typeof playFromAtlasNextState>
     ) => {
-      if (home) {
-        setQuery(home.query);
-        setHour(home.hour);
-        setPlace(home.place);
-        setMixLabel(home.mixLabel);
-      }
-      const q = home ? home.query : query;
-      const h = home ? home.hour : hour;
-      const p = home ? home.place : place;
-      const mix = home ? home.mixLabel : mixLabel;
+      const q = query.trim();
       const queue = createQueueSession({
-        sourceType: home
-          ? "atlas"
-          : q.trim()
-            ? "search"
-            : listening.listeningMode === "world"
-              ? "ai_mix"
-              : "atlas",
-        sourceLabel: mix || (q.trim() ? `Search: ${q.trim()}` : label),
+        sourceType: q ? "search" : listening.listeningMode === "world" ? "ai_mix" : "atlas",
+        sourceLabel: mixLabel || (q ? `Search: ${q}` : label),
         stations: pool,
         context: {
           country: station.country,
-          query: q.trim() || null,
+          query: q || null,
           view: "elsewhere",
         },
-        seed: `${q}:${h || ""}:${p || ""}`,
+        seed: `${query}:${hour || ""}:${place || ""}`,
       });
       boardStation(station, queue);
     },
@@ -110,9 +103,6 @@ export function useHomePlay({
       place,
       query,
       selectedPool,
-      setHour,
-      setPlace,
-      setQuery,
     ]
   );
 
@@ -218,6 +208,7 @@ export function useHomePlay({
   return {
     boardStation,
     play,
+    playAtlas,
     requestAiWorld,
     submitIntent,
     mixPending: pending === "mix",

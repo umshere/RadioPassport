@@ -73,7 +73,8 @@ export function useHomeOverlays(search: string) {
   const chooseCountry = useCallback(
     (next: string) => {
       setCountry(next);
-      setAtlas(false);
+      // Keep Atlas selected while its country drilldown is in front.
+      setAtlas(true);
       void loadCountry(next);
     },
     [loadCountry]

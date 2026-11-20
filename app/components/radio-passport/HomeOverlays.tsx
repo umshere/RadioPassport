@@ -5,7 +5,6 @@ import {
   findCityFromPassport,
   resolveStampReplay,
 } from "./productFlow";
-import { playFromCountryNextState } from "./searchState";
 import { AtlasOverlay, CountryOverlay, PassportOverlay } from "./Overlays";
 import { TrailWhisper } from "./TrailWhisper";
 
@@ -26,8 +25,8 @@ type Props = {
     station: Station,
     pool?: Station[],
     label?: string,
-    home?: ReturnType<typeof playFromCountryNextState>
   ) => void;
+  playAtlas: (station: Station, pool: Station[], label: string) => void;
   toggleFavorite: (id: string, station?: Station) => void;
 };
 
@@ -45,6 +44,7 @@ export function HomeOverlays({
   travelerNumber,
   selectedPool,
   play,
+  playAtlas,
   toggleFavorite,
 }: Props) {
   const {
@@ -68,7 +68,7 @@ export function HomeOverlays({
   };
   return (
     <>
-      {atlas && (
+      {atlas && !country && (
         <AtlasOverlay
           countries={countries}
           stations={stations}
@@ -91,15 +91,7 @@ export function HomeOverlays({
             setAtlas(true);
           }}
           close={() => setCountry(null)}
-          onPlay={(station) => {
-            play(
-              station,
-              countryStations,
-              `Country: ${country}`,
-              playFromCountryNextState(country)
-            );
-            setCountry(null);
-          }}
+          onPlay={(station, pool, label) => playAtlas(station, pool, label)}
           onFavorite={toggleFavorite}
         />
       )}

@@ -184,6 +184,7 @@ export function HomeRedesign() {
   const noop = useCallback(() => {}, []);
   const {
     play,
+    playAtlas,
     requestAiWorld,
     submitIntent,
     mixPending,
@@ -681,6 +682,7 @@ export function HomeRedesign() {
         travelerNumber={travelerNumber}
         selectedPool={selectedPool}
         play={play}
+        playAtlas={playAtlas}
         toggleFavorite={toggleFavorite}
       />
     </main>

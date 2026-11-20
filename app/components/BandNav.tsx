@@ -9,6 +9,10 @@ import {
 } from "~/components/radio-passport/productFlow";
 import { useHydrated } from "~/hooks/useHydrated";
 import { usePlayerStore } from "~/state/playerStore";
+import {
+  intentSearchString,
+  parseInitialIntent,
+} from "~/components/radio-passport/searchState";
 
 const SLOTS = [
   { id: "elsewhere", label: "Elsewhere", to: "/" },
@@ -46,6 +50,7 @@ export default function BandNav({ variant }: { variant: "band" | "rail" }) {
   }, []);
   const atlasOpen = atlasPin ?? atlasRequested(location.search);
   const theaterEmpty = mounted && !nowPlaying;
+  const savedHomeSearch = (location.state as { homeSearch?: string } | null)?.homeSearch;
 
   const current =
     location.pathname === "/listen"
@@ -117,7 +122,9 @@ export default function BandNav({ variant }: { variant: "band" | "rail" }) {
         return (
           <Link
             key={slot.id}
-            to={slot.to}
+            to={slot.id === "elsewhere" && location.pathname === "/listen" && savedHomeSearch
+              ? { pathname: "/", search: savedHomeSearch }
+              : slot.to}
             className={className}
             aria-current={isCurrent ? "page" : undefined}
             prefetch="intent"
@@ -125,11 +132,15 @@ export default function BandNav({ variant }: { variant: "band" | "rail" }) {
             // Home overlays (Atlas, country drilldown) sync through
             // history.replaceState, which Remix never hears — a bare Link to
             // "/" would navigate nowhere and strand them open. Ask to close.
-            onClick={
-              slot.id === "elsewhere" && location.pathname === "/"
-                ? () => requestCloseAtlas()
-                : undefined
-            }
+            onClick={(event) => {
+              if (location.pathname !== "/") return;
+              if (slot.id === "elsewhere") requestCloseAtlas();
+              if (slot.id !== "theater" || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+              // replaceState may have changed the Hall filters since this link rendered.
+              event.preventDefault();
+              const homeSearch = intentSearchString("", parseInitialIntent(window.location.href));
+              navigate(slot.to, { state: { homeSearch }, preventScrollReset: true });
+            }}
           >
             {slot.label}
           </Link>

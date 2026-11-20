@@ -23,7 +23,8 @@ Elsewhere is one loop: **land, intent, tune, inhabit, stamp, next**. The contrac
 | Search field (2+ letters) | Catalog search. Sky folds to one flap line with the query. Board is the answer (up to 32) |
 | A sentence in the field | `POST /api/ai/interpret`. May fire a world mix |
 | Surprise | AI world mix, then plays the first station |
-| Atlas door | Overlay: countries, then a country's stations. Play replaces the queue |
+| Atlas door | Browse countries and filter stations by language |
+| Tap a station in Atlas | Starts playback and keeps the country, language, and scroll position. Previous and Next follow the displayed stations |
 | Passport button | Overlay: stamps and kept signals. A stamp replays that city |
 | Recent stamps (under the board) | Open the passport |
 | Share square (site bar) | Opens the ticket sheet for the station on the air |
@@ -33,6 +34,8 @@ Elsewhere is one loop: **land, intent, tune, inhabit, stamp, next**. The contrac
 | Dock art or Desk tab | `/listen` |
 
 Search, hours and overlays never call `stop()`.
+
+For example, open Atlas, choose India, select Malayalam, and tap a station. The row shows Connecting, then On air when audio starts. If the signal fails, the row shows the failure and you can try another one. Choose Desk for the listening view or Elsewhere to return to the Hall and its previous filters.
 
 ## The desk (`/listen`)
 

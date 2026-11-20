@@ -306,7 +306,18 @@ describe("home: the departures hall", () => {
     );
     expect(homeOverlaysHook).toContain("announceAtlas");
     expect(homeOverlaysHook).toContain("CLOSE_ATLAS_EVENT");
-    expect(homeOverlays).toContain("playFromCountryNextState");
+    expect(home).toContain("playAtlas={playAtlas}");
+    expect(homeOverlays).toContain("atlas && !country");
+    expect(homeOverlays).not.toContain("playFromCountryNextState(country)");
+    expect(homeOverlays).toContain("onPlay={(station, pool, label) => playAtlas(station, pool, label)}");
+    const homePlay = readFileSync(
+      new URL("../../app/hooks/home/useHomePlay.ts", import.meta.url),
+      "utf8",
+    );
+    expect(homePlay).toContain('sourceType: "atlas"');
+    expect(homePlay).toContain("playAtlas");
+    expect(band).toContain("state: { homeSearch }");
+    expect(band).toContain("search: savedHomeSearch");
     // The instant-board derivation lives in the home stations hook.
     const homeStations = readFileSync(
       new URL("../../app/hooks/home/useHomeStations.ts", import.meta.url),
@@ -323,6 +334,12 @@ describe("home: the departures hall", () => {
       "utf8",
     );
     expect(overlays).toContain('<Sheet close={close} label="Atlas" hideClose focusContainerOnOpen>');
+    expect(overlays).toContain('addEventListener("playing", confirm)');
+    expect(overlays).toContain('"On air"');
+    expect(overlays).toContain('"Connecting"');
+    expect(overlays).toContain('"Paused"');
+    expect(overlays).toContain('failuresById[attempt.id]');
+    expect(overlays).toContain("displayedGroups.flatMap(([, list]) => list)");
     expect(overlays).toContain("CountryFlag");
     // Overlay headers are boards too — Atlas and the country name flip.
     expect(overlays).toContain("FlipBoard");

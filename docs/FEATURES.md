@@ -83,7 +83,7 @@ The Keeper hosts it (`useDeskKeeper`, pure rules in `deskKeeper.ts`), from 960px
 
 ### 1.4 Atlas (overlay)
 
-A country list, not a map or a globe. Opens over the home (`?atlas=1`, the Atlas door, the band tab, or `requestOpenAtlas()`); playback never stops. Opens on Popular (the 24 busiest countries); one chip per continent shows that region busiest first, 24 at a time with a Show all button; search spans every country by name, code or language. Tiles with flags. Grouping lives in `atlasModel.ts`. A country opens a drill-down list of that country's stations; Play replaces the queue. Code: `app/components/radio-passport/Overlays.tsx` (`AtlasOverlay`, `CountryOverlay`), `HomeOverlays.tsx`, `app/hooks/home/useHomeOverlays.ts`, state helpers in `productFlow.ts`. Built on the `Sheet` primitive.
+Atlas opens over the home (`?atlas=1`, the Atlas door, the band tab, or `requestOpenAtlas()`) while playback continues. It opens on Popular (the 24 busiest countries). Region chips show that region busiest first, 24 at a time, and search spans every country by name, code or language. A country opens its station list with language filters. Playing a station keeps that list open, preserves the Hall's intent, and queues the displayed stations in order. The active row reports playback and signal failures. Grouping lives in `atlasModel.ts`. The overlays use `Sheet` and are wired through `HomeOverlays.tsx` and `useHomeOverlays.ts`.
 - `app/services/atlas/atlasGraph.server.ts` and `/api/atlas/expand` still exist (a catalog graph of country, language and station nodes) but no page calls them.
 
 ### 1.5 Passport overlay
