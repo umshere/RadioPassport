@@ -126,7 +126,7 @@
   .ew-flaptext-word { display: inline-block; white-space: nowrap; perspective: 240px; }
   .ew-flaptext-char { display: inline-block; white-space: pre; backface-visibility: hidden; transform-origin: 50% 0; animation: ew-flap-in 80ms var(--ew-settle) both; }
 
-  @media (min-width: 961px) {
+  @media (min-width: 961px) and (min-height: 700px) {
     .ew-keeper-scrim { background: transparent; }
     .ew-keeper-sheet {
       top: 76px;

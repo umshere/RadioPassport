@@ -2,13 +2,11 @@
    (the purge gremlin). Every colour is a token, so Day is the same page.
    Structure: one scrolling column of flex children on the phone (never a
    grid of scroll containers: iOS WebKit collapses those), two columns of
-   cards from 700px of desk, three from 960px with room above each row for
-   the roaming keeper to stand on. Container queries, not viewport ones: the
+   cards from 700px of desk, three from 961px, with room above each row on a
+   tall desktop for the roaming keeper. Container queries, not viewport ones: the
    desk sizes itself. The sky rules below are the home's (HomeSky). */
 
 .ew-desk {
-  --desk-pad-l: max(16px, env(safe-area-inset-left, 0px));
-  --desk-pad-r: max(16px, env(safe-area-inset-right, 0px));
   position: relative;
   flex: 1 1 auto;
   min-height: 0;
@@ -21,7 +19,7 @@
   background: var(--ew-ink);
   color: var(--ew-bone);
 }
-.ew-desk-inner { display: flex; flex-direction: column; gap: 16px; min-width: 0; padding: 16px var(--desk-pad-r) 0 var(--desk-pad-l); }
+.ew-desk-inner { --desk-pad-l: max(16px, env(safe-area-inset-left, 0px)); --desk-pad-r: max(16px, env(safe-area-inset-right, 0px)); display: flex; flex-direction: column; gap: 16px; min-width: 0; padding: 16px var(--desk-pad-r) 0 var(--desk-pad-l); }
 .ew-desk-inner > * { flex: none; }
 .ew-desk-top, .ew-desk-mid, .ew-desk-more { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
 :is(.ew-desk-top, .ew-desk-mid, .ew-desk-more) > * { flex: none; min-width: 0; }
@@ -383,23 +381,25 @@
 .ew-shelf-clock .ew-flap-line.is-board .ew-flap { font-size: 12px; }
 .ew-shelf .ew-departures-gate { margin-top: 4px; }
 
-/* ---- Wider desks: two columns from 700px; from 960px three, with head
-   room over each row for the keeper to stand on (he roams from 960px). */
+/* ---- Wider desks: two columns from 700px; from 961px three, with head
+   room over each row on a tall desktop (he roams from 961px). */
 @container desk (min-width: 700px) {
-  .ew-desk { --desk-pad-l: max(24px, env(safe-area-inset-left, 0px)); --desk-pad-r: max(24px, env(safe-area-inset-right, 0px)); }
-  .ew-desk-inner { gap: 20px; padding-top: 24px; }
+  .ew-desk-inner { --desk-pad-l: max(24px, env(safe-area-inset-left, 0px)); --desk-pad-r: max(24px, env(safe-area-inset-right, 0px)); gap: 20px; padding-top: 24px; }
   .ew-desk-top { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); align-items: stretch; gap: 20px; }
   .ew-desk-top > .ew-ask { grid-column: 1 / -1; }
   .ew-desk-more { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); align-items: start; gap: 20px; }
 }
-@container desk (min-width: 960px) {
-  .ew-desk-inner { --desk-head-room: 112px; box-sizing: border-box; width: 100%; max-width: 1320px; margin: 0 auto; gap: var(--desk-head-room); padding-top: 168px; }
+@container desk (min-width: 961px) {
+  .ew-desk-inner { box-sizing: border-box; width: 100%; max-width: 1320px; margin: 0 auto; }
   .ew-desk-top { grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) minmax(0, 1fr); }
   .ew-desk-top > .ew-ask { grid-column: auto; }
   .ew-desk-more { grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); }
   .ew-shelf-strip { flex-direction: row; flex-wrap: wrap; gap: 12px; }
   .ew-shelf-strip > li { flex: 1 1 220px; max-width: calc(50% - 6px); }
   .ew-desk.is-empty .ew-desk-inner { max-width: 720px; }
+}
+@media (min-width: 961px) and (min-height: 700px) {
+  .ew-desk-inner { --desk-head-room: 112px; gap: var(--desk-head-room); padding-top: 168px; }
 }
 
 /* ---- Motion: stepped, like the character. Reduced motion stills it all. */

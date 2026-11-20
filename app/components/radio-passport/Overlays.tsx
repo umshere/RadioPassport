@@ -60,7 +60,7 @@ export function AtlasOverlay({
     setShowAll(false);
   };
   return (
-    <Sheet close={close} label="Atlas" hideClose>
+    <Sheet close={close} label="Atlas" hideClose focusContainerOnOpen>
       <header className="rp-overlay-head">
         <div>
           <h2>
@@ -72,7 +72,6 @@ export function AtlasOverlay({
           </Eyebrow>
         </div>
         <input
-          autoFocus
           value={query}
           onChange={(event) => setQuery(event.target.value)}
           placeholder="Country or language…"

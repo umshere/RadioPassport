@@ -20,6 +20,7 @@ Elsewhere (repo heritage name: Radio Passport). Live radio from someone else's n
 | [TICKETS.md](./TICKETS.md) | Share tickets: image, link preview, sheet |
 | [ENVIRONMENT_LIGHT.md](./ENVIRONMENT_LIGHT.md) | The room's foliage light |
 | [DESIGN_SPECS.md](./DESIGN_SPECS.md) | Tokens, type, shape, CSS file map, design-system artifact |
+| [RESPONSIVE_DISPLAY_PLAN.md](./RESPONSIVE_DISPLAY_PLAN.md) | Narrow cover screens, unfolded displays, and resize checks |
 | [BRAND_ASSETS.md](./BRAND_ASSETS.md) | Heritage assets that must not be deleted, OG still drift |
 
 ## Engineering

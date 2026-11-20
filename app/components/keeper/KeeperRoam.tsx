@@ -23,7 +23,7 @@ import {
 import type { KeeperView } from "./useKeeper";
 import { VOICE } from "./keeperVoice";
 
-const WIDE_QUERY = `(min-width: ${ROAM_MIN_WIDTH}px)`;
+const WIDE_QUERY = `(min-width: ${ROAM_MIN_WIDTH}px) and (min-height: 700px)`;
 
 function useWide(): boolean {
   const [wide, setWide] = useState(false);
@@ -125,8 +125,8 @@ export function useKeeperRoamStops(stops: RoamStop[] | null) {
  * The keeper as a pet, on wider screens: he walks between anchors on the
  * page (a CSS transform transition, with a walk wiggle), faces the way he
  * walks, bobs at rest, hops when poked, and says a line in a bubble beside
- * him. Below 960px he stays the edge-hugging float. He sits under the header
- * and the dock in the stack, so he can never cover the transport.
+ * him. On narrow or short screens he stays the edge-hugging float. He sits
+ * under the header and the dock in the stack, so he can never cover transport.
  */
 export function KeeperRoam({ view, askEnabled }: { view: KeeperView; askEnabled: boolean }) {
   const wide = useWide();

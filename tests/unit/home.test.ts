@@ -36,7 +36,7 @@ describe("home: the departures hall stylesheet", () => {
     expect(css).toMatch(/\.ew-home > \* \{ flex: none; min-width: 0; \}/);
     expect(css).toContain("container: home / inline-size");
     expect(css).toContain("@container home (min-width: 700px)");
-    expect(css).toContain("@container home (min-width: 1100px)");
+    expect(rulesFor(css, ".ew-home-landing").join(" ")).toContain("grid-template-columns: repeat(2, minmax(0, 1fr))");
   });
 
   it("moves only in steps, and stills everything under reduced motion", () => {

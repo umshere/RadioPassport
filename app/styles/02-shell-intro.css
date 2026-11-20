@@ -45,7 +45,7 @@
     /* 16px floor: iOS Safari force-zooms any focused input below 16px. The
        type reads a little larger than the old 13px; tighter padding keeps the
        row within a couple of px of its old height. */
-    font: 400 15px/1.3 "Schibsted Grotesk", sans-serif;
+    font: 400 16px/1.3 "Schibsted Grotesk", sans-serif;
     padding: 8px 0;
   }
   .rp-intent input::placeholder { color: var(--ew-dust); }

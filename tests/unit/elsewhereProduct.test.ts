@@ -322,7 +322,7 @@ describe("home: the departures hall", () => {
       ),
       "utf8",
     );
-    expect(overlays).toContain('<Sheet close={close} label="Atlas" hideClose>');
+    expect(overlays).toContain('<Sheet close={close} label="Atlas" hideClose focusContainerOnOpen>');
     expect(overlays).toContain("CountryFlag");
     // Overlay headers are boards too — Atlas and the country name flip.
     expect(overlays).toContain("FlipBoard");

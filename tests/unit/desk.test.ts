@@ -204,7 +204,7 @@ describe("desk wiring", () => {
 
   it("leaves head room over each row for the roaming keeper on wide desks", () => {
     const css = readAppCss();
-    expect(css).toMatch(/@container desk \(min-width: 960px\) \{\s*\.ew-desk-inner \{ --desk-head-room: 112px;/);
+    expect(css).toMatch(/@media \(min-width: 961px\) and \(min-height: 700px\) \{\s*\.ew-desk-inner \{ --desk-head-room: 112px;/);
   });
 
   it("stacks the phone desk in flex columns and stills motion when asked", () => {

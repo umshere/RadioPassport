@@ -14,6 +14,7 @@ export function Sheet({
   close,
   label,
   hideClose,
+  focusContainerOnOpen = false,
   className = "",
 }: {
   className?: string;
@@ -22,6 +23,8 @@ export function Sheet({
   label: string;
   /** Atlas is a tab destination now — the tabs dismiss it, so it needs no ×. */
   hideClose?: boolean;
+  /** Keep the keyboard closed when the first control is a search field. */
+  focusContainerOnOpen?: boolean;
 }) {
   const dialogRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLElement | null>(null);
@@ -39,10 +42,12 @@ export function Sheet({
     }
     const focusTimer = window.setTimeout(() => {
       const dialog = dialogRef.current;
-      const first = dialog?.querySelector<HTMLElement>(
-        FOCUSABLE
-      );
-      (first ?? dialog)?.focus();
+      if (!dialog || dialog.contains(document.activeElement)) return;
+      if (focusContainerOnOpen) {
+        dialog.focus({ preventScroll: true });
+      } else {
+        (dialog.querySelector<HTMLElement>(FOCUSABLE) ?? dialog).focus();
+      }
     }, 0);
     const key = (event: KeyboardEvent) => {
       if (event.key === "Escape") closeRef.current();
@@ -53,7 +58,7 @@ export function Sheet({
       window.removeEventListener("keydown", key);
       triggerRef.current?.focus();
     };
-  }, []);
+  }, [focusContainerOnOpen]);
   const trapFocus = (event: React.KeyboardEvent<HTMLDivElement>) => {
     if (event.key !== "Tab") return;
     const focusable = Array.from(
@@ -68,7 +73,10 @@ export function Sheet({
     }
     const first = focusable[0]!;
     const last = focusable[focusable.length - 1]!;
-    if (event.shiftKey && document.activeElement === first) {
+    if (document.activeElement === event.currentTarget) {
+      event.preventDefault();
+      (event.shiftKey ? last : first).focus();
+    } else if (event.shiftKey && document.activeElement === first) {
       event.preventDefault();
       last.focus();
     } else if (!event.shiftKey && document.activeElement === last) {

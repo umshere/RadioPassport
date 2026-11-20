@@ -158,7 +158,7 @@ The Night/Day toggle (`AtmospherePin.tsx`, `atmosphereStore.ts`, `app/utils/atmo
 
 ## 9. Brand, icons, PWA
 
-- Manifest `public/manifest.json`: standalone, portrait, ink background. Icons in `public/icons/`: `icon-192`, `icon-512` (any), `maskable-192`, `maskable-512`, `apple-touch-icon` (180), `favicon-32`, `favicon-48`, `artwork-512` (media session).
+- Manifest `public/manifest.json`: standalone, portrait or landscape, ink background. Icons in `public/icons/`: `icon-192`, `icon-512` (any), `maskable-192`, `maskable-512`, `apple-touch-icon` (180), `favicon-32`, `favicon-48`, `artwork-512` (media session).
 - Tab icon: `/elsewhere-favicon.svg`, plus PNG fallbacks; `/favicon.ico` redirects to the SVG. The mark is the round seal (foil ring, lacquer disc), transparent, with no black square.
 - Social card default: `public/elsewhere-og.jpg`, rendered from `scripts/og-still.html` by `scripts/render-og.mjs`.
 - Wordmark component: `SignalMark.tsx`. Brand constants: `app/constants/brand.ts`.

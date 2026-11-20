@@ -26,7 +26,7 @@ export function keeperAnchor(name: string): { "data-keeper-anchor": string } {
 }
 
 /** Below this width the keeper stays the edge-hugging float. */
-export const ROAM_MIN_WIDTH = 960;
+export const ROAM_MIN_WIDTH = 961;
 export const ROAM_SIZE = 104;
 export const ROAM_BUBBLE_WIDTH = 288;
 /** Before the first measure: taller than the longest welcome, so placement errs safe. */
