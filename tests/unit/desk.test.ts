@@ -207,14 +207,20 @@ describe("desk wiring", () => {
     expect(css).toMatch(/@media \(min-width: 961px\) and \(min-height: 700px\) \{\s*\.ew-desk-inner \{ --desk-head-room: 112px;/);
   });
 
-  it("puts the similar-station action beside the live panel and returns to the originating Hall", () => {
+  it("puts an explicit station recommendation in the on-air panel and returns See all to its shelf", () => {
     const listen = read("app/pages/ListenRedesign.tsx");
     const onAir = read("app/components/desk/DeskOnAir.tsx");
     expect(listen).toContain("hallReturnLink(location.state)");
     expect(listen).toContain("hallReturnLabel(location.state)");
-    expect(listen).toMatch(/<DeskOnAir[\s\S]*onSomewhereLike=\{onSomewhereLike\}/);
-    expect(onAir).toContain("ew-onair-like");
-    expect(onAir).toContain("VOICE.somewhereLike");
+    expect(listen).toContain("pick={pick}");
+    expect(listen).toContain("reason={picks?.label ?? null}");
+    expect(listen).toContain("trackTune(pick.uuid, () => startStation(pick, { preserveQueue: true, autoPlay: true }))");
+    expect(onAir).toContain("data-qa=\"desk-recommendation\"");
+    expect(onAir).toContain("data-qa=\"desk-recommendation-tune\"");
+    expect(onAir).toContain("data-qa=\"desk-recommendation-see-all\"");
+    expect(onAir).toContain("aria-label={`Listen to ${tidyStationName(pick.name)}`}");
+    expect(onAir).toContain("{VOICE.recommendationListen}");
+    expect(onAir).toContain("aria-live=\"polite\"");
     expect(read("app/utils/hallReturn.ts")).toContain("hallReturnFromState(state)");
   });
 

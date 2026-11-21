@@ -239,7 +239,7 @@
 .ew-cards-empty { margin: 0; font: italic 400 16px/1.45 "Newsreader", serif; color: var(--ew-dust); }
 
 /* ---- On air. */
-.ew-onair { container: onair / inline-size; display: flex; align-items: flex-start; gap: 14px; }
+.ew-onair { container: onair / inline-size; display: flex; flex-wrap: wrap; align-items: flex-start; gap: 14px; }
 .ew-onair-art { position: relative; flex: none; display: grid; place-items: center; width: 88px; height: 88px; margin: 0; overflow: hidden; border: 1px solid var(--ew-foil-line); background: var(--ew-ink); color: var(--ew-foil); }
 .ew-onair-art img { display: block; width: 100%; height: 100%; object-fit: cover; }
 .ew-onair-art svg { width: 40%; height: auto; }
@@ -248,7 +248,7 @@
 .ew-onair-eq b { display: block; width: 3px; height: 100%; background: var(--ew-ether); transform-origin: bottom; }
 .ew-onair-eq b:nth-child(2) { transform: scaleY(.55); }
 .ew-onair-eq b:nth-child(3) { transform: scaleY(.8); }
-.ew-onair-copy { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.ew-onair-copy { display: flex; flex: 1 1 0%; flex-direction: column; gap: 6px; min-width: 0; }
 .ew-onair-label { display: inline-flex; align-items: center; gap: 8px; margin: 0; }
 .ew-onair-title { margin: 0; font: 500 21px/1.2 "Schibsted Grotesk", sans-serif; letter-spacing: -.01em; color: var(--ew-bone); overflow-wrap: anywhere; }
 .ew-onair-title.is-programme { font: italic 400 22px/1.2 "Newsreader", serif; }
@@ -257,7 +257,13 @@
 .ew-onair-note { margin: 0; font: 400 14px/1.4 "Schibsted Grotesk", sans-serif; color: var(--ew-dust); }
 .ew-onair-note.is-lead { font: italic 400 18px/1.35 "Newsreader", serif; color: var(--ew-bone); }
 .ew-onair-note.is-waiting { color: var(--ew-foil); }
-.ew-onair-like { align-self: flex-start; min-height: 44px; }
+.ew-onair-recommendation { flex: 1 1 100%; min-width: 0; margin: 4px 0 0; padding: 12px 0 0; border-top: 1px solid var(--ew-rule); }
+.ew-onair-recommendation-reason { margin: 0 0 5px; font: 500 10px/1.35 "Azeret Mono", ui-monospace, monospace; letter-spacing: .12em; text-transform: uppercase; color: var(--ew-foil); }
+.ew-onair-recommendation-name { margin: 0; font: italic 400 22px/1.12 "Newsreader", "Iowan Old Style", serif; color: var(--ew-bone); overflow-wrap: anywhere; }
+.ew-onair-recommendation-place { margin: 3px 0 0; font: 400 12px/1.4 "Schibsted Grotesk", sans-serif; color: var(--ew-dust); }
+.ew-onair-recommendation-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin-top: 10px; }
+.ew-onair-recommendation-tune { min-height: 44px; }
+.ew-onair-recommendation-all { min-height: 44px; }
 @container onair (min-width: 420px) {
   .ew-onair-art { width: 132px; height: 132px; }
   .ew-onair-title { font-size: 26px; }
@@ -398,13 +404,13 @@
 }
 @container desk (min-width: 700px) {
   .ew-desk-inner { --desk-pad-l: max(24px, env(safe-area-inset-left, 0px)); --desk-pad-r: max(24px, env(safe-area-inset-right, 0px)); gap: 20px; padding-top: 24px; }
-  .ew-desk-top { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); align-items: stretch; gap: 20px; }
+  .ew-desk-top { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); align-items: stretch; gap: 20px; }
   .ew-desk-top > .ew-ask { grid-column: 1 / -1; }
   .ew-desk-more { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); align-items: start; gap: 20px; }
 }
 @container desk (min-width: 961px) {
   .ew-desk-inner { box-sizing: border-box; width: 100%; max-width: 1320px; margin: 0 auto; }
-  .ew-desk-top { grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) minmax(0, 1fr); }
+  .ew-desk-top { grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1fr); }
   .ew-desk-top > .ew-ask { grid-column: auto; }
   .ew-desk-more { grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); }
   .ew-shelf-strip { flex-direction: row; flex-wrap: wrap; gap: 12px; }

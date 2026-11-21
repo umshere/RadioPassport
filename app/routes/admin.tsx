@@ -177,6 +177,15 @@ const OTHER_ACTIONS: Array<[string, string]> = [
   ["station_share", "Shared a station"],
 ];
 
+const RECOMMENDATION_ACTIONS: Array<[string, string]> = [
+  ["desk_rec_eligible", "Desk recommendation available"],
+  ["desk_rec_impression", "Recommendation at least half visible"],
+  ["desk_rec_see_all", "Opened the recommendation shelf"],
+  ["desk_rec_tune", "Tapped a Desk recommendation"],
+  ["desk_rec_audio_started", "A suggested station started playing"],
+  ["desk_rec_listened_30s", "Listened continuously for 30 seconds"],
+];
+
 const PAGE_NAMES: Record<string, string> = {
   home: "Home (the departures hall)",
   desk: "The desk (/listen)",
@@ -236,6 +245,8 @@ export default function Admin() {
   const first = days.find((d) => Object.keys(d.counts).length > 0)?.day;
   const rangeLabel = RANGES.find((r) => r.days === data.rangeDays)?.label ?? `${data.rangeDays} days`;
   const joined = sum(days, "tune_join");
+  const eligibleRecommendations = sum(days, "desk_rec_eligible");
+  const sustainedRecommendationListens = sum(days, "desk_rec_listened_30s");
 
   return (
     <main className="adm">
@@ -316,6 +327,22 @@ export default function Admin() {
             </tbody>
           </table>
         </details>
+      </section>
+
+      <section>
+        <h2>Desk recommendations</h2>
+        <p className="note">
+          {eligibleRecommendations
+            ? `${((sustainedRecommendationListens / eligibleRecommendations) * 100).toFixed(1)}% of eligible Desk visits led to 30 seconds on a suggested station.`
+            : "No eligible Desk visits counted in this range yet."}
+        </p>
+        <table aria-label="Desk recommendation counts">
+          <tbody>
+            {RECOMMENDATION_ACTIONS.map(([field, label]) => (
+              <tr key={field}><th scope="row">{label}</th><td>{sum(days, field)}</td></tr>
+            ))}
+          </tbody>
+        </table>
       </section>
 
       <section>

@@ -17,6 +17,12 @@ export const USAGE_EVENTS = [
   "pageview",
   "land",
   "stamp",
+  "desk_rec_eligible",
+  "desk_rec_impression",
+  "desk_rec_tune",
+  "desk_rec_audio_started",
+  "desk_rec_listened_30s",
+  "desk_rec_see_all",
 ] as const;
 export type UsageEvent = (typeof USAGE_EVENTS)[number];
 

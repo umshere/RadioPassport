@@ -20,7 +20,7 @@ import {
 } from "~/components/radio-passport/productFlow";
 import { cleanTrackLine } from "~/services/keeper/cleanTitle";
 import { Eyebrow } from "~/components/ui/Eyebrow";
-import { ButtonLink } from "~/components/ui/Button";
+import { Button, ButtonLink } from "~/components/ui/Button";
 import { Keeper } from "~/components/keeper/Keeper";
 import { useKeeperAskEnabled } from "~/components/keeper/KeeperSheet";
 import { useKeeperView } from "~/components/keeper/useKeeper";
@@ -42,6 +42,7 @@ import { deskDepartures, deskOnAir, deskShelf, postmarkDate } from "~/components
 import type { NowPlayingTrack } from "~/types/nowPlaying";
 import { useFloorClearance, useMinuteClock } from "~/components/desk/deskHooks";
 import { hallReturnLabel, hallReturnLink } from "~/utils/hallReturn";
+import { useDeskRecommendationMetrics } from "~/hooks/useDeskRecommendationMetrics";
 
 /**
  * The desk: the keeper's own page for the station you are inside. A compact
@@ -80,6 +81,9 @@ export function ListenRedesign() {
   const lastTrackRef = useRef<NowPlayingTrack | null>(null);
   const [similar, setSimilar] = useState<{ station: string; found: Similar | null } | null>(null);
   const [pointed, setPointed] = useState(false);
+  const picks = similar && similar.station === nowPlaying?.uuid ? similar.found : null;
+  const pick = picks?.stations[0] ?? null;
+  const { exposureRef, trackTune, trackSeeAll } = useDeskRecommendationMetrics(Boolean(pick));
 
   useEffect(() => {
     logUsage("desk_view");
@@ -140,7 +144,6 @@ export function ListenRedesign() {
     : null;
   const stamped = stamps.some((stamp) => stamp.id === stampId);
   const departures = nowPlaying ? deskDepartures(queue, queueIndex, nowPlaying, now) : [];
-  const picks = similar && similar.station === nowPlaying?.uuid ? similar.found : null;
   const shelf = nowPlaying ? deskShelf(nowPlaying, picks?.stations ?? [], departures, now) : [];
 
   useDeskKeeper(
@@ -213,9 +216,9 @@ export function ListenRedesign() {
     (room.phase === "filed" && intelligence.facts.length > 0) ||
     Boolean(intelligence.links?.length);
 
-  const pick = picks?.stations[0] ?? null;
-  const onSomewhereLike = pick
+  const onSeeAllSimilar = pick
     ? () => {
+        trackSeeAll();
         setPointed(true);
         const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
         const shelfSection = document.getElementById("ew-desk-shelf");
@@ -229,7 +232,7 @@ export function ListenRedesign() {
           actions: [
             {
               label: VOICE.similarHop(name),
-              onSelect: () => startStation(pick, { preserveQueue: true, autoPlay: true }),
+              onSelect: () => trackTune(pick.uuid, () => startStation(pick, { preserveQueue: true, autoPlay: true })),
             },
             {
               label: VOICE.similarStay,
@@ -261,6 +264,20 @@ export function ListenRedesign() {
             </Link>
           </nav>
           <div className="ew-desk-top">
+            <div className="ew-desk-mid">
+              <DeskOnAir
+                onAir={onAir}
+                facts={facts}
+                plate={view.plate}
+                playing={isPlaying}
+                pick={pick}
+                reason={picks?.label ?? null}
+                recommendationRef={exposureRef}
+                onTune={pick ? () => trackTune(pick.uuid, () => startStation(pick, { preserveQueue: true, autoPlay: true })) : undefined}
+                onSeeAll={onSeeAllSimilar}
+              />
+              <DeskPlays labels={shelfLabels[nowPlaying.uuid] ?? null} tags={facts.station.tags} />
+            </div>
             <DeskPlace
               facts={facts}
               station={nowPlaying}
@@ -272,10 +289,6 @@ export function ListenRedesign() {
             >
               <SecretTrail stationId={nowPlaying.uuid} city={place} longitude={nowPlaying.longitude} />
             </DeskPlace>
-            <div className="ew-desk-mid">
-              <DeskOnAir onAir={onAir} facts={facts} plate={view.plate} playing={isPlaying} onSomewhereLike={onSomewhereLike} />
-              <DeskPlays labels={shelfLabels[nowPlaying.uuid] ?? null} tags={facts.station.tags} />
-            </div>
             <DeskAsk facts={facts} askEnabled={askEnabled} entries={entries} />
           </div>
         </div>
@@ -288,7 +301,12 @@ export function ListenRedesign() {
             askEnabled={askEnabled}
             date={postmarkDate(now)}
           />
-          <DeskShelf cards={shelf} label={picks?.label ?? null} pointed={pointed}>
+          <DeskShelf
+            cards={shelf}
+            label={picks?.label ?? null}
+            pointed={pointed}
+            onRecommendationTune={(station, tune) => trackTune(station.uuid, tune)}
+          >
             <TheaterSeek held />
           </DeskShelf>
         </div>

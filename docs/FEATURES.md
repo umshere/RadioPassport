@@ -67,10 +67,10 @@ The field takes a short query (catalog search), a sentence (`/api/ai/interpret`,
 ### 1.2 The desk (`/listen`)
 
 Rebuilt 2026-10-17 (wave 2) to the "Desk — the Keeper roams" mockup. Cards, in phone order:
-- **You are not here** (`DeskPlace`): split-flap clock at the station's longitude, place, hour word + offset, spoken, signal, a light hour tint, stamp ring filling over the continuous minute (reads the dock's `--stamp-ink`; reduced motion keeps a static ring and line), passport count, send-a-ticket. Replaces the big sky panel and the boarding pass.
-- **On air** (`DeskOnAir`): art, title/artist marked "sent by the station", the station's name.
+- **On air** (`DeskOnAir`): art, title/artist marked "sent by the station", and the station's name. When there is a match, the panel shows one related station with its match reason, a direct listen action, and **See all** for the shelf.
 - **What this station plays** (`DeskPlays`): up to 3 plain-word labels from the offline Jev labels (label slot 1, family, format, at `STATION_LABEL_MIN_CONFIDENCE`), passed from the route loader (`allStationShelfLabels`) so `stationLabels.json` stays server-only; "The station's own tags (N)" reveals the raw tags. Unlabelled stations show raw tags.
-- **Ask the Keeper** (`DeskAsk`): the shared `KeeperCounter` plus "Somewhere like this".
+- **You are not here** (`DeskPlace`): split-flap clock at the station's longitude, place, hour word + offset, spoken, signal, a light hour tint, stamp ring filling over the continuous minute (reads the dock's `--stamp-ink`; reduced motion keeps a static ring and line), passport count, send-a-ticket.
+- **Ask the Keeper** (`DeskAsk`): the shared `KeeperCounter`.
 - **Postcards** (`DeskNote`): one notebook note at a time, "One more note" for the next; labelled as the notebook, not the station.
 - **Next on this shelf** (`DeskShelf`): `findSimilar` picks first, then the queue (`deskShelf`), each with its own clock; Change gate field under it.
 - **The station's file**: unchanged, below when filed.

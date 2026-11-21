@@ -23,6 +23,7 @@ export function DeskShelf({
   cards,
   label,
   pointed,
+  onRecommendationTune,
   children,
 }: {
   cards: ShelfCard[];
@@ -30,10 +31,15 @@ export function DeskShelf({
   label: string | null;
   /** The keeper just pointed at the shelf ("Somewhere like this"). */
   pointed: boolean;
+  onRecommendationTune?: (station: Station, tune: () => void) => void;
   children?: ReactNode;
 }) {
   const startStation = usePlayerStore((state) => state.startStation);
-  const board = (station: Station) => startStation(station, { preserveQueue: true, autoPlay: true });
+  const board = (station: Station, similar: boolean) => {
+    const tune = () => startStation(station, { preserveQueue: true, autoPlay: true });
+    if (similar && onRecommendationTune) onRecommendationTune(station, tune);
+    else tune();
+  };
   return (
     <section
       id="ew-desk-shelf"
@@ -61,7 +67,7 @@ export function DeskShelf({
                   className="ew-shelf-card"
                   data-hour={solar?.toLowerCase() ?? "unknown"}
                   data-similar={similar || undefined}
-                  onClick={() => board(station)}
+                  onClick={() => board(station, similar)}
                   aria-label={`${where}, ${name}${clock ? `, ${clock} there` : ""}`}
                 >
                   <span className="ew-shelf-art" aria-hidden="true">{initial(station.name)}</span>

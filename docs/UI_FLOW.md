@@ -39,9 +39,15 @@ For example, open Atlas, choose India, select Malayalam, and tap a station. The 
 
 ## The desk (`/listen`)
 
-The place card leads with the station's local hour. On air shows what the station sends, with **More like this** linking to the next departures when similar stations are available. Ask the Desk, postcards, and the station file provide more detail. The place and on-air cards sit next to each other on wider screens. Only the page column scrolls. The site bar and dock stay put.
+On air leads with what the station sends. When the catalog has a match, the panel names one related station and explains the match. **See all** opens the next departures. The current stream keeps playing until the listener picks a station. The place card shows the local hour alongside On air on wider screens and below it on phones. Ask the Desk, postcards, and the station file provide more detail. Only the page column scrolls. The site bar and dock stay put.
 
 With no station: the Keeper sleeps ("Nobody at the desk yet.") and a Land button goes home.
+
+### Evaluating the station recommendation
+
+Use the recommendation counters in the private admin console to follow eligible Desk visits, recommendations seen, tunes requested, audio started, and 30 seconds of continuous playback on a suggested station. Each step counts once per Desk visit. An impression requires at least half of the card to be visible in a foreground tab. A tune is observed for up to two minutes, including when the listener moves to another page while the same station plays. The primary measure is the 30-second count divided by eligible Desk visits. The counters record event names as anonymous daily totals and provide an observational baseline.
+
+For an iPhone usability session, open the Desk on a station with a known language. Ask a first-time listener to find another station in the same language without naming the control. Record their first tap, whether they complete the task without help, and what they expected to happen before tuning. Use the findings to decide what to change. Size any randomized comparison using the observed eligible volume and decide the minimum meaningful improvement before running it. Watch stream-start failures alongside the primary measure.
 
 ## Sending a station
 

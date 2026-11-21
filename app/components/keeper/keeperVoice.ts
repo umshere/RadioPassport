@@ -29,6 +29,8 @@ export const VOICE = {
   similarTag: (tag: string) => `More ${tag}`,
   similarHour: (word: string) => `Also ${word}, elsewhere`,
   similarNone: "Nothing close to this one on my board yet.",
+  recommendationListen: "Listen",
+  recommendationSeeAll: "See all similar stations",
   threadOffer: (label: string) => `${label}? Open my desk and I’ll show you.`,
   noPostcards: (place: string) => `No postcards from ${place} yet. Ask me something and I’ll go looking.`,
   actChatterOn: "Chatter on",
