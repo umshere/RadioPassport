@@ -13,6 +13,7 @@ import { spokenHour } from "~/components/keeper/keeperFacts";
 import { skyBody, skyHour } from "~/components/desk/deskModel";
 import type { Station } from "~/types/radio";
 import { flapLine, isSeekQuery, type ArrivalSky, type GuideChip, type HomePhase } from "./homeModel";
+import { useOpenDesk } from "~/hooks/useOpenDesk";
 
 /**
  * The arrival card on the home's landing band: the arrival city's sky at
@@ -33,6 +34,8 @@ export function HomeSky({
   keeperLine,
   keeperState,
   cta,
+  firstVisit,
+  ticketLanding,
   guide,
   onGuide,
   onAsk,
@@ -52,6 +55,9 @@ export function HomeSky({
   keeperLine: string;
   keeperState: KeeperState;
   cta: { label: string; kind: "land" | "continue" | "none" };
+  firstVisit: boolean;
+  /** A shared ticket has its own promise and keeps the original Land here copy. */
+  ticketLanding: boolean;
   guide: GuideChip[];
   onGuide: (chip: GuideChip) => void;
   /** A question typed to the keeper; the home decides what it means. */
@@ -59,6 +65,7 @@ export function HomeSky({
   onLand: () => void;
   onOpenKeeper?: () => void;
 }) {
+  const openDesk = useOpenDesk();
   const [asking, setAsking] = useState(false);
   const [draft, setDraft] = useState("");
   const tint = skyHour(sky.solar);
@@ -152,7 +159,7 @@ export function HomeSky({
           ) : null}
           <div className="ew-home-cta">
             {playing ? (
-              <ButtonLink to="/listen" variant="atlas" className="ew-home-desk-link" prefetch="intent">
+              <ButtonLink to="/listen" variant="atlas" className="ew-home-desk-link" prefetch="intent" onClick={openDesk}>
                 {VOICE.homeAtDesk} <span aria-hidden="true">→</span>
               </ButtonLink>
             ) : station && cta.kind !== "none" ? (
@@ -160,7 +167,11 @@ export function HomeSky({
                 variant="land"
                 onClick={onLand}
               >
-                {cta.label}
+                {cta.kind === "continue"
+                  ? VOICE.homeResumeListening
+                  : firstVisit && !ticketLanding
+                    ? VOICE.homeListenLive
+                    : cta.label}
               </Button>
             ) : null}
           </div>

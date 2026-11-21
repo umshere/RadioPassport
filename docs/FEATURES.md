@@ -31,14 +31,14 @@ Navigation is three places: **Elsewhere** (`/`), **Atlas** (an overlay on the ho
 
 One scrolling column: a compact landing band (the arrival card beside the gates), Your stations, shelves, then All departures. There is no globe. Code: `app/routes/_index.tsx`, `app/components/home/*`, `app/hooks/home/*`, `app/services/home/homeBoard.server.ts`, `homeShelves.server.ts`, CSS `14-home.css` and `08-home-board.css`.
 
-**The sky** (`HomeSky.tsx`). The arrival city's sky at its own hour: tint by the hour there, sun or moon where it stands, a split-flap clock ("21:04"), the city name on split flaps, country, flag, hours ahead or behind the listener, and the Keeper on the horizon with one line. One call to action: **Land here** (first visit), **Continue** (this browser has a last city), none while playing. Status chip says On air or Now leaving. The Day/Night toggle sits in the sky head.
+**The sky** (`HomeSky.tsx`). The arrival city's sky at its own hour: tint by the hour there, sun or moon where it stands, a split-flap clock ("21:04"), the city name on split flaps, country, flag, hours ahead or behind the listener, and the Keeper on the horizon with one line. The play action is **Listen live** on a first visit and **Resume listening** when there is a last station. Status chip says On air or Now leaving. The Day/Night toggle sits in the sky head.
 - No coordinates, no clock and no sky. Nothing is guessed except the board clock below.
 - While a question is typed the sky folds to one flap line: the query.
 
 **The gates** (`HomeGates.tsx`). A sticky rail under the header with:
 - the search field (`SiteSeekRail`, 48px, square, always on; a real child of its rail, never a portal because Safari drops portaled forms out of sticky boxes),
-- the hour rail: Dawn, Midday, Dusk, Night (`HourRail.tsx`). Tapping one shows live stations where it is that hour right now. It marks the listener's own hour with a dotted underline,
-- the Atlas door.
+- **Browse by place** beside search opens Atlas,
+- the hour rail: Dawn, Midday, Dusk, Night (`HourRail.tsx`). Tapping one shows live stations where it is that hour right now. It marks the listener's own hour with a dotted underline.
 
 The field takes a short query (catalog search), a sentence (`/api/ai/interpret`, may fire a world mix), or the Surprise button (AI world mix, `IntentBar.tsx`). Two or more letters count as a seek (`SEEK_MIN` in `homeModel.ts`).
 

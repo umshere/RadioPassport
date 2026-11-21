@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Eyebrow } from "~/components/ui/Eyebrow";
 import type { Country, Station } from "~/types/radio";
 import { ATLAS_PAGE, atlasSearch, atlasTabCountries, atlasTabs, POPULAR } from "./atlasModel";
@@ -165,6 +165,8 @@ export function AtlasOverlay({
 
 export function CountryOverlay({
   country,
+  initialLanguageFilter = null,
+  returnScrollTop = 0,
   stations,
   favorites,
   onBack,
@@ -175,6 +177,8 @@ export function CountryOverlay({
   onRetry,
 }: {
   country: string;
+  initialLanguageFilter?: string | null;
+  returnScrollTop?: number;
   stations: Station[];
   favorites: string[];
   onBack: () => void;
@@ -210,7 +214,8 @@ export function CountryOverlay({
       audioElement.removeEventListener("pause", uncertain);
     };
   }, [audioElement]);
-  const [languageFilter, setLanguageFilter] = useState<string | null>(null);
+  const [languageFilter, setLanguageFilter] = useState<string | null>(initialLanguageFilter);
+  const scrollRestored = useRef(false);
   const [languageStations, setLanguageStations] = useState<Station[] | null>(
     null
   );
@@ -220,10 +225,16 @@ export function CountryOverlay({
   >("idle");
   const languages = languageChipsFromStations(stations);
   useEffect(() => {
-    setLanguageFilter(null);
-    setLanguageStations(null);
-    setLanguageStatus("idle");
-  }, [country]);
+    if (!returnScrollTop || scrollRestored.current || drilldown?.status !== "ready" ||
+      (languageFilter && languageStatus !== "ready")) return;
+    const frame = window.requestAnimationFrame(() => {
+      const overlay = document.querySelector<HTMLElement>(".rp-overlay[data-hall-country]");
+      if (!overlay) return;
+      overlay.scrollTop = returnScrollTop;
+      scrollRestored.current = true;
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [drilldown?.status, languageFilter, languageStatus, returnScrollTop]);
   useEffect(() => {
     if (!languageFilter) {
       setLanguageStations(null);
@@ -301,7 +312,7 @@ export function CountryOverlay({
     ? attempt.id
     : null;
   return (
-    <Sheet close={close} label={`${country} stations`} hideClose>
+    <Sheet close={close} label={`${country} stations`} hideClose dataHallCountry={country} dataHallLanguage={languageFilter}>
       <Button onClick={onBack}>← Atlas</Button>
       <header className="mt-6">
         <h2>
@@ -324,7 +335,7 @@ export function CountryOverlay({
           · {languages.join(" · ") || "LANGUAGE UNAVAILABLE"}
         </Eyebrow>
       </header>
-      {drilldown?.status === "loading" ? (
+      {!drilldown || drilldown.status === "loading" ? (
         <p className="mt-8 text-sm text-muted" role="status">
           Loading the live catalog for {country}…
         </p>
@@ -335,16 +346,16 @@ export function CountryOverlay({
             Retry live catalog →
           </Button>
         </div>
-      ) : stations.length === 0 ? (
+      ) : stations.length === 0 && !languageFilter ? (
         <p className="mt-8 text-sm text-muted" role="status">
           No currently playable stations are available for this country.
         </p>
       ) : (
         <>
-          {languages.length > 1 && (
+          {(languages.length > 1 || languageFilter) && (
             <div className="mt-6 flex flex-wrap gap-2">
               <Eyebrow as="span" className="self-center">LANGUAGE</Eyebrow>
-              {languages.map((language) => (
+              {(languageFilter && !languages.includes(languageFilter) ? [...languages, languageFilter] : languages).map((language) => (
                 <Chip
                   selected={languageFilter === language}
                   onClick={() =>
@@ -360,6 +371,11 @@ export function CountryOverlay({
             </div>
           )}
           <div className="mt-8 space-y-7">
+            {displayedGroups.length === 0 ? (
+              <p className="text-sm text-muted" role="status">
+                {languageStatus === "loading" ? "Loading stations…" : "No playable stations in this selection."}
+              </p>
+            ) : null}
             {displayedGroups.map(([city, list], index) => (
                 <section key={city}>
                   <Eyebrow tone="foil">

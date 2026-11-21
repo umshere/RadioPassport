@@ -21,6 +21,10 @@
 }
 .ew-desk-inner { --desk-pad-l: max(16px, env(safe-area-inset-left, 0px)); --desk-pad-r: max(16px, env(safe-area-inset-right, 0px)); display: flex; flex-direction: column; gap: 16px; min-width: 0; padding: 16px var(--desk-pad-r) 0 var(--desk-pad-l); }
 .ew-desk-inner > * { flex: none; }
+.ew-desk-leading { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.ew-desk-leading > * { flex: none; min-width: 0; }
+.ew-desk-return a { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; color: var(--ew-dust); font: 500 11px/1.2 "Azeret Mono", ui-monospace, monospace; letter-spacing: .08em; text-transform: uppercase; text-decoration: none; }
+.ew-desk-return a:hover, .ew-desk-return a:focus-visible { color: var(--ew-foil); }
 .ew-desk-top, .ew-desk-mid, .ew-desk-more { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
 :is(.ew-desk-top, .ew-desk-mid, .ew-desk-more) > * { flex: none; min-width: 0; }
 
@@ -253,6 +257,7 @@
 .ew-onair-note { margin: 0; font: 400 14px/1.4 "Schibsted Grotesk", sans-serif; color: var(--ew-dust); }
 .ew-onair-note.is-lead { font: italic 400 18px/1.35 "Newsreader", serif; color: var(--ew-bone); }
 .ew-onair-note.is-waiting { color: var(--ew-foil); }
+.ew-onair-like { align-self: flex-start; min-height: 44px; }
 @container onair (min-width: 420px) {
   .ew-onair-art { width: 132px; height: 132px; }
   .ew-onair-title { font-size: 26px; }
@@ -358,7 +363,6 @@
 .ew-note-more { display: inline-flex; align-items: center; min-height: 44px; margin-top: 6px; padding: 0; border: 0; background: none; color: var(--ew-foil); font: 500 10px/1 "Azeret Mono", ui-monospace, monospace; letter-spacing: .14em; text-transform: uppercase; cursor: pointer; }
 .ew-note-more:hover { color: var(--ew-bone); }
 .ew-ask { display: flex; flex-direction: column; }
-.ew-ask-like { align-self: flex-start; margin-top: 12px; }
 .ew-onair-station { margin: 2px 0 0; font: 400 14px/1.35 "Schibsted Grotesk", sans-serif; color: var(--ew-dust); overflow-wrap: anywhere; }
 .ew-onair-station b { font-weight: 500; color: var(--ew-bone); }
 
@@ -383,6 +387,15 @@
 
 /* ---- Wider desks: two columns from 700px; from 961px three, with head
    room over each row on a tall desktop (he roams from 961px). */
+@container desk (max-width: 699px) {
+  .ew-desk-top > .ew-place { gap: 10px; padding: 14px; }
+  .ew-place-clock { font-size: 32px; }
+  .ew-place-grid { gap: 8px; padding-top: 8px; }
+  .ew-place-stamp { padding-top: 8px; }
+}
+@container onair (max-width: 260px) {
+  .ew-onair-art { width: 58px; height: 58px; }
+}
 @container desk (min-width: 700px) {
   .ew-desk-inner { --desk-pad-l: max(24px, env(safe-area-inset-left, 0px)); --desk-pad-r: max(24px, env(safe-area-inset-right, 0px)); gap: 20px; padding-top: 24px; }
   .ew-desk-top { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); align-items: stretch; gap: 20px; }

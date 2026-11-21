@@ -1,6 +1,7 @@
 import type { loader } from "~/routes/_index";
 import { json, type LoaderFunctionArgs } from "@remix-run/node";
-import { Link, useLoaderData, useSearchParams } from "@remix-run/react";
+import { Link, useLoaderData, useLocation, useSearchParams } from "@remix-run/react";
+import { hallReturnFromState } from "~/utils/hallReturn";
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { usePlayerStore } from "~/state/playerStore";
 import { useEnvStore } from "~/state/envStore";
@@ -109,6 +110,8 @@ export function HomeRedesign() {
     boardSeed = 0,
   } = useLoaderData<typeof loader>();
   const [searchParams] = useSearchParams();
+  const location = useLocation();
+  const returnContext = hallReturnFromState(location.state);
   const hydrated = useHydrated();
   const nowPlaying = usePlayerStore((state) => state.nowPlaying);
   const isPlaying = usePlayerStore((state) => state.isPlaying);
@@ -127,6 +130,15 @@ export function HomeRedesign() {
   const now = useMinuteClock();
   const setEnvHour = useEnvStore((state) => state.setHomeHour);
   const pageRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const saved = returnContext;
+    if (!saved) return;
+    const frame = window.requestAnimationFrame(() => {
+      const page = pageRef.current;
+      if (page) page.scrollTop = saved.scrollTop;
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [returnContext]);
   const pageBox = useFloorClearance(pageRef);
   const { hour, setHour, place, setPlace, query, setQuery } = useHomeIntent(
     searchParams.toString()
@@ -137,7 +149,7 @@ export function HomeRedesign() {
     error: catalogError,
     retry: retryCatalog,
   } = useCatalogSearch(query);
-  const overlays = useHomeOverlays(searchParams.toString());
+  const overlays = useHomeOverlays(searchParams.toString(), returnContext);
   const {
     setAtlas,
     countryCache,
@@ -514,6 +526,8 @@ export function HomeRedesign() {
             keeperLine={keeperLine}
             keeperState={keeperState}
             cta={{ label: arrival.cta, kind: arrival.ctaKind }}
+            firstVisit={firstVisit}
+            ticketLanding={friendPending}
             onLand={landArrival}
             onAsk={(question) => {
               const act = (route: HomeAsk) => {

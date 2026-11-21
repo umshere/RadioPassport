@@ -4,6 +4,7 @@ import { keeperAnchor } from "~/components/keeper/keeperRoamModel";
 import { keeperTrackLine, tidyStationName, type KeeperFacts } from "~/components/keeper/keeperFacts";
 import { VOICE } from "~/components/keeper/keeperVoice";
 import { markArtworkUrlFailed } from "~/utils/stations";
+import { Chip } from "~/components/ui/Button";
 import { DESK_ANCHORS } from "./deskKeeper";
 import type { OnAir } from "./deskModel";
 
@@ -18,11 +19,13 @@ export function DeskOnAir({
   facts,
   plate,
   playing,
+  onSomewhereLike,
 }: {
   onAir: OnAir;
   facts: KeeperFacts;
   plate: string | null;
   playing: boolean;
+  onSomewhereLike?: () => void;
 }) {
   const [failed, setFailed] = useState<string | null>(null);
   useEffect(() => setFailed(null), [plate]);
@@ -100,6 +103,11 @@ export function DeskOnAir({
         <p className="ew-onair-station">
           {VOICE.onAirOn} <b>{tidyStationName(facts.station.name)}</b>
         </p>
+        {onSomewhereLike ? (
+          <Chip className="ew-onair-like" onClick={onSomewhereLike}>
+            {VOICE.somewhereLike} <span aria-hidden="true">→</span>
+          </Chip>
+        ) : null}
       </div>
     </section>
   );

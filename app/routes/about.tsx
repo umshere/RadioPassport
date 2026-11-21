@@ -22,7 +22,7 @@ export const meta = () => [
 const STEPS = [
   {
     title: "Land",
-    body: "Tap Land here, or tell me a place, a language or a mood. Or pick an hour (dawn, midday, dusk or night) and I’ll find a live station where it is that hour right now.",
+    body: "Tap Listen live, or tell me a place, a language or a mood. Or pick an hour (dawn, midday, dusk or night) and I’ll find a live station where it is that hour right now.",
   },
   {
     title: "Listen, and get stamped",

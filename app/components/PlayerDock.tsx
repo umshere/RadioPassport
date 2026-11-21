@@ -15,6 +15,7 @@ import { dispatchRequestFor, roomForStation, useRoomStore } from "~/state/roomSt
 import type { DispatchResponse } from "~/types/ai";
 import { stationLocation } from "~/components/radio-passport/StationRow";
 import { cleanTrackLine } from "~/services/keeper/cleanTitle";
+import { useOpenDesk } from "~/hooks/useOpenDesk";
 
 export function shouldAnimateDock(isPlaying: boolean, reducedMotion: boolean) {
   return isPlaying && !reducedMotion;
@@ -24,6 +25,7 @@ export function shouldAnimateDock(isPlaying: boolean, reducedMotion: boolean) {
 export default function PlayerDock() {
   const location = useLocation();
   const navigate = useNavigate();
+  const openDesk = useOpenDesk(true);
   const mounted = useHydrated();
   const nowPlaying = usePlayerStore((state) => state.nowPlaying);
   const isPlaying = usePlayerStore((state) => state.isPlaying);
@@ -264,7 +266,7 @@ export default function PlayerDock() {
         </div>
       </div>
       <div className="rp-dock-row">
-      <Link to="/listen" prefetch="intent" viewTransition aria-label="Open the desk">
+      <Link to="/listen" onClick={openDesk} prefetch="intent" viewTransition aria-label="Open the desk">
         <img className="rp-dock-art" src="/elsewhere-mark.webp" alt="" width={44} height={44} />
       </Link>
       <div className="min-w-0 flex-1">
@@ -352,6 +354,7 @@ export default function PlayerDock() {
       </button>
       <Link
         to="/listen"
+        onClick={openDesk}
         className="rp-theater-link rp-eyebrow text-foil"
         prefetch="intent"
         viewTransition

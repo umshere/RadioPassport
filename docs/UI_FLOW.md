@@ -5,7 +5,7 @@ Elsewhere is one loop: **land, intent, tune, inhabit, stamp, next**. The contrac
 ## First 20 seconds (home, `/`)
 
 1. The Departures Hall opens on the sky of a city that is on the air (from the catalog, with coordinates), with its clock, the Keeper's line ("You are not here. Pick a gate, or land where I point.") and the first-visit card "How Elsewhere works" (Land, Listen, Send).
-2. **Land here** (or **Continue** when this browser has a last city) starts audio. Browsers block silent autoplay, so the tap is the gesture.
+2. **Listen live** (or **Resume listening** when this browser has a last station) starts audio on the tap. **Browse by place** opens Atlas from beside the search field.
 3. The sky becomes the city you landed in: clock, place, hours ahead or behind you. The Keeper says "Landed in Lagos." The CTA disappears while playing.
 4. If the stream sends a title, it appears under the city. Otherwise nothing is shown in its place. The dock shows the same cleaned title.
 5. After 60 seconds of continuous play the city is stamped: the play disc slams, an INKED toast appears, the Keeper says so. The first-visit card is gone for good once there is a stamp or it is dismissed.
@@ -14,7 +14,7 @@ Elsewhere is one loop: **land, intent, tune, inhabit, stamp, next**. The contrac
 
 | Action | Result |
 |---|---|
-| Land here / Continue | Plays the featured (or last) station. The sky becomes that city |
+| Listen live / Resume listening | Plays the featured (or last) station. The sky becomes that city |
 | Tap a departures row | Plays that station. The row shows its local time and hour tint |
 | Heart on a row | Keeps the station in the passport |
 | More departures | Board grows 8, 16, 32 rows |
@@ -23,7 +23,7 @@ Elsewhere is one loop: **land, intent, tune, inhabit, stamp, next**. The contrac
 | Search field (2+ letters) | Catalog search. Sky folds to one flap line with the query. Board is the answer (up to 32) |
 | A sentence in the field | `POST /api/ai/interpret`. May fire a world mix |
 | Surprise | AI world mix, then plays the first station |
-| Atlas door | Browse countries and filter stations by language |
+| Browse by place / Atlas | Browse countries and filter stations by language |
 | Tap a station in Atlas | Starts playback and keeps the country, language, and scroll position. Previous and Next follow the displayed stations |
 | Passport button | Overlay: stamps and kept signals. A stamp replays that city |
 | Recent stamps (under the board) | Open the passport |
@@ -35,11 +35,11 @@ Elsewhere is one loop: **land, intent, tune, inhabit, stamp, next**. The contrac
 
 Search, hours and overlays never call `stop()`.
 
-For example, open Atlas, choose India, select Malayalam, and tap a station. The row shows Connecting, then On air when audio starts. If the signal fails, the row shows the failure and you can try another one. Choose Desk for the listening view or Elsewhere to return to the Hall and its previous filters.
+For example, open Atlas, choose India, select Malayalam, and tap a station. The row shows Connecting, then On air when audio starts. If the signal fails, the row shows the failure and you can try another one. Open the Desk for the listening view. **Back to Malayalam stations** brings you to the same filter and scroll position, with the station and queue still playing. The browser Back button also returns to that view. While in Atlas, **Elsewhere** closes the overlay and shows the Hall.
 
 ## The desk (`/listen`)
 
-Sky at the station's hour with the Keeper on the horizon and his murmur bubble. Then, in reading order: boarding pass, on air (only what the stream sent), ask the desk, postcards, the station's file (only when a title filed), next departures with a "Change gate" seek row. On a phone it is one column; on wide screens the sky sits beside the cards. Only the page column scrolls; the site bar and dock stay put.
+The place card leads with the station's local hour. On air shows what the station sends, with **More like this** linking to the next departures when similar stations are available. Ask the Desk, postcards, and the station file provide more detail. The place and on-air cards sit next to each other on wider screens. Only the page column scrolls. The site bar and dock stay put.
 
 With no station: the Keeper sleeps ("Nobody at the desk yet.") and a Land button goes home.
 

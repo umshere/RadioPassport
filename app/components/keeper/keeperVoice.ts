@@ -68,7 +68,7 @@ export const VOICE = {
   homeThere: (word: string) => `${word[0]!.toUpperCase()}${word.slice(1)} there`,
   guideHow: "How it works",
   askSteps:
-    "Three steps. Land: tap Land here. Listen: stay a minute and I’ll stamp the city. Send: pass a friend a ticket.",
+    "Three steps. Land: tap Listen live. Listen: stay a minute and I’ll stamp the city. Send: pass a friend a ticket.",
   askThinking: "Let me check the board…",
   guideAskChip: "Ask me anything",
   guideAskPlaceholder: "Ask me: where, when, who…",
@@ -129,7 +129,7 @@ export const VOICE = {
   noteCount: (index: number, count: number) => `${index + 1} of ${count}`,
   shelfTitle: "Next on this shelf",
   shelfLike: "Like this one",
-  somewhereLike: "Somewhere like this",
+  somewhereLike: "More like this",
   similarHop: (name: string) => `Hop to ${name}`,
   similarStay: "Stay here",
   similarNoneYet: "Nothing close to this one on my shelf yet. Change gate and I’ll look further.",
@@ -154,7 +154,7 @@ export const VOICE = {
   deskEmptyLine: "Pick a city, press play, and I’ll stamp you in.",
 
   /* ---- The departures hall (home): one line per state, no chatter. ---- */
-  homeWelcome: "New here? Tap Land here. It’s a real station, live in another city. Stay a minute and I’ll stamp it in your passport.",
+  homeWelcome: "Choose a live station from another city. I’ll stamp it in your passport after a minute.",
   homeSomewhere: (word: string) => `Somewhere it’s ${word}.`,
   homeSeeking: (query: string) => `Looking for ${query}.`,
   homeHourGate: (word: string) => `This gate: everywhere it’s ${word}.`,
@@ -162,6 +162,9 @@ export const VOICE = {
   homeLanded: (place: string) => `Landed in ${place}.`,
   homeAsleep: "Quiet hours here. Land anywhere and I’ll wake up.",
   homeAtDesk: "At the desk",
+  homeBrowsePlace: "Browse by place",
+  homeListenLive: "Listen live",
+  homeResumeListening: "Resume listening",
   homeGates: "Gates",
   homeHourHint: "Hear a place by its hour",
   homeBoard: "Departures",

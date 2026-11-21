@@ -1,4 +1,3 @@
-import { Chip } from "~/components/ui/Button";
 import { KeeperCounter } from "~/components/keeper/KeeperCounter";
 import type { KeeperFacts } from "~/components/keeper/keeperFacts";
 import { keeperAnchor } from "~/components/keeper/keeperRoamModel";
@@ -17,13 +16,10 @@ export function DeskAsk({
   facts,
   askEnabled,
   entries,
-  onSomewhereLike,
 }: {
   facts: KeeperFacts;
   askEnabled: boolean;
   entries: KeeperFactEntry[];
-  /** Shown when the shelf has a similar pick to point at. */
-  onSomewhereLike?: () => void;
 }) {
   const hushed = useKeeperStore((state) => state.hushed);
   const setHushed = useKeeperStore((state) => state.setHushed);
@@ -42,11 +38,6 @@ export function DeskAsk({
         </button>
       </header>
       <KeeperCounter facts={facts} askEnabled={askEnabled} surface="desk" entries={entries} idPrefix="ew-desk-ask" />
-      {onSomewhereLike ? (
-        <Chip className="ew-ask-like" onClick={onSomewhereLike}>
-          {VOICE.somewhereLike} →
-        </Chip>
-      ) : null}
     </section>
   );
 }

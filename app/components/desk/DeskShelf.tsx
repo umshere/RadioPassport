@@ -40,6 +40,7 @@ export function DeskShelf({
       className="ew-shelf"
       data-pointed={pointed || undefined}
       aria-labelledby="ew-shelf-title"
+      tabIndex={-1}
       {...keeperAnchor(DESK_ANCHORS.next)}
     >
       <header className="ew-shelf-head">

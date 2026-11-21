@@ -9,10 +9,8 @@ import {
 } from "~/components/radio-passport/productFlow";
 import { useHydrated } from "~/hooks/useHydrated";
 import { usePlayerStore } from "~/state/playerStore";
-import {
-  intentSearchString,
-  parseInitialIntent,
-} from "~/components/radio-passport/searchState";
+import { useOpenDesk } from "~/hooks/useOpenDesk";
+import { hallReturnLink } from "~/utils/hallReturn";
 
 const SLOTS = [
   { id: "elsewhere", label: "Elsewhere", to: "/" },
@@ -32,6 +30,7 @@ const SLOTS = [
 export default function BandNav({ variant }: { variant: "band" | "rail" }) {
   const location = useLocation();
   const navigate = useNavigate();
+  const openDesk = useOpenDesk();
   const mounted = useHydrated();
   const nowPlaying = usePlayerStore((state) => state.nowPlaying);
   // Same-URL atlas flips never reach useLocation (home syncs through
@@ -50,7 +49,6 @@ export default function BandNav({ variant }: { variant: "band" | "rail" }) {
   }, []);
   const atlasOpen = atlasPin ?? atlasRequested(location.search);
   const theaterEmpty = mounted && !nowPlaying;
-  const savedHomeSearch = (location.state as { homeSearch?: string } | null)?.homeSearch;
 
   const current =
     location.pathname === "/listen"
@@ -122,9 +120,10 @@ export default function BandNav({ variant }: { variant: "band" | "rail" }) {
         return (
           <Link
             key={slot.id}
-            to={slot.id === "elsewhere" && location.pathname === "/listen" && savedHomeSearch
-              ? { pathname: "/", search: savedHomeSearch }
+            to={slot.id === "elsewhere" && location.pathname === "/listen"
+              ? hallReturnLink(location.state)
               : slot.to}
+            state={slot.id === "elsewhere" && location.pathname === "/listen" ? location.state : undefined}
             className={className}
             aria-current={isCurrent ? "page" : undefined}
             prefetch="intent"
@@ -133,13 +132,8 @@ export default function BandNav({ variant }: { variant: "band" | "rail" }) {
             // history.replaceState, which Remix never hears — a bare Link to
             // "/" would navigate nowhere and strand them open. Ask to close.
             onClick={(event) => {
-              if (location.pathname !== "/") return;
-              if (slot.id === "elsewhere") requestCloseAtlas();
-              if (slot.id !== "theater" || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
-              // replaceState may have changed the Hall filters since this link rendered.
-              event.preventDefault();
-              const homeSearch = intentSearchString("", parseInitialIntent(window.location.href));
-              navigate(slot.to, { state: { homeSearch }, preventScrollReset: true });
+              if (slot.id === "theater") openDesk(event);
+              if (slot.id === "elsewhere" && location.pathname === "/") requestCloseAtlas();
             }}
           >
             {slot.label}

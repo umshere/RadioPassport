@@ -207,6 +207,17 @@ describe("desk wiring", () => {
     expect(css).toMatch(/@media \(min-width: 961px\) and \(min-height: 700px\) \{\s*\.ew-desk-inner \{ --desk-head-room: 112px;/);
   });
 
+  it("puts the similar-station action beside the live panel and returns to the originating Hall", () => {
+    const listen = read("app/pages/ListenRedesign.tsx");
+    const onAir = read("app/components/desk/DeskOnAir.tsx");
+    expect(listen).toContain("hallReturnLink(location.state)");
+    expect(listen).toContain("hallReturnLabel(location.state)");
+    expect(listen).toMatch(/<DeskOnAir[\s\S]*onSomewhereLike=\{onSomewhereLike\}/);
+    expect(onAir).toContain("ew-onair-like");
+    expect(onAir).toContain("VOICE.somewhereLike");
+    expect(read("app/utils/hallReturn.ts")).toContain("hallReturnFromState(state)");
+  });
+
   it("stacks the phone desk in flex columns and stills motion when asked", () => {
     const css = readAppCss();
     const desk = css.slice(css.indexOf("/* ---- The desk (/listen)"));

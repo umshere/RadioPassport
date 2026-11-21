@@ -316,8 +316,8 @@ describe("home: the departures hall", () => {
     );
     expect(homePlay).toContain('sourceType: "atlas"');
     expect(homePlay).toContain("playAtlas");
-    expect(band).toContain("state: { homeSearch }");
-    expect(band).toContain("search: savedHomeSearch");
+    expect(band).toContain("useOpenDesk()");
+    expect(band).toContain("hallReturnLink(location.state)");
     // The instant-board derivation lives in the home stations hook.
     const homeStations = readFileSync(
       new URL("../../app/hooks/home/useHomeStations.ts", import.meta.url),

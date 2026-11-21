@@ -16,8 +16,12 @@ export function Sheet({
   hideClose,
   focusContainerOnOpen = false,
   className = "",
+  dataHallCountry,
+  dataHallLanguage,
 }: {
   className?: string;
+  dataHallCountry?: string;
+  dataHallLanguage?: string | null;
   children: ReactNode;
   close: () => void;
   label: string;
@@ -87,6 +91,8 @@ export function Sheet({
   return (
     <div
       className={`rp-overlay ${className}`}
+      data-hall-country={dataHallCountry}
+      data-hall-language={dataHallLanguage ?? undefined}
       role="dialog"
       aria-modal="true"
       aria-label={label}

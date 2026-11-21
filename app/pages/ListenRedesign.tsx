@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react";
-import { useLoaderData } from "@remix-run/react";
+import { Link, useLoaderData, useLocation } from "@remix-run/react";
 import type { loader } from "~/routes/listen";
 import { logUsage } from "~/utils/usage";
 import { useHydrated } from "~/hooks/useHydrated";
@@ -41,6 +41,7 @@ import { useDeskKeeper } from "~/components/desk/useDeskKeeper";
 import { deskDepartures, deskOnAir, deskShelf, postmarkDate } from "~/components/desk/deskModel";
 import type { NowPlayingTrack } from "~/types/nowPlaying";
 import { useFloorClearance, useMinuteClock } from "~/components/desk/deskHooks";
+import { hallReturnLabel, hallReturnLink } from "~/utils/hallReturn";
 
 /**
  * The desk: the keeper's own page for the station you are inside. A compact
@@ -54,6 +55,7 @@ import { useFloorClearance, useMinuteClock } from "~/components/desk/deskHooks";
  */
 export function ListenRedesign() {
   const { shelfLabels } = useLoaderData<typeof loader>();
+  const location = useLocation();
   const hydrated = useHydrated();
   const storedNowPlaying = usePlayerStore((state) => state.nowPlaying);
   const storedIsPlaying = usePlayerStore((state) => state.isPlaying);
@@ -216,9 +218,9 @@ export function ListenRedesign() {
     ? () => {
         setPointed(true);
         const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-        document
-          .getElementById("ew-desk-shelf")
-          ?.scrollIntoView({ block: "nearest", behavior: reduce ? "auto" : "smooth" });
+        const shelfSection = document.getElementById("ew-desk-shelf");
+        shelfSection?.focus({ preventScroll: true });
+        shelfSection?.scrollIntoView({ block: "start", behavior: reduce ? "auto" : "smooth" });
         const name = tidyStationName(pick.name);
         goTo(DESK_ANCHORS.next, {
           pose: "travel",
@@ -251,23 +253,31 @@ export function ListenRedesign() {
       }
     >
       <div className="ew-desk-inner" key={nowPlaying.uuid}>
-        <div className="ew-desk-top">
-          <DeskPlace
-            facts={facts}
-            station={nowPlaying}
-            place={place}
-            offset={offset}
-            playing={isPlaying}
-            stamped={stamped}
-            stampCount={stamps.length}
-          >
-            <SecretTrail stationId={nowPlaying.uuid} city={place} longitude={nowPlaying.longitude} />
-          </DeskPlace>
-          <div className="ew-desk-mid">
-            <DeskOnAir onAir={onAir} facts={facts} plate={view.plate} playing={isPlaying} />
-            <DeskPlays labels={shelfLabels[nowPlaying.uuid] ?? null} tags={facts.station.tags} />
+        <div className="ew-desk-leading">
+          <nav className="ew-desk-return" aria-label="Hall navigation">
+            <Link to={hallReturnLink(location.state)} state={location.state} preventScrollReset>
+              <span aria-hidden="true">←</span>
+              {hallReturnLabel(location.state)}
+            </Link>
+          </nav>
+          <div className="ew-desk-top">
+            <DeskPlace
+              facts={facts}
+              station={nowPlaying}
+              place={place}
+              offset={offset}
+              playing={isPlaying}
+              stamped={stamped}
+              stampCount={stamps.length}
+            >
+              <SecretTrail stationId={nowPlaying.uuid} city={place} longitude={nowPlaying.longitude} />
+            </DeskPlace>
+            <div className="ew-desk-mid">
+              <DeskOnAir onAir={onAir} facts={facts} plate={view.plate} playing={isPlaying} onSomewhereLike={onSomewhereLike} />
+              <DeskPlays labels={shelfLabels[nowPlaying.uuid] ?? null} tags={facts.station.tags} />
+            </div>
+            <DeskAsk facts={facts} askEnabled={askEnabled} entries={entries} />
           </div>
-          <DeskAsk facts={facts} askEnabled={askEnabled} entries={entries} onSomewhereLike={onSomewhereLike} />
         </div>
 
         <div className="ew-desk-more">

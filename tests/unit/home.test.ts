@@ -71,6 +71,16 @@ describe("home: the departures hall stylesheet", () => {
     // The field is the desk's shared always-on square field.
     expect(readAppCss()).toContain(".ew-gate-field .ew-seek { width: 100%;");
   });
+
+  it("puts place browsing beside search and hour gates below", () => {
+    const gates = read("app/components/home/HomeGates.tsx");
+    expect(gates.indexOf("ew-gates-topline")).toBeLessThan(gates.indexOf("ew-gates-hours"));
+    expect(gates).toContain("VOICE.homeBrowsePlace");
+    expect(gates).toContain(" (Atlas)");
+    expect(gates).toContain("<HourRail hour={hour} onTap={onHourTap} />");
+    expect(homeCss()).toMatch(/\.ew-gates-atlas \{[^}]*min-width: 44px;[^}]*min-height: 48px/);
+    expect(homeCss()).toContain(".ew-gates-topline { display: flex;");
+  });
 });
 
 describe("home: the sheet is gone", () => {
@@ -112,6 +122,10 @@ describe("home: words and honesty", () => {
     const model = read("app/components/home/homeModel.ts");
     expect(model).toContain("VOICE.homeSeeking");
     expect(model).toContain("VOICE.homeEmpty");
+    expect(read("app/components/keeper/keeperVoice.ts")).toContain('homeWelcome: "Choose a live station');
+    expect(sky).toContain("VOICE.homeResumeListening");
+    expect(sky).toContain("firstVisit && !ticketLanding");
+    expect(sky).toContain(": cta.label");
     expect(board).toContain("tidyStationName(station.name)");
     expect(board).toContain("VOICE.homeMore");
     expect(board).toContain("empty.actions.map");

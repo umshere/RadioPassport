@@ -28,18 +28,19 @@ export function HomeGates({
 }) {
   return (
     <section className="ew-gates" aria-label={VOICE.homeGates}>
-      <div className="ew-gates-seek ew-gate-field" {...keeperAnchor("seek")}>
-        <SiteSeekRail />
-      </div>
-      <div className="ew-gates-row">
-        <div className="ew-gates-hours">
-          <p className="ew-gates-hint">{VOICE.homeHourHint}</p>
-          <HourRail hour={hour} onTap={onHourTap} />
+      <div className="ew-gates-topline">
+        <div className="ew-gates-seek ew-gate-field" {...keeperAnchor("seek")}>
+          <SiteSeekRail />
         </div>
         <Button variant="atlas" className="ew-gates-atlas" onClick={onAtlas}>
-          Atlas
+          {VOICE.homeBrowsePlace}
+          <span className="sr-only"> (Atlas)</span>
           <span aria-hidden="true">→</span>
         </Button>
+      </div>
+      <div className="ew-gates-hours">
+        <p className="ew-gates-hint">{VOICE.homeHourHint}</p>
+        <HourRail hour={hour} onTap={onHourTap} />
       </div>
       {stamps && onPassport ? (
         <div className="ew-gates-passport">

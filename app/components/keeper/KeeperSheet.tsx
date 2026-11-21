@@ -13,6 +13,7 @@ import { VOICE } from "./keeperVoice";
 import type { KeeperFacts } from "./keeperFacts";
 import { skyHour } from "~/components/desk/deskModel";
 import type { KeeperView } from "./useKeeper";
+import { useOpenDesk } from "~/hooks/useOpenDesk";
 
 /** Root loader data: the one public flag the keeper reads. */
 export function useKeeperAskEnabled(): boolean {
@@ -38,6 +39,7 @@ function dockFloor(): number {
  * Esc closes, focus returns to the keeper.
  */
 export function KeeperSheet({ view }: { view: KeeperView & { facts: KeeperFacts } }) {
+  const openDesk = useOpenDesk();
   const { facts } = view;
   const askEnabled = useKeeperAskEnabled();
   const closeSheet = useKeeperStore((state) => state.closeSheet);
@@ -187,7 +189,10 @@ export function KeeperSheet({ view }: { view: KeeperView & { facts: KeeperFacts 
             {where ? <FlipBoard text={where} className="is-meta" /> : null}
           </h2>
           {/* SPA link: the audio bridge in root keeps playing. */}
-          <Link to="/listen" className="ew-keeper-door" onClick={close}>
+          <Link to="/listen" className="ew-keeper-door" onClick={(event) => {
+            close();
+            openDesk(event);
+          }}>
             {VOICE.deskDoor}
           </Link>
           <Button variant="text" className="ew-keeper-close" onClick={close}>

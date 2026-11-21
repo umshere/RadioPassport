@@ -53,7 +53,8 @@ export function HomeOverlays({
     atlasQuery,
     setAtlasQuery,
     country,
-    setCountry,
+    countryView,
+    closeCountry,
     countryDrilldown,
     countryStations,
     loadCountry,
@@ -63,7 +64,7 @@ export function HomeOverlays({
   } = overlays;
   const openBook = () => {
     setAtlas(false);
-    setCountry(null);
+    closeCountry();
     setPassport(true);
   };
   return (
@@ -81,16 +82,19 @@ export function HomeOverlays({
       )}
       {country && (
         <CountryOverlay
+          key={country}
           country={country}
+          initialLanguageFilter={countryView?.language}
+          returnScrollTop={countryView?.scrollTop}
           stations={countryStations}
           drilldown={countryDrilldown}
           onRetry={() => void loadCountry(country, true)}
           favorites={favorites}
           onBack={() => {
-            setCountry(null);
+            closeCountry();
             setAtlas(true);
           }}
-          close={() => setCountry(null)}
+          close={closeCountry}
           onPlay={(station, pool, label) => playAtlas(station, pool, label)}
           onFavorite={toggleFavorite}
         />

@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useSecretTrail } from "~/state/secretTrail";
+import type { HallReturnContext } from "~/utils/hallReturn";
+import type { Station } from "~/types/radio";
 import {
   countryCacheKey,
   countryCacheWith,
@@ -15,16 +17,23 @@ import {
   passportRequested,
 } from "~/components/radio-passport/productFlow";
 
+const EMPTY_STATIONS: Station[] = [];
+
 /**
  * The three things that stand above the home: the Atlas, a country
  * drilldown and the Passport. Owns their open state, the URL flag for Atlas
  * (replace, never push), the window events that open/close them from the
  * site bar, the drilldown cache, and the secret-trail visits.
  */
-export function useHomeOverlays(search: string) {
+export function useHomeOverlays(search: string, returnContext?: HallReturnContext | null) {
   const [atlas, setAtlas] = useState(() => atlasRequested(search));
   const [atlasQuery, setAtlasQuery] = useState("");
-  const [country, setCountry] = useState<string | null>(null);
+  const [countryView, setCountryView] = useState(() => returnContext?.country ? {
+    country: returnContext.country,
+    language: returnContext.language,
+    scrollTop: returnContext.overlayScrollTop,
+  } : null);
+  const country = countryView?.country ?? null;
   const [countryCache, setCountryCache] = useState<
     Record<string, CountryDrilldownState>
   >({});
@@ -70,20 +79,27 @@ export function useHomeOverlays(search: string) {
     [countryCache]
   );
 
+  useEffect(() => {
+    if (!country) return;
+    const state = countryCache[countryCacheKey(country)];
+    if (state) return;
+    void loadCountry(country);
+  }, [country, countryCache, loadCountry]);
+
   const chooseCountry = useCallback(
     (next: string) => {
-      setCountry(next);
+      setCountryView({ country: next, language: null, scrollTop: 0 });
       // Keep Atlas selected while its country drilldown is in front.
       setAtlas(true);
-      void loadCountry(next);
     },
-    [loadCountry]
+    []
   );
+  const closeCountry = useCallback(() => setCountryView(null), []);
 
   const countryDrilldown = country
     ? countryCache[countryCacheKey(country)] ?? null
     : null;
-  const countryStations = countryDrilldown?.stations ?? [];
+  const countryStations = countryDrilldown?.stations ?? EMPTY_STATIONS;
 
   useEffect(() => {
     if (passportRequested(search)) setPassport(true);
@@ -107,12 +123,12 @@ export function useHomeOverlays(search: string) {
   // Leaving the overlay world drops the country drilldown too.
   useEffect(() => {
     const closeAtlas = () => {
-      setCountry(null);
+      closeCountry();
       setAtlas(false);
     };
     window.addEventListener(CLOSE_ATLAS_EVENT, closeAtlas);
     return () => window.removeEventListener(CLOSE_ATLAS_EVENT, closeAtlas);
-  }, []);
+  }, [closeCountry]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -131,12 +147,13 @@ export function useHomeOverlays(search: string) {
   }, [atlas]);
 
   return {
+    countryView,
     atlas,
     setAtlas,
     atlasQuery,
     setAtlasQuery,
     country,
-    setCountry,
+    closeCountry,
     countryCache,
     countryDrilldown,
     countryStations,
