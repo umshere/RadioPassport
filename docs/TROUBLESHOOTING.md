@@ -111,3 +111,7 @@ npx --yes --cache "$NPM_CACHE" vercel --prod --yes
 ## Stream dies, copy mentions filters
 
 Dead-stream copy is `playbackNoticeCopy`. The notice store is message-only — no Retry/Next buttons unless that store grows actions.
+
+## Music stops after an Android phone locks
+
+Chrome on Android keeps an `<audio>` element playing behind a locked screen, but the OS can still stop it (battery saver, Doze cutting the network, OEM background limits on Xiaomi/Samsung/Vivo/Oppo), and an hls.js live buffer can drain. `GlobalAudioBridge` in `app/root.tsx` handles this: while hidden, a stall is read from the element's own clock (`isMediaClockStalled`), not timer cadence; a stream that dies behind the lock is retried, then *parked* (`parkedStationRef`) rather than skipped; returning to the page (`visibilitychange`, `resume`) starts a parked station again, and restarts one that is not moving within `RETURN_CHECK_DELAY_MS`. No wake lock: the screen still locks. If music still stops on a given phone, the listener can exempt Chrome from battery optimisation in Android settings.

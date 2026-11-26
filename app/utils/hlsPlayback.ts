@@ -45,6 +45,8 @@ export const HLS_JS_ENABLED = true;
 export type HlsHandle = {
   destroy: () => void;
   startLoad: () => void;
+  /** Where a live stream should play from now; null before the first load. */
+  readonly liveSyncPosition?: number | null;
   loadSource: (url: string) => void;
 };
 

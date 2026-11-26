@@ -84,3 +84,41 @@ export function isPlaybackStalled(input: {
   if (!input.lastProgressAt) return false;
   return input.now - input.lastProgressAt >= (input.timeoutMs ?? STALL_TIMEOUT_MS);
 }
+
+/**
+ * Hidden pages throttle and freeze timers, so wall-clock silence alone is not
+ * a stall there. The element's own clock is: if `currentTime` has not moved
+ * for the stall window while playback intent is on, the stream has drained
+ * (an hls.js live buffer running dry behind a locked screen, or a plain
+ * stream the OS cut off). This reads the media clock, never timer cadence.
+ */
+export function isMediaClockStalled(input: {
+  isPlaying: boolean;
+  currentTime: number;
+  lastCurrentTime: number;
+  lastAdvanceAt: number;
+  now: number;
+  timeoutMs?: number;
+}): boolean {
+  if (!input.isPlaying || !input.lastAdvanceAt) return false;
+  if (input.currentTime !== input.lastCurrentTime) return false;
+  return input.now - input.lastAdvanceAt >= (input.timeoutMs ?? STALL_TIMEOUT_MS);
+}
+
+/**
+ * The OS (screen lock on Android, battery saver, a call) stopped the stream
+ * while the page was away. When the listener comes back, start it again,
+ * unless they changed station or pressed Play/Pause themselves since.
+ */
+export function shouldResumeOnReturn(input: {
+  parkedStationId: string | null;
+  stationNow: string | null;
+  playbackIntent: boolean;
+}): boolean {
+  if (!input.parkedStationId) return false;
+  if (input.playbackIntent) return false;
+  return input.parkedStationId === input.stationNow;
+}
+
+/** How long after the page returns to check that the stream is really moving. */
+export const RETURN_CHECK_DELAY_MS = 1_500;
